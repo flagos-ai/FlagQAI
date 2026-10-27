@@ -84,8 +84,15 @@ export async function checkManagedQuantumDiskSpace(paths, probe = statfs) {
 export async function installManagedQuantum({ paths, env, execute, probeDisk = statfs, diskCheckIntervalMs = QUANTUM_DISK_CHECK_MS }) {
   await Promise.all([paths.quantumToolDir, paths.quantumBinDir, paths.quantumCache, paths.quantumPythonDir]
     .map(path => mkdir(path, { recursive: true, mode: 0o700 })))
+  // `UV_PYTHON_INSTALL_DIR` alone does not keep the interpreter inside this
+  // runtime: when a suitable 3.12 is already on PATH, uv links the tool to that
+  // one instead of downloading into the pinned directory, and the installed
+  // `bin/python` then points outside the managed tree. `UV_MANAGED_PYTHON`
+  // requires a uv-managed interpreter, so a first setup downloads 3.12 into
+  // `paths.quantumPythonDir` and the runtime stays self-contained.
   const installEnv = { ...env, UV_TOOL_DIR: paths.quantumToolDir, UV_TOOL_BIN_DIR: paths.quantumBinDir,
-    UV_CACHE_DIR: paths.quantumCache, UV_PYTHON_INSTALL_DIR: paths.quantumPythonDir }
+    UV_CACHE_DIR: paths.quantumCache, UV_PYTHON_INSTALL_DIR: paths.quantumPythonDir,
+    UV_MANAGED_PYTHON: '1' }
   let uvVersionError
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
