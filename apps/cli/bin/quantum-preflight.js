@@ -342,8 +342,36 @@ async function discoverTools({ command, args, cwd, env, spawnProcess, timeoutMs,
     finished = true
     clearTimeout(timer)
     if (diskTimer) clearInterval(diskTimer)
-    child.kill()
+    await stopProbeChild(child)
   }
+}
+
+/**
+ * Stop the probe child and wait until it has actually exited.
+ *
+ * `child.kill()` only delivers a signal; it returns while the process is still
+ * terminating. A caller that then removes or reuses the child's working
+ * directory races that process. On Windows the race is not benign: a
+ * terminating child still holds a handle on its working directory, so removing
+ * it fails with `EBUSY: resource busy or locked, rmdir`. Waiting here makes the
+ * promise "the probe is done" mean what callers assume.
+ */
+async function stopProbeChild(child, graceMs = 5000) {
+  if (child.exitCode !== null || child.signalCode !== null) return
+  const exited = new Promise(resolve => child.once('exit', resolve))
+  child.kill()
+  let timer
+  const grace = new Promise(resolve => { timer = setTimeout(resolve, graceMs) })
+  timer.unref?.()
+  const stillRunning = await Promise.race([exited.then(() => false), grace.then(() => true)])
+  clearTimeout(timer)
+  if (!stillRunning) return
+  // A child that ignored the signal must not keep the working directory pinned.
+  const forced = new Promise(resolve => child.once('exit', resolve))
+  child.kill('SIGKILL')
+  let forceTimer
+  await Promise.race([forced, new Promise(resolve => { forceTimer = setTimeout(resolve, graceMs) })])
+  clearTimeout(forceTimer)
 }
 
 /** Verify the exact pinned MCP and a writable workspace before model inference. */

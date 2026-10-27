@@ -11,6 +11,29 @@ import { heavyweightMcpLifecyclePolicy } from '../../../packages/server/settings
 
 const fixture = fileURLToPath(new URL('./quantum-preflight-fixture.mjs', import.meta.url))
 
+/**
+ * Remove a temporary directory, retrying briefly.
+ *
+ * The preflight now waits for its probe child to exit before returning, which
+ * removes the main cause of `EBUSY: resource busy or locked, rmdir` on Windows.
+ * A shorter window still exists: antivirus and the search indexer open handles
+ * on freshly written files after the writer closes them, and `rm --force` only
+ * ignores `ENOENT`. Retrying keeps a filesystem race from being reported as a
+ * preflight defect.
+ */
+async function removeTempDirectory(directory, attempts = 5) {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      await rm(directory, { recursive: true, force: true })
+      return
+    } catch (error) {
+      if (attempt >= attempts || !['EBUSY', 'EPERM', 'ENOTEMPTY'].includes(error?.code)) throw error
+      await new Promise(resolve => setTimeout(resolve, 50 * attempt))
+    }
+  }
+}
+
+
 test('the pinned MCP launcher requests a supported Python interpreter', () => {
   assert.deepEqual(FLAGQUANTUM_MCP_ARGS, [
     ...FLAGQUANTUM_MCP_TORCH_ARGS, '--python', '3.12', '--from', 'flagquantum-mcp-server==0.3.2', 'flagquantum-mcp-server',
@@ -33,7 +56,7 @@ test('a managed MCP runs without uv cache discovery or package resolution', asyn
       probeCacheDir: () => { throw new Error('managed launch must not inspect uv cache') } })
     assert.equal(result.status, 'ready')
     assert.deepEqual(result.uvCache, { status: 'not-required' })
-  } finally { await rm(cwd, { recursive: true, force: true }) }
+  } finally { await removeTempDirectory(cwd) }
 })
 
 test('pinned quantum preflight discovers task capabilities before model startup', async () => {
@@ -75,7 +98,7 @@ test('pinned quantum preflight discovers task capabilities before model startup'
       error => error.code === 'vqe_runtime_unavailable')
     await assert.rejects(preflightFlagQuantum({ ...options, task: 'VQE', env: { ...env, FQ_TEST_MODE: 'invalid-training' } }),
       error => error.code === 'vqe_runtime_unavailable')
-  } finally { await rm(cwd, { recursive: true, force: true }) }
+  } finally { await removeTempDirectory(cwd) }
 })
 
 test('a stalled MCP reports a bounded timeout without claiming tool readiness', async () => {
@@ -89,7 +112,7 @@ test('a stalled MCP reports a bounded timeout without claiming tool readiness', 
       onProgress: stage => progress.push(stage),
     }), error => error.code === 'mcp_timeout' && /no model request was sent/u.test(error.message))
     assert.deepEqual(progress, ['mcp-starting'])
-  } finally { await rm(cwd, { recursive: true, force: true }) }
+  } finally { await removeTempDirectory(cwd) }
 })
 
 test('non-object MCP messages reject preflight and stop the child without an uncaught exception', async () => {
@@ -108,7 +131,7 @@ test('non-object MCP messages reject preflight and stop the child without an unc
       assert.ok(child?.killed, 'malformed messages must stop the preflight child')
       assert.deepEqual(progress, ['mcp-starting'], 'malformed messages cannot claim readiness')
     }
-  } finally { await rm(cwd, { recursive: true, force: true }) }
+  } finally { await removeTempDirectory(cwd) }
 })
 
 test('uvx refuses a nearly full cache volume before starting MCP', async () => {
@@ -132,7 +155,7 @@ test('uvx refuses a nearly full cache volume before starting MCP', async () => {
       }), error => error.code === 'insufficient_disk_space' && error.message.includes(variable))
     }
     assert.equal(starts, 0)
-  } finally { await rm(cwd, { recursive: true, force: true }) }
+  } finally { await removeTempDirectory(cwd) }
 })
 
 test('uvx can inspect real free space on each effective writable directory', async () => {
@@ -145,7 +168,7 @@ test('uvx can inspect real free space on each effective writable directory', asy
       spawnProcess: (_command, _args, options) => spawn(process.execPath, [fixture], options),
     })
     assert.equal(result.status, 'ready')
-  } finally { await rm(cwd, { recursive: true, force: true }) }
+  } finally { await removeTempDirectory(cwd) }
 })
 
 test('uvx stops an active cold install if a monitored volume runs low', async () => {
@@ -169,7 +192,7 @@ test('uvx stops an active cold install if a monitored volume runs low', async ()
     assert.ok(child?.killed, 'the active MCP installer is stopped at the disk floor')
   } finally {
     child?.kill()
-    await rm(cwd, { recursive: true, force: true })
+    await removeTempDirectory(cwd)
   }
 })
 
@@ -203,7 +226,7 @@ test('molecular VQE requires and exercises the six-tool research contract', asyn
       error => error.code === 'research_runtime_unavailable' && /independent energy/u.test(error.message))
     await assert.rejects(preflightFlagQuantum({ ...options, env: { ...options.env, FQ_TEST_MODE: 'research-bad-validation' } }),
       error => error.code === 'research_runtime_unavailable' && /did not validate/u.test(error.message))
-  } finally { await rm(cwd, { recursive: true, force: true }) }
+  } finally { await removeTempDirectory(cwd) }
 })
 
 test('unwritable or missing workspace fails before MCP startup', async () => {
@@ -235,7 +258,7 @@ test('file-data or sync failures in each runtime directory stop before MCP start
       }), error => error.code === code)
       assert.equal(probes, failedProbe)
     }
-  } finally { await rm(cwd, { recursive: true, force: true }) }
+  } finally { await removeTempDirectory(cwd) }
 })
 
 test('unmatched scientific tasks fail before workspace or MCP setup', async () => {
@@ -259,7 +282,7 @@ test('an explicit uv cache is verified before contacting MCP', async () => {
     await writeFile(blocked, 'x')
     await assert.rejects(preflightFlagQuantum({ ...options, env: { ...process.env, UV_CACHE_DIR: blocked } }), error => error.code === 'cache_not_writable')
     await assert.rejects(preflightFlagQuantum({ ...options, env: { ...process.env, UV_CACHE_DIR: 'relative-cache' } }), error => error.code === 'cache_path_not_absolute')
-  } finally { await rm(cwd, { recursive: true, force: true }) }
+  } finally { await removeTempDirectory(cwd) }
 })
 
 test('default uv cache lookup and writes fail before MCP startup', async () => {
@@ -277,7 +300,7 @@ test('default uv cache lookup and writes fail before MCP startup', async () => {
       error => error.code === 'cache_discovery_failed')
     await assert.rejects(preflightFlagQuantum({ ...options, probeCacheDir: () => 'relative-cache' }),
       error => error.code === 'cache_path_not_absolute')
-  } finally { await rm(cwd, { recursive: true, force: true }) }
+  } finally { await removeTempDirectory(cwd) }
 })
 
 test('uvx rejects unwritable tool and Python directories before MCP startup', async () => {
@@ -301,7 +324,7 @@ test('uvx rejects unwritable tool and Python directories before MCP startup', as
       error => error.code === 'python_dir_not_writable' && /UV_PYTHON_INSTALL_DIR/u.test(error.message))
     await assert.rejects(preflightFlagQuantum({ ...options, probeUvDir: () => { throw new Error('uv failed') } }),
       error => error.code === 'tool_discovery_failed')
-  } finally { await rm(cwd, { recursive: true, force: true }) }
+  } finally { await removeTempDirectory(cwd) }
 })
 
 test('machine-readable preflight failure is structured and does not start a model', async () => {
@@ -327,5 +350,5 @@ test('machine-readable preflight failure is structured and does not start a mode
     assert.equal(toolFailure.status, 1)
     assert.equal(toolFailure.stderr, '')
     assert.equal(JSON.parse(toolFailure.stdout).error.code, 'tool_dir_not_writable')
-  } finally { await rm(cwd, { recursive: true, force: true }) }
+  } finally { await removeTempDirectory(cwd) }
 })
