@@ -27,6 +27,32 @@ async function waitFor(check, timeoutMs, label) {
   throw new Error(`Timed out waiting for ${label}`)
 }
 
+/**
+ * Type text into a PTY, one character at a time on Windows.
+ *
+ * POSIX PTYs deliver a written chunk as a sequence of key events, so a whole
+ * command lands in the composer the way a fast typist would produce it. ConPTY
+ * does not: the same chunk can be coalesced or partly consumed by whatever
+ * handler is active, and on the Windows acceptance run `/provider` ended with
+ * only `r` in the composer, so the provider menu never opened and the check
+ * timed out. Typing character by character removes the coalescing entirely.
+ *
+ * Only the multi-character text goes through here. Escape sequences and a lone
+ * Enter stay whole, because splitting those changes their meaning.
+ */
+const TYPE_DELAY_MS = process.platform === 'win32' ? 25 : 0
+
+async function writeText(child, text) {
+  if (TYPE_DELAY_MS === 0 || text.length < 2) {
+    child.write(text)
+    return
+  }
+  for (const character of text) {
+    child.write(character)
+    await delay(TYPE_DELAY_MS)
+  }
+}
+
 export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profilePatch, verifyProviderWizard = false, verifyAgentTurn = false }) {
   assert.ok(!verifyAgentTurn || verifyProviderWizard, 'the agent turn requires the isolated provider wizard')
   const pty = require(modulePath)
@@ -80,6 +106,7 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
       name: 'xterm-256color', cols: 100, rows: 32, cwd,
       env: { ...env, TERM: 'xterm-256color', FLAGQAI_LANG: 'en', DSH_TELEMETRY_MODE: 'DISABLED' },
     })
+    const type = text => writeText(child, text)
     child.onData(data => {
       output = (output + data).slice(-128 * 1024)
       terminal.write(data)
@@ -90,7 +117,7 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
     if (screen().includes('Welcome to FlagQAI')) child.write('\u001b')
     await waitFor(() => exit !== undefined || screen().includes('Say something, or type'), 30000, 'FlagQAI command prompt')
     assert.equal(exit, undefined, `TUI exited before its command prompt appeared (code ${exit?.exitCode})`)
-    child.write('/provider')
+    await type('/provider')
     await waitFor(() => exit !== undefined || screen().includes('Add, edit or delete an LLM provider'), 10000, 'provider command selection')
     child.write('\r')
     await waitFor(() => exit !== undefined || screen().includes('Add a new provider'), 15000, 'installed provider wizard')
@@ -103,16 +130,16 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
       assert.ok(address && typeof address !== 'string')
       child.write('\u001b[B\r')
       await waitFor(() => exit !== undefined || screen().includes('Enter a route name'), 10000, 'custom route name')
-      child.write(routeName)
+      await type(routeName)
       await waitFor(() => exit !== undefined || screen().includes(routeName), 10000, 'typed route name')
       child.write('\r')
       await waitFor(() => exit !== undefined || screen().includes('Enter the API key'), 10000, 'custom API key')
-      child.write('fixture-secret-never-send')
+      await type('fixture-secret-never-send')
       await delay(250)
       assert.ok(!output.includes('fixture-secret-never-send'), 'the API key must be masked while typing')
       child.write('\r')
       await waitFor(() => exit !== undefined || screen().includes('Enter the baseURL'), 10000, 'custom endpoint')
-      child.write(`http://127.0.0.1:${address.port}/v1`)
+      await type(`http://127.0.0.1:${address.port}/v1`)
       await waitFor(() => exit !== undefined || screen().includes(`/v1`), 10000, 'typed custom endpoint')
       child.write('\r')
       await waitFor(() => exit !== undefined || screen().includes('Choose the wire protocol'), 10000, 'custom protocol')
@@ -164,7 +191,7 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
     // Exercise the installed composer as a user would, without submitting a
     // message or touching a model endpoint. This is a black-box contract for
     // a future independently implemented input surface.
-    child.write('FQEDITXYZ')
+    await type('FQEDITXYZ')
     await waitFor(() => exit !== undefined || screen().includes('FQEDITXYZ'), 10000, 'typed draft')
     assert.equal(exit, undefined, `TUI exited while typing a draft (code ${exit?.exitCode})`)
     child.write('\u001b[D\u007f')
