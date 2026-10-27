@@ -110,7 +110,10 @@ export async function createReleaseFileInventory({ destination, ref = 'HEAD' }) 
   const temporary = await mkdtemp(join(tmpdir(), 'flagqai-release-inventory-'))
   try {
     const packageReport = await packFlagqai({ destination: temporary })
-    const archiveMembers = checked('tar', ['-tzf', packageReport.path], { encoding: 'utf8' }).trimEnd().split('\n')
+    // bsdtar is the `tar` on Windows and ends each listed member with CRLF, so
+    // splitting on '\n' alone leaves a trailing \r on every path and the
+    // comparison against the npm report fails. Split on either ending.
+    const archiveMembers = checked('tar', ['-tzf', packageReport.path], { encoding: 'utf8' }).trimEnd().split(/\r?\n/u)
     validateArchiveMembers(archiveMembers, packageReport.files)
     const extracted = join(temporary, 'extracted')
     await mkdir(extracted)
