@@ -1,0 +1,881 @@
+/**
+ * 后台任务（ctx.jobs）UI 投影回归：/jobs 面板、转录任务卡、状态栏角标、完成 toast。
+ *
+ * Group A — BackgroundJobStore 单元（无渲染）：
+ *   注册/转换/消失合成 killed、onSettled 恰好一次、输出镜像过滤与有界、时长格式化。
+ * Group B — channel 集成（真实 cordis Context + 假 agents/jobs 服务）：
+ *   任务注册建卡、job_output 结果镜像进瀑布、落定 toast、存活任务消失冻结、
+ *   jobControl.kill 权限传递、无 jobs 服务降级、/new 重置投影。
+ * Group C — 渲染冒烟（headless xterm）：
+ *   JobCard 运行态三行瀑布（有输出时）/仅头行（无输出时）、settled 折叠、JobsPanel 标题/行/提示。
+ * Group D — 按键归属（Chat 整屏 + 假 channel）：
+ *   面板打开时 Esc 关面板而非中断对话；面板关闭后 Esc 仍能中断（防假通过）。
+ *
+ * 运行：node --import tsx/esm scripts/verify-jobs-panel.tsx
+ */
+process.env.FLAGQAI_LANG = 'en'
+process.env.FORCE_COLOR = '3'
+
+// 家目录隔离：channel 构造路径会 touch 用户目录，先切临时目录再 import。
+const { mkdtempSync, mkdirSync } = await import('node:fs')
+const { tmpdir } = await import('node:os')
+const { join: joinPath } = await import('node:path')
+const isolatedHome = mkdtempSync(joinPath(tmpdir(), 'flagqai-jobs-panel-'))
+process.env.HOME = isolatedHome
+process.env.USERPROFILE = isolatedHome
+mkdirSync(joinPath(isolatedHome, '.flagqai'), { recursive: true })
+
+const [
+  { Context },
+  { createChannel },
+  { BackgroundJobStore, formatJobDuration, JOBS_MAX_TRACKED, JOBS_MAX_OUTPUT_LINES },
+  { settled, settle, sleep },
+  React,
+  { render },
+  { JobCard },
+  { JobsPanel, resolveJobsRowColumns },
+  { Chat },
+  { QuestionStore },
+  { createJobProjection },
+] = await Promise.all([
+  import('@deepseek-ai/cordis'),
+  import('../src/dsh-adapter/channel.js'),
+  import('../src/dsh-adapter/jobs.js'),
+  import('./lib/term-test.mjs'),
+  import('react'),
+  import('../src/ui.js'),
+  import('../src/components/Chat/JobCard.js'),
+  import('../src/components/JobsPanel.js'),
+  import('../src/screens/Chat.js'),
+  import('../src/dsh-adapter/questions.js'),
+  import('../src/dsh-adapter/channel/job-projection.js'),
+])
+const { Writable, PassThrough } = await import('node:stream')
+const { Terminal: XTerm } = (await import('@xterm/headless')) as unknown as {
+  Terminal: typeof import('@xterm/headless').Terminal
+}
+
+let failed = 0
+function check(name: string, ok: boolean, extra = ''): void {
+  console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${extra ? `  (${extra})` : ''}`)
+  if (!ok) failed += 1
+}
+
+// ---------------------------------------------------------------------------
+// Group A — BackgroundJobStore 单元
+// ---------------------------------------------------------------------------
+console.log('--- A: BackgroundJobStore units ---')
+{
+  const settledJobs: string[] = []
+  let changes = 0
+  const store = new BackgroundJobStore({
+    onSettled: job => settledJobs.push(`${job.id}:${job.status}`),
+    onChanged: () => { changes += 1 },
+  })
+  const snap = (id: string, status: 'running' | 'completed', extra: Record<string, unknown> = {}) =>
+    ({ id, kind: 'pwsh', label: `cmd ${id}`, status, startedAt: 1000, ...extra })
+
+  store.replace([snap('pwsh-1', 'running'), snap('pwsh-2', 'running')])
+  check('A1 注册两个任务', store.snapshot().length === 2 && changes === 1)
+  const changesAfterNoop = changes
+  store.replace([snap('pwsh-1', 'running'), snap('pwsh-2', 'running')])
+  check('A1 无变化 replace 不触发事件', changes === changesAfterNoop)
+
+  store.replace([snap('pwsh-1', 'completed', { detail: 'exit code: 0', finishedAt: 5000 }), snap('pwsh-2', 'running')])
+  check('A2 running→completed 触发一次 onSettled', settledJobs.join(',') === 'pwsh-1:completed', settledJobs.join(','))
+  store.replace([snap('pwsh-1', 'completed', { detail: 'exit code: 0', finishedAt: 5000 }), snap('pwsh-2', 'running')])
+  check('A2 重复终态不重复触发', settledJobs.length === 1)
+
+  // 存活任务从 list 消失（owner 处置/会话切换）→ 冻结为 killed 并保留为历史。
+  store.replace([snap('pwsh-1', 'completed', { detail: 'exit code: 0', finishedAt: 5000 })])
+  check('A3 存活任务消失合成 killed', settledJobs.join(',') === 'pwsh-1:completed,pwsh-2:killed', settledJobs.join(','))
+  check('A3 消失任务冻结保留在快照', store.get('pwsh-2')?.status === 'killed')
+
+  store.onOutputSeen('pwsh-1', 'line A\n\nline B  \n[status: completed, exit code: 0]')
+  const job1 = store.get('pwsh-1')
+  check(
+    'A4 镜像输出去空行 + 去 [status:] 尾缀',
+    (job1?.outputLines ?? []).map(line => line.text).join('|') === 'line A|line B',
+    JSON.stringify(job1?.outputLines),
+  )
+  store.onOutputSeen('pwsh-1', Array.from({ length: 40 }, (_, i) => `tail ${i}`).join('\n'))
+  check(
+    'A4 输出尾部有界',
+    job1?.outputLines.length === JOBS_MAX_OUTPUT_LINES && job1?.outputLines.at(-1)?.text === 'tail 39',
+    `len=${job1?.outputLines.length}`,
+  )
+  store.onOutputSeen('unknown-job', 'x')
+  check('A4 未知任务镜像被忽略', store.get('unknown-job') === undefined)
+
+  // A7 内核 output 环摄取：通道标签、跨 chunk 行拼接、gap 标记、游标推进。
+  {
+    const kernelStore = new BackgroundJobStore()
+    kernelStore.replace([{
+      id: 'pwsh-9', kind: 'pwsh', label: 'stream cmd', status: 'running', startedAt: 0,
+      output: { total: 0, earliest: 0 },
+    }])
+    kernelStore.onKernelOutput('pwsh-9', {
+      chunks: [
+        { at: 0, text: 'partial without new', channel: 'stdout' },
+        { at: 21, text: 'line end\n', channel: 'stdout' },
+      ],
+      next: 29,
+    })
+    check(
+      'A7 跨 chunk 行拼接（无换行尾暂存）',
+      kernelStore.get('pwsh-9')?.outputLines.length === 1
+        && kernelStore.get('pwsh-9')?.outputLines[0]?.text === 'partial without newline end',
+      JSON.stringify(kernelStore.get('pwsh-9')?.outputLines),
+    )
+    check('A7 游标推进到 next', kernelStore.kernelCursorOf('pwsh-9') === 29, String(kernelStore.kernelCursorOf('pwsh-9')))
+    check('A7 总字节跟踪', kernelStore.get('pwsh-9')?.outputTotalBytes === 29, String(kernelStore.get('pwsh-9')?.outputTotalBytes))
+    kernelStore.onKernelOutput('pwsh-9', {
+      chunks: [
+        { at: 29, text: 'warn line\n', channel: 'stderr', gapBefore: true },
+        { at: 39, text: 'narration\n', channel: 'log' },
+      ],
+      next: 49,
+    })
+    const klines = kernelStore.get('pwsh-9')?.outputLines ?? []
+    check(
+      'A7 通道标签落行（stderr/log）',
+      klines.some(line => line.channel === 'stderr' && line.text === 'warn line')
+        && klines.some(line => line.channel === 'log' && line.text === 'narration'),
+      JSON.stringify(klines),
+    )
+    check(
+      'A7 gapBefore 标记在丢失后首行',
+      klines.find(line => line.channel === 'stderr')?.gapBefore === true,
+      JSON.stringify(klines),
+    )
+    check('A7 丢失标记置位 outputDropped', kernelStore.get('pwsh-9')?.outputDropped === true)
+    kernelStore.onKernelOutput('pwsh-9', { chunks: [], next: 49, lossy: true })
+    check('A7 空增量 lossy 不清丢失标记', kernelStore.get('pwsh-9')?.outputDropped === true)
+  }
+
+  const big = new BackgroundJobStore()
+  big.replace(
+    Array.from({ length: JOBS_MAX_TRACKED + 10 }, (_, i) => ({
+      id: `bash-${i}`, kind: 'bash', label: 'x', status: i < 5 ? 'running' as const : 'completed' as const, startedAt: i, finishedAt: i + 1,
+    })),
+  )
+  const remaining = big.snapshot()
+  check(
+    'A5 终态有界且存活全保留',
+    remaining.length <= JOBS_MAX_TRACKED && remaining.filter(job => job.status === 'running').length === 5,
+    `len=${remaining.length}`,
+  )
+
+  check(
+    'A6 时长格式化',
+    formatJobDuration({ startedAt: 0, finishedAt: 3000 }) === '3s'
+      && formatJobDuration({ startedAt: 0, finishedAt: 192_000 }) === '3m12s'
+      && formatJobDuration({ startedAt: 0, finishedAt: 3_720_000 }) === '1h02m',
+    `${formatJobDuration({ startedAt: 0, finishedAt: 192_000 })}`,
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Group B — channel 集成
+// ---------------------------------------------------------------------------
+console.log('--- B: channel integration ---')
+interface FakeAgent {
+  id: string
+  status: string
+  options: Record<string, unknown>
+  ctx: unknown
+  session: { id: string; seq: number; events: unknown[]; header: Record<string, unknown> }
+  steered: string[]
+  followup(message: unknown): void
+  steer(message: unknown): void
+  inbox: { remove(): boolean }
+  cancel(): void
+  whenIdle(): Promise<void>
+}
+function makeAgent(id: string, sessionId: string): FakeAgent {
+  const steered: string[] = []
+  return {
+    id,
+    status: 'idle',
+    options: {},
+    ctx: { on: () => () => {} },
+    session: { id: sessionId, seq: 0, events: [], header: {} },
+    steered,
+    followup() {},
+    steer(message) { steered.push(JSON.stringify((message as { content?: unknown }).content)) },
+    inbox: { remove: () => true },
+    cancel() {},
+    whenIdle: () => Promise.resolve(),
+  } as FakeAgent
+}
+const makeHandle = (agent: FakeAgent) => ({ agent, dispose: () => Promise.resolve() })
+
+function makeFakeJobs(currentOwner: () => string | undefined = () => undefined): {
+  runtime: Record<string, unknown>
+  register(snap: Record<string, unknown>): void
+  update(snap: Record<string, unknown>): void
+  remove(id: string): void
+  kills: string[]
+} {
+  const snapshots = new Map<string, Record<string, unknown>>()
+  // 内核口径：`list(caller)` 只返回 `owner === undefined || owner.id === caller`
+  // 的任务。假注册表原先忽略 caller 一律全返，于是「切会话后按新会话重读」
+  // 这条路在夹具里永远看不到为空——真实内核会过滤掉上一个会话的任务。
+  const owners = new Map<string, string | undefined>()
+  const changed = new Set<(owner: unknown) => void>()
+  const done = new Set<(snap: unknown, owner: unknown) => void>()
+  const kills: string[] = []
+  const fire = (): void => { for (const listener of changed) listener(undefined) }
+  return {
+    kills,
+    runtime: {
+      list: (caller?: string) => [...snapshots.values()].filter(snap => owners.get(String(snap.id)) === undefined || owners.get(String(snap.id)) === caller),
+      kill: (id: string) => { kills.push(id); return 'requested' },
+      onJobsChanged: (listener: (owner: unknown) => void) => { changed.add(listener); return () => changed.delete(listener) },
+      onJobDone: (listener: (snap: unknown, owner: unknown) => void) => { done.add(listener); return () => done.delete(listener) },
+    },
+    register(snap) { snapshots.set(snap.id as string, snap); owners.set(String(snap.id), currentOwner()); fire() },
+    update(snap) { snapshots.set(snap.id as string, snap); fire() },
+    remove(id) { snapshots.delete(id); fire() },
+  }
+}
+
+const jobRows = (channel: { rows: Array<{ kind: string }> }) => channel.rows.filter(row => row.kind === 'job')
+const NOW = Date.now()
+
+{
+  const ctx = new Context()
+  const provide = (ctx as unknown as { provide(name: string, value: unknown): void }).provide.bind(ctx)
+  const emit = (event: string, ...args: unknown[]) =>
+    (ctx as unknown as { emit(event: string, ...args: unknown[]): void }).emit(event, ...args)
+  const initial = makeAgent('agent-a', 'sess-a')
+  provide('agents', {
+    get: () => undefined,
+    create: () => Promise.resolve(makeHandle(makeAgent('agent-b', 'sess-b'))),
+  })
+  // 本组所有注册都发生在 /new 之前，归属于初始 agent。
+  const fake = makeFakeJobs(() => initial.id)
+  provide('jobs', fake.runtime)
+  const channel = createChannel(ctx as never, initial as never, {
+    model: 'm0', cwd: '/tmp/demo', provider: 'p0', activity: false,
+  })
+
+  fake.register({ id: 'pwsh-1', kind: 'pwsh', label: 'gh run watch 42', status: 'running', startedAt: NOW - 3000 })
+  check('B1 任务注册进快照', await settled(() => channel.backgroundJobs.length === 1))
+  check('B1 转录出现任务卡行', await settled(() => jobRows(channel).length === 1))
+  check('B1 卡行初态 running', jobRows(channel)[0]?.job?.status === 'running', String(jobRows(channel)[0]?.job?.status))
+
+  // job_output 工具结果流经事件流 → 镜像进瀑布（去掉 [status:] 尾缀）。
+  emit('session/event', initial.session, {
+    type: 'tool/call',
+    data: { callId: 'cj1', name: 'job_output', arguments: JSON.stringify({ job_id: 'pwsh-1' }) },
+  })
+  emit('session/event', initial.session, {
+    type: 'tool/result',
+    data: {
+      message: {
+        source: { callId: 'cj1' },
+        content: [{ type: 'tool-result', content: [{ type: 'text', text: 'build step 1 ok\nbuild step 2 ok\n[status: running]' }] }],
+      },
+    },
+  })
+  check(
+    'B2 job_output 结果镜像进卡行',
+    await settled(() => (jobRows(channel)[0]?.job?.outputLines ?? []).map(line => line.text).join('|') === 'build step 1 ok|build step 2 ok'),
+    JSON.stringify(jobRows(channel)[0]?.job?.outputLines),
+  )
+  check(
+    'B2 镜像记录输出更新时间',
+    await settled(() => typeof channel.backgroundJobs[0]?.lastOutputAt === 'number'),
+    String(channel.backgroundJobs[0]?.lastOutputAt),
+  )
+
+  const noticesBefore = channel.notifications.length
+  fake.update({ id: 'pwsh-1', kind: 'pwsh', label: 'gh run watch 42', status: 'completed', detail: 'exit code: 0', startedAt: NOW - 3000, finishedAt: NOW })
+  check('B3 落定后卡行 completed + exit detail', await settled(() =>
+    jobRows(channel)[0]?.job?.status === 'completed' && jobRows(channel)[0]?.job?.detail === 'exit code: 0',
+  ))
+  check(
+    'B3 完成 toast 送达（含任务 id）',
+    await settled(() => channel.notifications.length > noticesBefore
+      && channel.notifications.some(item => item.text.includes('pwsh-1'))),
+    JSON.stringify(channel.notifications.map(item => item.text)),
+  )
+
+  // 第二个任务：存活中消失（owner 处置）→ 卡行冻结为 killed，随后移出面板。
+  fake.register({ id: 'bash-2', kind: 'bash', label: 'sleep 99', status: 'running', startedAt: NOW })
+  check('B4 第二个任务注册', await settled(() => channel.backgroundJobs.length === 2))
+  fake.remove('bash-2')
+  check('B4 存活任务消失→卡行冻结 killed', await settled(() => {
+    const row = jobRows(channel).find(r => r.job?.id === 'bash-2')
+    return row?.job?.status === 'killed'
+  }), String(jobRows(channel).find(r => r.job?.id === 'bash-2')?.job?.status))
+  check('B4 面板快照冻结为 killed 保留', await settled(() =>
+    channel.backgroundJobs.find(job => job.id === 'bash-2')?.status === 'killed',
+  ))
+
+  check('B5 jobControl.kill 调用注册表并带 owner', channel.jobControl.kill('pwsh-1') === true && fake.kills.join(',') === 'pwsh-1', fake.kills.join(','))
+  await sleep(150) // 固定窗:探针 终态任务 kill 后观察窗内不得发出 steer
+  check('B5 终态任务 kill 不触发 steer', initial.steered.length === 0, initial.steered.join('|'))
+
+  // 存活任务被用户 kill → steer 通知模型（kill 会抑制 harness 完成通知）。
+  fake.register({ id: 'bash-3', kind: 'bash', label: 'sleep 100', status: 'running', startedAt: NOW })
+  check('B8 存活任务注册', await settled(() => channel.backgroundJobs.some(job => job.id === 'bash-3')))
+  check('B8 存活 kill 返回 true', channel.jobControl.kill('bash-3') === true)
+  check(
+    'B8 kill 后 steer 送达模型（含任务 id）',
+    await settled(() => initial.steered.some(text => text.includes('bash-3'))),
+    initial.steered.join('|'),
+  )
+
+  // 启动 ack（started background job <id>）先于注册到达：命令暂存，注册后挂上。
+  emit('session/event', initial.session, {
+    type: 'tool/call',
+    data: { callId: 'cj9', name: 'pwsh', arguments: JSON.stringify({ command: 'gh pr checks --watch 42', description: 'watch ci' }) },
+  })
+  emit('session/event', initial.session, {
+    type: 'tool/result',
+    data: {
+      message: {
+        source: { callId: 'cj9' },
+        content: [{ type: 'tool-result', content: [{ type: 'text', text: 'started background job pwsh-9' }] }],
+      },
+    },
+  })
+  fake.register({ id: 'pwsh-9', kind: 'pwsh', label: 'watch ci', status: 'running', startedAt: NOW })
+  check(
+    'B9 启动 ack 捕获完整命令（注册后挂上）',
+    await settled(() => channel.backgroundJobs.find(job => job.id === 'pwsh-9')?.command === 'gh pr checks --watch 42'),
+    String(channel.backgroundJobs.find(job => job.id === 'pwsh-9')?.command),
+  )
+
+  check('B6 /new 成功', (await channel.newSession()) === true)
+  check('B6 切换后面板快照清空', channel.backgroundJobs.length === 0)
+  check('B6 切换后任务卡行清空', jobRows(channel).length === 0)
+}
+
+// 无 jobs 服务：功能静默降级，kill 返回 false。
+{
+  const ctx = new Context()
+  const provide = (ctx as unknown as { provide(name: string, value: unknown): void }).provide.bind(ctx)
+  provide('agents', {
+    get: () => undefined,
+    create: () => Promise.resolve(makeHandle(makeAgent('agent-b', 'sess-b'))),
+  })
+  const channel = createChannel(ctx as never, makeAgent('agent-a', 'sess-a') as never, {
+    model: 'm0', cwd: '/tmp/demo', provider: 'p0', activity: false,
+  })
+  await sleep(50) // 固定窗:探针 无 jobs 服务时快照必须始终为空（轮询空条件会立即返回）
+  check('B7 无 jobs 服务：快照为空', channel.backgroundJobs.length === 0)
+  check('B7 无 jobs 服务：kill 安全返回 false', channel.jobControl.kill('pwsh-9') === false)
+}
+
+// ---------------------------------------------------------------------------
+// Group B2 — 内核事件总线集成（events.subscribe + readAt 非消费增量）
+// ---------------------------------------------------------------------------
+console.log('--- B2: kernel event bus integration ---')
+{
+  const ctx2 = new Context()
+  const provide2 = (ctx2 as unknown as { provide(name: string, value: unknown): void }).provide.bind(ctx2)
+  provide2('agents', {
+    get: () => undefined,
+    create: () => Promise.resolve(makeHandle(makeAgent('agent-k', 'sess-k'))),
+  })
+
+  /** 内核形状的假注册表：events 总线 + 环形 readAt（字节偏移切片）。 */
+  const ring: string[] = []
+  const listeners = new Set<(event: Record<string, unknown>) => void>()
+  const shots = new Map<string, Record<string, unknown>>()
+  let nextByte = 0
+  const append = (text: string, channel?: string, gapBefore?: boolean): void => {
+    ring.push((gapBefore ? '\u0000' : '') + JSON.stringify({ at: nextByte, text, ...(channel ? { channel } : {}), ...(gapBefore ? { gapBefore: true } : {}) }))
+    nextByte += text.length
+    for (const listener of listeners) listener({ type: 'output', id: 'pwsh-7', total: nextByte })
+  }
+  const kernelRuntime = {
+    list: (caller?: string) => {
+      if (caller !== 'agent-k-id') throw new Error('fence: caller must be the session id string')
+      return [...shots.values()]
+    },
+    kill: (id: string, caller?: string) => {
+      if (caller !== 'agent-k-id') throw new Error('fence: caller must be the session id string')
+      return 'requested'
+    },
+    events: {
+      subscribe: (_filter: unknown, listener: (event: Record<string, unknown>) => void) => {
+        listeners.add(listener as (event: Record<string, unknown>) => void)
+        return () => { listeners.delete(listener as (event: Record<string, unknown>) => void) }
+      },
+    },
+    readAt: (id: string, from: number) => {
+      if (id !== 'pwsh-7') throw new Error('unknown job')
+      const chunks: Array<{ at: number; text: string; channel?: string; gapBefore?: true }> = []
+      let next = from
+      for (const raw of ring) {
+        const gap = raw.startsWith('\u0000')
+        const chunk = JSON.parse(gap ? raw.slice(1) : raw) as { at: number; text: string; channel?: string }
+        if (chunk.at < from) continue
+        chunks.push({ ...chunk, ...(gap ? { gapBefore: true } : {}) })
+        next = chunk.at + chunk.text.length
+      }
+      return { chunks, next }
+    },
+  }
+  provide2('jobs', kernelRuntime)
+  const kernelAgent = makeAgent('agent-k', 'sess-k')
+  // 会话 id 字符串才是围栏口径（Agent.id）；FakeAgent.id 字段直接充当。
+  ;(kernelAgent as unknown as { id: string }).id = 'agent-k-id'
+  const channel2 = createChannel(ctx2 as never, kernelAgent as never, {
+    model: 'm0', cwd: '/tmp/demo', provider: 'p0', activity: false,
+  })
+
+  shots.set('pwsh-7', {
+    id: 'pwsh-7', kind: 'pwsh', label: 'kernel stream', status: 'running', startedAt: NOW,
+    progress: '2/5', output: { total: 0, earliest: 0 },
+  })
+  for (const listener of listeners) listener({ type: 'registered', job: shots.get('pwsh-7') })
+  check('B2a 内核 registered 事件建卡', await settled(() => channel2.backgroundJobs.length === 1))
+  check(
+    'B2a roster 携带 progress 进度行',
+    await settled(() => channel2.backgroundJobs[0]?.progress === '2/5'),
+    String(channel2.backgroundJobs[0]?.progress),
+  )
+
+  append('kernel line 1\n', 'stdout')
+  append('kernel warn\n', 'stderr')
+  check(
+    'B2b output 事件拉取增量（通道落行）',
+    await settled(() => {
+      const lines = channel2.backgroundJobs[0]?.outputLines ?? []
+      return lines.some(line => line.text === 'kernel line 1')
+        && lines.some(line => line.text === 'kernel warn' && line.channel === 'stderr')
+    }),
+    JSON.stringify(channel2.backgroundJobs[0]?.outputLines),
+  )
+  check(
+    'B2b 非消费游标推进（cursor 跟踪字节）',
+    await settled(() => channel2.backgroundJobs[0]?.outputTotalBytes === 'kernel line 1\nkernel warn\n'.length),
+    String(channel2.backgroundJobs[0]?.outputTotalBytes),
+  )
+
+  append('after gap\n', 'stdout', true)
+  check(
+    'B2c gapBefore → 丢失标记 + 行级 gap 标记',
+    await settled(() => channel2.backgroundJobs[0]?.outputDropped === true
+      && (channel2.backgroundJobs[0]?.outputLines ?? []).some(line => line.text === 'after gap' && line.gapBefore === true)),
+    JSON.stringify(channel2.backgroundJobs[0]?.outputLines),
+  )
+
+  shots.set('pwsh-7', {
+    id: 'pwsh-7', kind: 'pwsh', label: 'kernel stream', status: 'completed', detail: 'exit code: 0',
+    startedAt: NOW, finishedAt: Date.now(), output: { total: nextByte, earliest: 0 },
+  })
+  const notices2 = channel2.notifications.length
+  for (const listener of listeners) listener({ type: 'settled', job: shots.get('pwsh-7'), cause: 'producer', awaited: false })
+  check(
+    'B2d settled 事件 → 完成 toast',
+    await settled(() => channel2.notifications.length > notices2
+      && channel2.notifications.some(item => item.text.includes('pwsh-7'))),
+    JSON.stringify(channel2.notifications.map(item => item.text)),
+  )
+
+  check(
+    'B2e kill 以会话 id 字符串过围栏',
+    channel2.jobControl.kill('pwsh-7') === true,
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Group B3 — 会话换绑：订阅不得冻结在启动会话上
+// ---------------------------------------------------------------------------
+console.log('--- B3: session rebind (the roster must follow the binding) ---')
+{
+  // 现场：flagqai 启动先建一个全新会话，随后才恢复用户会话。jobs 投影在
+  // 「服务注入」时 attach——那一刻若把订阅过滤器钉死成启动会话，内核之后会按
+  // owner 丢弃全部事件，refresh 永不触发，面板永远停在 attach 时的空名册。
+  const bootJob = { id: 'boot-job', kind: 'bash', label: 'boot work', status: 'running' as const, startedAt: 1 }
+  const userJob = { id: 'user-job', kind: 'pwsh', label: 'user work', status: 'running' as const, startedAt: 2 }
+  const calls: string[] = []
+  const subs: Array<{ filter: Record<string, unknown>; listener: (event: Record<string, unknown>) => void }> = []
+  const kernelJobs = {
+    list(caller?: string) {
+      calls.push(String(caller))
+      if (caller === 'sess-boot') return [bootJob]
+      if (caller === 'sess-user') return [userJob]
+      return []
+    },
+    kill() {},
+    readAt() { return { chunks: [], next: 0 } },
+    events: {
+      subscribe(filter: Record<string, unknown>, listener: (event: Record<string, unknown>) => void) {
+        subs.push({ filter, listener })
+        return () => {}
+      },
+    },
+  }
+  /** 内核投递口径：`ownerId !== filter.owner` 的事件直接丢弃。 */
+  const emit = (event: Record<string, unknown>, ownerId: string): void => {
+    for (const sub of subs) {
+      if ('owner' in sub.filter && sub.filter.owner !== ownerId) continue
+      sub.listener(event)
+    }
+  }
+  let bound: { id: string } = { id: 'sess-boot' }
+  const state = { backgroundJobs: [], rows: [], emit() {} }
+  const projection = createJobProjection(
+    () => state as never,
+    {
+      owner: { current: () => true, own: () => () => {} },
+      notify: () => {},
+      rowIds: { value: 0 },
+      agent: () => bound as never,
+      steer: () => {},
+    },
+  )
+  const ids = (): string => projection.store.snapshot().map(job => job.id).join(',')
+  projection.attach(kernelJobs as never)
+  check('B3a 订阅不带 owner 过滤（带则换绑后事件全被内核丢弃）',
+    subs.length === 1 && !('owner' in (subs[0]?.filter ?? {})), JSON.stringify(subs.map(sub => sub.filter)))
+  check('B3b 挂载即按当前会话读名册', calls.length === 1 && calls[0] === 'sess-boot', calls.join(','))
+  projection.reanchor()
+  check('B3c 会话未变时 reanchor 不重复读（挂载只读一次）', calls.length === 1, calls.join(','))
+
+  bound = { id: 'sess-user' }
+  projection.reanchor()
+  check('B3d 换绑后按新会话重读且旧名册被替换',
+    calls.at(-1) === 'sess-user' && ids() === 'user-job', `${calls.join(',')} → ${ids()}`)
+
+  const beforeEvent = calls.length
+  emit({ type: 'registered', job: userJob }, 'sess-user')
+  check('B3e 换绑后本会话事件仍能触发刷新（反证：订阅没被冻结）',
+    calls.length === beforeEvent + 1 && calls.at(-1) === 'sess-user', calls.join(','))
+  emit({ type: 'output', id: 'boot-job', total: 10 }, 'sess-other')
+  check('B3f 他人会话的输出事件被围栏挡住（不崩、不污染名册）',
+    calls.length === beforeEvent + 1 && ids() === 'user-job', `${calls.join(',')} → ${ids()}`)
+}
+
+// ---------------------------------------------------------------------------
+// Group C — 渲染冒烟
+// ---------------------------------------------------------------------------
+console.log('--- C: render smoke ---')
+const COLS = 70
+const ROWS = 24
+class FakeStdout extends Writable {
+  columns = COLS
+  rows = ROWS
+  isTTY = true
+  constructor(private term: InstanceType<typeof XTerm>, columns = COLS) { super(); this.columns = columns }
+  _write(chunk: unknown, _encoding: BufferEncoding, callback: () => void): void {
+    this.term.write(String(chunk), callback)
+  }
+}
+class Input extends PassThrough {
+  isTTY = true
+  setRawMode(): this { return this }
+  ref(): this { return this }
+  unref(): this { return this }
+}
+async function withTerminal(
+  make: () => React.ReactNode,
+  run: (screen: () => string, rerender: (node: React.ReactNode) => void, stdin: Input) => Promise<void>,
+  cols = COLS,
+): Promise<void> {
+  const term = new XTerm({ cols, rows: ROWS, scrollback: 0, allowProposedApi: true })
+  const stdout = new FakeStdout(term, cols) as unknown as NodeJS.WriteStream
+  const stdin = new Input()
+  const instance = await render(make(), {
+    stdout,
+    stdin: stdin as unknown as NodeJS.ReadStream,
+    exitOnCtrlC: false,
+    patchConsole: false,
+  })
+  const screen = (): string =>
+    Array.from({ length: ROWS }, (_, y) => term.buffer.active.getLine(y)?.translateToString(true) ?? '').join('\n')
+  try {
+    await run(screen, node => instance.rerender(node), stdin)
+  } finally {
+    await instance.unmount()
+    term.dispose()
+  }
+}
+
+const runningJob = {
+  id: 'pwsh-1', kind: 'pwsh', label: 'gh run watch 42', status: 'running' as const,
+  command: 'gh pr checks --watch 42',
+  startedAt: Date.now() - 65_000, outputLines: [{ text: 'build step 1 ok' }, { text: 'build step 2 ok' }],
+}
+await withTerminal(
+  () => React.createElement(JobCard, { job: runningJob, marginTopOnTurn: false }),
+  async screen => {
+    // 固定窗:待迁移 一个 sleep 服务同一快照上的多条正/负混合断言，
+    // 迁移需把全部条件合进一个 settled 谓词并在其中捕获快照，非平凡改写。
+    await sleep(150)
+    const text = screen()
+    check('C1 运行卡头含 id/label', text.includes('pwsh-1') && text.includes('gh run watch 42'))
+    check('C1 瀑布呈现镜像输出', text.includes('build step 1 ok') && text.includes('build step 2 ok'))
+  },
+)
+await withTerminal(
+  () => React.createElement(JobCard, {
+    job: { ...runningJob, outputLines: [] },
+    marginTopOnTurn: false,
+  }),
+  async screen => {
+    // 固定窗:待迁移 一个 sleep 服务同一快照上的多条正/负混合断言，
+    // 迁移需把全部条件合进一个 settled 谓词并在其中捕获快照，非平凡改写。
+    await sleep(150)
+    const text = screen()
+    check(
+      'C1 无输出时仅保留任务头和命令行',
+      text.includes('gh run watch 42') && text.split('\n').filter(line => line.trim() !== '').length === 2,
+      text.split('\n').slice(0, 3).join('|'),
+    )
+  },
+)
+await withTerminal(
+  () => React.createElement(JobCard, {
+    job: { ...runningJob, status: 'completed' as const, detail: 'exit code: 0', finishedAt: Date.now() },
+    marginTopOnTurn: false,
+  }),
+  async screen => {
+    // 固定窗:待迁移 一个 sleep 服务同一快照上的多条正/负混合断言，
+    // 迁移需把全部条件合进一个 settled 谓词并在其中捕获快照，非平凡改写。
+    await sleep(150)
+    const text = screen()
+    check('C2 落定卡仍保留尾两行输出', text.includes('build step 1 ok') && text.includes('build step 2 ok'))
+    check('C2 落定卡头含 exit detail', text.includes('exit code: 0'))
+  },
+)
+await withTerminal(
+  () => React.createElement(JobsPanel, {
+    jobs: [
+      runningJob,
+      { id: 'bash-2', kind: 'bash', label: 'pnpm build', status: 'completed' as const, detail: 'exit code: 0', startedAt: NOW - 90_000, finishedAt: NOW - 1000, outputLines: [] },
+    ],
+    onClose: () => {},
+    onKill: () => {},
+  }),
+  async screen => {
+    // 固定窗:待迁移 一个 sleep 服务同一快照上的多条正/负混合断言，
+    // 迁移需把全部条件合进一个 settled 谓词并在其中捕获快照，非平凡改写。
+    await sleep(150)
+    const text = screen()
+    check('C3 面板标题与两行任务', text.includes('Background Jobs') && text.includes('pwsh-1') && text.includes('bash-2'))
+    check('C3 面板含操作提示', text.includes('press k twice'), text.split('\n').at(-3) ?? '')
+    // 聚焦第一行（默认）→ 详情块展开：完整任务名 + 开始时间 + 输出尾巴。
+    check('C3 聚焦行详情含完整任务名与开始时间', text.includes('gh run watch 42') && text.includes('started'), text.split('\n').slice(0, 8).join('|'))
+    check('C3 聚焦行详情含完整命令', text.split('\n').some(line => line.includes('│ ') && line.includes('gh pr checks --watch 42')), text.split('\n').slice(0, 8).join('|'))
+    check('C3 聚焦行详情含镜像输出尾巴', text.includes('build step 1 ok') && text.includes('build step 2 ok'))
+    // 非聚焦行不展开详情（bash-2 无输出 → 其无输出提示也不应出现）。
+    check('C3 非聚焦行无详情块', !text.includes('no mirrored output yet'))
+  },
+)
+
+await withTerminal(
+  () => React.createElement(JobsPanel, {
+    jobs: [
+      runningJob,
+      { id: 'bash-2', kind: 'bash', label: 'pnpm build', status: 'completed' as const, detail: 'exit code: 0', startedAt: NOW - 90_000, finishedAt: NOW - 1000, outputLines: [] },
+      { id: 'subagent-3', kind: 'subagent', label: 'review the regressions', status: 'running' as const, startedAt: NOW - 10_000, outputLines: [] },
+    ],
+    initialFocusId: 'subagent-3',
+    onClose: () => {},
+    onKill: () => {},
+  }),
+  async screen => {
+    await sleep(150) // 固定窗:探针 C4 渲染落定（initialFocusId 聚焦行渲染）
+    const text = screen()
+    const rows = text.split('\n')
+    check(
+      'C4 initialFocusId 聚焦指定任务（非首行）',
+      rows.some(line => line.includes('review the regressions') && line.includes('❯')),
+      rows.filter(line => line.includes('❯') || line.includes('subagent-3')).join('|'),
+    )
+    check(
+      'C4 默认首行不被聚焦',
+      !rows.some(line => line.includes('pwsh-1') && line.includes('❯')),
+      rows.filter(line => line.includes('pwsh-1')).join('|'),
+    )
+  },
+)
+
+await withTerminal(
+  () => React.createElement(JobsPanel, {
+    jobs: [runningJob],
+    initialFocusId: 'gone-job',
+    onClose: () => {},
+    onKill: () => {},
+  }),
+  async screen => {
+    await sleep(150) // 固定窗:探针 C4 渲染落定（回退首行用例）
+    const text = screen()
+    check('C4 未知 initialFocusId 回退首行', text.includes('❯') && text.includes('pwsh-1'))
+  },
+)
+// G16 — side-panel rows put each command under its fixed id/status header.
+console.log('--- G16: panel commands wrap below the job header ---')
+{
+  const tail = 'PANEL-COMMAND-TAIL'
+  const label = 'pwsh -Command ' + 'Write-Output long-command-segment; '.repeat(3) + tail
+  for (const cols of [28, 34]) {
+    await withTerminal(
+      () => React.createElement(JobsPanel, {
+        jobs: [{ ...runningJob, label, command: label }],
+        variant: 'panel',
+        onClose: (): void => {},
+        onKill: (): void => {},
+      }),
+      async (screen, _rerender, stdin) => {
+        await sleep(150) // 固定窗:探针 G16 面板行布局落定
+        check('G16 ' + cols + ' columns: command folds by default', !screen().includes(tail) && screen().includes('Write-Output'), screen().split('\n').slice(0, 7).join('|'))
+        stdin.write('e')
+        await settled(() => screen().includes(tail))
+        const lines = screen().split('\n')
+        const header = lines.findIndex(line => line.includes('pwsh-1'))
+        const command = lines.findIndex(line => line.includes('Write-Output'))
+        check('G16 ' + cols + ' columns: command tail remains visible', screen().includes(tail), lines.slice(0, 8).join('|'))
+        check('G16 ' + cols + ' columns: command starts below its id row', command > header && lines[command]?.trimStart().startsWith('│ ') && !screen().includes('⎿'), JSON.stringify(lines.slice(header, command + 2)))
+      },
+      cols,
+    )
+  }
+}
+
+console.log('--- G17: the job panel keeps all twenty-five script rows ---')
+{
+  const command = 'pwsh -Command "' + Array.from({ length: 25 }, (_, index) => 'PANEL-SCRIPT-' + String(index + 1).padStart(2, '0')).join('\n') + '"'
+  await withTerminal(
+    () => React.createElement(JobsPanel, { jobs: [{ ...runningJob, label: 'long script', command, outputLines: [] }], variant: 'panel', onKill: () => {} }),
+    async (screen, _rerender, stdin) => {
+      check('G17 panel: script begins folded at its first statement', await settled(() => screen().includes('PANEL-SCRIPT-01')) && !screen().includes('PANEL-SCRIPT-02'))
+      stdin.write('e')
+      await settle(() => screen().includes('PANEL-SCRIPT-02'))
+      for (let row = 0; row < 16; row++) {
+        stdin.write('\x1b[B')
+        await sleep(30) // 固定窗:pacing 逐次滚动，按键和渲染不合并
+      }
+      check('G17 panel: expanded script remains complete after scrolling', await settled(() => screen().includes('PANEL-SCRIPT-25')) && !screen().includes('open jobs for all'), screen().split('\n').slice(-14).join('|'))
+    },
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Group D — 按键归属：/jobs 面板打开时 Esc 关面板，不得同时中断对话
+// ---------------------------------------------------------------------------
+console.log('--- D: /jobs panel owns Esc ---')
+{
+  const cancelled: string[] = []
+  const panelJob = {
+    id: 'pwsh-7', kind: 'pwsh', label: 'gh run watch 42', status: 'running' as const,
+    command: 'gh pr checks --watch 42', startedAt: NOW - 5_000, outputLines: [],
+  }
+  const channel: Record<string, unknown> = {
+    version: 0,
+    rows: [],
+    status: 'idle',
+    sessionTitle: 'jobs esc probe',
+    agentId: 'probe',
+    provider: 'deepseek',
+    model: 'deepseek-v4-pro',
+    tokens: { input: 0, output: 0 },
+    cwd: '/tmp/demo',
+    displayCwd: '/tmp/demo',
+    // /jobs 是 idle-only 的指挥行（working 时 Enter 走插话），所以初始为 idle：
+    // 面板先打开，再让回合变成在跑（点转录任务卡进面板、或面板开着时回合起跑），
+    // 这正是 bug 的现场——面板开着 + 回合在跑。
+    working: false,
+    spinnerMode: 'idle',
+    responseChars: 0,
+    activeToolCount: 0,
+    mode: { id: 'default', plan: false },
+    modeIndex: 0,
+    cycleMode(): void {},
+    turnStart: NOW,
+    lastUserText: '',
+    pending: [],
+    commandList: [{ name: 'jobs', description: 'Show background jobs of this session' }],
+    commandCompletions: () => [{
+      name: 'jobs',
+      description: 'Show background jobs of this session',
+      replacement: '/jobs',
+      commandLine: '/jobs',
+    }],
+    notifications: [],
+    activityEnabled: false,
+    activityFrames: [],
+    backgroundJobs: [panelJob],
+    jobControl: { kill: () => true },
+    subscribe: () => () => {},
+    submit: (): void => {},
+    cancel: (): void => { cancelled.push('cancel') },
+    clear: (): void => {},
+    notify: (): void => {},
+    listModels: () => Promise.resolve([]),
+    listSessions: () => [],
+    setResumeTarget: (): void => {},
+    stageImage: () => Promise.resolve(''),
+    listSubagents: () => Promise.resolve([]),
+    lastUsage: { input: 0, cacheRead: 0, cacheWrite: 0, output: 0 },
+    contextWindow: 1_000_000,
+    contextSegments: { system: 0, prompt: 0, assistant: 0, thinking: 0, tools: 0 },
+    tps: undefined,
+    tpsSamples: [],
+    reasoningEffort: 'high',
+    agentPreset: 'standard',
+  }
+
+  await withTerminal(
+    () => React.createElement(Chat, {
+      channel: channel as never,
+      questionStore: new QuestionStore() as never,
+      onExit: () => {},
+      fullscreen: true,
+      trajectorySeen: true,
+    }),
+    async (screen, _rerender, stdin) => {
+      // 等首帧上屏（等待后操作 → settle）再发键。
+      await settle(() => screen().includes('❯'))
+      // 打开面板：整行一次写入 → PromptInput 直接派发 /jobs。
+      stdin.write('/jobs\r')
+      check('D1 /jobs 打开后台任务面板', await settled(() => screen().includes('Background Jobs')), screen().split('\n')[0] ?? '')
+      // 面板开着时回合起跑（字段按 key 时实时读取，无需重渲染）。
+      channel.working = true
+      channel.status = 'working'
+      channel.spinnerMode = 'working'
+      check('D1 面板已打开时回合在跑且未被打断', cancelled.length === 0)
+      // Esc：面板拥有键盘 → 只关面板（等待后断言 → settled 把终值直接交给 check）。
+      stdin.write('\x1b')
+      check('D2 面板打开时 Esc 关闭面板', await settled(() => !screen().includes('Background Jobs')), screen().split('\n')[0] ?? '')
+      check('D2 同一次 Esc 不中断对话', cancelled.length === 0, JSON.stringify(cancelled))
+      // 反证：无面板时同一个 Esc 仍需中断，证明 D2 不是"Esc 根本没送达"。
+      const before = cancelled.length
+      stdin.write('\x1b')
+      check('D3 面板关闭后 Esc 恢复中断对话', await settled(() => cancelled.length === before + 1), JSON.stringify(cancelled))
+    },
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Group E — 侧栏形态的列宽分配纯函数（panel variant 的行网格契约）
+// ---------------------------------------------------------------------------
+console.log('--- E: panel-variant column allocation ---')
+{
+  const full = resolveJobsRowColumns(52)
+  check('E1 宽面板（52）三列全开', full.showProgress && full.showDuration && full.showStatus && full.idWidth === 9 && full.statusWidth === 9 && !full.labelWrap)
+  const mid46 = resolveJobsRowColumns(46)
+  check('E1 中宽面板（46）无进度列、有时长与状态', !mid46.showProgress && mid46.showDuration && mid46.showStatus)
+  if (false) { const full2 = resolveJobsRowColumns(46)
+  check('E1 宽面板旧断言已迁移', false) }
+  const mid = resolveJobsRowColumns(38)
+  check('E1 中等面板（38）无进度列、有时长与状态', !mid.showProgress && mid.showDuration && mid.showStatus)
+  const narrow = resolveJobsRowColumns(30)
+  check('E1 窄面板（30）省略时长列、保留状态列', !narrow.showProgress && !narrow.showDuration && narrow.showStatus)
+  const min = resolveJobsRowColumns(28)
+  check('E1 minColumns=28 仍有状态列', min.showStatus && !min.showProgress && !min.showDuration)
+}
+
+if (failed > 0) {
+  console.error(`\n${failed} check(s) failed`)
+  process.exit(1)
+}
+console.log('\nALL PASS')

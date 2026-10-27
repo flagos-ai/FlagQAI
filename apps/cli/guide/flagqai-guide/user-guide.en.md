@@ -1,0 +1,732 @@
+# FlagQAI CLI User Guide
+
+[Documentation index](SKILL.md) · [中文](user-guide.md)
+
+> This chapter preserves the imported terminal interaction reference. For the
+> current FlagQAI CLI install and provider setup, read
+> [FlagQAI Getting Started](getting-started.en.md) first. `flagqai` is the
+> primary command; `fq` is the short command. The
+> `@flagqai/cli` package is not published to npm yet.
+
+> A user manual for day-to-day use: launch, keys, commands, session workflow, UI indicators, and tips.
+
+## Table of contents
+
+- [1. Quick start](#1-quick-start)
+- [2. Keymap quick reference](#2-keymap-quick-reference)
+- [3. Command reference](#3-command-reference)
+- [4. Session workflow](#4-session-workflow)
+- [5. UI and status bar](#5-ui-and-status-bar)
+- [6. Model / preset / theme / language](#6-model--preset--theme--language)
+- [7. Tips](#7-tips)
+
+## 1. Quick start
+
+### 1.1 Install and launch
+
+Build and install the local tarball as described in
+[Getting Started](getting-started.en.md). The package is not yet on npm. After
+installation, run `flagqai setup` once to prepare the pinned local Harness
+runtime, then start the terminal with `flagqai`. A separate global `dsh` or
+pnpm installation is not needed for this managed path.
+
+- `flagqai --resume` resumes the last session; `flagqai safe` opens the inherited
+  safe-mode diagnostics and rescue workflow (see §5.5).
+- `fq` is the short command. The profile is `flagqai` and the data directory is
+  `~/.flagqai`. Old product configuration is not migrated.
+- Configure an official provider or a compatible gateway through `/setup` and
+  `/provider`. `/doctor` checks the local environment, but does not verify a
+  live provider connection.
+- The managed setup pins Harness `0.2.1-rc.2`. Existing installations with an
+  explicit `DSH_HOME` keep their previous profile workflow; do not replace that
+  environment solely to follow the managed setup instructions.
+- After replacing an older `0.1.0` preview archive, run `flagqai setup --refresh`
+  and check the Harness version with `flagqai doctor`.
+
+### 1.2 What you see on first launch
+
+1. **First-run guide** (whenever the guide has not been completed yet — a fresh install, or a
+   guide that bumped its own version): a four-step wizard — **API key & connectivity → language &
+   theme → model & workspace → shortcuts & moves**. `←/→` change step, `Tab` switches between the
+   two panes, `↑/↓` move the selection, `Enter` runs the step, `Esc` skips. **Skipping is not
+   recorded** (you are asked again next launch); the last step only counts as finished — and writes
+   the marker — when `Enter` lands on a **shortcut card** (on a command card `Enter` tries the command).
+   Re-run it any time with `/setup`.
+2. **Launchpad** (the first screen of an **ordinary launch** — no `--resume`, no workspace target,
+   no prompt; `FLAGQAI_NO_LAUNCHPAD=1` skips it entirely): the FlagQAI header (`FlagQAI`
+   version, `FLAGQAI / CLI` big text, current model and effort, working directory, and a
+   **startup hint**; the header here is **frozen from the first frame** — the intro animation is
+   left to the transcript header once you are in the chat), a **real input box** underneath
+   (type your first sentence here; Enter carries it into the chat screen), a **parameter row** under
+   the box (model · effort · mode · permission — all four are clickable and open the chat page's
+   pickers in place; all four stay on the row, and when the line does not fit only the over-long
+   segments are truncated at the tail with a trailing `…` — the permission segment is never
+   truncated — and a hover reveals a truncated segment's **full name** (mouse tracking is always on
+   for the launchpad screen, inline mode included); only when the **full permission name does not
+   fit the budget** (widening the terminal past 76 columns changes nothing — a narrower terminal
+   or a longer permission name triggers it earlier) are whole segments dropped from the tail in
+   display order), and a row of **quick actions** (v7 four slots: `Continue "…"` — shortcut `Alt+R`,
+   the slot is simply absent when there is nothing to continue · `Sessions & workspaces` — history
+   and workspaces are the same `/home` screen, merged into one entry · `Settings` · a **conditional
+   slot** — `Background jobs` while jobs are running, `Update available` when a newer release is
+   detected, `Feed us a star` once usage milestones are reached and you never starred, falling back
+   to `Help`). Move with `↑/↓` or `Tab`, activate with `Enter`, or just click; short terminals drop
+   whole blocks (quick actions → hint line → input only) and narrow ones climb down the ladder in
+   5.1. Full screens opened from this screen (sessions & workspaces / settings / background jobs /
+   the first-run guide) render **above the launchpad** — `Esc` closes them back onto the launchpad
+   (draft, params and focus intact); the only way off the launchpad into the chat is submitting a
+   non-command line with Enter. When the dsh engine is out of the verified range, a **⚠
+   version-drift warning** appears with the align command.
+3. **Bottom status bar**: working-status row, context bar, TPS gauge, and other live
+   indicators (see [5. UI and status bar](#5-ui-and-status-bar)).
+4. **Startup hint line**: one fixed line under the logo:
+   `提示：<随机小技巧> · /tips 更多技巧` — changes each launch.
+   `/tips` opens the full tips panel (`↑/↓` scroll, `Esc` close).
+5. **First normal launch** (no `--resume`, no workspace, no prompt) reaches the
+   **session manager** after the launchpad to pick a workspace. `~/.flagqai/home.json`
+   records "seen" so later launches go straight to chat. Open it any time with `/resume`,
+   `/home`, `/agentview`, `/bg`, or `⌸` at the start of the input line.
+6. Type `/` for the command menu, `?` for the shortcut help.
+
+### 1.3 Core mental model
+
+- Every command supports **Tab completion** (for commands with arguments,
+  type `/命令 ` first, then Tab).
+- Non-command input is a normal message. **Unknown commands are sent to the model as plain messages**.
+
+## 2. Keymap quick reference
+
+> In the tables, `Ctrl` on macOS can usually be swapped for `⌘` (`⌘V` `⌘O` `⌘R` `⌘T` `⌘L` `⌘Enter`);
+> `Ctrl+C`/`Ctrl+D` stay `Ctrl`.
+> `⌘` needs the extended keyboard protocol (see §5.4). Terminal.app: use Ctrl.
+
+### 2.1 Send and deliver (three behaviors while the model is working)
+
+| Key | Action |
+|---|---|
+| `Enter` | idle = send; **a known `/` command (with or without arguments) = run that command** (its own gate decides while a turn is running); model working = steer (inject a next-step boundary, no interrupt); menu open = confirm selection |
+| `Tab` | complete `/` command or `@` file; **model working = follow-up** (queue after the current turn) |
+| `Ctrl+Enter` (⌘Enter) | interrupt the current turn and send the input now |
+| `Shift+Enter` / `Ctrl+J` | newline (`Option+Enter` is the mac Terminal.app fallback) |
+| `Alt+Up` | bring the last unhandled message back to the input for editing (no interrupt) |
+| `Esc` (working + pending) | interrupt the turn and re-send the pending message now |
+| `/btw …` while working | Enter runs it directly (side question never interrupts the main turn) |
+
+While a turn is running, the `/` overlay groups commands by their impact on the current conversation: the harmless ones stay on top in their normal style, while commands that are gated, interrupt or replace the conversation, or steer into it sink to the bottom in the theme's grey (`subtle`), with no extra header row. The grey region never blocks use — the gate still gates and the steer still steers. Only two kinds of input steer into the running turn: text that is not a command, and a **direct skill gesture** (`/skill-name …`), which the overlay groups as steering as well.
+
+### 2.2 Interrupt / exit / system
+
+| Key | Action |
+|---|---|
+| `Ctrl+C` | working = interrupt; if the interrupt won't settle, press again = force quit; idle with input = clear input; idle empty input = double-press exit (3 s window) |
+| `Ctrl+D` | working = interrupt (press again if it won't settle = force quit); idle = double-press exit |
+| `Ctrl+L` (⌘L) | clear screen and force redraw |
+| `Ctrl+O` (⌘O) | expand/collapse details (full thinking, tool args and output) |
+| `Ctrl+E` | in input = cursor to line end; in transcript = expand/collapse hidden old messages |
+| `Ctrl+P` | toggle the loaded-context panel at startup (works when the panel is on screen) |
+| `?` | empty input = open shortcut/command help menu |
+
+### 2.3 Search
+
+| Key | Action |
+|---|---|
+| `Ctrl+R` (⌘R) | history search (current project only); press again or `↓` for next match; `Enter` fills the input |
+| `/` (transcript) | full-transcript search; `n` / `N` jump (only in Ctrl+O expanded state) |
+
+### 2.4 Input editing
+
+| Key | Action |
+|---|---|
+| `←` / `→` | move the cursor by character (with a selection, collapse to that edge) |
+| `Ctrl+←` / `Ctrl+→` (⌘←/→) | jump by word |
+| `Home` / `End`, `Ctrl+E` | logical line start / end (`Ctrl+A` now opens the subagent panel, see §2.7) |
+| `Ctrl+U` / `Ctrl+K` | delete before the cursor (to line start) / after the cursor (to line end) |
+| `Ctrl+W` | delete the previous word |
+| `Ctrl+Z` | undo the draft's last word-level edit (caret and images included); draft-only — a submit or a history recall (`Ctrl+R`/`↑`) ends it, and it is unrelated to the `Esc Esc` conversation/message rewind; remappable via `/settings` |
+| `Backspace` / `Delete` | delete previous / next character; **with a selection, delete the whole selection** |
+| `↑` / `↓` | move between lines when multi-line; browse input history when single-line (scoped per project, last 200 entries each, kept across restarts; history from before the upgrade shows in every project) |
+| `Ctrl+V` (⌘V) / `Alt+V` | paste: text / file path (images auto `@`-referenced) / clipboard bitmap (`[Image #N]` attachment); use `Alt+V` when the terminal swallows `Ctrl+V` |
+| `Ctrl+G` | edit the input in the `$VISUAL`/`$EDITOR` external editor (`:cq` keeps the draft; prompts you to configure when unset) |
+| `Ctrl+Shift+E` (⌘⇧E) | open the **full-screen draft editor** (or click `⛶` at the end of the input line): line numbers, current line highlighted, `Enter` newline, `Ctrl+Enter` send, `Esc` collapse (draft kept); off at `/settings → 全屏草稿编辑` |
+| long draft auto-fold | pasting a block **≥6 lines or ≥600 chars** folds into a `▸ N 行・M 字` chip: click the chip or `▾` to toggle; `Enter` always submits the full text |
+| `/vim` | **vim editing mode toggle** (per-session, not persisted): shows an `INSERT` badge, `Esc` to `NORMAL`, `i/I/a/A/o/O` back to INSERT. NORMAL keys below |
+| typing | **replaces the whole selection when one exists** (like a standard editor), cursor lands after the inserted text |
+| right-click / `Ctrl+Shift+V` | terminal-native paste (newlines inserted as-is) |
+| `Esc` (input) | closes layer by layer: help → **image preview** → command menu → file menu (only the current `@` token) → **clear selection if any (text stays)** → re-send interrupt → clear input → double-press = time-travel |
+| double-press `Esc` (empty input) | **time-travel rewind** (press twice within 3 s) |
+
+**vim NORMAL keys**: move `h/l` `j/k` `0/^/$` `w/b`;
+delete `x/X` `dd`/`d$`/`d0`/`d^`/`dw`; `u` undo, `Enter` send.
+Unrecognized keys are ignored, `Esc` does nothing, clear with `Ctrl+C`/`dd`.
+
+### 2.5 Navigation / modes
+
+| Key | Action |
+|---|---|
+| `Shift+Tab` | cycle session mode (default → plan → full access); mounted third-party permission presets follow in registry order at the end of the cycle |
+| `Shift+↑` | message selection mode (`↑/↓` move, `Enter` expand one, `Esc` exit) |
+| `Ctrl+T` (⌘T) | open the trace scene (same as `/trace`) |
+| `Alt+R` | on the launchpad, **continue the most recent session** (same as the `Continue "…"` entry; bound only while the launchpad is up, no-op when there is nothing to continue). Remappable in `/settings` |
+| `Alt+S` | one-key star (same as `/star`; the splash's star line is clickable too). Remappable in `/settings`; a short celebration plays on success. Replay it with `FLAGQAI_STAR_MODAL=1 flagqai`; preview the splash star line with `FLAGQAI_STAR_LINE=1 flagqai` (inherited preview env vars, ledger untouched) |
+
+### 2.6 Mouse (fullscreen mode; drag/double-click/triple-click select-and-copy)
+
+| Action | Effect |
+|---|---|
+| left-drag | select text, **copy on release** (OSC 52 + system clipboard tools as fallback), auto-clear the selection |
+| double-click / triple-click | select word / line, copy immediately |
+| wheel | scroll the message list (±3 rows/notch); **with a text selection, pan the selection with the content** |
+| in the input box | drag / Shift+click / double-click build a selection; `Backspace`/`Delete` delete it, typing replaces, `←/→` collapse, `Esc` clears only the selection, `Ctrl+C` copies it |
+| `Esc` | clear the selection (no copy) |
+| single-click | message row = expand/collapse · hyperlink = open browser · 「加载更早消息」/StickyHeader/「↓ N new」= load/jump |
+| hover truncated content | hover ~600 ms to show full content in a popover; no popover while dragging a selection |
+| keyboard selection extend | with a selection, `Shift+←/→/↑/↓/Home/End` extends/shrinks (wraps across lines) |
+
+### 2.7 Per-scene keys
+
+**Questionnaire (model ask_user_question)**
+
+- `↑/↓` select, `Space` multi-select, `Tab` jump to custom answer, `Enter` submit; `←/→` switch question (no submit, draft kept); `Ctrl+V` paste, `Ctrl+K` fold.
+- `Esc` back from question 2 onward, cancel the whole batch on question 1; `Ctrl+C` cancel on any question. On the input row, `←/→` move the caret first and switch questions only at the text edge.
+
+**Plan review**
+
+- `↑/↓` move, `1`/`2` quick pick; typing = fill feedback (`Ctrl+V` paste, `Enter` submit); `Esc` interrupt; **approve must have no feedback**.
+
+**Tool approval**
+
+- `↑/↓` move, `1` allow (this time only), `2` deny, `Enter` submit; `Esc`/`Ctrl+C` deny.
+
+**Session manager** (`/resume`, `/home`, `/agentview`, `/bg`, `⌸` at the input line start — the same screen)
+
+- Layout: left workspace column, right session column; ≥84 columns side-by-side, narrower hides the workspace column.
+- Switch column `←/→`; move `↑/↓`/`PgUp`/`PgDn`; **typing = live filter** (by title/dir/branch/model).
+- Enter `Enter` (row 0 = new session in that workspace); new `Ctrl+Enter`/`Ctrl+N`; stop background session `Ctrl+X`.
+- `Ctrl+L` reload · `Enter` on the rail opens the action menu · `Esc` close hint → clear filter → leave.
+- Source tabs: when Claude Code / Codex / Grok Build / zcode have conversations on this machine, tabs appear on the right of the title row; switch with `Tab`/`Shift+Tab` or a click.
+  On a source tab `Enter`/click imports just that conversation and opens it (one imported before opens directly); a missing working directory is reported and nothing is imported; `Ctrl+L` rescans the source.
+- Mouse: click a session row = enter, click `★`/`☆` = toggle pin only, right-click a workspace row = action menu.
+- Empty input + `←` (or `/bg`) = send to background and open this screen, session keeps running.
+
+Switching sessions just parks the current one — the running turn keeps going.
+A session taken by another terminal shows red with `占用 pid <pid>`
+and can't be entered; it recovers after that terminal exits.
+Fixed items live in `~/.flagqai/session-pins.json`.
+The workspace menu has four items: edit / new here / rename / remove from list (**removes the entry only**, directory and session log stay).
+After removal, a directory with past sessions remains in the rail as "History only"; the heading counts registrations and history directories separately, and a success notice confirms the removal.
+A "History only" row offers edit and new here; rename and remove apply only to registered workspaces.
+
+**Image preview** (open by clicking `[Image #N]` in the input or a thumbnail in the transcript)
+
+- `←/→` previous / next; bottom-button zoom: `适应`/`100%`/`200%`/`400%`/`800%`;
+  drag or wheel to pan.
+- `Esc`/`Ctrl+C`/`Enter` or click outside to close.
+- The bottom 「打开原图」opens the original file in the system viewer.
+
+**Editor terminal use**
+
+Run FlagQAI in the integrated terminal. No companion editor extension is
+shipped in this release; see [terminal setup](vscode.en.md).
+
+**History search (Ctrl+R)**
+Lists only inputs from the current project (the session's working directory), plus unscoped history from before the upgrade.
+`↑/↓` select · press `Ctrl+R` again or `↓` for next · `Enter` fill · `Esc`/`Ctrl+C`/`Ctrl+D` cancel
+
+**Trace scene (Ctrl+T / /trace)**
+- `↑/↓`/`PgUp`/`PgDn` move · `←/→` (or `h`) switch timeline/hotspot · `g`/`G` top/bottom · `q`/`Esc` exit
+- `[`/`]` jump failure · `{`/`}` jump turn · `m` cycle projection · `Enter` expand details (`j`/`k` page) · hotspot `t` sort
+- `/` query line (prefixes `tool:` `kind:` `turn:` `err:` `run:` `>10s` `tok>1k`)
+
+**/settings panel**
+`↑/↓` move · `Enter` expand/toggle/edit · `←/→` cycle a field that has options (booleans still only respond to `Enter`) ·
+changes save automatically, `Esc` exits
+
+**/btw panel**
+`↑/↓` scroll · `Space`/`Enter`/`Esc` close · `c` copy answer · `Esc` cancels while waiting
+
+**/effort slider**
+`←/→` adjust live (Esc does not revert) · `Enter`/`Esc` done
+
+**@ file completion**
+`@` triggers anywhere in the message · `↑/↓` move · `Tab`/`Enter` accept · directories drill down ·
+`Esc` closes only the current token menu
+- **Two query modes**: path-like input (`@src/` `@./` `@~/` `@D:\`) lists only that directory;
+  plain fragments use **fuzzy subsequence match** (`@ink` hits `src/ink/Box.js`).
+- Image paths auto-become `[Image #N]` attachments.
+
+**Subagent panel (Ctrl+A)**
+`↑/↓` browse · `Enter` view details · `Esc` close; details page `←/→` page, `X` interrupts while running; subagents render as live card rows. The panel mirrors every child this session dispatched — `subagent`/`send_message` runs, continuable re-dispatches (each new run resets the row), and workflow/ralph members — and re-folds durable discovery facts from the session log on resume, so restarting no longer blanks it. Historical rows without live timing show a `⚪` state instead of a fake duration.
+
+**Double-press Esc time-travel (rewind)**
+List `↑/↓` + `Enter` to confirm · confirm page `Enter` rewind / `Esc` back · only `Esc` responds while a plugin decision is pending
+
+### 2.8 Side panel
+
+`Ctrl+B` (remappable under `/settings` → `Shortcuts`) expands a panel column to the right of the
+chat: a capsule tab bar on top, the active panel in the middle, a key-hint row at the bottom, and a
+one-column seam between the two surfaces.
+
+- **Three states**: **split** (chat ≈ 68% plus the panel; `+`/`-` resize by 4 columns), **collapsed**
+  (the layout is byte-identical to before), **zoom** (the panel takes over and the chat column keeps
+  its minimum width).
+- **When it splits**: `fullscreen` plus a content width of ≥93 columns (≈97 terminal columns at the
+  default page margin); narrow terminals, inline mode and the expanded draft editor fall back —
+  `/jobs` and friends keep their full-screen panels there, while `Ctrl+B` and `/panel` do not split at all.
+- **Focus model**: one keyboard focus at a time; while the panel holds it, its frame and the seam
+  brighten together. `Ctrl+B` is three-state: closed → open and focus the panel; open but
+  chat-focused → focus the panel; panel-focused → close and return to the chat.
+- **Panel keys**: `Esc` steps back to the input (the panel stays open) · `←`/`→` or `[`/`]` switch
+  panels · `1`-`9` jump to the Nth · `z` or `Alt+Z` zoom · `+`/`-` resize (`+` widens the panel by 4 columns) · `↑`/`↓`/`PgUp`/`PgDn`
+  go to the active panel (jobs selects and scrolls with them). Keys the panel does not take never
+  reach the chat, while `Ctrl+C`/`Ctrl+D`/`Ctrl+L` and the other Ctrl combos still do.
+- **Mouse**: click the chat column to focus the chat, click the panel column to focus the panel;
+  clicking a tab on the bar switches to that panel (hover highlights it), and the `⤢` on its right
+  edge blows the active panel up to the full screen. The panel column is excluded from
+  drag-selection.
+- **Panels**: all eight built-in panels are enabled by default and can be changed in `sidePanel.panels`. `todo` (Goals/Todos — with a split it moves here from above the input), `jobs`
+  (background jobs; clicking a job card in the transcript focuses that job here), `agents`
+  (subagent dashboard and detail: Enter opens the detail, Esc steps back), `companion`
+  (the pet — its mood follows
+  the session, click for a heart, Enter to poke; the `flagqai.companion.skin` setting offers
+  deepy (default; its optional image kit is not shipped), whaleGirl or whale), `info` (model, effort, mode,
+  permissions, context usage, cache hit, tokens, TPS, spend, working dir, session title and id),
+  `trajectory` (the session's wake band + ledger + inspector: ↑/↓ select, Enter expands, Tab
+  switches to the hotspot view — ←/→ always stay the host's panel-cycling keys), `workspace`
+  (working-directory overview; Enter opens the full workspace home), `btw` (follow-up threads, also opened by `/btw`).
+- **Pet (companion) details**: the pet sits at the BOTTOM of the panel with a status area above
+  it (mood · subagent/session counts · current animation). Interactions: clicking its left/right
+  half pokes it (poke-left/right), three rapid clicks tickle it, **holding and dragging walks it
+  around the whole panel with the pointer (release springs it back home)**, hovering makes it look
+  toward the pointer; Enter also pokes. Job-done / interrupted notices are spoken by a speech
+  bubble above its head — while the pet panel is the ACTIVE panel the toast above the input box
+  does NOT repeat it (toasts return on any other panel; error-colored notices always toast). Moods
+  are debounced: fast tool calls no longer flicker the animation (leaving the working state takes
+  ~1.5s to settle; approvals and errors still preempt instantly). Subagent/session counts switch
+  the music / conducting / building ensemble animations. When the column is too narrow even for
+  the compact form the pet hides, leaving one line: "So cramped! {{name}} is hiding for now~".
+  The inherited `flagqai.companion.skin` setting accepts `deepy` (default), `whaleGirl`, or
+  `whale`. The optional Deepy and whale-girl image kits are **not included** in this release;
+  selecting those skins uses the built-in character-art fallback. The upstream 240px/267-frame
+  image behavior requires assets that are not distributed with FlagQAI CLI.
+
+| Subcommand | Effect |
+|---|---|
+| `/panel` | Open the panel picker (↑↓ to choose, Enter opens and focuses) |
+| `/panel toggle` | Really open / really close (closing returns focus to the chat) |
+| `/panel focus` | Open and focus the panel |
+| `/panel zoom` | Open and zoom the active panel |
+| `/panel <id>` | Open a panel by id: `todo` / `info` / `trajectory` / `jobs` / `agents` / `workspace` / `btw` / `companion` (completion lists the enabled ids) |
+
+- Views that used to be full-screen-only now also live in the sidebar: with the split up and the
+  matching panel enabled, `Ctrl+T` / `/trace` open the trajectory panel and `/home` opens the
+  workspace panel; the `⤢` on the panel bar puts them back on the whole screen (`⤢` is the mouse
+  path — the keyboard equivalents are each view's own full-screen shortcut: `Ctrl+T` trajectory,
+  `Ctrl+A` agents, `/jobs` jobs, `/home` the workspace home).
+- Settings: the **Side panel** group in `/settings`, or
+  `flagqai.sidePanel.{splitEnabled,open,ratio,panels}` (see the
+  [configuration reference](configuration.en.md#tui-configuration)).
+- **tmux users**: `Ctrl+B` is tmux's default prefix, so tmux swallows it before the TUI sees it —
+  remap `sidePanel` to another combo (for example `alt+b`) under `/settings` → `Shortcuts`.
+
+## 3. Command reference
+
+The command menu = built-in commands (58, aliases included) + DSH registry commands (`/plan` `/goal` etc.) + the skill catalog
+(completion only, hidden from the `/help` menu). `/lang` switches the UI and command descriptions between English and Chinese.
+
+### 3.1 Session
+
+| Command | Args | Effect |
+|---|---|---|
+| `/new` | none | start a new session (no confirmation; the old session stays under `/resume`) |
+| `/resume` | none | open the **session manager** (workspace + session columns, live filter, pins, cross-workspace): switching just **parks** the outgoing session — it keeps running in the background and the active turn is not interrupted (like `/tree`) |
+| `/home` / `/agentview` / `/bg` | none | the same session manager (`/home`=workspace view · `/agentview`=hosted session state · `/bg`=send to background and open, alias `/background`) |
+| `/tree` | none | session fork tree: hover to preview, click to rewind / fork / switch branch |
+| `/fork` | none | copy the current session into a resumable clone (original unaffected) |
+| `/restart` | none | restart the process and resume this session (rejected mid-turn, `Ctrl+C` first) |
+| `/kernel` | none | show the current session kernel; the first release offers only Harness-backed DSH |
+| `/rename` | `<新名称>` | rename the current session (no arg shows the current title and usage) |
+| `/recap` | none | recent-activity summary (one line) + suggested title; press `a` or click to apply the title. With `flagqai.recapOnOpen` (default on), opening/resuming a session auto-shows a divider + `回顾：` summary line at the bottom; hover to view actions, click to expand, gone after the next message |
+| `/workspace` | `resume` / `rename <名称>` / `open <路径或URI>` | manage workspaces; `open` accepts an absolute path, file URI, or plugin scheme |
+| `/clear` | none | clear the current session view (reset expand/selection state) |
+| `/compact` | none | compact session history (prompts when nothing to compact) |
+| `/export` | none | export the session as Markdown to the working directory |
+| `/btw` | `<问题>` | side question: single turn, no tools, doesn't interrupt the main turn, not written to history |
+| `/trace` | none | open the trace scene (same as `Ctrl+T`) |
+| `/rewind` | none | rewind selector (same as double-press Esc on empty input); **a running turn is cancelled first** |
+| `/exit` (alias `/quit` `/q`) | none | exit FlagQAI CLI |
+
+### 3.2 Status and diagnostics
+
+| Command | Args | Effect |
+|---|---|---|
+| `/context` | none | loaded-context detail (instructions/runtime context/skills/tools etc.) |
+| `/status` | none | model+effort, working/idle, session id, dir+git branch, token, cache hit rate, context percentage, session title |
+| `/cost` | none | token usage + cache hit rate + a session estimate (subagent usage included) split into main/subagent; unofficial or unlisted models show tokens only and are marked unpriced (**an estimate — the platform bill is authoritative**) |
+| `/balance` | none | DeepSeek official account balance (free read-only API): summary line + hover detail (same session-estimate split: main/subagent/unpriced), click refresh, `×` close |
+| `/config` | none | config sources: `cordis.patch.yml` path, launch method, model routing |
+| `/doctor` | none | environment check |
+| `/migrate` | `[agent] [--dry-run]` | import conversation history from other coding agents (claude-code/codex/omp/zcode/grok-build); runs in a child process — see [Session migration](migrate.en.md) |
+| `/init` | none | create `AGENTS.md` in the working directory (created / exists / failed) |
+| `/agents` | none | subagent list for this session |
+| `/jobs` | none | background-task panel: status/runtime/exit-code tracking, `↑/↓` select, `k` stop; while open, `Esc` **closes only the panel** and won't interrupt the turn (close the panel first, then `Ctrl+C`) |
+| `/settings` | none | open the plugin settings editor (namespace read/edit) |
+| `/setup` | none | re-run the first-run guide (API key / language+theme / model+workspace / shortcuts) — same screen as the very first launch |
+| `/help` | none | shortcut + command help menu (`?` entry) |
+
+### 3.3 Model / display
+
+| Command | Args | Effect |
+|---|---|---|
+| `/model` | none | model selector; **switching = fork the session** (history kept, only routing changes; a session nobody has typed into records no branch, keeping automatic titles for its first prompt), choice persisted to `~/.flagqai/model.json` |
+| `/effort` | `status` / `<id>` | reasoning effort: no-arg slider (`←/→` adjust); `status` current level; `<id>` set directly. Persisted to `~/.flagqai/effort.json`; new-session start level follows /settings `effortDefault` (§5.3) |
+| `/thinking` | none | extended-thinking display toggle (thinking expands item by item while streaming) |
+| `/tokens` | none | three separate figures, never two different quantities side by side: **this request**'s upload (input + cache read + cache write — the harness's four buckets are disjoint), the **session totals** (uncached input / output / cache read / cache write), and **context occupancy** |
+| `/activity` | `frames <名>` / `status` | working-status animation: no-arg selector, `frames <名>` sets directly (includes `random`), default `moon8`. Persisted to `~/.flagqai/working-activity.json` |
+| `/preset` | `<id>` / `status` | agent preset: `standard` / `ptc` (old 0.1.1 name `code`) / `minimal` / `cordis` / **Liangshen mode `liangshen`**; **cannot switch an already-started session**. Persisted to `~/.flagqai/agent-preset.json` |
+| `/theme` | `<名字>` / `status` | theme: no-arg selector; `<名字>` switch directly; `status` current theme (auto appends the OSC 11 result). Persisted to `~/.flagqai/theme.json` |
+| `/color` | no-arg / `<名>` / `status` / `reset` | session accent color: no-arg opens the palette (`↑/↓` pick, `Enter` apply); `<名>` set directly; `reset` back to default. Colors `red/orange/yellow/green/blue/purple/pink/cyan`, saved per session |
+| `/lang` | `en` / `zh` / `status` | hot-switch UI language. Priority: `FLAGQAI_LANG` > profile config (legacy: settings.yaml user layer > cordis.yml) > persisted |
+| `/vim` | none | **vim editing mode toggle** (see §2.4): input switches to vim keys, per-session, not persisted |
+| `/panel` | `toggle` / `focus` / `zoom` / `<panel id>` | side panel: toggle / focus / zoom / switch panels; states and subcommands in §2.8 |
+
+### 3.4 Account / policy / extensions
+
+| Command | Args | Effect |
+|---|---|---|
+| `/provider` | none | interactive model-provider wizard (add / edit / delete; standard-profile account sign-in includes DeepSeek on DSH 0.2.0-rc.1+, plus ChatGPT/Codex / Claude / Grok and, when supported by host pi-ai, OpenAI direct / Meta Muse) |
+| `/auth` | `status` / `login [provider]` / `logout <provider>` | inspect account status, sign in, or sign out (`deepseek-account` for DeepSeek; `openai-codex` / `anthropic` / `xai` for pi-ai subscriptions; newer pi-ai also `openai` / `meta`) |
+| `/login` | none | credential status (source, store writability, base URL; account states are listed when the OAuth module is mounted) |
+| `/logout` | none | logout notes (env source: delete the variable and restart) |
+| `/permission` | none / `<preset>` / `status` | view/switch permission preset and policy (no arg opens the selector) |
+| `/add-dir` | none | file-policy scope notes (rooted at the working directory) |
+| `/hooks` | none | placeholder: notes when DSH hooks aren't mounted in the composition |
+| `/mcp` | none | MCP connection state (tools grouped as `mcp__服务器__工具`); shows a `cordis.patch.yml` snippet when unconfigured |
+| `/skills` | none | skill-catalog selector (name+source+blurb); Enter fills a direct-call skill as `/name ` |
+| `/plugins` | `check <dsh-plugin.json 路径>` | plugin diagnostics: trust banner + host descriptor + authorization matrix + ledger; `check` validates a manifest and reports compatibility |
+| `/update` | none | update a published TUI and auto-restart to resume the session (only via `dsh --profile`; rejected mid-turn). Unavailable for the unpublished FlagQAI preview; install a newer local tarball and run `flagqai setup --refresh`. |
+| `/terminal-setup` | none | terminal setup advice (Windows Terminal ≥110 columns, paste keys) |
+
+### 3.5 Skills
+
+FlagQAI CLI bundles its product guide (`/flagqai-guide`), but no general-purpose skill set. `/skills` browses skills the active Harness discovers; a direct-call skill joins the command menu as `/name` (see §4.8).
+
+### 3.6 Placeholder commands
+
+`/connect`: placeholder — DSH has no remote-connection mechanism yet.
+
+### 3.7 Registry commands (from the DSH ecosystem, merged into the `/` menu)
+
+| Command | Effect |
+|---|---|
+| `/plan` | `[off\|message]` plan mode; `/plan off` exits |
+| `/goal` | set/view the session goal |
+| `/feedback` | submit usage feedback |
+| `/permission` | view/switch presets from the DSH `permissionPresets` registry (third-party presets in registry order) |
+
+> These commands come from the DSH command registry; this repo only merges them into the menu, completes, and dispatches.
+
+## 4. Session workflow
+
+### 4.1 Session lifecycle
+
+| Action | Command/Key | Notes |
+|---|---|---|
+| New | `/new` | no confirmation — the old session is persisted, always reachable via `/resume`; also clears the resume marker |
+| Resume | `/resume` (same as `/home` `/agentview` `/bg` and `⌸` at the input line start) | the three-in-one **session manager**: `←/→` switch column, type to filter, `Enter` enter, `Ctrl+N` new, `Ctrl+X` stop background session, `★`/`☆` pin. Switching just parks the session, the turn keeps running; a session taken by another terminal shows red and can't be entered (see §2.7) |
+| Rename | `/rename <标题>` | rename immediately and persist (writes a session/title event, readable back in the session manager) |
+| Compact | `/compact` | trigger DSH compaction manually; **rejected mid-turn**; unavailable under minimal preset; the compaction point renders as a Divider summary row |
+| Export | `/export` | export Markdown from the full session log (thinking and tool-call sections), file `flagqai-export-<时间戳>.md` in the current session cwd |
+| Clear | `/clear` | clears the view only, never the session log |
+| Stop | session manager `Ctrl+X` | stop the **background** session under the cursor; the session the current terminal is using can't be stopped (exit the whole TUI with `/exit` or double-press `Ctrl+C`) |
+| Exit | `/exit` (or `/quit` `/q`) | double-press `Ctrl+C` or `Ctrl+D` also exits when idle; mid-work, press `Ctrl+C`/`Ctrl+D` again to force quit when the interrupt won't settle |
+
+Command-line resume: `flagqai --resume` (last session) / `flagqai --resume <id>` (specific session).
+`-c` / `--continue` are equivalent.
+
+### 4.2 Time-travel rewind (double-press Esc)
+
+**Double-press `Esc` on empty input** (or `/rewind`) opens the rewind selector:
+
+1. The selector lists **your own messages** (newest first), `↑/↓` + `Enter` to pick.
+2. If the model is working: cancel the turn and wait for it to settle (up to 30 s).
+3. The boundary is **before the turn** that message belongs to; **can't rewind past the first message**.
+4. The system forks a new session and replays history to the rewind point, **puts the original message back in the input** for editing and resend.
+5. The rewind branch stays in the `/resume` list, keeps the current model routing + the session's own preset.
+
+### 4.3 Message delivery semantics (while the model is working)
+
+Keys are in §2.1:
+- `Enter` = a known `/` command (with or without arguments) runs as a command (its own gate decides while a turn is running); anything else **steers** (inject a next-step boundary, no interrupt)
+- `Tab` = **follow-up** (queue after the turn)
+- `Ctrl+Enter` = **interrupt** (interrupt and send)
+- `Alt+Up` bring the last unhandled message back
+- `↑` recalling a message that is still queued also withdraws that queued entry (same as `Alt+Up`, so the same text is not sent twice); once the running turn claimed it, only a notice appears
+- `Esc` (with pending) interrupt and re-send
+- `/btw …` side question never interrupts the main turn
+
+### 4.4 Side question /btw
+
+`/btw <问题>`: one no-tool, single-turn answer reusing the current context,
+**not written to history, no token counted**.
+Panel `↑/↓` scroll · `c` copy · `Esc` close.
+
+### 4.5 Trace scene (Ctrl+T / /trace)
+
+Full-screen view of the whole session timeline (doesn't pollute scrollback); keys are in §2.7.
+
+### 4.6 Model switching and presets
+
+- `/model`: selector. **Switching = fork the session** (history kept, only routing changes, the old session stays in `/resume`);
+  persisted to `~/.flagqai/model.json`.
+- Switching is rejected mid-turn.
+- `/preset` options: `standard` (default full features), `ptc`, `minimal` (the kernel's Minimal preset: one persistent-shell tool only, no compaction, no plan mode — and therefore no compaction and no tool-result pruning, so a long session can hit the context limit and `/compact` plus questions are unavailable; Help and `/` completion mark the command, and entering the preset says so once),
+  `cordis`, `liangshen` (Liangshen mode).
+  **A session that already has messages can't switch** (blank-only): the choice only becomes the default for the next `/new`.
+  This is a **kernel agent preset** deciding which tools the model can use; `/settings → Minimal UI` (极简界面) on the display side is unrelated.
+- Cycle session mode with `Shift+Tab`: default (workspace-write + approval) → plan (read-only) →
+  full (danger-full-access).
+- Third-party permission presets follow in registry order at the end.
+- **After approving a plan or `/plan off`, sandbox and approval policy return to the pre-plan state**.
+
+### 4.7 Questionnaires and approvals
+
+Keys are in §2.7. Key points:
+- Questionnaire **last line is a free-input line** (typing submits together with the option label).
+- Plan review **approve must have no feedback text**.
+- When an approval and a questionnaire hang at once, **approval wins**.
+- A background-session approval is tagged `来自后台会话 <会话 id 前 8 位>`.
+
+### 4.8 Skills / registry / Goals-Todos
+
+- `/skills` browses the skill catalog; a direct-call skill joins the command menu as `/name`. The bundled `/flagqai-guide` covers this product; general-purpose skills come from the active Harness.
+- `/plan` `/goal` `/feedback` `/permission` come from the DSH registry, merged into the `/` menu.
+- **Goals/Todos panel appears automatically**: when the model writes a goal/todo, it renders above the input
+  (🎯 goal + phase badge + tree todo), no action needed; with a split it moves to the `todo` panel on the right (see §2.8).
+
+### 4.9 MCP / Workspace / other
+
+- `/mcp`: lists `mcp__服务器__工具` grouped by server;
+  shows a `cordis.patch.yml` snippet when unconfigured.
+- `/workspace`: `resume` / `rename <名>` / `open <路径|file:// URI>`
+  (open and start a new session).
+- `flagqai <path>` also accepts a workspace target (`flagqai` remains a compatibility alias).
+- `/doctor` check: Node/platform, API key, model routing, cwd, context window, session storage, plugin host.
+- `/provider` interactive wizard to manage model providers: add / edit / delete. Focus a model and press `Tab` to edit its context window, max output tokens, reasoning efforts, and image input; `Enter` saves to the provider draft, and cancelling the outer wizard leaves it unwritten.
+  - The standard profile's built-in OAuth module offers **subscription sign-in** (ChatGPT/Codex / Claude / Grok; OpenAI direct / Meta Muse on newer pi-ai, no API key); `/auth login <provider>` also signs in, and `/auth logout <provider>` removes the stored OAuth credential.
+  - DSH 0.2.0-rc.1+ delegates DeepSeek account browser authorization to the Host: run `/auth login deepseek-account`, then select the separate `deepseek-account` route with `/model`; `/auth logout deepseek-account` delegates sign-out to the Host. It does not change the `deepseek-official` API key.
+- Non-env-variable API keys are written to `~/.dsh/.credentials.yaml` (0600), and the UI shows only `••••••`; pi-ai subscription OAuth credentials instead live in `$DSH_HOME/dsh-auth/credentials.json` (`~/.dsh/dsh-auth/credentials.json` when DSH_HOME is unset). The Host credential service owns DeepSeek account grants; they are not written to that OAuth file.
+  - Custom endpoints need route name, API key, baseURL, and protocol (`openai-completions` / `openai-responses` /
+  `anthropic-messages`).
+- After add/edit, run `/model` to switch to the new route.
+- `/init` creates AGENTS.md; `/agents` subagent list; `/login` `/logout` credential management.
+- `/permission` `/add-dir` permission notes; `/hooks` `/vim` `/connect` are placeholders.
+
+## 5. UI and status bar
+
+An empty FlagQAI session shows a FlagQAI wordmark at the top (scrolls away with the conversation).
+The following whale and portrait controls are inherited compatibility options, not the default
+FlagQAI artwork:
+
+- **Intro animation** (~3.4 s, three picked each launch, `/deepseek` egg re-rolls): classic / heart / sleep.
+- **Welcome idle animation** (`whaleIdle`, default on): fin, blink, tail wag, sleeps with Z after 10 s idle; **click to show a heart and wake it**.
+- **Maid portrait** (`whaleGirl`, default off): the optional raster portrait is not included in this release. In inherited artwork modes, the setting uses character-art fallback; the FlagQAI wordmark remains the default header.
+- After the first agent task, it freezes to a static frame (`/new` re-enters the welcome period).
+- FlagQAI header: product wordmark, current model and effort, working directory, and startup hint.
+  The bottom-right version plate reads `FlagQAI v<version>` and identifies the
+  Harness/DSH kernel.
+- The big-text face rotates by **local date** (eight faces: bold / square / bevel / wide / dot /
+  stencil / classic / slab): the same day always shows the same one, independent of launch time.
+  To keep one face, pick it in `/settings → Splash font` (`splashFont`) — choosing a specific face
+  pins it, choosing `Daily rotation` (the default) restores the rotation; it applies immediately.
+- Out of the verified range, a **⚠ version-drift warning** appears (with the align command).
+- Narrow terminals reduce the wordmark layout to fit the available content width. Inherited
+  non-FlagQAI skins have their own artwork layout and fallbacks.
+- The inherited pixel whale art and idle behavior were ported from
+  [dsh-ui-whale](https://github.com/lhh010/dsh-ui-whale) (author
+  [@lhh010](https://github.com/lhh010)); they are not the default FlagQAI brand art.
+
+**Long single-line fold** (default on)
+
+- Text with **a single line over 1000 chars** folds into
+  `… 已折叠 N 字符（点击或 ctrl+o 展开）` marker.
+- Expand: **click the line** (tool card: click the card) to unfold, click again to fold; keyboard `Ctrl+O`.
+- Thinking lines don't fold.
+
+### 5.2 Bottom status bar (three rows under the input)
+
+**Row 1 — context segment bar** (`/settings → statusBar.contextBar`, default on)
+
+- Colored by content type (system / prompt / assistant / thinking / tools).
+- Segment token counts are a **local estimate** (CJK/full-width ≈1.4 chars/token, ASCII ≈4, other scripts ≈2): they describe what the bar is made of and **never** feed the occupancy total — that comes from the ctx reading below.
+- The only text on the bar is the right-edge reading `13k/64k 19.5%` (narrow screens show only `19.5%`).
+- The reading colors by usage: <80% gray-blue, **≥80% amber, ≥95% red**.
+- Hover the whole bar for the legend: color block + name + token count (narrow screens shorten the names).
+
+**Row 2 — status field row** (each field toggled separately, see `/settings`)
+- left group: model → TPS → thinking → mode → ctx (**context occupancy** `19.5% (13k/64k)`: the SAME
+  value the segmented bar, the working line's pressure prefix, `/tokens`, `/status` and the context-low
+  warning read, sourced from the harness's own `contextPressure` projection — `projectedTokens ??
+  pressureTokens`, i.e. what the NEXT request would occupy, so a compaction or a rejected request shows
+  up immediately instead of waiting for one successful request; a bare `cordis.yml` composition without
+  the meter falls back to the last request's billed usage) → cache hit rate → tokens (`1.2k→340` input→output) →
+  cost (`≈¥0.05 谷`, **a session estimate** that includes subagent usage, priced per
+  each agent's model × peak/idle × cache components; hover splits main ¥ / subagent ¥ / unpriced N tok;
+  unofficial or unlisted models show tokens only and are marked unpriced;
+  **the platform bill is authoritative**)
+- right group: git branch → working directory (basename only in compact mode) → session title → short session ID (`#` + first 8 chars, for `--resume`)
+- `statusBar.compact` merges the two sides into one row.
+- Default on: compact, model, thinking, cwd, contextUsage, cache, cost, goal, contextBar.
+- Default off: tokens, tps, gitBranch, sessionTitle, sessionId, mode, activity, trajectory.
+
+**Row 3 — hints / working activity + mini trace bar**
+- Idle shows `? for shortcuts`, running `esc to interrupt`, selecting `esc to return to input`.
+- Idle also shows the working-activity animation (`statusBar.activity` on), context ≥80% amber, ≥95% red (the same occupancy reading as the ctx field).
+- Right-side **mini trace bar MiniWake** (`statusBar.trajectory`, default off): session projected as density glyphs, color per channel, failures red;
+  degrades/hides on narrow screens.
+
+**TPS gauge** (`statusBar.tps`, default off): streaming shows a live gauge + `N tps`, after the turn a sparkline;
+speed **≥50 green / ≥20 yellow / <20 red**.
+
+### 5.3 The /settings editor
+
+`/settings` opens the plugin settings editor; **changes save automatically**, `Esc` exits directly.
+The inherited `flagqai` settings block writes to the active profile's `cordis.patch.yml`; older hosts use the settings.yaml user layer. Most settings apply live; fullscreen and image-preview need `/restart`.
+Common items below, full list on the /settings screen. Most topics (**Appearance**, **Splash**, **Conversation**, **Rendering**) lay their fields right on the root page under small headers — no subpage round-trip to tweak them; only the genuinely block-like domains — **Formula**, **Status bar**, **Side panel**, **Shortcuts** — keep a subpage behind one root-page row:
+
+| Field | Notes |
+|---|---|
+| lang | UI language zh/en (locked when FLAGQAI_LANG is pinned) |
+| fullscreen | fullscreen mode (default on); takes effect after `/restart` |
+| minimal | Minimal UI (default off): hide the header splash, emoji glyphs and decorative colors, and trim the footer to model + cwd; code highlight and tool colors stay. **An interface switch** with no effect on model capability — do not confuse it with the kernel Minimal agent preset in `/preset` |
+| terminalImages | terminal image preview (default on, needs terminal support); takes effect after `/restart`. Off shows text only and skips preview decode, sending images to the model is unaffected |
+| imageBacking | image backing (default `transparent`, same **Rendering** topic as the row above): what sits behind chat photos and illustrations. Transparent paints only the pixels of the image itself — the terminal background or wallpaper shows at anti-aliased edges and transparent corners; Terminal colour composites onto the terminal background for smooth soft edges. Applies immediately |
+| codeFrameStyle | code-frame shape (default `light`): `light` uses an open left rail; `full` adds a continuous right wall and bottom edge. Very narrow terminals show a plain code fence. Applies immediately |
+| whale | inherited pixel whale control (default on); FlagQAI's default brand header remains a wordmark |
+| whaleIdle | inherited whale idle animation (default on when that artwork is shown); freezes after the first task |
+| splashFont | big-text face on the header splash: Daily rotation (default, changes with the local date) / bold / square / bevel / wide / dot matrix / stencil / thin (classic) / slab. Picking a face pins it; picking Daily rotation restores the rotation. Applies immediately |
+| whaleGirl | optional inherited portrait mode (default off); raster assets are excluded from this release, so compatible artwork modes use character-art fallback |
+| diffLayout | Edit/Write diff layout: auto (two columns ≥110 cols) / split / unified |
+| thinkingFold | thinking block: preview (2-3 line preview + folded when settled) / full (expanded to end of turn) |
+| btw.contextBudget | Total character budget of recent Q/A pairs carried into a `/btw` follow-up (default 24000, range 1000-200000); oldest whole pairs are dropped first. Applies immediately |
+| btw.contextTurns | Number of most recent completed Q/A pairs explicitly carried into a `/btw` follow-up (default 4, range 1-8); older pairs stay in the thread and panel but are omitted from the request. Applies immediately |
+| jobGroupFold | consecutive background-job cards: auto (default — runs of 2+ group, a settled run of 3+ folds into its summary line) / always (any run of 2+ folds right away, live jobs included) / never (never folds on its own, every card stays). The group header summarizes status and total time; click it or press Ctrl+O to expand |
+| effortDefault | default reasoning effort: auto / off / low / high / max. Start level for new sessions (details below) |
+| smoothStreaming | smooth streaming output (default on): replies/thinking/tool-card text reveal at ~30fps; replay/history always direct |
+| toolBackground | tool-card background emphasis: none / subtle / strong |
+| turnUsageRow | Turn-usage row (default off): show a per-turn summary of tokens, cache, duration and retries; `/tokens`, `/status` and the footer token hover are unaffected |
+| mermaidDiagrams | Mermaid diagrams (default on): ```` ```mermaid ```` blocks render as character diagrams, forming while streaming; too-wide or unsupported types keep source with the required columns. Applies immediately |
+| mathRendering | LaTeX math (default `auto`; lives on the **Formula** subpage of `/settings`): how `$…$` / `\(…\)` inline and `$$…$$` / `\[…\]` / bare display-environment (`\begin{align}` …) block formulas in replies show. `auto` uses the best available renderer (today Unicode text, with fractions and limits stacked in blocks), `image` typesets formulas with MathJax as terminal images when the terminal has graphics — the Kitty graphics protocol (Kitty, Ghostty, WezTerm, iTerm2…) or Sixel (Windows Terminal 1.22+, xterm, foot, WezTerm) — in the theme's text color (block formulas up to 16 rows; inline formulas as one-row images when a single row can hold them legibly; still-streaming formulas, dimmed thinking, terminals without graphics, formulas too small on one row, and any render failure fall back to Unicode), `unicode` pins Unicode text, `source` keeps the TeX. Unsupported, still-streaming, or too-wide formulas keep their source (a too-wide block first falls back to one line). Prices (`$5`), shell variables (`$HOME`), and `$` in code are left alone. The older `latexMath: false` still means `source`. **Click a formula image** to open the preview card: it re-typesets at twice the cell size, zooms 100–800%, pans, closes on `Esc` or a click outside, and titles itself with the formula's TeX. On Sixel the formulas carry **no backing** (only their strokes), so the terminal background or wallpaper shows through. Optional illustrations with transparent margins would float the same way; the `whaleGirl` raster is not shipped in this release. photographs, screenshots, and images inside cards still composite onto a colour, because Sixel cannot express soft alpha. Applies immediately |
+| mathImageScale | formula image size (default `auto`; same **Formula** subpage), used with LaTeX math → Image: `auto` matches the body text, `large` / `xlarge` set **display** formulas bigger. Terminal images are drawn one device pixel per pixel, so "bigger" literally means more pixels per stroke — the only sharpness lever there is. Inline formulas are unaffected (they must fit one row). Applies immediately |
+| scrollGutter | transcript gutter: timeline (turn timeline, default) / scrollbar (proportional) / hidden. Applies immediately |
+| pageMargin | page margin: inset from all four terminal edges. Presets none / slim / normal (default) / roomy, or custom `NxM` (details below). Applies immediately |
+| foldTerminalCommand | fold terminal commands (default off): multi-line commands on terminal cards (Bash/PowerShell) fold to first line + count; `Ctrl+O` or click to expand |
+| expandEditor | full-screen draft editor (default on): `⛶` at the input line end or `Ctrl+Shift+E` expands to a full-screen editor; `Ctrl+Enter` send, `Esc` collapse (draft kept); off hides both entries |
+| statusBar.* | all status-bar toggles above (compact/model/thinking/cwd/contextUsage/cache/tokens/cost/tps/gitBranch/sessionTitle/sessionId/mode/contextBar/activity/trajectory; statusBar.sessionId is the bottom-bar display toggle, unrelated to cordis startup sessionId) |
+
+**effortDefault**: when the model lacks that level, drop one level and show a notice; priority settings user layer > cordis `effort` >
+last `/effort` (effort.json) > model default.
+
+**scrollGutter**: the scrollbar track can be dragged directly; `Shift`/`Alt`/`Ctrl`+drag is still text selection.
+
+**pageMargin**: custom `NxM` = `N` columns left/right, `M` rows top/bottom (cap 8x4); only `N` means 1 row top/bottom.
+
+Namespaces not declared as TUI blocks are listed read-only; edit the profile config by hand (`~/.dsh/settings.yaml` on older hosts).
+These settings are **not in /settings**, edit `$DSH_HOME/profiles/flagqai/cordis.patch.yml`:
+provider / model / cwd / preset / workspace / sessionId / modes,
+plus the startup-level `effort` key.
+
+### 5.4 Terminal requirements
+
+- Interactive TTY required; Windows Terminal recommended (≥110 columns, monospace, TrueColor).
+- macOS `⌘` modifier needs the extended keyboard protocol (iTerm2 / kitty / WezTerm / ghostty / tmux).
+- Terminal.app: use Ctrl.
+Use the integrated terminal; see [terminal setup](vscode.en.md).
+- Or run `flagqai` directly in the integrated terminal (`flagqai` remains a compatibility alias).
+- **Images**: thumbnails and full preview need Kitty graphics or Sixel (auto-detected, Kitty preferred).
+  - `FLAGQAI_IMAGE_PROTOCOL=auto|kitty|sixel|none` overrides the protocol.
+- `FLAGQAI_DISABLE_TERMINAL_IMAGES=1` forces preview off.
+  - tmux/screen, non-TTY, and accessibility mode show text only; sending images to the model is unaffected.
+- **Pasting clipboard images (Ctrl+V / Alt+V)**: on Linux one of `wl-paste` (wl-clipboard), `xclip` or `xsel` is required.
+  - WSL: WSLg exposes a Windows bitmap as `image/bmp`; FlagQAI CLI converts it to PNG before attaching.
+  - When those tools find nothing, it falls back to `powershell.exe` (needs Windows interop) to read the
+    Windows clipboard: screenshots, files copied in Explorer, and text.
+- Environment check: `/doctor`.
+
+### 5.5 Safe mode and rescue profile (`flagqai safe`)
+
+When dsh exits unexpectedly, safe mode gives a **read-only** environment diagnosis, profile plugin list, and fix guidance.
+
+- **Two entry points**: run `flagqai safe` manually; or follow the on-screen prompt after a non-zero Harness exit (non-interactive envs just print a line).
+- **Read-only scope**: diagnosis/list/guidance change no state.
+- Exception: retry normal startup, or reuse an existing clean rescue profile. This unpublished preview cannot create a new rescue profile by fetching itself from npm.
+- **The rescue profile must prove clean first** (no third-party plugins, no `cordis.patch.yml` entries), else it refuses and prints how to handle it.
+- **Non-interactive**: `flagqai safe --rescue` only reports the verdict (ready exits 0, refused exits 1); a missing rescue profile is refused while the package is unpublished.
+- **Run the fix commands yourself** (safe mode only lists them):
+  - `dsh plugin --profile flagqai remove <third-party-plugin>` removes suspicious plugins.
+  - After installing a newer local CLI tarball, run `flagqai setup --refresh` to reinstall the managed profile. The unpublished preview cannot be fetched with `npm install @flagqai/cli` or `dsh plugin add @flagqai/cli`.
+  - `flagqai doctor` environment diagnosis.
+
+## 6. Model / preset / theme / language
+
+| Item | Command | Notes |
+|---|---|---|
+| Model | `/model` | selector; **switching = fork the session** (history kept, routing only); persisted to `~/.flagqai/model.json`, reused on restart and `/new`. Never chosen → built-in default (currently `deepseek-flash`) |
+| Reasoning effort | `/effort` | slider (`←/→` live) or `/effort <id>`; `/effort status` for current; new-session default in /settings → default reasoning effort |
+| Agent preset | `/preset` | `standard` / `ptc` (old 0.1.1 name `code`) / `minimal` / `cordis` / **Liangshen mode `liangshen`**; **can't switch an already-started session** |
+| Theme | `/theme` | `auto` (OSC 11 follows terminal background) / `light` / `dark` / `dark-ansi`; `/theme <名>` direct; `/theme status` for the result |
+| Custom theme | manual | `~/.flagqai/themes/<名>.json`, `{base, colors}` format, hot-swap on select; naming it `auto` gets shadowed by the built-in |
+| Language | `/lang` | `en` / `zh` hot switch; priority `FLAGQAI_LANG` > profile config (legacy: settings.yaml user layer > cordis.yml) > persisted |
+| Status animation | `/activity` | selector or `/activity frames <名>`; default `moon8`, `random` randomizes |
+
+**Theme priority**: `FLAGQAI_THEME` > `~/.flagqai/theme.json` > OSC 11 terminal-background detection > dark fallback.
+
+**~/.flagqai/ preference files** (all best-effort, fall back on bad files):
+
+- `theme.json`, `model.json`, `agent-preset.json`, `effort.json`, `working-activity.json`, `lang.json`,
+  `trajectory.json`, `resume.txt` / `last-used.json`, `themes/<名>.json`
+
+**Common environment variables**:
+
+- `FLAGQAI_LANG`, `FLAGQAI_THEME`, `FLAGQAI_PRESET`, `FLAGQAI_PERSONA`
+- `FLAGQAI_DISABLE_MOUSE`, `FLAGQAI_DISABLE_TERMINAL_IMAGES`, `FLAGQAI_IMAGE_PROTOCOL`,
+  `FLAGQAI_ACCESSIBILITY` (accessibility: no animation/graphics preview)
+- `FLAGQAI_RESUME_SESSION`, `FLAGQAI_WORKSPACE_TARGET`, `FLAGQAI_SESSION_ROOT`, `FLAGQAI_DEBUG`,
+  `FLAGQAI_RENDER_LOG` (frame capture)
+- `DEEPSEEK_API_KEY`, `DEEPSEEK_BASE_URL`, `VISUAL`/`EDITOR` (`Ctrl+G` external editor),
+  `DSH_PERMISSION_MODE`
+
+## 7. Tips
+
+**Getting started**
+
+1. `?` for shortcuts, `/` for commands — both have Tab completion.
+2. Not sure the environment is right? Run `/doctor`; for the whole session, `/status`.
+3. Switch UI language `/lang en|zh`, applies immediately and persists.
+
+**Efficiency**
+
+4. Three deliveries while the model works: `Enter` inject a next step (a known `/` command runs as a command instead), `Tab` queue, `Ctrl+Enter` interrupt and send.
+5. `Alt+Up` brings the last unhandled message back to edit and resend, no retyping.
+6. A quick question without interrupting the main turn or writing history:
+   `/btw <问题>`.
+7. Made a mistake? **Double-press `Esc` on empty input to rewind** (or `/rewind`), edit and resend.
+8. `@` completes files anywhere in the message, `@src/a.ts#L12-14` cites a precise line range.
+9. `Ctrl+A` subagent panel: `Enter` for details, `X` to interrupt a running subagent.
+10. `Ctrl+O` expand/collapse details; `Ctrl+T` for the trace (`[`/`]` jump failure, `/` field query).
+
+**Troubleshooting**
+
+11. Context pressure ≥80% turns amber, ≥95% red — time to `/compact` (unavailable under minimal preset).
+12. Session manager (`/resume`, `/home`, `/agentview`, `/bg`, or `⌸` at the input line start):
+    type to filter, `★` pin, `Ctrl+X` stop a background session; switching just parks it.
+13. Mid-turn, `/compact`, `/model`, `/restart` are rejected — `Ctrl+C` first or wait for the turn to end.
+14. `/model` switch = fork (history kept), persisted and reused on restart and `/new`.
+
+**Ask the manual**
+
+15. Not sure how a feature works? **Ask the AI in the session** — the manual ships with the package
+    and the answer cites its source; to force a manual lookup, type `/flagqai-guide <question>`.
+    The former `/flagqai-guide` skill remains a compatibility entry.
+    Manual text is only read into context when asked, so it costs nothing while idle. (Launching
+    `dsh --profile flagqai` directly, bypassing the `flagqai`/`fq` launcher and
+    legacy aliases, skips the manual.)

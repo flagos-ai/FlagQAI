@@ -1,0 +1,12 @@
+{
+  "name": "flagqai-cli-source",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@11.26.0",
+  "scripts": {
+    "cli:install": "pnpm --dir apps/cli install --frozen-lockfile",
+    "cli:build": "pnpm --dir apps/cli run compile",
+    "cli:verify": "node --test apps/cli/scripts/package-boundary.test.mjs apps/cli/scripts/bundled-notices.test.mjs && npm --prefix apps/cli run verify:package",
+    "cli": "node apps/cli/bin/flagqai.js"
+  }
+}

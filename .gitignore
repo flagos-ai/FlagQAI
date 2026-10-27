@@ -1,0 +1,21 @@
+**/node_modules/
+apps/cli/lib/
+apps/cli/vendor/dsh-std/packages/*/lib/
+apps/cli/vendor/mathjax-tex-svg/lib/
+.flagqai/
+.env
+.env.*
+*.tgz
+*.log
+
+# Root pnpm writes this whenever `pnpm install` runs at the repository root,
+# which has no dependencies and no workspaces. Only apps/cli is a pnpm
+# project; its lockfile stays tracked.
+/pnpm-lock.yaml
+
+# Local packaging and experiment output
+/dist/
+/results/
+__pycache__/
+*.py[cod]
+.DS_Store

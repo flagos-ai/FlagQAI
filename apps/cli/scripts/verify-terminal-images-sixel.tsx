@@ -1,0 +1,749 @@
+/** Run pnpm compile:src first, then node --import tsx/esm this file.
+ * Uses built modules so Worker entry resolution matches the published package.
+ * Headless text/byte assertions are not native terminal visual acceptance.
+ */
+// First import on purpose: the dev react-reconciler records a
+// performance.measure() per commit whose detail structured-clones the 8 MiB
+// `source` prop of every <Image>. The large preview below then needs seconds
+// and misses the 10 s deadline on CI runners. Launchers force production too.
+import '../lib/types/force-production-react.js'
+import assert from 'node:assert/strict'
+import { PassThrough, Writable } from 'node:stream'
+import { setTimeout as delay } from 'node:timers/promises'
+import React from 'react'
+import chalk from 'chalk'
+import { decode } from 'sixel'
+import xterm from '@xterm/headless'
+import { AlternateScreen, Box, Image, Text, render } from '../lib/types/ui.js'
+import { ImagePreviewOverlay } from '../lib/types/components/ImagePreviewOverlay.js'
+import { ThemeProvider } from '../lib/types/components/design-system/ThemeProvider.js'
+import { getTheme } from '../lib/types/theme.js'
+import { clearTranscriptImageCacheForTests, loadTranscriptImageFull } from '../lib/types/components/messages/TranscriptImages.js'
+import { loadSharp } from '../lib/types/dsh-adapter/sharp.js'
+import instances from '../lib/types/ink/instances.js'
+import { createNode, type DOMElement } from '../lib/types/ink/dom.js'
+import { encodeSixel, SixelEncoderCache, sixelCoveragePaints } from '../lib/types/ink/sixel-codec.js'
+import { MathBlock } from '../lib/types/components/MathBlock.js'
+import { applyMathRendering } from '../lib/types/tuiDisplayPrefs.js'
+import { SixelGraphicsManager } from '../lib/types/ink/sixel-graphics.js'
+import { backgroundOpenCode } from '../lib/types/ink/colorize.js'
+import { selectTerminalImageProtocol } from '../lib/types/ink/terminal-image-protocol.js'
+import { CharPool, HyperlinkPool, StylePool, createScreen, setCellAt } from '../lib/types/ink/screen.js'
+import type { TerminalImagePlacement, TerminalImageSource } from '../lib/types/ink/terminal-image.js'
+import type { SixelEncodeRequest, SixelRaster } from '../lib/types/ink/sixel-codec.js'
+
+async function until(check: () => boolean, message: string): Promise<void> {
+  const deadline = Date.now() + 10_000
+  while (!check() && Date.now() < deadline) await delay(20)
+  assert.ok(check(), message)
+}
+const { Terminal } = xterm
+if (!await loadSharp()) { console.log('SKIP Sixel images: optional sharp unavailable'); process.exit(0) }
+// Erase output carries the surface background as an SGR sequence, and chalk
+// clamps to level 0 under a non-TTY stdout, which would strip it away.
+chalk.level = 3
+chalk.level = 0
+assert.equal(backgroundOpenCode('#abc'), '\x1b[48;2;170;187;204m', 'image erasure retains RGB background without a TTY')
+assert.equal(backgroundOpenCode('ansi256(238)'), '\x1b[48;5;238m')
+assert.equal(backgroundOpenCode('ansi:blackBright'), '\x1b[100m')
+assert.equal(backgroundOpenCode('rgb(256,0,0)'), '', 'invalid RGB cannot paint an image background')
+chalk.level = 3
+function decodeRaster(data: string) {
+  const body = /^\x1bP0;1;q([\s\S]*)\x1b\\$/u.exec(data)?.[1]
+  assert.ok(body, 'complete DCS introducer and terminator')
+  return decode(body)
+}
+
+const source: TerminalImageSource = {
+  width: 2, height: 2,
+  data: new Uint8Array([255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 1, 2, 3, 0]),
+}
+const raster = await encodeSixel({ source, width: 2, height: 2, background: '#ffffff' })
+assert.match(raster.data, /^\x1bP0;1;q/u)
+assert.ok(raster.data.endsWith('\x1b\\'))
+const decoded = decodeRaster(raster.data)
+assert.equal(decoded.width, 2)
+assert.equal(decoded.height, 2)
+const pixels = new Uint8Array(decoded.data32.buffer)
+assert.deepEqual([...pixels], [255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 255, 255])
+assert.equal(source.data[15], 0, 'encoding must not mutate the shared RGBA')
+for (const [width, height] of [[0, 1], [1025, 1], [1, Infinity], [1.5, 2]]) {
+  await assert.rejects(encodeSixel({ source, width, height, background: '#000000' }))
+}
+await assert.rejects(encodeSixel({ source, width: 2048, height: 2048, background: '#ffffff', presentation: 'preview' }),
+  'large-preview edge permission must not allow a 16 MiB square raster')
+const boundsCache = new SixelEncoderCache()
+await boundsCache.render({ assetKey: 'large-bounds', request: { source, width: 1200, height: 2, background: '#ffffff', presentation: 'preview' } })
+await assert.rejects(boundsCache.render({ assetKey: 'large-bounds', request: { width: 1200, height: 2, background: '#ffffff' } }),
+  'cache hits must not bypass the ordinary source presentation budget')
+await assert.rejects(encodeSixel({ source: { ...source, data: new Uint8Array(1) }, width: 2, height: 2, background: '#000000' }))
+// Transparent rasters go out as-is: the DCS keeps background select 1 ("no
+// action") and empty areas are never painted, so a sixel terminal shows its
+// own background (a wallpaper included) through a formula or through the
+// transparent margins of an illustration. Everything else still composites
+// onto a colour, because Sixel cannot express the partial alpha that keeps
+// shadows and translucent panels smooth.
+{
+  const clearSource: TerminalImageSource = { width: 2, height: 2, data: new Uint8Array(16) }
+  const clear = await encodeSixel({ source: clearSource, width: 2, height: 2, transparent: true })
+  assert.match(clear.data, /^\x1bP0;1;q/u, 'a transparent raster keeps the no-action background select')
+  const body = /^\x1bP0;1;q([\s\S]*)\x1b\\$/u.exec(clear.data)![1]
+  const onMagenta = new Uint8Array(decode(body, { fillColor: 0xffff00ff }).data32.buffer)
+  const onGreen = new Uint8Array(decode(body, { fillColor: 0xff00ff00 }).data32.buffer)
+  assert.deepEqual([...onMagenta.slice(0, 4)], [255, 0, 255, 255], 'empty pixels take whatever the terminal fills with')
+  assert.deepEqual([...onGreen.slice(0, 4)], [0, 255, 0, 255], 'so they stay unpainted instead of baked to one colour')
+  // Coverage is binary (see TRANSPARENT_INK_THRESHOLD): dropping anti-aliased
+  // pixels outright is what thinned formula strokes to hairlines.
+  const edge: TerminalImageSource = { width: 1, height: 1, data: new Uint8Array([52, 57, 69, 128]) }
+  const strongest = await encodeSixel({ source: edge, width: 1, height: 1, transparent: true })
+  const strongestBody = /^\x1bP0;1;q([\s\S]*)\x1b\\$/u.exec(strongest.data)![1]
+  const strongestPixel = [...new Uint8Array(decode(strongestBody, { fillColor: 0xffff00ff }).data32.buffer).slice(0, 4)]
+  // The palette round trip may shift a channel by a level; the point is that a
+  // partially covered pixel survives as solid ink instead of vanishing.
+  assert.equal(strongestPixel[3], 255, 'coverage above the threshold becomes solid ink')
+  assert.ok(Math.abs(strongestPixel[0]! - 52) <= 2 && Math.abs(strongestPixel[1]! - 57) <= 2,
+    `and keeps the ink colour (${strongestPixel.join(',')})`)
+  const faint: TerminalImageSource = { width: 1, height: 1, data: new Uint8Array([52, 57, 69, 32]) }
+  const faintest = await encodeSixel({ source: faint, width: 1, height: 1, transparent: true })
+  const faintestBody = /^\x1bP0;1;q([\s\S]*)\x1b\\$/u.exec(faintest.data)![1]
+  assert.deepEqual([...new Uint8Array(decode(faintestBody, { fillColor: 0xffff00ff }).data32.buffer).slice(0, 4)],
+    [255, 0, 255, 255], 'and coverage below it stays transparent')
+  const painted = await encodeSixel({ source: clearSource, width: 2, height: 2, background: '#ffffff' })
+  assert.ok(painted.data.length > clear.data.length, 'a backing colour still paints the whole raster')
+  const defaulted = await encodeSixel({ source: clearSource, width: 2, height: 2 })
+  assert.ok(defaulted.data.length > clear.data.length, 'a raster that is not transparent always paints a backing')
+}
+// Line art (typeset formulas) keeps a SOLID transparent mask: the 25%–62.5%
+// coverage band the 2×2 Bayer dither turns into a checkerboard is exactly
+// where thin strokes live (fraction-bar edges, radical overlines, small
+// superscripts — real MathJax rasters measured ~30–50% of their ink pixels in
+// that band), and dithering there is the user-visible speckled, faded look.
+// A request marked lineArt paints the whole band solid; photos and sprites
+// keep the dithered mask byte-for-byte.
+{
+  const midFill = (width: number, height: number): TerminalImageSource => {
+    const data = new Uint8Array(width * height * 4)
+    // 112 ≈ 44% coverage, centred in the dither plateau (96–127 after
+    // quantization) so the exact Bayer expectation is platform-stable.
+    for (let index = 0; index < data.length; index += 4) data.set([52, 57, 69, 112], index)
+    return { data, width, height }
+  }
+  const paintedMap = async (request: SixelEncodeRequest): Promise<boolean[]> => {
+    const raster = await encodeSixel(request)
+    const body = /^\x1bP0;1;q([\s\S]*)\x1b\\$/u.exec(raster.data)![1]
+    return [...decode(body, { fillColor: 0xffff00ff }).data32].map(pixel => pixel !== 0xffff00ff)
+  }
+  const countRow = (painted: boolean[], width: number, row: number): number =>
+    painted.slice(row * width, (row + 1) * width).filter(Boolean).length
+  const longestRun = (painted: boolean[], width: number, row: number): number => {
+    let best = 0
+    let run = 0
+    for (let x = 0; x < width; x++) {
+      run = painted[row * width + x] ? run + 1 : 0
+      best = Math.max(best, run)
+    }
+    return best
+  }
+  // a) The dither band, both policies. A constant ~44% coverage area is what
+  // an anti-aliased stroke edge looks like after quantization.
+  const patchSource = midFill(4, 4)
+  const speckled = await paintedMap({ source: patchSource, width: 4, height: 4, transparent: true })
+  const solid = await paintedMap({ source: patchSource, width: 4, height: 4, transparent: true, lineArt: true })
+  const expectedBayer = Array.from({ length: 16 }, (_, index) => sixelCoveragePaints(112, index % 4, Math.floor(index / 4)))
+  assert.deepEqual(speckled, expectedBayer, 'the unmarked (photo) mask still dithers by Bayer position')
+  assert.equal(speckled.filter(Boolean).length, 8, 'a mid-band area thins to half its pixels under the dither')
+  assert.equal(solid.filter(Boolean).length, 16, 'line art paints the whole dither band solid — reverting the strategy fails here')
+  // A thin bar must be CONTINUOUS under line art (the readable-stroke goal)
+  // while the dither keeps breaking it (the "hairline" symptom).
+  const barSource = midFill(8, 2)
+  const speckledBar = await paintedMap({ source: barSource, width: 8, height: 2, transparent: true })
+  const solidBar = await paintedMap({ source: barSource, width: 8, height: 2, transparent: true, lineArt: true })
+  for (const row of [0, 1]) {
+    assert.equal(countRow(speckledBar, 8, row), 4, 'the dithered bar keeps only every other pixel')
+    assert.equal(longestRun(speckledBar, 8, row), 1, 'and reads as speckles, not a line')
+    assert.equal(countRow(solidBar, 8, row), 8, 'the line-art bar paints every pixel')
+    assert.equal(longestRun(solidBar, 8, row), 8, 'as one continuous solid run')
+  }
+  // b) Constructive byte-identity: pure 0/255 sources (screenshots, pixel art)
+  // encode byte-identically under either policy, and a composited raster
+  // ignores lineArt entirely — photographs are untouched by this fix.
+  const shot: TerminalImageSource = {
+    width: 2, height: 2,
+    data: new Uint8Array([9, 8, 7, 255, 0, 0, 0, 0, 0, 0, 0, 0, 210, 220, 230, 255]),
+  }
+  assert.equal((await encodeSixel({ source: shot, width: 2, height: 2, transparent: true, lineArt: true })).data,
+    (await encodeSixel({ source: shot, width: 2, height: 2, transparent: true })).data,
+    'pure 0/255 sources are byte-identical under either mask policy')
+  assert.equal((await encodeSixel({ source: shot, width: 2, height: 2, background: '#101010', lineArt: true })).data,
+    (await encodeSixel({ source: shot, width: 2, height: 2, background: '#101010' })).data,
+    'a composited (non-transparent) raster ignores lineArt')
+  // c) The marker reaches the encoder: a line-art placement keys its own raster
+  // and its request carries the flag; an unmarked placement does not.
+  const chainJobs: Array<{ request: SixelEncodeRequest; resolve: (value: SixelRaster) => void }> = []
+  const chain = new SixelGraphicsManager(() => {}, request => new Promise(resolve => chainJobs.push({ request, resolve })))
+  const blankScreen = () => createScreen(40, 16, new StylePool(), new CharPool(), new HyperlinkPool())
+  chain.setCellSize({ width: 10, height: 20 })
+  chain.beginFrame(40, 16)
+  const formulaPlacement: TerminalImagePlacement = {
+    node: createNode('ink-image'), source: patchSource, x: 2, y: 3, columns: 4, rows: 4,
+    presentation: 'transcript', transparent: true, lineArt: true,
+  }
+  chain.prepare(formulaPlacement)
+  chain.prepare({ ...formulaPlacement, node: createNode('ink-image'), lineArt: undefined })
+  chain.reconcile(blankScreen(), blankScreen())
+  assert.equal(chainJobs.length, 1, 'the worker encodes one variant at a time')
+  chainJobs[0].resolve(raster)
+  await until(() => chainJobs.length === 2, 'the line-art marker keys a separately encoded raster')
+  assert.ok(chainJobs.some(job => job.request.transparent === true && job.request.lineArt === true),
+    'the formula request carries the line-art marker into the encoder')
+  assert.ok(chainJobs.some(job => job.request.transparent === true && job.request.lineArt === undefined),
+    'an unmarked (photo) request does not')
+  chain.dispose()
+}
+const tail = decodeRaster((await encodeSixel({ source, width: 13, height: 7, background: '#123456' })).data)
+assert.equal(tail.width, 13)
+assert.equal(tail.height, 7, 'last six-pixel band must not extend raster dimensions')
+for (const background of ['ansi:blackBright', 'ansi256(238)', 'rgb(20,30,40)']) {
+  assert.equal(decodeRaster((await encodeSixel({ source, width: 2, height: 2, background })).data).width, 2)
+}
+assert.equal(selectTerminalImageProtocol('OK', [61, 4], undefined), 'kitty')
+assert.equal(selectTerminalImageProtocol(undefined, [61, 4, 28], undefined), 'sixel')
+assert.equal(selectTerminalImageProtocol(undefined, [4], undefined), 'none', 'device class is not a capability')
+assert.equal(selectTerminalImageProtocol(undefined, [61], undefined), 'none')
+assert.equal(selectTerminalImageProtocol('OK', [61, 4], 'none'), 'none')
+assert.equal(selectTerminalImageProtocol('OK', [61, 4], 'sixel'), 'sixel')
+assert.equal(selectTerminalImageProtocol(undefined, undefined, 'invalid'), 'none')
+
+const styles = new StylePool()
+const chars = new CharPool()
+const links = new HyperlinkPool()
+const screen = () => createScreen(40, 16, styles, chars, links)
+const node = createNode('ink-image')
+const placement: TerminalImagePlacement = { node, source, x: 2, y: 3, columns: 8, rows: 4, presentation: 'preview', background: '#ffffff' }
+const jobs: Array<{ request: SixelEncodeRequest; resolve: (value: SixelRaster) => void }> = []
+let notifications = 0
+const manager = new SixelGraphicsManager(() => notifications++, request => new Promise(resolve => jobs.push({ request, resolve })))
+manager.setCellSize({ width: 10, height: 20 })
+manager.beginFrame(40, 16)
+assert.equal(manager.prepare({ ...placement, presentation: undefined }), false, 'unmarked plugin images retain fallback')
+assert.equal(manager.prepare(placement), false, 'pending pixels keep text fallback')
+manager.reconcile(screen(), screen())
+assert.equal(jobs.length, 1)
+assert.deepEqual([jobs[0].request.width, jobs[0].request.height], [80, 80])
+const readyRaster = { width: 80, height: 80, data: raster.data }
+jobs[0].resolve(readyRaster)
+await until(() => notifications === 1, 'async completion should request a repaint')
+manager.beginFrame(40, 16)
+assert.equal(manager.prepare(placement), true)
+assert.equal(manager.reconcile(screen(), screen()).erase, '')
+assert.match(manager.paint([]), /^\x1b\[4;3H/u)
+manager.beginFrame(40, 16)
+manager.prepare(placement)
+manager.reconcile(screen(), screen())
+assert.equal(manager.paint([{ type: 'cursorMove', x: 0, y: 12 }, { type: 'stdout', content: 'spinner' }]), '', 'unrelated text must not retransmit image')
+assert.notEqual(manager.paint([{ type: 'cursorMove', x: 3, y: 4 }, { type: 'stdout', content: ' ' }]), '', 'a text write touching pixels must repair the image')
+manager.setDisplayMode(true)
+const borrowedMode = manager.paint([])
+assert.ok(borrowedMode.startsWith('\x1b[?80l'))
+assert.ok(borrowedMode.endsWith('\x1b[?80h'), 'restore borrowed terminal display mode')
+manager.setDisplayMode(false)
+manager.beginFrame(40, 16)
+const removed = manager.reconcile(screen(), screen())
+assert.match(removed.erase, /\x1b\[8X/u, 'blank-to-blank removal still emits an erase')
+assert.equal(manager.paint([]), '')
+manager.beginFrame(40, 16)
+manager.prepare(placement)
+const covered = screen()
+setCellAt(covered, 3, 4, { char: 'X', width: 0, styleId: styles.none })
+manager.reconcile(covered, screen())
+assert.equal(manager.paint([]), '', 'image must not overpaint a text overlay')
+
+manager.beginFrame(40, 16)
+assert.equal(manager.prepare({ ...placement, columns: 10 }), true)
+manager.reconcile(screen(), screen())
+assert.ok(manager.paint([]).includes('\x1b[4;4H'), 'unchanged pixels are centered inside a wider cell box')
+assert.equal(jobs.length, 1, 'extra layout padding alone must not trigger re-encoding')
+
+manager.beginFrame(40, 16)
+manager.prepare({ ...placement, columns: 9, rows: 5 })
+manager.reconcile(screen(), screen())
+await until(() => jobs.length === 2, 'new geometry queues work')
+manager.beginFrame(40, 16)
+manager.prepare({ ...placement, columns: 10, rows: 5 })
+manager.reconcile(screen(), screen())
+manager.beginFrame(40, 16)
+manager.prepare({ ...placement, columns: 11, rows: 6 })
+manager.reconcile(screen(), screen())
+jobs[1].resolve({ ...readyRaster, width: 90, height: 90 })
+await until(() => jobs.length === 3, 'only latest pending geometry is processed')
+assert.equal(jobs[2].request.width, 110)
+const beforeClose = notifications
+manager.clear()
+jobs[2].resolve({ ...readyRaster, width: 110, height: 110 })
+await delay(20)
+assert.equal(notifications, beforeClose, 'closed preview must not be resurrected by an old job')
+manager.dispose()
+
+// The image raster must fit its source aspect, not pad the rounded cell box.
+for (const [sourceWidth, sourceHeight] of [[16, 9], [9, 16], [17, 11], [255, 113]]) {
+  const data = new Uint8Array(sourceWidth * sourceHeight * 4)
+  for (let index = 0; index < data.length; index += 4) data.set([0, 255, 0, 255], index)
+  const image = { ...placement, source: { width: sourceWidth, height: sourceHeight, data }, columns: 24, rows: 5 }
+  let result: SixelRaster | undefined
+  let request: SixelEncodeRequest | undefined
+  let ready = false
+  const fitted = new SixelGraphicsManager(() => { ready = true }, async input => {
+    request = input
+    result = await encodeSixel(input)
+    return result
+  })
+  fitted.setCellSize({ width: 11, height: 23 })
+  fitted.beginFrame(40, 16)
+  fitted.prepare(image)
+  fitted.reconcile(screen(), screen())
+  await until(() => ready, 'source-aspect raster is encoded')
+  assert.ok(request && result)
+  assert.ok(request.width <= 264 && request.height <= 115, 'fitted raster stays within the cell box')
+  assert.ok(Math.abs(request.width * sourceHeight - request.height * sourceWidth) <= Math.max(sourceWidth, sourceHeight),
+    'raster aspect differs by no more than pixel rounding')
+  const decoded = decodeRaster(result.data)
+  assert.ok(decoded.data32.every(pixel => pixel === 0xff00ff00), 'no black letterbox pixels are encoded')
+  fitted.dispose()
+}
+
+let failedReady = 0
+const failed = new SixelGraphicsManager(() => failedReady++, async () => { throw new Error('fixture failure') })
+failed.beginFrame(40, 16)
+assert.equal(failed.prepare(placement), false)
+failed.reconcile(screen(), screen())
+await until(() => failedReady === 1, 'failure resolves the pending job')
+failed.beginFrame(40, 16)
+assert.equal(failed.prepare(placement), false, 'failed encoding retains fallback without retrying every frame')
+failed.dispose()
+
+const coalesced: Array<{ request: SixelEncodeRequest; resolve: (value: SixelRaster) => void }> = []
+const latest = new SixelGraphicsManager(() => {}, request => new Promise(resolve => coalesced.push({ request, resolve })))
+latest.beginFrame(40, 16)
+latest.prepare(placement)
+latest.reconcile(screen(), screen())
+latest.beginFrame(40, 16)
+latest.prepare({ ...placement, columns: 9, rows: 5 })
+latest.reconcile(screen(), screen())
+latest.beginFrame(40, 16)
+latest.prepare(placement)
+latest.reconcile(screen(), screen())
+coalesced[0].resolve(readyRaster)
+await delay(20)
+assert.equal(coalesced.length, 1, 'returning to the active request withdraws obsolete pending work')
+latest.dispose()
+
+// A scroll row moves the image's clip, so the raster it needs is a NEW crop
+// (left/top/cropWidth/cropHeight are part of the variant key) and the encoder
+// is asynchronous. Erasing the displayed rect in the frame that has no
+// replacement to draw is what flashed black while scrolling, and the same
+// skip made an image vanish under a tooltip that merely covered part of it.
+const scrollJobs: Array<{ request: SixelEncodeRequest; resolve: (value: SixelRaster) => void }> = []
+let scrollReady = 0
+const scroll = new SixelGraphicsManager(() => scrollReady++, request => new Promise(resolve => scrollJobs.push({ request, resolve })))
+scroll.setCellSize({ width: 10, height: 20 })
+scroll.beginFrame(40, 16)
+scroll.prepare(placement)
+scroll.reconcile(screen(), screen())
+scrollJobs[0].resolve(readyRaster)
+await until(() => scrollReady === 1, 'scroll fixture encodes the visible crop')
+scroll.beginFrame(40, 16)
+assert.equal(scroll.prepare(placement), true)
+assert.equal(scroll.reconcile(screen(), screen()).erase, '', 'the first display of a cached crop needs no erase')
+assert.match(scroll.paint([]), /^\x1b\[4;3H/u)
+const clipped: TerminalImagePlacement = { ...placement, clip: { x: 2, y: 5, columns: 8, rows: 2 } }
+scroll.beginFrame(40, 16)
+assert.equal(scroll.prepare(clipped), false, 'a scrolled crop starts unencoded')
+assert.equal(scroll.reconcile(screen(), screen()).erase, '', 'a pending replacement must not erase the displayed rect')
+assert.equal(scroll.paint([]), '', 'and must not redraw the stale raster')
+assert.equal(scrollJobs.length, 2, 'the scrolled crop is queued')
+scrollJobs[1].resolve(readyRaster)
+await until(() => scrollReady === 2, 'the replacement requests a repaint')
+scroll.beginFrame(40, 16)
+assert.equal(scroll.prepare(clipped), true)
+const swapped = scroll.reconcile(screen(), screen())
+assert.match(swapped.erase, /\x1b\[8X/u, 'the ready replacement erases the old rect')
+assert.ok(scroll.paint([]).includes('\x1b[6;3H'), 'and draws the replacement in the same frame')
+scroll.beginFrame(40, 16)
+scroll.prepare(clipped)
+scroll.reconcile(screen(), screen(), [{ ...clipped, occluded: true }])
+assert.equal(scroll.paint([]), '', 'an occluded rect is neither erased nor redrawn')
+// The cells an overlay covers must give up their pixels: their style does not
+// change, so the frame diff never rewrites them and the raster would show
+// through the overlay (the white block between "100%" and "原像素").
+scroll.beginFrame(40, 16)
+scroll.prepare(clipped)
+const partialCover = scroll.reconcile(screen(), screen(), [{
+  ...clipped,
+  occluded: true,
+  coveredRects: [{ x: 3, y: 5, width: 4, height: 1 }],
+}])
+assert.match(partialCover.erase, /\x1b\[0m\x1b\[48;2;255;255;255m\x1b\[6;4H\x1b\[4X/u,
+  'the covered cells are erased with the placement surface color')
+assert.ok(!/\x1b\[8X/u.test(partialCover.erase), 'only the covered cells are erased, not the whole raster')
+assert.equal(scroll.paint([]), '', 'the uncovered pixels stay on screen')
+scroll.beginFrame(40, 16)
+scroll.prepare(clipped)
+assert.equal(scroll.reconcile(screen(), screen(), [{
+  ...clipped,
+  occluded: true,
+  coveredRects: [{ x: 3, y: 5, width: 4, height: 1 }],
+}]).erase, '', 'an unchanged cover is erased once')
+scroll.beginFrame(40, 16)
+scroll.prepare(clipped)
+assert.equal(scroll.reconcile(screen(), screen(), [clipped]).erase, '', 'uncovering needs no erase of the rect own pixels')
+assert.ok(scroll.paint([]).includes('\x1b[6;3H'), 'an uncovered rect is redrawn after being held')
+scroll.dispose()
+
+class Input extends PassThrough {
+  isTTY = true
+  isRaw = false
+  setRawMode(value: boolean): this { this.isRaw = value; return this }
+  ref(): this { return this }
+  unref(): this { return this }
+}
+class Output extends Writable {
+  isTTY = true
+  columns = 50
+  rows = 18
+  data = ''
+  constructor(readonly input: Input, readonly capabilities: string) { super() }
+  _write(chunk: unknown, _encoding: BufferEncoding, done: () => void): void {
+    const text = String(chunk)
+    this.data += text
+    const reply = text === '\x1b[c' ? this.capabilities
+      : text === '\x1b[?80$p' ? '\x1b[?80;1$y'
+      : text === '\x1b[16t' ? '\x1b[6;20;10t'
+        : text === '\x1b[14t' ? '\x1b[4;360;500t' : ''
+    if (reply) queueMicrotask(() => this.input.write(reply))
+    done()
+  }
+}
+const oldEnv = { ...process.env }
+delete process.env.TMUX
+delete process.env.STY
+delete process.env.FLAGQAI_ACCESSIBILITY
+delete process.env.FLAGQAI_DISABLE_TERMINAL_IMAGES
+delete process.env.FLAGQAI_IMAGE_PROTOCOL
+const imageTree = (show: boolean, counter = 0, preview = true, covered = false, partial = false, ell = false) => (
+  <AlternateScreen>
+    <Box width={50} height={17} flexDirection="column">
+      <Text>PREVIEW HEADER</Text>
+      <Box height={7} backgroundColor="toolCardBackground">
+        {show ? <Image source={source} width={8} height={4} alt="test" presentation={preview ? 'preview' : undefined}><Text>FALLBACK</Text></Image> : null}
+        {/* A popup that covers only part of the raster: the same surface color,
+            so the covered cells keep the image's own backing style. */}
+        {partial ? <Box position="absolute" top={2} left={2} width={3} height={2} backgroundColor="toolCardBackground"><Text>{'   \n   '}</Text></Box> : null}
+        {/* An overlay is not necessarily one rectangle. A 4x1 bar and a 1x4 bar
+            sharing one corner cover 7 cells; their bounding box is 4x4 = 16.
+            Same surface color, so the covered cells keep the image's backing. */}
+        {ell ? <Box position="absolute" top={0} left={1} width={4} height={1} backgroundColor="toolCardBackground"><Text>{'    '}</Text></Box> : null}
+        {ell ? <Box position="absolute" top={0} left={1} width={1} height={4} backgroundColor="toolCardBackground"><Text>{' \n \n \n '}</Text></Box> : null}
+      </Box>
+      <Text>AFTER {counter}</Text>
+      {covered ? <Box position="absolute" top={1} left={0} width={8} height={4} opaque><Text>{'        \n        \n        \n        '}</Text></Box> : null}
+    </Box>
+  </AlternateScreen>
+)
+const stdin = new Input()
+const stdout = new Output(stdin, '\x1b[?61;4;28c')
+const stderr = new Writable({ write(_chunk, _encoding, done) { done() } })
+const app = await render(imageTree(true), { stdin, stdout, stderr, exitOnCtrlC: false, patchConsole: false })
+try {
+  await until(() => stdout.data.includes('\x1bP0;1;q'), 'DA1 capability must enable a real compiled-worker image')
+  assert.ok(stdout.data.includes('FALLBACK'), 'fallback is visible during preparation')
+  assert.ok(!stdout.data.includes('a=t,t=d,f=32'), 'Sixel terminal receives no Kitty uploads')
+  assert.ok(stdout.data.includes('\x1b[?80l'))
+  assert.ok(stdout.data.includes('\x1b[?80h'), 'integration restores the original display mode')
+  const firstEnd = stdout.data.length
+  app.rerender(imageTree(true, 1))
+  await until(() => stdout.data.length > firstEnd, 'unrelated counter renders')
+  await delay(50)
+  assert.ok(!stdout.data.slice(firstEnd).includes('\x1bP0;1;q'), 'spinner/text-only changes do not resend pixels')
+  const coverStart = stdout.data.length
+  app.rerender(imageTree(true, 1, true, true))
+  await until(() => stdout.data.slice(coverStart).includes('\x1b[8X'), 'a blank overlay erases pixels beneath it')
+  assert.ok(!stdout.data.slice(coverStart).includes('\x1bP0;1;q'), 'blank overlays must not be pierced by Sixel')
+  const uncoverStart = stdout.data.length
+  app.rerender(imageTree(true, 1))
+  await until(() => stdout.data.slice(uncoverStart).includes('\x1bP0;1;q'), 'uncovering restores cached pixels')
+  // A popup covering only part of the raster: the cells it covers must be
+  // erased with the surface color (nothing else rewrites them — a
+  // background-only space cell diffs as unchanged), while the rest of the
+  // image stays on screen.
+  const partialStart = stdout.data.length
+  app.rerender(imageTree(true, 1, true, false, true))
+  await until(() => {
+    const covered = stdout.data.slice(partialStart)
+    return /\x1b\[0m\x1b\[48;2;\d+;\d+;\d+m(?:\x1b\[\d+;\d+H\x1b\[\d+X)+/u.test(covered)
+  }, 'a partial overlay erases its covered cells with the surface color')
+  assert.ok(!/\x1b\[8X/u.test(stdout.data.slice(partialStart)), 'a partial overlay must not erase the whole raster')
+  assert.ok(!stdout.data.slice(partialStart).includes('\x1bP0;1;q'), 'a covered raster is not redrawn over the overlay')
+  const partialUncover = stdout.data.length
+  app.rerender(imageTree(true, 1))
+  await until(() => stdout.data.slice(partialUncover).includes('\x1bP0;1;q'), 'the raster returns once the overlay closes')
+  // An overlay's cover is not always one rectangle. An L made of a 4x1 bar and
+  // a 1x4 bar sharing one corner covers 7 cells, while their bounding box is
+  // 4x4 = 16. Folding intersecting occluders into their bounding box therefore
+  // erases 9 cells whose pixels are still on screen — the manager has to erase
+  // the union of the covered rects, never the bounding box that encloses them.
+  const ellStart = stdout.data.length
+  app.rerender(imageTree(true, 1, true, false, false, true))
+  await until(() => {
+    const covered = stdout.data.slice(ellStart)
+    return /\x1b\[0m\x1b\[48;2;\d+;\d+;\d+m(?:\x1b\[\d+;\d+H\x1b\[\d+X)+/u.test(covered)
+  }, 'an L-shaped overlay erases its covered cells with the surface color')
+  const ellFrame = stdout.data.slice(ellStart)
+  const ellPlacement = (instances.get(stdout) as unknown as {
+    frontFrame: { images?: TerminalImagePlacement[] }
+  }).frontFrame.images?.find(placement => placement.coveredRects !== undefined)
+  assert.ok(ellPlacement, 'an L-shaped cover stays partial instead of taking the whole raster down')
+  const rectKey = (rect: { x: number; y: number; width: number; height: number }) =>
+    `${rect.x},${rect.y},${rect.width},${rect.height}`
+  const ellX = ellPlacement!.x + 1
+  const ellY = ellPlacement!.y
+  // Rectangle level: an L has no rectangular union, so the two bars must stay
+  // two rects. One 4x4 rect here is the bounding-box mistake.
+  assert.deepEqual((ellPlacement!.coveredRects ?? []).map(rectKey).sort(),
+    [`${ellX},${ellY},4,1`, `${ellX},${ellY},1,4`].sort(),
+    'the covered rects are the real occluders, not their bounding box')
+  // Cell level: every erased cell is covered and every covered cell is erased —
+  // 7 distinct cells, not the 16 of the bounding box.
+  const erasedCells = new Set<string>()
+  for (const run of ellFrame.matchAll(/\x1b\[0m\x1b\[48;2;\d+;\d+;\d+m((?:\x1b\[\d+;\d+H\x1b\[\d+X)+)/gu)) {
+    for (const op of run[1]!.matchAll(/\x1b\[(\d+);(\d+)H\x1b\[(\d+)X/gu)) {
+      const row = Number(op[1]) - 1
+      const column = Number(op[2]) - 1
+      for (let i = 0; i < Number(op[3]); i++) erasedCells.add(`${column + i},${row}`)
+    }
+  }
+  const coveredCells = new Set<string>()
+  for (let i = 0; i < 4; i++) coveredCells.add(`${ellX + i},${ellY}`)
+  for (let i = 0; i < 4; i++) coveredCells.add(`${ellX},${ellY + i}`)
+  assert.equal(coveredCells.size, 7, 'the L covers 7 distinct cells')
+  assert.deepEqual([...erasedCells].sort(), [...coveredCells].sort(),
+    'exactly the covered cells are erased — an uncovered pixel is never taken down')
+  assert.ok(!ellFrame.includes('\x1bP0;1;q'), 'a covered raster is not redrawn over the overlay')
+  const ellUncover = stdout.data.length
+  app.rerender(imageTree(true, 1))
+  await until(() => stdout.data.slice(ellUncover).includes('\x1bP0;1;q'), 'the raster returns once the L closes')
+  const closeStart = stdout.data.length
+  app.rerender(imageTree(false))
+  await until(() => stdout.data.slice(closeStart).includes('\x1b[8X'), 'closing a preview must erase actual pixels')
+  const terminal = new Terminal({ cols: 50, rows: 18, allowProposedApi: true })
+  await new Promise<void>(resolve => terminal.write(stdout.data, resolve))
+  const lines = Array.from({ length: 18 }, (_, y) => terminal.buffer.active.getLine(y)?.translateToString(true) ?? [])
+  assert.ok(lines.some(line => line.includes('PREVIEW HEADER')))
+  assert.ok(lines.some(line => line.includes('AFTER')))
+  assert.ok(!lines.some(line => line.includes('FALLBACK')), 'closing restores underlying text')
+  assert.equal(terminal.buffer.active.cursorY, 17, 'cursor stays parked at the input row')
+  terminal.dispose()
+  for (let i = 0; i < 10; i++) {
+    const start = stdout.data.length
+    app.rerender(imageTree(true))
+    await until(() => stdout.data.slice(start).includes('\x1bP0;1;q'), 'cached reopen paints')
+    app.rerender(imageTree(false))
+    await until(() => stdout.data.slice(start).includes('\x1b[8X'), 'repeated close erases')
+  }
+  const thumbnailStart = stdout.data.length
+  app.rerender(imageTree(true, 0, false))
+  await delay(100)
+  assert.ok(!stdout.data.slice(thumbnailStart).includes('\x1bP0;1;q'))
+  stdout.columns = 35
+  stdout.rows = 15
+  stdout.emit('resize')
+  const resizeStart = stdout.data.length
+  app.rerender(imageTree(true))
+  await until(() => stdout.data.slice(resizeStart).includes('\x1bP0;1;q'), 'resize repositions and repaints')
+  const ink = instances.get(stdout)
+  assert.ok(ink)
+  const handoffStart = stdout.data.length
+  ink.enterAlternateScreen()
+  assert.ok(stdout.data.slice(handoffStart).includes('\x1b[8X'), 'editor handoff erases displayed pixels before transfer')
+  await delay(50)
+  assert.ok(!stdout.data.slice(handoffStart).includes('\x1bP0;1;q'), 'no drawing while the editor owns the terminal')
+  ink.exitAlternateScreen()
+  await until(() => stdout.data.slice(handoffStart).includes('\x1bP0;1;q'), 'handoff restoration redraws the cached image')
+} finally {
+  stdout.isTTY = false
+  app.unmount()
+}
+const sharp = await loadSharp()
+assert.ok(sharp)
+const png = await sharp(source.data, { raw: { width: 2, height: 2, channels: 4 } }).png().toBuffer()
+const previewImage = { id: 'sixel-overlay-fixture', width: 2, height: 2, name: 'test.png', mediaType: 'image/png', read: async () => png }
+const previousChalkLevel = chalk.level
+chalk.level = 3
+const overlayInput = new Input()
+const overlayOutput = new Output(overlayInput, '\x1b[?61;4;28c')
+const overlayTree = (show: boolean) => <ThemeProvider theme="light"><AlternateScreen><Box width={50} height={17} flexDirection="column"><Text>CONVERSATION</Text>{show ? <ImagePreviewOverlay image={previewImage} onClose={() => {}} region={{ columns: 50, rows: 17 }} /> : null}</Box></AlternateScreen></ThemeProvider>
+const overlayApp = await render(overlayTree(true), { stdin: overlayInput, stdout: overlayOutput, stderr, exitOnCtrlC: false, patchConsole: false })
+try {
+  await until(() => overlayOutput.data.includes('\x1bP0;1;q'), 'the neutral preview card displays Sixel')
+  const elements: DOMElement[] = []
+  const collect = (element: DOMElement): void => {
+    elements.push(element)
+    for (const child of element.childNodes) if (child.nodeName !== '#text') collect(child)
+  }
+  collect((instances.get(overlayOutput) as unknown as { rootNode: DOMElement }).rootNode)
+  const card = elements.find(element => element.style.position === 'absolute' && element.style.opaque)
+  assert.ok(card, 'preview retains opaque text cleanup')
+  assert.equal(card.style.backgroundColor, 'rgb(255,255,255)', 'light preview uses a white card background')
+  const border = elements.find(element => element.style.borderStyle === 'round')
+  assert.equal(border?.style.borderColor, getTheme('light').inactive, 'preview border uses a neutral theme role')
+  const cardTerminal = new Terminal({ cols: 50, rows: 18, allowProposedApi: true })
+  try {
+    await new Promise<void>(resolve => cardTerminal.write(overlayOutput.data, resolve))
+    const titleY = Array.from({ length: 18 }, (_, y) => y)
+      .find(y => cardTerminal.buffer.active.getLine(y)?.translateToString(true).includes('test.png'))
+    assert.notEqual(titleY, undefined)
+    const titleLine = cardTerminal.buffer.active.getLine(titleY!)!
+    const left = Array.from({ length: 50 }, (_, x) => x).find(x => titleLine.getCell(x)?.getChars() === '╭')
+    const right = Array.from({ length: 50 }, (_, x) => x).find(x => titleLine.getCell(x)?.getChars() === '╮')
+    assert.ok(left !== undefined && right !== undefined && right > left)
+    for (let x = left; x <= right; x++) assert.equal(titleLine.getCell(x)?.getBgColor(), 0xffffff, 'title background is white, not blue')
+    // The card owns its whole rect: the border ring and the image's own cells
+    // belong to the surface as well. Leaving any of them at the terminal
+    // default is the black frame around the card and the black strip beside
+    // the raster on Windows Terminal.
+    let cardX = 0
+    let cardY = 0
+    for (let ancestor: DOMElement | undefined = card; ancestor; ancestor = ancestor.parentNode) {
+      cardX += ancestor.yogaNode?.getComputedLeft() ?? 0
+      cardY += ancestor.yogaNode?.getComputedTop() ?? 0
+    }
+    const cardWidth = Math.floor(card!.yogaNode?.getComputedWidth() ?? 0)
+    const cardHeight = Math.floor(card!.yogaNode?.getComputedHeight() ?? 0)
+    assert.ok(cardWidth > 0 && cardHeight > 0, 'card rect is measurable')
+    for (let y = Math.floor(cardY); y < Math.floor(cardY) + cardHeight; y++) {
+      const line = cardTerminal.buffer.active.getLine(y)
+      for (let x = Math.floor(cardX); x < Math.floor(cardX) + cardWidth; x++) {
+        assert.equal(line?.getCell(x)?.getBgColor(), 0xffffff, `card cell ${x},${y} keeps the surface background`)
+      }
+    }
+  } finally { cardTerminal.dispose() }
+  const start = overlayOutput.data.length
+  overlayApp.rerender(overlayTree(false))
+  await until(() => /\x1b\[\d+X/u.test(overlayOutput.data.slice(start)), 'the real card close erases Sixel')
+  // Erase-Character fills the erased cells with the current background, so an
+  // erase that passes the CARD surface color leaves that color on screen: the
+  // frame clears exactly these cells in its own model (see reconcile's
+  // clearRegion), so nothing rewrites them and the block survives until
+  // unrelated text scrolls past — the white rectangle a closed light-theme
+  // preview used to leave on the transcript. The rect must end at the
+  // terminal default, like every other cell the frame does not rewrite.
+  const residueTerminal = new Terminal({ cols: 50, rows: 18, allowProposedApi: true })
+  try {
+    await new Promise<void>(resolve => residueTerminal.write(overlayOutput.data, resolve))
+    const residue: string[] = []
+    for (let y = 0; y < 18; y++) {
+      const line = residueTerminal.buffer.active.getLine(y)
+      for (let x = 0; x < 50; x++) {
+        if (line?.getCell(x)?.getBgColor() === 0xffffff) residue.push(`${x},${y}`)
+      }
+    }
+    assert.deepEqual(residue, [], 'a closed card leaves no surface-colored cells behind')
+  } finally { residueTerminal.dispose() }
+} finally {
+  overlayOutput.isTTY = false
+  overlayApp.unmount()
+  chalk.level = previousChalkLevel
+}
+
+// A real modal must pass the larger source through both admission layers and
+// the compiled worker, not merely draw a larger empty frame around 1024 pixels.
+clearTranscriptImageCacheForTests()
+const largePng = await sharp({ create: {
+  width: 2400, height: 1200, channels: 4, background: { r: 0, g: 255, b: 0, alpha: 1 },
+} }).png().toBuffer()
+const largeImage = { id: 'large-preview', width: 2400, height: 1200, name: 'large.png', read: async () => largePng }
+const largeInput = new Input()
+const largeOutput = new Output(largeInput, '\x1b[?61;4;28c')
+largeOutput.columns = 240
+largeOutput.rows = 100
+const largeTree = (show: boolean) => <AlternateScreen><Box width={240} height={99} flexDirection="column">
+  <Box width={240} height={96} flexShrink={0}><Text>CONVERSATION</Text>
+    {show ? <ImagePreviewOverlay image={largeImage} onClose={() => {}} region={{ columns: 240, rows: 96 }} /> : null}
+  </Box><Text>PROMPT</Text>
+</Box></AlternateScreen>
+const largeApp = await render(largeTree(true), { stdin: largeInput, stdout: largeOutput, stderr, exitOnCtrlC: false, patchConsole: false })
+try {
+  await until(() => largeOutput.data.includes('\x1bP0;1;q'), 'large preview is encoded by the compiled worker')
+  const sequence = /\x1bP0;1;q[\s\S]*?\x1b\\/u.exec(largeOutput.data)?.[0]
+  assert.ok(sequence)
+  const image = decodeRaster(sequence)
+  assert.ok(image.width > 1024 && image.width <= 2048, 'preview contains more than 1024 real image pixels')
+  assert.ok(image.width * image.height * 4 <= 8 * 1024 * 1024, 'large output remains within the pixel budget')
+  assert.ok(image.data32.every(pixel => pixel === 0xff00ff00), 'large native quantization introduces no border pixels')
+  const host = instances.get(largeOutput) as unknown as { frontFrame: { images?: TerminalImagePlacement[] } }
+  assert.ok(host.frontFrame.images?.some(placement => placement.source.width > 1024), 'large decode reaches the host image primitive')
+  const terminal = new Terminal({ cols: 240, rows: 100, allowProposedApi: true })
+  try {
+    await new Promise<void>(resolve => terminal.write(largeOutput.data, resolve))
+    assert.ok(terminal.buffer.active.getLine(96)?.translateToString(true).includes('PROMPT'), 'large modal does not cover the input row')
+  } finally { terminal.dispose() }
+  const start = largeOutput.data.length
+  largeApp.rerender(largeTree(false))
+  await until(() => /\x1b\[\d+X/u.test(largeOutput.data.slice(start)), 'closing the large modal erases its pixels')
+} finally {
+  largeOutput.isTTY = false
+  largeApp.unmount()
+  clearTranscriptImageCacheForTests()
+}
+const squarePng = await sharp({ create: {
+  width: 2400, height: 2400, channels: 4, background: { r: 0, g: 255, b: 0, alpha: 1 },
+} }).png().toBuffer()
+const squareDecode = await loadTranscriptImageFull({ id: 'large-square', width: 1, height: 1, read: async () => squarePng })
+assert.ok(squareDecode.width > 1024 && squareDecode.height > 1024, 'larger square previews retain extra detail')
+assert.ok(squareDecode.data.byteLength <= 8 * 1024 * 1024, 'decode uses actual metadata to cap total pixels')
+clearTranscriptImageCacheForTests()
+
+for (const [name, env, caps] of [
+  ['unsupported', {}, '\x1b[?61c'],
+  ['disabled', { FLAGQAI_DISABLE_TERMINAL_IMAGES: '1' }, '\x1b[?61;4c'],
+  ['accessibility', { FLAGQAI_ACCESSIBILITY: '1' }, '\x1b[?61;4c'],
+  ['multiplexer', { TMUX: 'test' }, '\x1b[?61;4c'],
+] as const) {
+  Object.assign(process.env, env)
+  const input = new Input()
+  const output = new Output(input, caps)
+  const instance = await render(imageTree(true), { stdin: input, stdout: output, stderr, exitOnCtrlC: false, patchConsole: false })
+  await delay(100)
+  assert.ok(output.data.includes('FALLBACK'), name)
+  assert.ok(!output.data.includes('\x1bP0;1;q'), name)
+  output.isTTY = false
+  instance.unmount()
+  for (const key of Object.keys(env)) delete process.env[key]
+}
+for (const key of Object.keys(process.env)) if (!(key in oldEnv)) delete process.env[key]
+Object.assign(process.env, oldEnv)
+
+// The mint point: a MathBlock formula in a real Sixel terminal marks its
+// placement lineArt, so the typeset raster reaches the encoder with the solid
+// mask strategy (the wiring <Image lineArt> → ink-image attribute → placement).
+{
+  applyMathRendering('image')
+  const mathInput = new Input()
+  const mathOutput = new Output(mathInput, '\x1b[?61;4;28c')
+  const mathTree = () => <ThemeProvider theme="dark"><AlternateScreen><Box width={50} height={16} flexDirection="column">
+    <Text>MATH</Text>
+    <MathBlock token={{ type: 'mathBlock', raw: '$$\n\\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}\n$$', text: '\\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}' }} dimColor={false} forceWidth={50} />
+    <Text>AFTER</Text>
+  </Box></AlternateScreen></ThemeProvider>
+  const mathApp = await render(mathTree(), { stdin: mathInput, stdout: mathOutput, stderr, exitOnCtrlC: false, patchConsole: false })
+  try {
+    const host = instances.get(mathOutput) as unknown as { frontFrame: { images?: TerminalImagePlacement[] } }
+    await until(() => (host.frontFrame.images ?? []).some(p => p.lineArt === true), 'the typeset formula placement carries the line-art marker')
+    assert.ok((host.frontFrame.images ?? []).some(p => p.lineArt === true && p.transparent === true && p.presentation === 'transcript'),
+      'a floating formula is transparent (masked) AND line art (solid mask) in the transcript')
+  } finally {
+    applyMathRendering('auto')
+    mathOutput.isTTY = false
+    mathApp.unmount()
+  }
+}
+console.log('Sixel codec, async lifecycle, fallback, erase, preview and line-art regression passed')

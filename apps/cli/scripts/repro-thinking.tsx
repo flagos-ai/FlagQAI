@@ -1,0 +1,194 @@
+/**
+ * thinking spinner 残影回归（issue #72 症状之一）。
+ *
+ * 背景：spinner 动画字符 ✳（U+2733）是 text-default emoji，终端画 1 格，
+ * 但 stringWidth 的 JS 回退实现曾把 emoji-regex 匹配到的字符一律量 2 格。
+ * 于是 spinner 行每次动画切到 ✳ 就整体错位 1 列，thinking 文字的残影
+ * （"tthinking"、孤立 t）在屏幕上堆积不消失。
+ *
+ * 本脚本 headless 渲染 Chat 全屏：working=true、spinnerMode='thinking'、
+ * 助手文本持续流式增长（强制内容增长 + stickyScroll），捕获全部帧字节，
+ * 用 xterm-headless 回放后断言可见区干净：
+ *
+ * - 恰有 1 行以 spinner 状态 "· thinking)" 收尾（不能用裸词 'thinking'：
+ *   随机启动 tip 有 4/100 条文案含该词，撞上即误报）
+ * - 无 'tthinking' 叠字
+ * - 无孤立残影 't'（任意列，两侧为空白或行尾）
+ *
+ * 运行：node --import tsx/esm scripts/repro-thinking.tsx
+ * 可选：COLS/ROWS 环境变量控制终端尺寸。失败以非零退出。
+ */
+process.env.FORCE_COLOR = '3'
+
+const [{ PassThrough, Writable }, React, { render }, { Chat }, { QuestionStore }, { Terminal: XTerm }, fs, { writeParsed, viewportLines, sleep }] =
+  await Promise.all([
+    import('node:stream'),
+    import('react'),
+    import('../src/ui.js'),
+    import('../src/screens/Chat.js'),
+    import('../src/dsh-adapter/questions.js'),
+    import('@xterm/headless'),
+    import('node:fs'),
+    import('./lib/term-test.mjs'),
+  ])
+
+const COLS = Number(process.env.COLS ?? 100)
+const ROWS = Number(process.env.ROWS ?? 28)
+
+class FakeStdout extends Writable {
+  columns = COLS
+  rows = ROWS
+  isTTY = true
+  frames: string[] = []
+  _write(chunk: unknown, _encoding: BufferEncoding, callback: () => void) {
+    this.frames.push(String(chunk))
+    callback()
+  }
+}
+class FakeStderr extends Writable {
+  isTTY = true
+  _write(_c: unknown, _e: BufferEncoding, cb: () => void) { cb() }
+}
+class FakeStdin extends PassThrough {
+  isTTY = true
+  setRawMode() { return this }
+  ref() { return this }
+  unref() { return this }
+}
+
+// ── 可变 channel：模拟一轮 thinking + 流式输出 ──
+const rows: any[] = [
+  { id: 0, kind: 'user', text: '帮我分析一下这个渲染问题的可能原因' },
+]
+let version = 0
+const listeners = new Set<() => void>()
+const channel = {
+  get version() { return version },
+  rows,
+  status: 'working',
+  sessionTitle: 'repro',
+  agentId: 'repro',
+  model: 'deepseek-v4-flash',
+  tokens: { input: 120, output: 45 },
+  cwd: '/tmp/repro',
+  displayCwd: '/tmp/repro',
+  gitBranch: 'main',
+  working: true,
+  spinnerMode: 'thinking',
+  get responseChars() { return currentText.length },
+  activeToolCount: 0,
+  mode: { id: 'default', plan: false },
+  modeIndex: 0,
+  cycleMode() {},
+  turnStart: Date.now(),
+  lastUserText: '帮我分析一下这个渲染问题的可能原因',
+  pending: [],
+  commandList: [],
+  notifications: [],
+  activityEnabled: false, // 强制走 WorkingSpinner（而非 ActivityLine）
+  contextBarEnabled: false,
+  subscribe: (fn: () => void) => { listeners.add(fn); return () => listeners.delete(fn) },
+  submit: () => {},
+  cancel: () => {},
+  clear: () => {},
+  notify: () => {},
+  listModels: () => Promise.resolve([]),
+  listSessions: () => [],
+  setResumeTarget: () => {},
+} as never
+
+let currentText = ''
+let nextId = 1
+function pushChunk(chunk: string) {
+  currentText += chunk
+  // 更新流式中的 assistant 行
+  const last = rows[rows.length - 1]
+  if (last && last.kind === 'assistant' && last.streaming) {
+    last.text = currentText
+  } else {
+    rows.push({ id: nextId++, kind: 'assistant', text: currentText, streaming: true })
+  }
+  version++
+  for (const fn of listeners) fn()
+}
+
+const stdout = new FakeStdout()
+const instance = await render(
+  React.createElement(Chat, { channel, questionStore: new QuestionStore(), onExit: () => {} }),
+  {
+    stdout,
+    stdin: new FakeStdin(),
+    stderr: new FakeStderr(),
+    exitOnCtrlC: false,
+    patchConsole: false,
+  },
+)
+
+// 固定窗:墙钟 启动稳定：让 spinner 先空转若干 50ms 动画帧——动画重绘本身是被测对象，
+// 这段时间线是场景的一部分，无可轮询的完成条件。
+await sleep(500)
+
+// 流式灌文本 ~6 秒（thinking 状态保持）。内容刻意全为中文、不含 'thinking'
+// 与孤立 ASCII 't'，让残影断言无歧义。
+const CHUNKS = [
+  '好的，', '让我来分析', '这个问题。', '首先，', '渲染器', '使用相对', '光标移动',
+  '来重绘', '变化的单元格。', '如果虚拟', '光标与真实', '终端光标', '失步，',
+  '写入就会', '落在错误的', '位置。', '具体来说，', '动画行', '每 50ms',
+  '重绘一次，', '微光颜色', '每帧都在变化。', '这就导致', '该行所有单元格',
+  '每帧都被重写。', '如果光标模型', '偏差了一行，', '重写就会', '落在下一行，',
+  '留下残影。', '这就是', '多个字符', '堆积的原因。', '分析完毕。',
+]
+for (const chunk of CHUNKS) {
+  pushChunk(chunk)
+  // 固定窗:pacing 120ms 是场景节拍：流式增长与 50ms 动画帧交错才能诱发残影，
+  // 不是在等某个可观测状态。
+  await sleep(120)
+}
+
+// 固定窗:墙钟 再让 spinner 空转几个 50ms 动画帧：残影需要多帧重绘才会显形
+await sleep(800)
+
+const byteStream = stdout.frames.join('')
+try { instance.unmount() } catch {}
+
+// ── xterm-headless 回放 ──
+// write 是异步分块解析的：必须等回调而不是固定 sleep，否则慢机器上
+// 断言读到解析了一半的屏幕。
+const term = new XTerm({ cols: COLS, rows: ROWS, scrollback: 500, allowProposedApi: true })
+await writeParsed(term, byteStream)
+
+// 扫可见视口（baseY 起的 ROWS 行）。裸 getLine(0..ROWS) 在有 scrollback 时
+// 读的是缓冲区开头：混入已滚出的旧行、漏掉视口底部 baseY 行——残影恰恰
+// 最容易出现在底部 spinner 附近。
+const lines = viewportLines(term, ROWS)
+
+// ── 残影检测 ──
+const problems: string[] = []
+let spinnerRows = 0
+lines.forEach((line, y) => {
+  // spinner 状态行以 "… · thinking)" 收尾；裸词 'thinking' 不能当指纹——
+  // 启动 tip 是 Math.random 抽的，100 条里 4 条文案含 'thinking'
+  // （如“工具卡/thinking/摘要点击展开”），抽中即误报（约 4%/次的假 flaky）。
+  if (/·\s*thinking\)/.test(line)) spinnerRows++
+  if (/tthinking/.test(line)) problems.push(`row ${y}: 叠字残影 "tthinking" → ${JSON.stringify(line)}`)
+  // 孤立 't'：两侧为空白/行首行尾（灌入文本与全部 tip 文案均不含孤立
+  // ASCII 't'，出现即残影）
+  const m = line.match(/(?:^|\s)t(?=\s|$)/)
+  if (m) problems.push(`row ${y}: 孤立残影 't' → ${JSON.stringify(line)}`)
+})
+if (spinnerRows !== 1) {
+  problems.push(`spinner 状态行（"· thinking)" 结尾）数为 ${spinnerRows}（期望 1）`)
+}
+
+if (problems.length > 0) {
+  const dump = '/tmp/repro-thinking-frames.bin'
+  fs.writeFileSync(dump, byteStream)
+  console.error(`FAIL: thinking spinner 残影回归（帧字节已存 ${dump}）`)
+  console.error(`=== xterm-headless replay: ${COLS}x${ROWS} (viewport baseY=${term.buffer.active.baseY}) ===`)
+  lines.forEach((line, y) => console.error(`${String(y).padStart(3)}|${line}`))
+  for (const p of problems) console.error(`- ${p}`)
+  process.exit(1)
+}
+
+console.log(`PASS: thinking spinner 无残影（${COLS}x${ROWS}，spinner 状态行恰 1 行）`)
+process.exit(0)

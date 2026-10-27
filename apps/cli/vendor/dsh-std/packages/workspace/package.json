@@ -1,0 +1,26 @@
+{
+  "name": "@dsh-std/workspace",
+  "version": "0.1.0",
+  "license": "MIT",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": { "types": "./lib/index.d.ts", "default": "./lib/index.js" },
+    "./catalog": { "types": "./lib/catalog.d.ts", "default": "./lib/catalog.js" },
+    "./sessions": { "types": "./lib/sessions.d.ts", "default": "./lib/sessions.js" }
+  },
+  "files": ["lib", "CHANGELOG.md"],
+  "scripts": {
+    "build": "pnpm run typecheck && tsdown",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@dsh-std/connection": "workspace:*",
+    "@dsh-std/core": "workspace:*",
+    "@dsh-std/manifest": "workspace:*",
+    "@dsh-std/session": "workspace:*"
+  },
+  "engines": { "node": "^22.19 || >=24" }
+}

@@ -1,0 +1,185 @@
+name: CLI source and package
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  cli:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            node: 22
+          - os: ubuntu-latest
+            node: 24
+          - os: macos-latest
+            node: 24
+          - os: windows-latest
+            node: 24
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.26.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+          cache-dependency-path: apps/cli/pnpm-lock.yaml
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11.10'
+      - run: node docs/releases/verify-fixture-lineage.mjs
+      - run: node --test docs/releases/provenance-candidate-status.test.mjs
+      - run: node --test docs/releases/verify-clean-initial-import.test.mjs
+      - run: pnpm --dir apps/cli install --frozen-lockfile --ignore-scripts
+      - run: pnpm --dir apps/cli run compile
+      - run: pnpm --dir apps/cli run verify:ink-reconciler-contract
+      - run: pnpm --dir apps/cli run verify:dom-tree-mutations
+      - run: pnpm --dir apps/cli run verify:ink-node-state
+      - run: pnpm --dir apps/cli run verify:ink-measurement-contract
+      - run: pnpm --dir apps/cli run verify:text-wrap-geometry
+      - run: pnpm --dir apps/cli run verify:text-measure-cache
+      - run: pnpm --dir apps/cli run verify:pointer-events
+      - run: pnpm --dir apps/cli run verify:drag-protocol
+      - run: pnpm --dir apps/cli run verify:resize-reflow
+      - run: pnpm --dir apps/cli run verify:tool-tooltip-gating
+      - run: pnpm --dir apps/cli run verify:agent-view-ui
+      - run: pnpm --dir apps/cli run verify:display-settings
+      - run: node --test apps/cli/scripts/package-boundary.test.mjs
+      - run: node --test apps/cli/scripts/bundled-notices.test.mjs
+      - run: node --test apps/cli/scripts/pack-flagqai.test.mjs
+      - run: node --test apps/cli/scripts/npm-cli.test.mjs
+      - run: node --test apps/cli/scripts/quantum-preflight.test.mjs apps/cli/scripts/quantum-preflight-fixture.test.mjs
+      - run: node --test apps/cli/scripts/quantum-route.test.mjs
+      - run: node --test apps/cli/scripts/guide-sources.test.mjs
+      - run: node apps/cli/scripts/verify-guide.mjs
+      - run: node --test docs/releases/registry-license-inventory.test.mjs
+      - run: node --test docs/releases/release-file-inventory.test.mjs
+      - run: node apps/cli/scripts/verify-installed-runtime.mjs
+      - run: pnpm --dir apps/cli run verify:package
+      - name: Inventory private release candidate files
+        run: node docs/releases/release-file-inventory.mjs --out "${{ runner.temp }}/release-file-inventory.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-file-inventory-${{ matrix.os }}-node-${{ matrix.node }}
+          path: ${{ runner.temp }}/release-file-inventory.json
+          if-no-files-found: ignore
+      - run: pnpm --dir apps/cli run verify:local-server-bundle
+      - run: pnpm --dir apps/cli run verify:scientific-evidence
+      - run: pnpm --dir apps/cli run verify:distribution
+      - name: Install macOS PTY test driver
+        if: matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          npm install --no-save --prefix "$RUNNER_TEMP/flagqai-pty-harness" node-pty@1.1.0 --no-audit --no-fund
+          cd "$RUNNER_TEMP/flagqai-pty-harness/node_modules/node-pty"
+          node scripts/prebuild.js || node "$(npm root -g)/npm/node_modules/node-gyp/bin/node-gyp.js" rebuild
+          node scripts/post-install.js
+          node - <<'NODE'
+          const fs = require('node:fs')
+          const path = require('node:path')
+          const pty = require(process.cwd())
+          if (typeof pty.spawn !== 'function') throw new Error('node-pty spawn is unavailable')
+          const helper = path.join(process.cwd(), 'prebuilds', `${process.platform}-${process.arch}`, 'spawn-helper')
+          if (process.platform === 'darwin') {
+            if (!fs.existsSync(helper)) throw new Error(`node-pty spawn helper is missing: ${helper}`)
+            fs.chmodSync(helper, fs.statSync(helper).mode | 0o100)
+          }
+          const child = pty.spawn(process.execPath, ['-e', "process.stdout.write('PTY_READY')"], { cwd: process.cwd(), env: process.env })
+          let output = ''
+          child.onData(data => { output += data })
+          child.onExit(({ exitCode }) => {
+            if (exitCode !== 0 || !output.includes('PTY_READY')) {
+              console.error(`node-pty smoke failed: exit=${exitCode}, output=${output}`)
+              process.exitCode = 1
+            }
+          })
+          NODE
+      - name: Verify Linux PTY utility
+        if: matrix.os == 'ubuntu-latest' && matrix.node == 22
+        run: script --version
+      - name: Verify clean Unix install and interactive TUI
+        if: matrix.os != 'windows-latest' && (matrix.node == 22 || matrix.os == 'macos-latest')
+        env:
+          FLAGQAI_ACCEPTANCE_PTY_MODULE: ${{ matrix.os == 'ubuntu-latest' && format('{0}/apps/cli/scripts/linux-script-pty.cjs', github.workspace) || format('{0}/flagqai-pty-harness/node_modules/node-pty', runner.temp) }}
+          FLAGQAI_ACCEPTANCE_PROVIDER_WIZARD: '1'
+          FLAGQAI_ACCEPTANCE_AGENT_TURN: '1'
+          FLAGQAI_ACCEPTANCE_SCIENCE_SDK: '1'
+          FLAGQAI_ACCEPTANCE_PERMISSION_EVIDENCE: '1'
+          FLAGQAI_ACCEPTANCE_QUANTUM_FIXTURE: '1'
+          FLAGQAI_ACCEPTANCE_LOCAL_INK_REAL_HOST: ${{ matrix.os == 'macos-latest' && '1' || '0' }}
+        run: node apps/cli/scripts/verify-installed-first-run.mjs
+        timeout-minutes: 15
+      - name: Install Windows PTY test driver
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $driver = Join-Path $env:RUNNER_TEMP 'flagqai-pty-harness'
+          npm install --no-save --prefix $driver node-pty@1.1.0 --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Push-Location (Join-Path $driver 'node_modules/node-pty')
+          try {
+            node scripts/prebuild.js
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            node scripts/post-install.js
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          } finally { Pop-Location }
+      - name: Install pinned uv for Windows startup
+        if: matrix.os == 'windows-latest'
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          version: '0.12.16'
+      - name: Verify clean Windows install and interactive TUI
+        if: matrix.os == 'windows-latest'
+        env:
+          FLAGQAI_ACCEPTANCE_PTY_MODULE: ${{ runner.temp }}/flagqai-pty-harness/node_modules/node-pty
+          FLAGQAI_ACCEPTANCE_PROVIDER_WIZARD: '1'
+          FLAGQAI_ACCEPTANCE_AGENT_TURN: '1'
+          FLAGQAI_ACCEPTANCE_SCIENCE_SDK: '1'
+          FLAGQAI_ACCEPTANCE_PERMISSION_EVIDENCE: '1'
+          FLAGQAI_ACCEPTANCE_QUANTUM_FIXTURE: '1'
+        run: node apps/cli/scripts/verify-installed-first-run.mjs
+        timeout-minutes: 15
+      - name: Install pinned uv for Ubuntu Harness acceptance
+        if: matrix.os == 'ubuntu-latest' && matrix.node == 22
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          version: '0.12.16'
+      - name: Verify installed Harness interactions and Bell task
+        if: matrix.os == 'ubuntu-latest' && matrix.node == 22
+        run: node apps/cli/scripts/verify-quantum-task.mjs --clean-install --interactions --todo-policy
+        timeout-minutes: 15
+      - name: Install pinned uv for FlagQuantum MCP acceptance
+        if: matrix.os == 'macos-latest'
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          version: '0.12.16'
+      - name: Verify pinned FlagQuantum Bell, trainer VQE, research VQE and Harness interactions
+        if: matrix.os == 'macos-latest'
+        run: node apps/cli/scripts/verify-quantum-task.mjs --clean-install --real-mcp --vqe --research-vqe --interactions
+        timeout-minutes: 20
+      - name: Verify installed Anthropic-compatible gateway interactions
+        if: matrix.os == 'ubuntu-latest' && matrix.node == 22
+        run: node apps/cli/scripts/verify-quantum-task.mjs --clean-install --gateway --interactions --todo-policy
+        timeout-minutes: 15
+      - run: pnpm --dir apps/cli run verify:plugin-panels
+      - run: pnpm --dir apps/cli run verify:panel-selection
+      - run: pnpm --dir apps/cli run verify:panel-registration
+      - run: pnpm --dir apps/cli run verify:panel-reentrancy
+      - run: pnpm --dir apps/cli run verify:host-panel-events
+      - run: pnpm --dir apps/cli run verify:secret-export
+      - run: pnpm --dir apps/cli run verify:question-lifetime
+      - run: pnpm --dir apps/cli run verify:science-error-redaction
+      - run: pnpm --dir apps/cli run verify:jobs-cache-lifetime
+      - run: pnpm --dir apps/cli run verify:jobs-detach-cleanup
+      - run: pnpm --dir apps/cli run verify:session-reset-hygiene
+      - run: pnpm --dir apps/cli run verify:standalone-update-checksum

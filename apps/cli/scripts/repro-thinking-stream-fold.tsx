@@ -1,0 +1,190 @@
+/**
+ * repro-thinking-stream-fold — 流式 thinking 行三行预览/全文切换回归。
+ *
+ * 用户报告：thinkingFold=preview 时默认能看到三行，但点击后正文变成
+ * 0 行，只剩 spinner 头；期望点击展开全文，再点收回三行预览。
+ *
+ * 场景：fullscreen Chat + streaming reasoning 行（thinkingFold=preview），
+ * 注入 SGR 点击：
+ *   1. 初始：固定三行最新思考预览；
+ *   2. 点击头部 → 展开完整正文；
+ *   3. 再点 → 收回三行预览（而不是隐藏正文）；
+ *   4. full 默认全文，点击同样只收为三行预览；
+ *   5. 步骤落定后保持全文，但标题立即停止旋转，turn 结束再折叠。
+ *
+ * 运行：node --import tsx/esm scripts/repro-thinking-stream-fold.tsx
+ */
+process.env.FORCE_COLOR = '3'
+process.env.FLAGQAI_THEME = 'dark'
+process.env.FLAGQAI_LANG = 'zh'
+
+const [{ PassThrough, Writable }, React, { Terminal: XTerm }, { render, AlternateScreen, Text }, { Chat }, { QuestionStore }, { LOCAL_COMMANDS }, { settled }, { THINKING_SPINNER_FRAMES, THINKING_SETTLED_MARKER }, { t }] = await Promise.all([
+  import('node:stream'),
+  import('react'),
+  import('@xterm/headless'),
+  import('../src/ui.js'),
+  import('../src/screens/Chat.js'),
+  import('../src/dsh-adapter/questions.js'),
+  import('../src/commands.js'),
+  import('./lib/term-test.mjs'),
+  import('../src/terminal-utils/figures.js'),
+  import('../src/i18n.js'),
+])
+
+const COLS = 100, ROWS = 40
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
+let failed = 0
+function check(name: string, ok: boolean, extra = '') {
+  console.log(`${ok ? 'PASS' : 'FAIL'}: ${name}${extra ? `  (${extra})` : ''}`)
+  if (!ok) failed += 1
+}
+
+const term = new XTerm({ cols: COLS, rows: ROWS, scrollback: 0, allowProposedApi: true })
+class FakeStdout extends Writable {
+  columns = COLS; rows = ROWS; isTTY = true
+  _write(chunk: unknown, _e: BufferEncoding, cb: () => void) { term.write(String(chunk), cb) }
+}
+class FakeStderr extends Writable { isTTY = true; _write(_c: unknown, _e: BufferEncoding, cb: () => void) { cb() } }
+class FakeStdin extends PassThrough {
+  isTTY = true
+  setRawMode() { return this }
+  ref() { return this }
+  unref() { return this }
+}
+const stdin = new FakeStdin(), stdout = new FakeStdout(), stderr = new FakeStderr()
+
+const BODY = Array.from({ length: 12 }, (_, i) => `推理第${i}行：探索未至之境`).join('\n')
+const listeners = new Set<() => void>()
+const channel: any = {
+  // 探针确定性：鲸鱼欢迎期闲置动画（默认开）不进本探针的测量窗口。
+  whaleIdle: false,
+  version: 0,
+  rows: [{ id: 1, kind: 'reasoning', text: BODY, streaming: true }],
+  status: 'idle',
+  sessionTitle: 'probe',
+  agentId: 'probe',
+  model: 'deepseek-v4-flash',
+  provider: 'deepseek',
+  reasoningEffort: 'max',
+  effortLevels: [],
+  tokens: { input: 0, output: 0 },
+  cwd: '/tmp/demo',
+  displayCwd: '/tmp/demo',
+  gitBranch: 'main',
+  working: true,
+  spinnerMode: 'requesting',
+  responseChars: 0,
+  activeToolCount: 0,
+  turnStart: 0,
+  pending: [],
+  commandList: LOCAL_COMMANDS,
+  notifications: [],
+  mode: { plan: false, sandbox: undefined },
+  activityFrames: 'moon8',
+  agentPreset: undefined,
+  thinkingFold: 'preview',
+  subscribe(cb: () => void) { listeners.add(cb); return () => listeners.delete(cb) },
+  submit: () => {},
+  cancel: () => {},
+  clear: () => {},
+  notify: () => {},
+  listModels: () => Promise.resolve([]),
+  listSessions: () => [],
+  setResumeTarget: () => {},
+  loadOlder: () => {},
+  mcpStatus: () => [],
+  pushLocal: () => {},
+  commandCompletions: () => [],
+}
+
+const inst = await render(
+  <AlternateScreen>
+    {/* CI once picked the random startup tip containing “思考” as the
+        clickable header. Keep that distractor present on EVERY run. */}
+    <Text>提示：Ctrl+O 展开/收起思考全文与工具详情</Text>
+    <Chat channel={channel} questionStore={new QuestionStore()} />
+  </AlternateScreen>,
+  { stdout: stdout as any, stdin: stdin as any, stderr: stderr as any, exitOnCtrlC: false, patchConsole: false },
+)
+await sleep(600) // 固定窗:pacing 等首帧上屏，无单一可轮询锚点
+
+const lines = () => {
+  const buf = term.buffer.active
+  return Array.from({ length: ROWS }, (_, y) => buf.getLine(buf.baseY + y)?.translateToString(true) ?? '')
+}
+const bodyLines = (ls: string[]) => ls.filter(l => l.includes('推理第')).length
+// Match the whole streaming header, not a startup tip that mentions thinking.
+const thinkingHeaders = new Set(THINKING_SPINNER_FRAMES.map(frame => `${frame} ${t('thinking-label')}…`.trim()))
+const headerRow = (ls: string[]) => ls.findIndex(line => thinkingHeaders.has(line.trim()))
+// 点击后的重绘在高负载（CI、并行回归）下可能晚于任何固定等待：按结果轮询，
+// 超时才判失败（term-test 的 settled 就是这条语义）。
+const waitFor = (pred: () => boolean, ms = 3000): Promise<boolean> => settled(pred, { timeoutMs: ms })
+
+await waitFor(() => headerRow(lines()) >= 0 && bodyLines(lines()) === 3)
+let ls = lines()
+const headerIdx = headerRow(ls)
+check('含“思考”的提示行不会被识别为折叠头', headerRow([ls[0] ?? '']) === -1 && headerIdx > 0)
+check('流式思考头行可见', headerIdx >= 0, headerIdx >= 0 ? `行${headerIdx}` : '未找到')
+check('默认三行预览', bodyLines(ls) === 3, `body=${bodyLines(ls)}`)
+check('预览跟随最新三行', ls.some(line => line.includes('推理第11行')), '应包含推理第11行')
+
+// 点击头行 → 展开全文。
+stdin.write(`\x1b[<0;6;${headerIdx + 1}M`)
+stdin.write(`\x1b[<0;6;${headerIdx + 1}m`)
+await waitFor(() => bodyLines(lines()) >= 10)
+ls = lines()
+check('点击后展开完整正文', bodyLines(ls) >= 10, `body=${bodyLines(ls)}`)
+
+// 固定窗:墙钟 再点同一行 → 收回三行预览。先等过 500ms 多击窗：同格快连两次会被判
+// 双击选词，这是既有语义——快速连点归选区，不归折叠。
+await sleep(600)
+const headerIdx2 = headerRow(ls)
+stdin.write(`\x1b[<0;6;${headerIdx2 + 1}M`)
+stdin.write(`\x1b[<0;6;${headerIdx2 + 1}m`)
+await waitFor(() => bodyLines(lines()) === 3)
+ls = lines()
+check('再点收回三行预览', bodyLines(ls) === 3, `body=${bodyLines(ls)}`)
+check('收起后不会隐藏全部正文', bodyLines(ls) > 0, `body=${bodyLines(ls)}`)
+
+// full 只是默认值相反：仍然只在全文/三行预览间切换，不再进入 0 行正文。
+channel.thinkingFold = 'full'
+channel.version += 1
+for (const listener of listeners) listener()
+await waitFor(() => bodyLines(lines()) >= 10)
+ls = lines()
+check('full 设置默认展开全文', bodyLines(ls) >= 10, `body=${bodyLines(ls)}`)
+
+await sleep(600) // 固定窗:墙钟 同上，等过 500ms 多击判定窗再点第二次
+const fullHeaderIdx = headerRow(ls)
+stdin.write(`\x1b[<0;6;${fullHeaderIdx + 1}M`)
+stdin.write(`\x1b[<0;6;${fullHeaderIdx + 1}m`)
+await waitFor(() => bodyLines(lines()) === 3)
+ls = lines()
+check('full 设置点击后收为三行预览', bodyLines(ls) === 3, `body=${bodyLines(ls)}`)
+
+// 再展开，然后模拟当前 step 已落定、整个 turn 仍在工具阶段。
+await sleep(600) // 固定窗:墙钟 同上，等过 500ms 多击判定窗再点第二次
+const fullPreviewHeaderIdx = headerRow(ls)
+stdin.write(`\x1b[<0;6;${fullPreviewHeaderIdx + 1}M`)
+stdin.write(`\x1b[<0;6;${fullPreviewHeaderIdx + 1}m`)
+await waitFor(() => bodyLines(lines()) >= 10)
+const reasoningRow = channel.rows[0]
+reasoningRow.streaming = false
+reasoningRow.thinkingOpen = true
+reasoningRow.durationMs = 35_000
+channel.version += 1
+for (const listener of listeners) listener()
+await waitFor(() => lines().some(line => line.includes(`${THINKING_SETTLED_MARKER} ${t('thinking-label')} · 35s`)))
+ls = lines()
+check('步骤落定后标题改为静态标记', headerRow(ls) === -1)
+check('步骤落定后 full 正文仍保持展开', bodyLines(ls) >= 10, `body=${bodyLines(ls)}`)
+
+reasoningRow.thinkingOpen = false
+channel.version += 1
+for (const listener of listeners) listener()
+await waitFor(() => bodyLines(lines()) === 0)
+check('turn 结束后 full 正文折叠', bodyLines(lines()) === 0, `body=${bodyLines(lines())}`)
+
+await inst.unmount()
+console.log(failed === 0 ? '\nALL PASS' : `\n${failed} 项失败`)
+process.exit(failed === 0 ? 0 : 1)

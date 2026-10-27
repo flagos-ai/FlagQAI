@@ -1,0 +1,306 @@
+/** Regression checks for the official Minimal preset (one persistent shell
+ * tool) and the host-layer ask_user_question carve-out. Run against compiled
+ * output. */
+
+import assert from 'node:assert/strict'
+import { createChannel } from '../lib/types/dsh-adapter/channel.js'
+import {
+  composePreset,
+  filterMinimalPresetTools,
+  presetHidesHostAskTool,
+  resolvePersistedPreset,
+  runningPresetOf,
+} from '../lib/types/dsh-adapter/presets.js'
+import { settled } from './lib/term-test.mjs'
+import { setLang } from '../lib/types/i18n.js'
+import { withTaskProgressPolicy } from '../lib/types/dsh-adapter/task-progress-policy.js'
+
+// The official Minimal composition
+// (`@deepseek-ai/dsh-web-app/presets/minimal.patch.yml`: `persona` +
+// `persistent-shell`) exposes EXACTLY ONE tool — the persistent shell, which is
+// `bash` on POSIX and `pwsh` on Windows. `str_replace_editor` became opt-in in
+// 0.1.3-alpha.2 and is not part of it; neither is the host-mounted
+// ask_user_question.
+const shell = { name: process.platform === 'win32' ? 'pwsh' : 'bash' }
+const ask = { name: 'ask_user_question' }
+const assembly = {
+  sections: [],
+  contexts: [],
+  tools: [shell, ask],
+  variables: {},
+}
+
+const minimal = filterMinimalPresetTools(assembly, 'minimal')
+assert.deepEqual(minimal.tools.map(tool => tool.name), [shell.name])
+assert.notEqual(minimal, assembly)
+assert.equal(presetHidesHostAskTool('minimal'), true)
+
+for (const preset of ['standard', 'ptc', 'cordis', 'liangshen', undefined]) {
+  assert.equal(filterMinimalPresetTools(assembly, preset), assembly)
+  assert.equal(presetHidesHostAskTool(preset), false)
+}
+// A user preset that merely mentions the shell keeps the host tool: only the
+// official id is carved out (see presets.presetHidesHostAskTool).
+assert.equal(filterMinimalPresetTools(assembly, 'minimal-copy'), assembly)
+
+const shellOnly = { ...assembly, tools: [shell] }
+assert.equal(filterMinimalPresetTools(shellOnly, 'minimal'), shellOnly)
+
+// The FlagQAI guidance is visible only when Harness exposes todo_write.
+const todo = { name: 'todo_write' }
+const withTodo = { ...assembly, sections: [{ name: 'base', text: 'Base prompt' }], tools: [shell, todo] }
+const guided = withTaskProgressPolicy(withTodo)
+assert.equal(guided.sections.length, 2)
+assert.match(guided.sections[1].text, /each new nontrivial user request/)
+assert.match(guided.sections[1].text, /previous task's list is complete/)
+assert.match(guided.sections[1].text, /before starting substantive work/)
+assert.match(guided.sections[1].text, /Skip the list for simple questions/)
+assert.equal(withTaskProgressPolicy(guided), guided)
+assert.equal(withTaskProgressPolicy(assembly), assembly)
+assert.equal(withTaskProgressPolicy({ ...withTodo, sections: [{ name: 'plan:policy', text: 'Stay in plan mode.' }] }).sections.length, 1)
+assert.equal(withTaskProgressPolicy({ ...withTodo, sections: [{ name: 'plan:policy', text: '' }] }).sections.length, 2)
+assert.deepEqual(withTaskProgressPolicy({ ...guided, tools: [shell] }).sections,
+  withTodo.sections, 'a later minimal-preset filter must remove stale Todo guidance')
+assert.deepEqual(withTaskProgressPolicy({ ...guided, sections: [...guided.sections, { name: 'plan:policy', text: 'Stay in plan mode.' }] }).sections.map(section => section.name),
+  ['base', 'plan:policy'], 'plan mode must remove guidance added by an earlier assembly handler')
+
+const legacyHeaderSession = {
+  header: { agentPreset: 'code' },
+  events: [],
+}
+const legacyEventSession = {
+  header: { agentPreset: 'standard' },
+  events: [{ type: 'agent-preset/selected', data: { agentPreset: 'code' } }],
+}
+const malformedLatestEventSession = {
+  header: { agentPreset: 'standard' },
+  events: [
+    { type: 'agent-preset/selected', data: { agentPreset: 'code' } },
+    { type: 'agent-preset/selected', data: null },
+  ],
+}
+assert.equal(runningPresetOf(legacyHeaderSession), 'code')
+assert.equal(runningPresetOf(legacyEventSession), 'code')
+assert.equal(runningPresetOf(malformedLatestEventSession), 'code')
+assert.equal(legacyHeaderSession.header.agentPreset, 'code')
+assert.equal(legacyEventSession.events[0].data.agentPreset, 'code')
+
+function presetContext(available, broken = new Set()) {
+  const attempts = []
+  const service = {
+    defaultId: 'standard',
+    async list() {
+      return [...available].map(id => ({ id, trust: 'system' }))
+    },
+    async resolve(id) {
+      attempts.push(id)
+      if (broken.has(id)) throw new Error(`broken ${id} preset`)
+      if (!available.has(id)) throw new Error(`missing ${id}`)
+      return { id, trust: 'system' }
+    },
+    async mount() {},
+    async recompose() { throw new Error('not used') },
+  }
+  return {
+    attempts,
+    ctx: {
+      get(name) {
+        if (name !== 'agentPresets') return undefined
+        return service
+      },
+      logger: { warn() {} },
+    },
+  }
+}
+
+const alphaRoster = presetContext(new Set(['standard', 'ptc']))
+const alphaComposition = await composePreset(alphaRoster.ctx, 'code')
+assert.deepEqual(alphaRoster.attempts, ['ptc'])
+assert.equal(alphaComposition.agentPreset, 'ptc')
+assert.equal(legacyHeaderSession.header.agentPreset, 'code')
+
+const rcRoster = presetContext(new Set(['standard', 'code']))
+const rcComposition = await composePreset(rcRoster.ctx, 'code')
+assert.deepEqual(rcRoster.attempts, ['code'])
+assert.equal(rcComposition.agentPreset, 'code')
+
+const rcNewName = presetContext(new Set(['standard', 'code']))
+const rcFallback = await composePreset(rcNewName.ctx, 'ptc')
+assert.deepEqual(rcNewName.attempts, ['code'])
+assert.equal(rcFallback.agentPreset, 'code')
+
+const brokenExact = presetContext(new Set(['standard', 'code', 'ptc']), new Set(['code']))
+const brokenComposition = await composePreset(brokenExact.ctx, 'code')
+assert.deepEqual(brokenExact.attempts, ['code'])
+assert.deepEqual(brokenComposition, {})
+
+const persistedPreset = await resolvePersistedPreset({
+  get(name) {
+    if (name !== 'sessionPersistence') return undefined
+    return { async load() { return { meta: legacyHeaderSession.header, events: legacyHeaderSession.events } } }
+  },
+}, 'legacy-session')
+assert.equal(persistedPreset, 'code')
+
+let directResolveId
+const directChannel = createChannel({
+  on() { return () => {} },
+  get(name) {
+    if (name !== 'agentPresets') return undefined
+    return {
+      defaultId: 'standard',
+      async list() { return [] },
+      async resolve(id) {
+        directResolveId = id
+        if (id !== 'ptc') throw new Error(`missing ${id}`)
+        return { id, trust: 'system' }
+      },
+      async mount() {},
+      async recompose() { throw new Error('not used') },
+    }
+  },
+  logger: { warn() {} },
+}, {
+  id: 'preset-alias-agent',
+  status: 'idle',
+  session: {
+    id: 'preset-alias-session',
+    seq: 1,
+    events: [{
+      type: 'agent-preset/selected',
+      seq: 1,
+      time: 1,
+      data: { agentPreset: 'code' },
+    }],
+  },
+  ctx: { on() { return () => {} } },
+  followup() {},
+  steer() {},
+}, {
+  model: 'deepseek-chat',
+  cwd: '/tmp',
+  provider: 'deepseek',
+  activity: false,
+  agentPreset: 'ptc',
+})
+assert.equal(directChannel.agentPreset, 'ptc')
+assert.equal(directChannel.rows.some(row => row.text.includes('ptc')), true)
+assert.equal(directChannel.rows.some(row => row.text.includes('code')), false)
+assert.equal(await directChannel.switchPreset('ptc'), true)
+assert.equal(directResolveId, 'ptc')
+
+// Display localization: the 0.1.2 roster id `ptc` must resolve the en
+// dictionary surface keyed under the legacy `code` id (preset-name-code /
+// preset-desc-code), never the Chinese roster copy — same bug as issue #8.
+setLang('en')
+const displayChannel = createChannel({
+  on() { return () => {} },
+  get(name) {
+    if (name !== 'agentPresets') return undefined
+    return {
+      defaultId: 'standard',
+      async list() {
+        return [
+          { id: 'standard', trust: 'system', name: '标准模式', description: '标准描述' },
+          { id: 'ptc', trust: 'system', name: 'PTC 模式', description: 'PTC 描述' },
+          { id: 'minimal', trust: 'system', name: '极简模式', description: '极简描述' },
+        ]
+      },
+      async resolve() { throw new Error('not used') },
+      async mount() {},
+      async recompose() { throw new Error('not used') },
+    }
+  },
+  logger: { warn() {} },
+}, {
+  id: 'preset-display-agent',
+  status: 'idle',
+  session: { id: 'preset-display-session', seq: 1, events: [] },
+  ctx: { on() { return () => {} } },
+  followup() {},
+  steer() {},
+}, {
+  model: 'deepseek-chat',
+  cwd: '/tmp',
+  provider: 'deepseek',
+  activity: false,
+  agentPreset: 'ptc',
+})
+const displayList = await displayChannel.listPresets()
+const ptcOption = displayList.find(preset => preset.id === 'ptc')
+assert.equal(ptcOption.name, 'PTC')
+assert.equal(ptcOption.description, 'Everything standard mode offers, with tools exposed through the Code Mode SDK so the model composes multi-step operations in one TypeScript program.')
+assert.equal(displayList.find(preset => preset.id === 'standard').name, 'Standard')
+assert.equal(displayList.find(preset => preset.id === 'minimal').name, 'Minimal')
+setLang('zh')
+
+const bundledSkills = [{
+  name: 'audit',
+  description: 'Audit code',
+  invocation: { modelInvocable: true, userInvocable: true },
+  source: 'bundled',
+}, {
+  name: 'manual-only',
+  description: 'Manual only',
+  invocation: { modelInvocable: false, userInvocable: true },
+  source: 'bundled',
+}]
+
+async function loadedContextWith(tools, complete = true) {
+  let unscopedReads = 0
+  const skills = {
+    async list() {
+      unscopedReads += 1
+      return bundledSkills
+    },
+    async snapshot(options) {
+      if (options?.scope !== agent || options.cwd !== '/tmp') {
+        unscopedReads += 1
+        return { skills: [], complete: true }
+      }
+      return { skills: bundledSkills, complete }
+    },
+  }
+  const ctx = {
+    on: () => () => {},
+    get(name) {
+      if (name === 'systemPrompt') {
+        return { assemble: async () => ({ sections: [], contexts: [], tools, variables: {} }) }
+      }
+      if (name === 'skills') return skills
+      return undefined
+    },
+    logger: { warn() {} },
+  }
+  const agent = {
+    id: 'a1',
+    status: 'idle',
+    session: { id: 's1', seq: 0, events: [] },
+    ctx: { on: () => () => {} },
+    followup() {},
+    steer() {},
+  }
+  const channel = createChannel(ctx, agent, {
+    model: 'deepseek-chat', cwd: '/tmp', provider: 'deepseek', activity: false,
+  })
+  assert.equal(await settled(() => channel.loadedContext !== undefined), true)
+  return { context: channel.loadedContext, unscopedReads }
+}
+
+// The Minimal-shaped catalogs below keep the real one-tool shape (the
+// persistent shell) at the front; the skill catalog read is decided by the
+// `skill` tool, not by the shell.
+const minimalContext = await loadedContextWith([shell])
+assert.deepEqual(minimalContext.context.skills, [])
+assert.equal(minimalContext.unscopedReads, 0)
+
+const standardContext = await loadedContextWith([shell, { name: 'skill' }])
+assert.deepEqual(standardContext.context.skills, [{ name: 'audit', description: 'Audit code' }])
+assert.equal(standardContext.unscopedReads, 0)
+
+const incompleteContext = await loadedContextWith([shell, { name: 'skill' }], false)
+assert.deepEqual(incompleteContext.context.skills, [])
+assert.deepEqual(incompleteContext.context.tools.map(tool => tool.name), [shell.name, 'skill'])
+assert.equal(incompleteContext.unscopedReads, 0)
+
+console.log('minimal preset tool filtering verified')

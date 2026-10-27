@@ -1,0 +1,426 @@
+{
+  "baselineCommit": "b2f408740a544f92a1e6e5ca8e07017793cabd63",
+  "importCommit": "c2eee95218d1decfce138f7d31ef7099cc391d00",
+  "scope": "Historical marker screen, not an independent rights classification",
+  "expectedHistoricalCcPortCount": 57,
+  "upstreamAuditExclusions": [
+    "scripts/perf-probe.cjs",
+    "src/types/cc.d.ts"
+  ],
+  "entries": [
+    {
+      "path": "scripts/perf-probe.cjs",
+      "baselineBlob": "43f914fe94d36dd6d8e01c299a878a9f88857b27",
+      "markers": [
+        "compatibility_environment_name"
+      ]
+    },
+    {
+      "path": "src/cc/figures.ts",
+      "baselineBlob": "d7207ad751fd2f1436f52ccf6236bc303f75d4c2",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/cc/format.ts",
+      "baselineBlob": "37fe4d81d4727fec355e9884d8ea242280afb24c",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/cc/markdown.ts",
+      "baselineBlob": "fb6dc05d98fe1dd739fcdf3c6009dd974cd96317",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/cc/terminal.ts",
+      "baselineBlob": "ec231c59421ef7b33588154d92e92249160b1b74",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/components/CommandSuggestions.tsx",
+      "baselineBlob": "f7e7c19850e74808fb2c2429954026edeea52535",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/components/HelpMenu.tsx",
+      "baselineBlob": "35007d73b987ac59afc89b855c0b2c3212f7cbc9",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/components/InterruptedByUser.tsx",
+      "baselineBlob": "60ef4ade32efb6d72d03390e524f39c9991de3a8",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/components/Markdown.tsx",
+      "baselineBlob": "97e4f510229649aab5b34d66841791e47a55fbb1",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/components/MarkdownTable.tsx",
+      "baselineBlob": "46aa13641382599e2a0cd32d326129c90f4ab8a1",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/components/PromptInput.tsx",
+      "baselineBlob": "38f74f535bf0dd38ca048f4659d398157c0508f2",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/components/Spinner/GlimmerMessage.tsx",
+      "baselineBlob": "d27141540ef31604765d03c476f98a2b18f55719",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/components/Spinner/SpinnerAnimationRow.tsx",
+      "baselineBlob": "bd727c9288fcb6d036805fce9f15793aa06aaf02",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/components/Spinner/SpinnerGlyph.tsx",
+      "baselineBlob": "e91af1d6f0558d8798f7d06d7f815eeee780127c",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/components/Spinner/spinnerUtils.ts",
+      "baselineBlob": "c8bcf0e45a55a9af229416406a6ec07cb50f2006",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/components/Spinner/useStalledAnimation.ts",
+      "baselineBlob": "20883466e61b8d6b897ae3440bbc2e0c2807ff89",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/components/StreamingMarkdown.tsx",
+      "baselineBlob": "fa34bcf1f1d96baff03061601d91f56dbf2d04a5",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/components/ThinkingToggle.tsx",
+      "baselineBlob": "25e82a17395db60a5905f5f3e861d7ceaa2441ed",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/components/ToolUseLoader.tsx",
+      "baselineBlob": "63ebd24a41ad81492e506d043f4bfb651867c36e",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/components/WorkingSpinner.tsx",
+      "baselineBlob": "b8afd5cb4421ae9dfe8189c2251f6ce6f448e86d",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/components/design-system/Byline.tsx",
+      "baselineBlob": "e0a9a64fb8ca7243ba732ce7a7fc3260c4f7140e",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/components/design-system/Divider.tsx",
+      "baselineBlob": "808a975d153fbb8cc810d8d6d60bf55a7a73d482",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/components/design-system/KeyboardShortcutHint.tsx",
+      "baselineBlob": "a36ab24876ed20b55766583a82207f8d8813339b",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/components/design-system/ListItem.tsx",
+      "baselineBlob": "191f6ea2d6b85fd60a7ae57b4e6e2f42961204f7",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/components/design-system/LoadingState.tsx",
+      "baselineBlob": "7a778b959c661d75ca8d37f46cc90f172ee71fd3",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/components/design-system/Pane.tsx",
+      "baselineBlob": "44e62c38e27236f23ab3a637822ba8ec74831b02",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/components/design-system/ProgressBar.tsx",
+      "baselineBlob": "4327edbbd272343e1e6bfb9890715b62c187853c",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/components/design-system/StatusIcon.tsx",
+      "baselineBlob": "be0fd83183bf519ead70a6c5d666ae7526f8bb7c",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/components/design-system/ThemedBox.tsx",
+      "baselineBlob": "7fe7039eba5a77485ed2b6bf24f080b13f0df4ea",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/components/design-system/ThemedText.tsx",
+      "baselineBlob": "fb6bf09b0ba19ffb0b52c81e110b2dd50d2d3df5",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/components/messages/AssistantTextMessage.tsx",
+      "baselineBlob": "6f2b649cce074fffcc5e1d9f4215fb49e07fa696",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/components/messages/AssistantThinkingMessage.tsx",
+      "baselineBlob": "21003b8b6335e8906ada8d03761e853ff9b7804a",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/components/messages/AssistantToolUseMessage.tsx",
+      "baselineBlob": "8a80dc85036b7321bb6b223c4700438c62ad71fa",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/components/messages/MessageMetadata.tsx",
+      "baselineBlob": "606644ab7d29ac0fde657dca362d6ed0eff00546",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/components/messages/UserPromptMessage.tsx",
+      "baselineBlob": "69bbfe6cd749f69de86032ccf609d5c0f40e083f",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/hooks/useBlink.ts",
+      "baselineBlob": "d71f5f9e761b974d0061f2914304a0cbb48208f6",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/ink/Ansi.tsx",
+      "baselineBlob": "757f2e2b1f3bfe508406960b08f9764d48f0912c",
+      "markers": [
+        "compiler_runtime_import"
+      ]
+    },
+    {
+      "path": "src/ink/colorize.ts",
+      "baselineBlob": "1c812e4d63b57dc49a57d2000c21bfc25639cff3",
+      "markers": [
+        "compatibility_environment_name"
+      ]
+    },
+    {
+      "path": "src/ink/components/AlternateScreen.tsx",
+      "baselineBlob": "b736f9299dde3bdf65e2521509e84eca370cc013",
+      "markers": [
+        "compiler_runtime_import"
+      ]
+    },
+    {
+      "path": "src/ink/components/App.tsx",
+      "baselineBlob": "783ad020c3facf10764482e5ef947b0a1981bee4",
+      "markers": [
+        "compatibility_environment_name"
+      ]
+    },
+    {
+      "path": "src/ink/components/Box.tsx",
+      "baselineBlob": "265a4ad468af4d070c108f4b8a2da10a04af1fbd",
+      "markers": [
+        "compiler_runtime_import"
+      ]
+    },
+    {
+      "path": "src/ink/components/Button.tsx",
+      "baselineBlob": "618b6ae5bc588f82297fb5c70f8c109e4f5296e9",
+      "markers": [
+        "compiler_runtime_import"
+      ]
+    },
+    {
+      "path": "src/ink/components/ClockContext.tsx",
+      "baselineBlob": "0f24839dfce619809cb3b4b79a3d436d5ea4baa4",
+      "markers": [
+        "compiler_runtime_import"
+      ]
+    },
+    {
+      "path": "src/ink/components/Link.tsx",
+      "baselineBlob": "82341db6489298c975d28e52d3ebe19b8b90eb6e",
+      "markers": [
+        "compiler_runtime_import"
+      ]
+    },
+    {
+      "path": "src/ink/components/Newline.tsx",
+      "baselineBlob": "5edf61882f36bdda97243879485d57ab25e09136",
+      "markers": [
+        "compiler_runtime_import"
+      ]
+    },
+    {
+      "path": "src/ink/components/NoSelect.tsx",
+      "baselineBlob": "d21b8d7abae89af1524cd4556fb880bb02c522f1",
+      "markers": [
+        "compiler_runtime_import"
+      ]
+    },
+    {
+      "path": "src/ink/components/RawAnsi.tsx",
+      "baselineBlob": "919e453b283412a51fcea3a4804e7045ca8c54e3",
+      "markers": [
+        "compiler_runtime_import"
+      ]
+    },
+    {
+      "path": "src/ink/components/Spacer.tsx",
+      "baselineBlob": "4d0af40f66646de8dec1f7d88dc4560f22ed68f6",
+      "markers": [
+        "compiler_runtime_import"
+      ]
+    },
+    {
+      "path": "src/ink/components/TerminalFocusContext.tsx",
+      "baselineBlob": "e017b64ab18e01a8cb53561641c3439652c25efc",
+      "markers": [
+        "compiler_runtime_import"
+      ]
+    },
+    {
+      "path": "src/ink/components/Text.tsx",
+      "baselineBlob": "b53d8345dd48b9e8d2ac9f45114be02f73c16a7d",
+      "markers": [
+        "compiler_runtime_import"
+      ]
+    },
+    {
+      "path": "src/ink/dom.ts",
+      "baselineBlob": "6fa257ae369c08a7cf946a566a111ae3435bd3c4",
+      "markers": [
+        "compatibility_environment_name"
+      ]
+    },
+    {
+      "path": "src/ink/hooks/use-terminal-size.ts",
+      "baselineBlob": "a8029410c30594790320a2a91f017865354f846a",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/ink/ink.tsx",
+      "baselineBlob": "8eb16f869208efc40340930679651f4a2da8b274",
+      "markers": [
+        "explicit_source_claim",
+        "compatibility_environment_name"
+      ]
+    },
+    {
+      "path": "src/ink/reconciler.ts",
+      "baselineBlob": "2bfd2f748292c20d193f0a3c05344ed4ab29f6b5",
+      "markers": [
+        "compatibility_environment_name"
+      ]
+    },
+    {
+      "path": "src/ink/render-to-screen.ts",
+      "baselineBlob": "9c2c062b774b7f0a8e2b45f19d5c295a4a5eca68",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/ink/termio/osc.ts",
+      "baselineBlob": "d7b905a088615de36fe5afacd4683167e9401170",
+      "markers": [
+        "internal_link"
+      ]
+    },
+    {
+      "path": "src/screens/Chat.tsx",
+      "baselineBlob": "9f2702cc753c1e751d64bbfa69455e5a171b730e",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/theme.ts",
+      "baselineBlob": "8013ff485d4342d99452a49e384c96924f8ca87c",
+      "markers": [
+        "explicit_source_claim"
+      ]
+    },
+    {
+      "path": "src/types/cc.d.ts",
+      "baselineBlob": "6793e383156dc646af1adefd88d4d7458a44a4c1",
+      "markers": [
+        "compiler_runtime_import"
+      ]
+    }
+  ]
+}

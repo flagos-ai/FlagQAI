@@ -1,0 +1,172 @@
+/**
+ * Type-check the TUI directly against the source-authoritative newest
+ * DeepSeek Harness prerelease. CI pins the checkout SHA; local runs point
+ * DSH_HARNESS_SOURCE_ROOT at a checkout of the expected tag.
+ */
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { dirname, join, parse, resolve } from 'node:path'
+import { tmpdir } from 'node:os'
+import { spawnSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
+import { rcompare, valid } from 'semver'
+import ts from 'typescript'
+
+const EXPECTED_UPSTREAM_VERSION = process.env.DSH_HARNESS_EXPECTED_VERSION ?? '0.2.0-rc.2'
+const tuiRoot = resolve(import.meta.dirname, '..')
+if (!process.env.DSH_HARNESS_SOURCE_ROOT) {
+  console.error(`DSH_HARNESS_SOURCE_ROOT is unset: point it at a deepseek-harness checkout of dsh-v${EXPECTED_UPSTREAM_VERSION}`)
+  process.exit(1)
+}
+const sourceRoot = resolve(process.env.DSH_HARNESS_SOURCE_ROOT)
+const sourceManifestPath = join(sourceRoot, 'package.json')
+if (!existsSync(sourceManifestPath)) {
+  console.error(`upstream source checkout missing: ${sourceRoot}`)
+  process.exit(1)
+}
+
+const sourceManifest = JSON.parse(readFileSync(sourceManifestPath, 'utf8'))
+if (sourceManifest.version !== EXPECTED_UPSTREAM_VERSION) {
+  console.error(`upstream source version mismatch: expected ${EXPECTED_UPSTREAM_VERSION}, got ${sourceManifest.version ?? 'missing'}`)
+  process.exit(1)
+}
+
+const upstreamConfigPath = join(sourceRoot, 'tsconfig.base.json')
+const upstreamConfigResult = ts.readConfigFile(upstreamConfigPath, path => readFileSync(path, 'utf8'))
+if (upstreamConfigResult.error !== undefined) {
+  console.error(ts.formatDiagnostic(upstreamConfigResult.error, {
+    getCanonicalFileName: path => path,
+    getCurrentDirectory: () => sourceRoot,
+    getNewLine: () => '\n',
+  }))
+  process.exit(1)
+}
+
+const upstreamPaths = upstreamConfigResult.config?.compilerOptions?.paths
+if (upstreamPaths === null || typeof upstreamPaths !== 'object') {
+  console.error(`upstream source tsconfig has no compilerOptions.paths: ${upstreamConfigPath}`)
+  process.exit(1)
+}
+const sourcePaths = Object.fromEntries(Object.entries(upstreamPaths)
+  .filter(([name]) => name.startsWith('@deepseek-ai/dsh-'))
+  .map(([name, entries]) => [
+    name,
+    entries.map(entry => {
+      const target = resolve(sourceRoot, entry)
+      const index = join(target, 'index.ts')
+      return existsSync(index) ? index : target
+    }),
+  ]))
+sourcePaths['@deepseek-ai/cordis'] = [
+  join(tuiRoot, 'node_modules/@deepseek-ai/cordis/lib/types/index.d.ts'),
+]
+sourcePaths['@deepseek-ai/schemastery'] = [
+  join(tuiRoot, 'node_modules/@deepseek-ai/schemastery/lib/types/index.d.ts'),
+]
+// The JSONL persistence backend's SOURCE tree depends on native-addon type
+// surfaces (@deepseek-ai/node-addon-system/flock) that do not exist in this
+// workspace, so type-checking it from source here is not possible — and its
+// published d.ts is generated from exactly that source. The same holds for
+// its base package: the persistence seam's declarations are published per
+// release, and the seam's source-tree graph drags session-format source in,
+// whose index-signature style does not compile under this workspace's
+// renderer-tuned options. Pin both to the npm declarations like
+// cordis/schemastery above. First src consumer: the cross-agent migration
+// (src/dsh-adapter/migrate/), which imports the plugin to write imported
+// conversations through the official backend.
+sourcePaths['@deepseek-ai/dsh-session-persistence'] = [
+  join(tuiRoot, 'node_modules/@deepseek-ai/dsh-session-persistence/lib/types/index.d.ts'),
+]
+sourcePaths['@deepseek-ai/dsh-session-persistence-jsonl'] = [
+  join(tuiRoot, 'node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/types/index.d.ts'),
+]
+// The format family's source tree uses optional-field headers against a
+// string index signature, which only compiles under upstream's own strict
+// flag set — not under this workspace's renderer-tuned options. Its
+// published d.ts is generated from exactly that source, so pin it the same
+// way whenever the persistence seam's graph reaches it. The package is a
+// transitive install (not a direct dependency), so the declaration is found
+// by scanning the pnpm store — ranked by each entry's OWN package.json
+// version, never by directory name: pnpm shortens a store name past
+// `virtual-store-dir-max-length` to `<name>_<hash>` (60 chars on Windows,
+// 120 elsewhere), leaving no version in the name at all, and a lexicographic
+// sort ranks 0.1.7-rc.2 above 0.1.7-rc.10. The alpha lanes check OLDER
+// upstream checkouts against the versions this workspace actually installs,
+// and the format types are shape-stable across those lines, so the newest
+// installed declaration is the right pin.
+{
+  const store = join(tuiRoot, 'node_modules/.pnpm')
+  const candidates = []
+  if (existsSync(store)) {
+    for (const entry of readdirSync(store)) {
+      const pkg = join(store, entry, 'node_modules/@deepseek-ai/dsh-session-format')
+      const manifest = join(pkg, 'package.json')
+      const declaration = join(pkg, 'lib/types/index.d.ts')
+      if (!existsSync(manifest) || !existsSync(declaration)) continue
+      try {
+        const version = valid(JSON.parse(readFileSync(manifest, 'utf8')).version)
+        if (version !== null) candidates.push({ version, declaration })
+      } catch {
+        // Unreadable manifest: not a candidate; the pin simply stays unset.
+      }
+    }
+  }
+  candidates.sort((a, b) => rcompare(a.version, b.version))
+  const newest = candidates[0]
+  if (newest !== undefined) sourcePaths['@deepseek-ai/dsh-session-format'] = [newest.declaration]
+}
+
+// HMR is an indirect settings dependency, not a TUI-owned implementation.
+// Compile it with upstream's strict options: our renderer's noImplicitAny=false
+// changes its evolving empty arrays into never[]. Keep the declarations
+// source-authoritative rather than hiding diagnostics or using npm instead.
+const hmrProject = join(sourceRoot, 'packages/boot/hmr/tsconfig.json')
+if (existsSync(hmrProject)) {
+  const result = spawnSync(process.execPath, [
+    join(sourceRoot, 'node_modules/typescript/bin/tsc'), '-b', hmrProject,
+  ], { cwd: sourceRoot, stdio: 'inherit' })
+  if (result.error !== undefined) throw result.error
+  if (result.status !== 0) process.exit(result.status ?? 1)
+  sourcePaths['@deepseek-ai/dsh-hmr'] = [join(dirname(hmrProject), 'lib/types/index.d.ts')]
+}
+
+const typescriptRoot = dirname(fileURLToPath(import.meta.resolve('typescript/package.json')))
+// tsc requires every input file to live under rootDir. POSIX '/' covers any
+// absolute path; on Windows '/' normalizes to the process drive, which need
+// not hold either tree — use the tui drive root and require the upstream source
+// to live on the same drive.
+const typeRoot = process.platform === 'win32' ? parse(tuiRoot).root : '/'
+if (process.platform === 'win32' && parse(sourceRoot).root !== typeRoot) {
+  console.error(`upstream source must share the TUI drive for tsc rootDir (tui ${typeRoot}, source ${parse(sourceRoot).root})`)
+  process.exit(1)
+}
+const projects = [
+  { label: 'flagqai', config: join(tuiRoot, 'tsconfig.json') },
+]
+for (const project of projects) {
+  const tempRoot = mkdtempSync(join(tmpdir(), `flagqai-alpha-tsc-${project.label}-`))
+  const generatedConfig = join(tempRoot, 'tsconfig.json')
+  writeFileSync(generatedConfig, `${JSON.stringify({
+    extends: project.config,
+    compilerOptions: {
+      target: 'ES2024',
+      lib: ['ES2024'],
+      noEmit: true,
+      declaration: false,
+      declarationMap: false,
+      rootDir: typeRoot,
+      allowImportingTsExtensions: true,
+      typeRoots: [join(tuiRoot, 'node_modules/@types')],
+      paths: sourcePaths,
+    },
+  }, null, 2)}\n`)
+  const result = spawnSync(process.execPath, [
+    join(typescriptRoot, 'bin/tsc'),
+    '--project', generatedConfig,
+    '--pretty', 'false',
+  ], { cwd: tuiRoot, stdio: 'inherit' })
+  rmSync(tempRoot, { recursive: true, force: true })
+  if (result.error !== undefined) throw result.error
+  if (result.status !== 0) process.exit(result.status ?? 1)
+  console.log(`upstream source types OK (${project.label})`)
+}
+console.log(`upstream source compatibility OK (${EXPECTED_UPSTREAM_VERSION}; ${Object.keys(sourcePaths).length} path mappings)`)

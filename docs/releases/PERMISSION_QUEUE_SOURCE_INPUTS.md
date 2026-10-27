@@ -1,0 +1,7 @@
+# Backend permission queue source inputs
+
+This private issue #93 batch replaces the backend-neutral permission panel queue. The implementation was designed from the client-neutral declarations in `packages/protocol/agent/{capabilities,events}.d.mts`, the exported panel/store signatures used by the CLI, the interaction bridge, and the behavioral checks in `apps/cli/scripts/verify-permission-store.ts`. The inherited store body was not used as an implementation template. The implementer previously worked in the imported repository, so this is not a strict clean-room claim or source-rights clearance.
+
+The queue is scoped by session and request ID, shows one prompt at a time, rejects stale panel keys and choices outside the original option set, and reports backend withdrawals as cancellation without sending a second user verdict. It copies the option list when a prompt is parked: later mutation by a backend cannot add an approvable choice to an already displayed request. Backend callback and UI subscriber exceptions cannot strand later requests. Harness remains authoritative for the actual permission decision and session lifecycle; this store only connects backend events to the panel.
+
+Validation for this change is recorded on its private PR. The remaining inherited TUI source, independent Ink compiler inputs, dependencies, and private history still require review before any public export. Retain upstream notices until the full source-rights disposition is approved.

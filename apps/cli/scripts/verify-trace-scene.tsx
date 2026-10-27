@@ -1,0 +1,824 @@
+/**
+ * Trajectory scene regression (issue #80 evolution) — replaces repro-trace.
+ *
+ * Part A drives the scene itself through a headless xterm and asserts what a
+ * reader actually sees: ledger rows with names and durations, the cursor, the
+ * wake, and an inspector that follows the cursor. Part B drives the whole Chat
+ * screen and asserts the properties that make the scene safe to open on a live
+ * session:
+ *
+ * - **The main screen comes back byte-identical.** The conversation must be
+ *   exactly as it was, because the scene is a place you visit, not a mode you
+ *   have to undo.
+ * - **Scrollback does not grow.** This is the shrink-frame family (#38/#39/
+ *   #19/#10) expressed as a machine check: the alternate screen has no
+ *   scrollback, so a correct implementation adds zero lines no matter how many
+ *   times the scene is opened and closed.
+ * - **Animation patches, never repaints.** Across a hundred idle ticks the
+ *   write stream must contain no line erase, screen clear, or scroll — if a
+ *   motion verb ever changes layout instead of colour, this fails.
+ *
+ * Run: node --import tsx/esm scripts/verify-trace-scene.tsx
+ */
+process.env.FORCE_COLOR = '3'
+// Asserts Chinese UI copy, so it pins the language rather than inheriting the
+// ambient one — the same rule the English-asserting scripts follow since
+// fb87339. `activeLang` resolves at import from env → persisted pref → OS
+// locale, none of which a CI runner or another developer's machine is obliged
+// to agree with.
+process.env.FLAGQAI_LANG = 'zh'
+
+const [{ PassThrough, Writable }, React, { Terminal: XTerm }, { render }, { TrajectoryScene }, { Chat }, { QuestionStore }, { stringWidth }, { settle, settled, sleep }] =
+  await Promise.all([
+    import('node:stream'),
+    import('react'),
+    import('@xterm/headless'),
+    import('../src/ui.js'),
+    import('../src/screens/TrajectoryScene.js'),
+    import('../src/screens/Chat.js'),
+    import('../src/dsh-adapter/questions.js'),
+    import('../src/ink/stringWidth.js'),
+    import('./lib/term-test.mjs'),
+  ])
+const { miniWakeWidth } = await import('../src/components/trajectory/MiniWake.js')
+const traj = await import('../src/dsh-adapter/trajectory/index.js')
+const instances = (await import('../src/ink/instances.js')).default
+const { TIPS } = await import('../src/tips.js')
+
+let failed = 0
+function check(name: string, ok: boolean, extra = ''): void {
+  console.log(`${ok ? 'PASS' : 'FAIL'}: ${name}${extra ? `  (${extra})` : ''}`)
+  if (!ok) failed += 1
+}
+
+// ───────────────────────── harness ──────────────────────────────────────────
+
+/** Pin a startup tip only for the initial mount; never leak the random stub. */
+async function renderWithTip(
+  node: React.ReactNode,
+  options: Parameters<typeof render>[1],
+  tipId: string,
+): ReturnType<typeof render> {
+  const tipIndex = TIPS.findIndex(tip => tip.id === tipId)
+  if (tipIndex < 0) throw new Error(`missing ${tipId} fixture`)
+  const random = Math.random
+  try {
+    Math.random = () => (tipIndex + 0.5) / TIPS.length
+    return await render(node, options)
+  } finally {
+    Math.random = random
+  }
+}
+
+/** Locale is pinned zh. Match the footer's prefix, not text quoted by a tip.
+ * A narrow header can truncate away /tips; geometry must not decide identity. */
+function idleShortcutHintRows(text: string): string[] {
+  return text.split('\n').filter(line => /^\s*\? 查看快捷键(?:\s|$)/.test(line))
+}
+
+function makeHarness(cols: number, rows: number, scrollback = 200) {
+  const term = new XTerm({ cols, rows, scrollback, allowProposedApi: true })
+  const writes: string[] = []
+  class FakeStdout extends Writable {
+    columns = cols
+    rows = rows
+    isTTY = true
+    _write(chunk: unknown, _encoding: BufferEncoding, callback: () => void): void {
+      writes.push(String(chunk))
+      term.write(String(chunk), callback)
+    }
+  }
+  class FakeStdin extends PassThrough {
+    isTTY = true
+    setRawMode(): this { return this }
+    ref(): this { return this }
+    unref(): this { return this }
+  }
+  const stdin = new FakeStdin()
+  const screen = (): string => {
+    // getLine() indexes the WHOLE buffer, scrollback included; the viewport
+    // starts at baseY. Reading from 0 after a frame taller than the terminal
+    // returns the PREVIOUS, larger frame's rows — which reads exactly like a
+    // repaint bug and is not one.
+    const buffer = term.buffer.active
+    return Array.from({ length: rows }, (_, y) => buffer.getLine(buffer.baseY + y)?.translateToString(true) ?? '')
+      .join('\n')
+  }
+  /**
+   * The same rows counted from the top of the buffer.
+   *
+   * Part A mounts the scene BARE, without the `<AlternateScreen>` the product
+   * wraps it in, so the park newline scrolls its first row out of the window
+   * here and nowhere else. The alternate screen has no scrollback, so reading
+   * from 0 is what that part is actually about.
+   */
+  // Read the WHOLE buffer (frame + any scroll history): the scene's frame
+  // legitimately grows past the terminal (ledger of 20 steps), and the
+  // checks assert content presence — title at the head, hotspot rows
+  // wherever the layout put them. A 30-row window (head OR viewport)
+  // loses one end or the other.
+  const screenFromTop = (): string => {
+    const buf = term.buffer.active
+    return Array.from({ length: buf.length }, (_, y) => buf.getLine(y)?.translateToString(true) ?? '')
+      .join('\n')
+  }
+  return { term, stdout: new FakeStdout(), stdin, screen, screenFromTop, writes }
+}
+
+const T0 = 1_700_000_000_000
+let seq = 0
+const ev = (type: string, data: unknown): Record<string, unknown> =>
+  ({ type, seq: ++seq, time: T0 + ++seq * 250, data })
+
+/** A session with tools, a burst, a failure and a retry — one of each shape. */
+function sampleEvents(): Record<string, unknown>[] {
+  seq = 0
+  const out: Record<string, unknown>[] = []
+  for (let turn = 1; turn <= 3; turn++) {
+    out.push(ev('turn/start', { turn }))
+    out.push(ev('user/message', { source: { kind: 'user' }, content: [{ type: 'text', text: `prompt ${turn}` }] }))
+    out.push(ev('step/start', { turn, step: 1 }))
+    out.push(ev('assistant/chunk', { turn, step: 1, chunk: {} }))
+    out.push(ev('assistant/message', {
+      turn, step: 1,
+      message: { content: [{ type: 'text', text: `reply about turn ${turn}` }] },
+      usage: { input: 200, output: 40, cacheRead: 10, cacheWrite: 0 },
+    }))
+    for (const name of ['read_file', 'grep_repo']) {
+      const callId = `c${turn}-${name}`
+      out.push(ev('tool/call', { turn, step: 1, callId, name, arguments: `{"path":"src/${name}.ts"}` }))
+      out.push(ev('tool/result', {
+        turn, step: 1,
+        message: { source: { callId }, content: [{ type: 'text', text: `${name} produced output` }] },
+        ...(turn === 2 && name === 'grep_repo' ? { error: { name: 'E', code: 'ENOENT' } } : {}),
+      }))
+    }
+    if (turn === 3) {
+      for (let i = 0; i < 4; i++) {
+        const callId = `burst${i}`
+        out.push(ev('tool/call', { turn, step: 1, callId, name: 'web_search', arguments: `{"q":${i}}` }))
+        out.push(ev('tool/result', { turn, step: 1, message: { source: { callId }, content: [] } }))
+      }
+      out.push(ev('llm/retry', { retryId: 'r', turn, step: 1, provider: 'deepseek-official', retry: 1, maxRetries: 2, delayMs: 900, failure: { message: 'rate limited', code: 'RATE_LIMIT' } }))
+      out.push(ev('llm/retry-started', { retryId: 'r', turn, step: 1, retry: 1 }))
+    }
+    out.push(ev('step/end', { turn, step: 1 }))
+    out.push(ev('turn/end', { turn, reason: { kind: 'completed' } }))
+  }
+  return out
+}
+
+const EVENTS = sampleEvents()
+
+/** Same session with the last tool still in flight, so the wake has a live edge. */
+const LIVE_EVENTS = [
+  ...EVENTS,
+  { type: 'turn/start', seq: 9000, time: T0 + 9_000_000, data: { turn: 4 } },
+  { type: 'step/start', seq: 9001, time: T0 + 9_000_100, data: { turn: 4, step: 1 } },
+  { type: 'tool/call', seq: 9002, time: T0 + 9_000_200, data: { turn: 4, step: 1, callId: 'live', name: 'long_task', arguments: '{}' } },
+]
+
+function makeChannel(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    version: 0,
+    rows: [],
+    status: 'idle',
+    sessionTitle: 'trajectory probe',
+    agentId: 'probe',
+    model: 'deepseek-v4-flash',
+    tokens: { input: 600, output: 120 },
+    cwd: 'C:/code/demo',
+    displayCwd: 'C:/code/demo',
+    gitBranch: 'main',
+    working: false,
+    spinnerMode: 'idle',
+    responseChars: 0,
+    activeToolCount: 0,
+    mode: { id: 'default', plan: false },
+    modeIndex: 0,
+    cycleMode(): void {},
+    turnStart: T0,
+    lastUserText: '',
+    pending: [],
+    commandList: [],
+    notifications: [],
+    activityEnabled: false,
+    contextBarEnabled: true,
+    statusBar: {
+      compact: true,
+      model: true,
+      thinking: true,
+      cwd: true,
+      contextUsage: true,
+      cache: true,
+      tokens: false,
+      tps: false,
+      gitBranch: false,
+      sessionTitle: false,
+      sessionId: false,
+      mode: false,
+      contextBar: false,
+      activity: false,
+      trajectory: true,
+      shortcutHint: false,
+    },
+    activityFrames: [],
+    loadedContext: undefined,
+    goal: undefined,
+    todos: [],
+    traceEvents: () => EVENTS,
+    subscribe: () => () => {},
+    submit: (): void => {},
+    cancel: (): void => {},
+    clear: (): void => {},
+    notify: (): void => {},
+    listModels: () => Promise.resolve([]),
+    listSessions: () => [],
+    setResumeTarget: (): void => {},
+    lastUsage: { input: 600, cacheRead: 40, cacheWrite: 0, output: 120 },
+    contextWindow: 1_000_000,
+    contextSegments: [],
+    tps: undefined,
+    tpsSamples: [],
+    reasoningEffort: 'max',
+    agentPreset: 'standard',
+    workspaceLabel: undefined,
+    ...overrides,
+  }
+}
+
+// ───────────────────────── part A: the scene ────────────────────────────────
+
+{
+  const { stdout, stdin, screenFromTop: screen, term } = makeHarness(120, 30)
+  const instance = await render(
+    React.createElement(TrajectoryScene, {
+      channel: makeChannel() as never,
+      build: traj.buildTrajectory(EVENTS as never),
+      onClose: () => {},
+    }),
+    { stdout: stdout as never, stdin: stdin as never, stderr: stdout as never, exitOnCtrlC: false, patchConsole: false },
+  )
+  // The ledger rows animate in (motion arrive): each assertion polls its OWN
+  // condition (settled) — snapshotting at the first painted rows would catch a
+  // frame that is still growing, and stale mid-animation frames would poison
+  // every whole-buffer negative check later in this part. The cursor snapshot
+  // `first` is taken only after every arrival condition has settled.
+  check('scene shows its title and totals', await settled(() => screen().includes('轨迹') && /\d+\s*轮/.test(screen())), screen().split('\n')[0]?.trim())
+  check('scene shows both view tabs', await settled(() => screen().includes('时序') && screen().includes('热点')))
+  check('ledger renders tool rows with names', await settled(() => screen().includes('read_file') && screen().includes('grep_repo')))
+  check('ledger folds the burst run', await settled(() => /web_search\s*×4/.test(screen())), /web_search[^\n]*/.exec(screen())?.[0]?.trim())
+  check('ledger surfaces the retry row', await settled(() => screen().includes('RATE_LIMIT') || screen().includes('RTY')))
+  check('ledger renders durations', await settled(() => /\d+(ms|\.\ds)/.test(screen())))
+  check('cursor pointer is visible', await settled(() => screen().includes('▸')))
+  check('wake band renders block glyphs', await settled(() => /[▁▂▃▄▅▆▇█]/.test(screen())))
+  check('hint line documents the keys', await settled(() => screen().includes('查询') || screen().includes('query')))
+  const first = screen()
+
+  // The inspector must occupy the same rows no matter where the cursor is —
+  // fixed geometry is what keeps cursor movement from resizing the frame.
+  // Fixed geometry means the rows BELOW the inspector never move. Counting
+  // non-blank lines would be wrong — the pane pads with blanks by design —
+  // so the invariant is measured where it matters: the hint line's row.
+  const hintRow = (text: string): number =>
+    text.split('\n').findIndex(line => line.includes('退出') || line.includes('exit'))
+  const cursorRow = (text: string): number => text.split('\n').findIndex(line => line.includes('▸'))
+  const before = hintRow(first)
+  const rowAtStart = cursorRow(first)
+  stdin.write('\x1b[A')
+  const movedUp = await settled(() => cursorRow(screen()) === rowAtStart - 1)
+  const afterUp = screen()
+  stdin.write('\x1b[A')
+  const movedTwo = await settled(() => cursorRow(screen()) === rowAtStart - 2)
+  const afterTwo = screen()
+  check('cursor opens pinned to the newest row', rowAtStart >= 0, `row ${rowAtStart}`)
+  check(
+    '↑ walks the cursor back up the ledger',
+    movedUp && movedTwo,
+    `${rowAtStart} → ${cursorRow(afterUp)} → ${cursorRow(afterTwo)}`,
+  )
+  check('inspector follows the cursor with no keystroke', afterUp !== first && afterTwo !== afterUp)
+  check(
+    'cursor movement never shifts the layout below the inspector',
+    before >= 0 && hintRow(afterUp) === before && hintRow(afterTwo) === before,
+    `${before} / ${hintRow(afterUp)} / ${hintRow(afterTwo)}`,
+  )
+
+  // Jump to the next failure, then confirm the inspector explains it.
+  stdin.write(']')
+  // 固定窗:待迁移 断言条件在 seek 前就已成立（retry 行本来就打印 RATE_LIMIT），
+  // settled 会在旧屏立即返回；且这段延迟同时负责让下一次 `/` 写入不与 `]`
+  // 合并进同一个 stdin chunk（合并后 useInput 收到 `']/'`，两个键都不匹配）。
+  await sleep(140)
+  const atFailure = screen()
+  check('] seeks to a failure', atFailure.includes('ENOENT') || atFailure.includes('RATE_LIMIT'), '')
+
+  // Query mode filters the whole session.
+  stdin.write('/')
+  // 固定窗:pacing 同上的 stdin chunk 合并风险——查询文本不能与 `/` 同批到达
+  await sleep(80)
+  stdin.write('tool:read_file')
+  check('query narrows the ledger', await settled(() => {
+    const s = screen()
+    return s.includes('read_file') && !s.includes('grep_repo')
+  }))
+  check('query reports its match count', await settled(() => /\d+\/\d+/.test(screen())), /\d+\/\d+[^\n]*/.exec(screen())?.[0])
+  stdin.write('\x1b')
+  check('esc clears the query', await settled(() => screen().includes('grep_repo')))
+
+  // View switching. The hotspot rows animate in (motion arrive); a fixed
+  // sleep races the animation — each check polls its own condition until the
+  // view materializes.
+  stdin.write('\x1b[C')
+  const hotspotShown = await settled(() => screen().includes('工具') || screen().includes('Tools'))
+  {
+    const buf = term.buffer.active
+    const all: string[] = []
+    for (let y = 0; y < buf.length; y++) all.push(`${y}|${buf.getLine(y)?.translateToString(true)?.slice(0, 70) ?? ''}`)
+    console.error('--- FULL BUFFER (len=' + buf.length + ' vy=' + buf.viewportY + ') ---')
+    console.error(all.join(String.fromCharCode(10)))
+  }
+  check('→ switches to the hotspot view', hotspotShown)
+  check('hotspot ranks tools by cost', await settled(() => /web_search|read_file/.test(screen())))
+  check('hotspot draws bars', await settled(() => /[█▌]/.test(screen())))
+  stdin.write('\x1b[D')
+  check('← returns to the timeline', await settled(() => screen().includes('read_file')))
+
+  instance.unmount()
+  term.dispose()
+}
+
+// ───────────────────────── part B: the round trip ───────────────────────────
+
+{
+  const { stdout, stdin, screen, term, writes } = makeHarness(120, 30, 500)
+  const rowsOf = (): number => term.buffer.active.length
+  const instance = await render(
+    React.createElement(Chat, {
+      channel: makeChannel({
+        traceEvents: () => LIVE_EVENTS,
+        working: true,
+        rows: Array.from({ length: 12 }, (_, i) => ({
+          id: i, kind: i % 2 === 0 ? 'user' : 'assistant', text: `conversation line ${i}`,
+        })),
+        lastUserText: 'conversation line 10',
+      }) as never,
+      questionStore: new QuestionStore() as never,
+      onExit: () => {},
+      fullscreen: false,
+    }),
+    { stdout: stdout as never, stdin: stdin as never, stderr: stdout as never, exitOnCtrlC: false, patchConsole: false },
+  )
+  // `<AlternateScreen>` notifies Ink via `instances.get(process.stdout)`.
+  // This harness renders to a fake stdout, so without aliasing the instance
+  // Ink would never learn it switched buffers and would paint the scene with
+  // inline geometry — the alt-screen path, which is exactly what the two
+  // safety assertions below exist to prove, would go untested.
+  for (const value of instances.values()) instances.set(process.stdout, value)
+  const conversationReady = await settled(() => screen().includes('conversation line'))
+  const conversation = screen()
+  const scrollbackBefore = rowsOf()
+  check('conversation renders before the scene opens', conversationReady)
+
+  // Open and close the scene twenty times: any per-round-trip leak compounds
+  // into an obvious number rather than hiding as a rounding error.
+  for (let round = 0; round < 20; round++) {
+    stdin.write('\x14') // Ctrl+T
+    if (round === 0) {
+      // Assert the PROTOCOL, not the pixels. `<AlternateScreen>` notifies the
+      // Ink instance via `instances.get(process.stdout)`, and this harness
+      // renders to a fake stdout — so under test Ink never learns it switched
+      // buffers and paints the scene with inline geometry. What the harness
+      // can prove is exactly what matters for safety: the alternate buffer was
+      // entered, the conversation is off-screen, and (below) the main screen
+      // comes back untouched. Scene rendering itself is covered by Part A.
+      check('Ctrl+T enters the alternate screen', await settled(() => term.buffer.active.type === 'alternate'),
+        term.buffer.active.type)
+      check('the conversation is no longer on screen', await settled(() => !screen().includes('conversation line 0')))
+      check('the scene is painted there', await settled(() => /[\u2500-\u259f]/.test(screen()) || screen().includes('时序')))
+    } else {
+      // Wait to be IN the scene before closing it (act-only wait → settle).
+      await settle(() => term.buffer.active.type === 'alternate')
+    }
+    stdin.write('q')
+    await settle(() => term.buffer.active.type === 'normal')
+  }
+  // 固定窗:pacing 下面 scrollback 计量的静置窗——settle 到「对话已恢复」会在
+  // 恢复后的重绘落地前采样 rowsOf()，把 per-trip 算少；无可轮询的完成条件。
+  await sleep(200)
+
+  const mainRestored = await settled(() => screen().includes('conversation line'))
+  const restored = screen()
+  check('main screen returns to the conversation', mainRestored,
+    restored === conversation ? '' : firstDiff(conversation, restored))
+
+  // Scrollback accounting. Leaving the alternate screen makes the terminal
+  // restore the main buffer, and Ink then repaints once because its front
+  // frame was blanked — one frame per ROUND TRIP in inline mode, the same cost
+  // the Ctrl+G editor handoff already pays. What must never happen is growth
+  // that scales with USE: the old inline overlay churned the frame on every
+  // keystroke, and that is the family this view exists to escape.
+  const perTrip = (rowsOf() - scrollbackBefore) / 20
+  check('scrollback growth is bounded per round trip, not per frame', perTrip <= 32,
+    `${(rowsOf() - scrollbackBefore)} lines over 20 trips = ${perTrip.toFixed(1)}/trip`)
+
+  // Navigating inside the scene is the common case by far, and it must be free.
+  stdin.write('\x14')
+  // 固定窗:pacing beforeNav 是「不得增长」探针的基线，必须等开屏首绘完全落地
+  // 后再采样（只 settle alt buffer 会采到半绘状态）；无可轮询的完成条件。
+  await sleep(240)
+  const beforeNav = rowsOf()
+  for (let i = 0; i < 40; i++) {
+    stdin.write(i % 2 === 0 ? '\x1b[A' : '\x1b[B')
+    await sleep(12) // 固定窗:pacing 按键必须落在各自独立的 stdin chunk 里
+  }
+  stdin.write('\x1b[C')
+  await sleep(120) // 固定窗:探针 scrollback 不得增长，需要墙上时间让错误增长浮现
+  stdin.write('\x1b[D')
+  await sleep(200) // 固定窗:探针 同上，scrollback 不得增长
+  check('navigating inside the scene adds no scrollback at all', rowsOf() === beforeNav,
+    `${beforeNav} → ${rowsOf()} over 42 keystrokes`)
+  stdin.write('q')
+  await settle(() => term.buffer.active.type === 'normal')
+
+  // Idle animation must patch, never repaint.
+  stdin.write('\x14')
+  // 固定窗:pacing 清空前 write 流必须静默（开屏绘制已完成）——清早了会把首绘
+  // 的尾巴算成「空闲重绘」；无可轮询的完成条件。
+  await sleep(200)
+  writes.length = 0
+  await sleep(1200) // 固定窗:探针 空闲观察窗，窗内不得有任何重绘逃逸
+  const stream = writes.join('')
+  const repaints = [
+    ['erase line', /\x1b\[[0-2]?K/],
+    ['erase screen', /\x1b\[[0-3]?J/],
+    ['scroll up', /\x1b\[\d*S/],
+    ['scroll down', /\x1b\[\d*T/],
+  ] as const
+  const offenders = repaints.filter(([, pattern]) => pattern.test(stream)).map(([name]) => name)
+  check('idle animation emits no repaint escapes', offenders.length === 0,
+    offenders.length === 0 ? `${stream.length} bytes over ~12 ticks` : offenders.join(', '))
+  check('idle animation does emit style updates', /\x1b\[[\d;]*m/.test(stream), `${stream.length} bytes`)
+
+  stdin.write('q')
+  await settle(() => term.buffer.active.type === 'normal')
+  instance.unmount()
+  instances.delete(process.stdout)
+  term.dispose()
+}
+
+// ───────────────────────── part B2: main-screen frame restore ─────────────
+
+{
+  const { stdout, stdin, screen, term, writes } = makeHarness(120, 30, 500)
+  const marker = 'unchanged conversation marker'
+  const listeners = new Set<() => void>()
+  const channel = makeChannel({
+    traceEvents: () => [],
+    working: false,
+    rows: [{ id: 1, kind: 'assistant', text: marker }],
+    subscribe(listener: () => void): () => void {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    },
+  })
+  const publish = (changes: Record<string, unknown>): void => {
+    Object.assign(channel, changes)
+    channel.version = Number(channel.version) + 1
+    for (const listener of listeners) listener()
+  }
+  const instance = await render(
+    React.createElement(Chat, {
+      channel: channel as never,
+      questionStore: new QuestionStore() as never,
+      onExit: () => {},
+      fullscreen: false,
+      trajectorySeen: true,
+    }),
+    { stdout: stdout as never, stdin: stdin as never, stderr: stdout as never, exitOnCtrlC: false, patchConsole: false },
+  )
+  for (const value of instances.values()) instances.set(process.stdout, value)
+  // 固定窗:pacing 清空前 write 流必须静默（首绘已完成），下面的「DEC 1049 恢复
+  // 后不得重绘」探针需要干净基线；无可轮询的完成条件。
+  await sleep(500)
+  writes.length = 0
+
+  stdin.write('\x14')
+  check('frame-restore probe enters the alternate screen', await settled(() => term.buffer.active.type === 'alternate'))
+  instances.get(process.stdout)?.resetPools()
+  stdin.write('q')
+  // 固定窗:探针 DEC 1049 恢复主屏后不得有任何东西重绘 marker——错误的重绘
+  // 需要这个观察窗才会落进捕获的 writes 里。
+  await sleep(500)
+
+  const roundTrip = writes.join('')
+  const exitIndex = roundTrip.lastIndexOf('\x1b[?1049l')
+  const afterExit = exitIndex < 0 ? roundTrip : roundTrip.slice(exitIndex + '\x1b[?1049l'.length)
+  const afterExitText = afterExit
+    .replace(/\x1b\][^\x07]*\x07/g, '')
+    .replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, '')
+  check(
+    'an unchanged main screen is not repainted after DEC 1049 restores it',
+    exitIndex >= 0 && !afterExitText.includes(marker),
+    `post-exit bytes=${afterExit.length}`,
+  )
+
+  const reasoning = Array.from({ length: 80 }, (_, index) =>
+    `reasoning line ${String(index).padStart(2, '0')}`,
+  ).join('\n')
+  // 固定窗:pacing 下面是脚本化的流式时间线（thinking → 开场景 → 继续流 →
+  // 关场景 → 继续流），逐个 sleep 复现 settle-paint 竞态所需的真实节奏；每步
+  // 都没有可轮询的完成条件，最终布局由序列之后的 settled() 断言。
+  // （以下每处 sleep 同属这一段 pacing。）
+  publish({
+    working: true,
+    spinnerMode: 'thinking',
+    rows: [
+      { id: 1, kind: 'user', text: 'investigate the rendering issue' },
+      { id: 2, kind: 'reasoning', text: reasoning.split('\n').slice(0, 40).join('\n'), streaming: true },
+    ],
+    lastUserText: 'investigate the rendering issue',
+  })
+  await sleep(500) // 固定窗:pacing 流式时间线步间（见上方说明）
+  stdin.write('\x14')
+  await sleep(250) // 固定窗:pacing 流式时间线步间（见上方说明）
+  publish({
+    rows: [
+      { id: 1, kind: 'user', text: 'investigate the rendering issue' },
+      { id: 2, kind: 'reasoning', text: reasoning, streaming: true },
+    ],
+  })
+  await sleep(250) // 固定窗:pacing 流式时间线步间（见上方说明）
+  publish({
+    spinnerMode: 'requesting',
+    rows: [
+      { id: 1, kind: 'user', text: 'investigate the rendering issue' },
+      { id: 2, kind: 'reasoning', text: reasoning, streaming: false, durationMs: 12_000 },
+      { id: 3, kind: 'assistant', text: 'FIRST RESPONSE SECTION', streaming: true },
+    ],
+  })
+  await sleep(250) // 固定窗:pacing 流式时间线步间（见上方说明）
+  stdin.write('q')
+  await sleep(400) // 固定窗:pacing 流式时间线步间（见上方说明）
+  publish({
+    rows: [
+      { id: 1, kind: 'user', text: 'investigate the rendering issue' },
+      { id: 2, kind: 'reasoning', text: reasoning, streaming: false, durationMs: 12_000 },
+      { id: 3, kind: 'assistant', text: 'FIRST RESPONSE SECTION\n\nSECOND RESPONSE SECTION', streaming: true },
+    ],
+  })
+  await sleep(400) // 固定窗:pacing 流式时间线步间（见上方说明）
+
+  // The settle paint is throttled behind the ink frame clock — poll for the
+  // markers instead of racing a fixed sleep. The ceiling is generous (~15s)
+  // on purpose: this check asserts the FINAL LAYOUT (no blank band between
+  // the two sections), not paint latency, and the old 4s window straddled
+  // the settle-paint latency distribution — it failed with first=-1/
+  // second=-1 (markers not yet on screen) in ~1/3 of local runs while the
+  // very next assertion passed 400ms later. Green paths break out early;
+  // only a real layout regression (or a paint that never lands) pays the
+  // full ceiling.
+  const settlePollStart = Date.now()
+  let lines: string[] = []
+  let firstIndex = -1
+  let secondIndex = -1
+  let gap = Number.POSITIVE_INFINITY
+  const noBlankGap = await settled(() => {
+    const buffer = term.buffer.active
+    lines = Array.from({ length: buffer.length }, (_, row) =>
+      buffer.getLine(row)?.translateToString(true) ?? '',
+    )
+    secondIndex = lines.findLastIndex(line => line.includes('SECOND RESPONSE SECTION'))
+    firstIndex = -1
+    for (let index = secondIndex - 1; index >= 0; index--) {
+      if (lines[index]?.includes('FIRST RESPONSE SECTION')) {
+        firstIndex = index
+        break
+      }
+    }
+    gap = firstIndex < 0 || secondIndex < 0
+      ? Number.POSITIVE_INFINITY
+      : lines.slice(firstIndex + 1, secondIndex).filter(line => line.trim() === '').length
+    return firstIndex >= 0 && secondIndex >= 0 && gap <= 1
+  }, { timeoutMs: 15_000, stepMs: 80 })
+  const settleWaitedMs = Date.now() - settlePollStart
+  check(
+    'reasoning that settles in the trajectory leaves no blank answer gap',
+    noBlankGap,
+    `first=${firstIndex}, second=${secondIndex}, blank=${gap}, buffer=${lines.length}, waited=${settleWaitedMs}ms` +
+      (firstIndex < 0 || secondIndex < 0
+        ? ' (markers never painted within the 15s window — hung or lost frame, not a layout gap)'
+        : ''),
+  )
+
+  stdin.write('\x0f') // Ctrl+O
+  check('Ctrl+O expands settled reasoning after the round trip', await settled(() => screen().includes('reasoning line 79')))
+  stdin.write('\x0f')
+  check('a second Ctrl+O folds settled reasoning again', await settled(() => !screen().includes('reasoning line 79')))
+
+  instance.unmount()
+  instances.delete(process.stdout)
+  term.dispose()
+}
+
+// ───────────────────────── part C: the chat-side entry ─────────────────────
+
+{
+  // The trajectory must be findable from the conversation without becoming
+  // clutter, and the design splits that across three non-overlapping
+  // channels: the startup tip teaches the key once, a live wake strip in the
+  // status line keeps showing the session's shape (and its failures, in
+  // position), and exactly ONE footnote points at the newest unseen failure.
+  const { stdout, stdin, screen, term } = makeHarness(126, 34, 200)
+  const failedRow = {
+    id: 7,
+    kind: 'tool',
+    text: '',
+    tool: {
+      callId: 'x1',
+      name: 'Bash',
+      argsText: 'pnpm test',
+      status: 'error',
+      errorText: 'Error: 3 tests failed',
+      startedAt: T0,
+      durationMs: 120,
+    },
+  }
+  const tree = React.createElement(Chat, {
+    channel: makeChannel({
+      traceEvents: () => EVENTS,
+      statusBar: {
+        ...makeChannel().statusBar as Record<string, unknown>,
+        shortcutHint: true,
+      },
+      // One row only: the harness terminal is short, and a longer
+      // transcript scrolls the failed card out of the visible window.
+      rows: [failedRow],
+    }) as never,
+    questionStore: new QuestionStore() as never,
+    onExit: () => {},
+    fullscreen: false,
+    // Deterministic: never read the developer's own prefs file.
+    trajectorySeen: false,
+  })
+  // Reproduce the CI collision: this startup tip quotes the status hint verbatim.
+  const instance = await renderWithTip(
+    tree,
+    { stdout: stdout as never, stdin: stdin as never, stderr: stdout as never, exitOnCtrlC: false, patchConsole: false },
+    'disp-statusbar-hint',
+  )
+  for (const value of instances.values()) instances.set(process.stdout, value)
+
+  check('the startup tip fixture quotes the idle shortcut hint', await settled(() =>
+    screen().split('\n').some(line => line.includes('/tips') && line.includes('? 查看快捷键'))))
+  check('the conversation exposes the trajectory key', await settled(() => /ctrl\+t|⌘t/.test(screen())), '')
+  // Count ALL footer matches: using find() here would hide a real duplicate.
+  const countIdleShortcutHints = (text: string): number =>
+    (idleShortcutHintRows(text).join('\n').match(/\? 查看快捷键/g) ?? []).length
+  const tipLine = '提示：空闲时 "? 查看快捷键" 常驻提示也是底栏开关 · /tips 更多技巧'
+  const clippedTipLine = '提示：空闲时 "? 查看快捷键" 常驻提示也是底栏开关 · …'
+  check('a startup tip cannot mask a missing status hint', countIdleShortcutHints(tipLine) === 0)
+  check('a clipped startup tip cannot mask a missing status hint', countIdleShortcutHints(clippedTipLine) === 0)
+  check('duplicate status hints are still counted',
+    countIdleShortcutHints(`${tipLine}\n${clippedTipLine}\n? 查看快捷键\n? 查看快捷键`) === 2)
+  const misalignedHint = ' ? 查看快捷键 ▁█'
+  check('misaligned footers remain visible to the geometry assertion',
+    idleShortcutHintRows(`${clippedTipLine}\n${misalignedHint}`)[0] === misalignedHint)
+  check('the idle shortcuts hint appears exactly once',
+    await settled(() => countIdleShortcutHints(screen()) === 1),
+    `${countIdleShortcutHints(screen())}`)
+
+  // B — scope the wake and key assertions to the same positively identified
+  // footer as the count above, even if a header tip loses its /tips suffix.
+  const hintRowOf = (text: string): string =>
+    idleShortcutHintRows(text)[0] ?? ''
+  check('the status line carries a live wake strip', await settled(() => /[▁▂▃▄▅▆▇█]/.test(hintRowOf(screen()))),
+    hintRowOf(screen()).trim().slice(-42))
+  check('the key hint rides beside the strip while unseen', await settled(() => /ctrl\+t|⌘t/.test(hintRowOf(screen()))),
+    hintRowOf(screen()).trim().slice(-42))
+
+  // E — exactly one footnote, on the failure.
+  check('a failed call carries exactly one trajectory footnote',
+    await settled(() => (screen().match(/看完整轨迹|full trajectory/g) ?? []).length === 1),
+    `${(screen().match(/看完整轨迹|full trajectory/g) ?? []).length}`)
+
+  // Opening the scene marks the failures seen and retires both pointers.
+  stdin.write('\x14')
+  await settle(() => term.buffer.active.type === 'alternate')
+  stdin.write('q')
+  // Closing the alternate screen restores the main frame first; the hint
+  // retirement and wake repaint may land on a later Ink frame. Anchor on the
+  // repainted hint row (wake back on screen) before the negative assertions —
+  // a bare negation would come true on the transient blank row mid-close.
+  await settle(() => /[▁▂▃▄▅▆▇█]/.test(hintRowOf(screen())))
+  check('the footnote clears once the trajectory has been opened',
+    await settled(() => (screen().match(/看完整轨迹|full trajectory/g) ?? []).length === 0), '')
+  check('the key hint retires once the trajectory has been opened',
+    await settled(() => {
+      const row = hintRowOf(screen())
+      return /[▁▂▃▄▅▆▇█]/.test(row) && !/ctrl\+t|⌘t/.test(row)
+    }), hintRowOf(screen()).trim().slice(-42))
+  check('the wake strip stays after the hint retires', await settled(() => /[▁▂▃▄▅▆▇█]/.test(hintRowOf(screen()))), '')
+
+  instance.unmount()
+  instances.delete(process.stdout)
+  term.dispose()
+}
+
+// ───────────────────────── part D: the width ladder ─────────────────────────
+
+{
+  // The status line is three rows that must all agree on how wide the terminal
+  // is: the context bar is a pre-rendered string sized from `useTerminalSize`,
+  // while the two rows under it are flex rows sized by the layout engine. When
+  // those two sources disagree the bar spans the terminal and the rows below
+  // stop short — the right group truncates mid-title and the wake floats in
+  // the middle of the line instead of sitting at the edge.
+  //
+  // A right-aligned element is what makes that visible, so it is also the
+  // cheapest thing to assert on: whenever a wake is present, the last non-blank
+  // cell of the hint row must be at the terminal's right margin. Walking a
+  // ladder of widths covers the size-dependent case, which is the one a single
+  // fixed-width test would miss.
+  const LADDER = [84, 100, 126, 150, 184]
+  for (const cols of LADDER) {
+    const { stdout, stdin, screen, term } = makeHarness(cols, 34, 200)
+    const instance = await renderWithTip(
+      React.createElement(Chat, {
+        channel: makeChannel({
+          traceEvents: () => EVENTS,
+          statusBar: {
+            ...makeChannel().statusBar as Record<string, unknown>,
+            shortcutHint: true,
+          },
+          rows: [],
+          // A long CJK title is the case that truncates first, so it is the
+          // one that shows a wrong container width soonest.
+          sessionTitle: '你是终稿评审助理。任务：对 11 份终稿做逐行一致性审计',
+        }) as never,
+        questionStore: new QuestionStore() as never,
+        onExit: () => {},
+        fullscreen: false,
+        trajectorySeen: true,
+      }),
+      { stdout: stdout as never, stdin: stdin as never, stderr: stdout as never, exitOnCtrlC: false, patchConsole: false },
+      'disp-keymap',
+    )
+    for (const value of instances.values()) instances.set(process.stdout, value)
+    if (cols === 100) {
+      check('the 100-column tip fixture loses its /tips suffix', await settled(() =>
+        screen().split('\n').some(line => line.includes('提示：/settings')
+          && line.includes('shortcuts') && line.includes('快捷键')
+          && line.includes('·') && line.trimEnd().endsWith('…') && !line.includes('/tips'))))
+    }
+    // A truncated tip can contain both "shortcuts" and · without /tips.
+    // Select the real footer independently of the width we are about to test.
+    const findHintRow = (): string | undefined => idleShortcutHintRows(screen()).find(line =>
+      /[▁▂▃▄▅▆▇█▶·]/.test(line))
+    // The settle predicate is exactly the disjunction of the two branch
+    // assertions below, which re-derive from the settled screen — no weaker
+    // wait condition can diverge from what is checked.
+    await settle(() => {
+      const row = findHintRow()
+      return miniWakeWidth(cols) === 0
+        || (row !== undefined && stringWidth(row.replace(/\s+$/, '')) === cols - 1)
+    })
+    const hintRow = findHintRow()
+    if (hintRow === undefined) {
+      // Below `miniWakeWidth`'s floor the strip is meant to be absent; above
+      // it, a missing row is itself the failure.
+      check(`wake strip present at ${cols} cols`, miniWakeWidth(cols) === 0, 'no hint row with a wake')
+    } else {
+      // Terminal geometry is measured in display cells, not JavaScript code
+      // units: the localized `查看快捷键` hint contains wide CJK glyphs. Using
+      // `.length` under-counts the row by one cell per glyph and made all five
+      // widths fail after the status hint became localized.
+      const right = stringWidth(hintRow.replace(/\s+$/, ''))
+      // paddingX={1} on the status line leaves its last occupied cell at
+      // terminal width - 1.
+      check(
+        `wake sits at the right margin at ${cols} cols`,
+        right === cols - 1,
+        `ends at ${right}, terminal is ${cols}`,
+      )
+    }
+
+    instance.unmount()
+    instances.delete(process.stdout)
+    term.dispose()
+    await sleep(30) // 固定窗:pacing 两次挂载之间的收尾间隔，无可轮询条件
+  }
+}
+
+/** First differing line, for a readable failure message. */
+function firstDiff(a: string, b: string): string {
+  const left = a.split('\n')
+  const right = b.split('\n')
+  for (let i = 0; i < Math.max(left.length, right.length); i++) {
+    if (left[i] !== right[i]) return `line ${i}: ${JSON.stringify(left[i])} vs ${JSON.stringify(right[i])}`
+  }
+  return 'length differs'
+}
+
+console.log(failed === 0 ? '\nAll trajectory scene checks passed.' : `\n${failed} check(s) failed.`)
+process.exit(failed === 0 ? 0 : 1)

@@ -1,0 +1,20 @@
+node_modules/
+package-lock.json
+/lib/
+*.log
+.DS_Store
+*.tsbuildinfo
+*.tgz
+/dist-bundle/
+/dist-standalone/
+/standalone/runtime.tar.gz
+/standalone/node_modules/
+/standalone/dist/
+.tmp/
+.dsh-prompt-debug.json
+HANDOVER.md
+.local/
+.claude/
+.upstream/
+# run-ci-group 保留的失败脚本帧日志（CI 传 artifact，本地随手跑也会生成）
+ci-render-logs/

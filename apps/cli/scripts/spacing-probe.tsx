@@ -1,0 +1,343 @@
+/**
+ * Spacing/visual-distinction probe: renders a transcript with user prompt,
+ * thinking, tool call and assistant text rows, then checks the transcript row spacing:
+ *   1. Every block is separated by a blank line (top margin on each new turn).
+ *   2. User prompt carries the gold bold label (userPromptLabel, no background
+ *      fill since the Kimi-style restyle).
+ *   3. Thinking label + body are dim+italic (grey).
+ * Run: node --import tsx scripts/spacing-probe.tsx (Windows side)
+ */
+process.env.FORCE_COLOR = '3'
+
+const [{ PassThrough, Writable }, React, { render }, { Chat }, { QuestionStore }, figures, width, activity, { ActivityStore }] =
+  await Promise.all([
+    import('node:stream'),
+    import('react'),
+    import('../src/ui.js'),
+    import('../src/screens/Chat.js'),
+    import('../src/dsh-adapter/questions.js'),
+    import('../src/terminal-utils/figures.js'),
+    import('../src/ink/stringWidth.js'),
+    import('../src/components/activityFrames.js'),
+    import('../src/dsh-adapter/activity-store.js'),
+  ])
+const { THINKING_SPINNER_FRAMES, THINKING_SETTLED_MARKER } = figures
+const { stringWidth } = width
+
+class FakeStdout extends Writable {
+  columns = 120
+  // Tall enough that the whale header + transcript + footer all fit without
+  // the sticky scroll pushing the header out of the viewport.
+  rows = 40
+  isTTY = true
+  frames: string[] = []
+  _write(chunk: unknown, _encoding: BufferEncoding, callback: () => void) {
+    this.frames.push(String(chunk))
+    callback()
+  }
+}
+
+class FakeStderr extends Writable {
+  isTTY = true
+  _write(_chunk: unknown, _encoding: BufferEncoding, callback: () => void) {
+    callback()
+  }
+}
+
+class FakeStdin extends PassThrough {
+  isTTY = true
+  setRawMode() {
+    return this
+  }
+  ref() {
+    return this
+  }
+  unref() {
+    return this
+  }
+}
+
+const channel = {
+  // 探针确定性：鲸鱼欢迎期闲置动画（默认开）不进本探针的测量窗口。
+  whaleIdle: false,
+  version: 0,
+  rows: [
+    { id: 0, kind: 'user', text: 'hello, list the files' },
+    { id: 1, kind: 'reasoning', text: 'the user wants a file listing', streaming: false, durationMs: 12000 },
+    { id: 2, kind: 'tool', text: '', tool: { callId: 'c1', name: 'Bash', argsText: '{"command":"ls"}', argsFull: '{"command":"ls"}', status: 'ok', resultText: 'src\nlib', startedAt: Date.now() - 8000, durationMs: 8000 } },
+    // Assistant reply starts with the working-activity ⏵ self-narration
+    // line (narrate contract) — the transcript must strip it.
+    { id: 3, kind: 'assistant', text: '⏵ 修一下状态栏\nhere are the files.', streaming: false },
+  ],
+  status: 'idle',
+  sessionTitle: 'probe',
+  agentId: 'probe',
+  // Chat reads the working line from the session projection store, keyed by
+  // session id; the store below carries the value this probe wants on screen.
+  sessionId: 'spacing-probe',
+  model: 'deepseek-v4-flash',
+  tokens: { input: 120, output: 45 },
+  contextWindow: 1000000,
+  reasoningEffort: 'max',
+  activityFrames: 'moon8',
+  contextBarEnabled: true,
+  lastUsage: { input: 12000, output: 356, cacheRead: 3400, cacheWrite: 1200 },
+  tps: 42,
+  tpsSamples: [
+    { tps: 30, at: Date.now() - 50000 },
+    { tps: 45, at: Date.now() - 40000 },
+    { tps: 38, at: Date.now() - 30000 },
+    { tps: 52, at: Date.now() - 20000 },
+    { tps: 47, at: Date.now() - 10000 },
+  ],
+  contextSegments: { system: 3000, prompt: 4000, assistant: 5000, thinking: 2000, tools: 2000 },
+  cwd: 'C:/code/demo-project',
+  gitBranch: 'main',
+  working: false,
+  spinnerMode: 'requesting',
+  responseChars: 0,
+  activeToolCount: 0,
+  turnStart: 0,
+  lastUserText: 'hello, list the files',
+  notifications: [],
+  pending: [],
+  mode: { id: 'default', plan: false },
+  provider: 'deepseek',
+  displayCwd: 'C:/code/demo-project',
+  statusBar: { tps: true, activity: true, shortcutHint: true, contextBar: true },
+  thinkingFold: 'full',
+  toolBackground: 'auto',
+  diffLayout: 'auto',
+  activityEnabled: true,
+  goal: undefined,
+  todos: [],
+  loadedContext: undefined,
+  commandList: [],
+  pluginScene: undefined,
+  agentPreset: undefined,
+  commandCompletions: () => [],
+  subscribe: () => () => {},
+  submit: () => {},
+  cancel: () => {},
+  clear: () => {},
+  notify: () => {},
+  listModels: () => Promise.resolve([]),
+  listSessions: () => [],
+  setResumeTarget: () => {},
+} as never
+
+const stdout = new FakeStdout()
+const questionStore = new QuestionStore()
+// The working line is host data now: seed the store the way a live session
+// would (the projection pushes values for the session being shown).
+const activityStore = new ActivityStore()
+activityStore.update('spacing-probe', {
+  phase: 'tool',
+  line: '正在查看 src/dsh-adapter/channel.ts · 总12s',
+  live: true,
+  toolCount: 2,
+  phaseStartedAt: Date.now() - 12_000,
+  turnStartedAt: Date.now() - 12_000,
+  updatedAt: Date.now(),
+  lang: 'zh',
+})
+const instance = await render(
+  <Chat channel={channel} questionStore={questionStore} activityStore={activityStore} onExit={() => {}} />,
+  {
+    stdout,
+    stdin: new FakeStdin(),
+    stderr: new FakeStderr(),
+    exitOnCtrlC: false,
+    patchConsole: false,
+  },
+)
+
+await new Promise(resolve => setTimeout(resolve, 600))
+
+const output = stdout.frames.join('')
+// Normalize differential cursor-right moves to spaces, then strip ANSI.
+const cursorMoved = output.replace(/\x1b\[(\d+)C/g, (_, n) => ' '.repeat(Number(n)))
+const plain = cursorMoved
+  .replace(/\x1b\[[0-9;?]*[a-zA-Z]/g, '')
+  .replace(/\x1b\]9;[^\x07]*\x07/g, '')
+const lines = plain.split('\n').map(l => l.trimEnd())
+const contentLines = lines.map(l => l.trim())
+
+const results: string[] = []
+let pass = 0
+function check(name: string, ok: boolean, detail = '') {
+  results.push(`${ok ? 'PASS' : 'FAIL'} ${name}${detail ? ' — ' + detail : ''}`)
+  if (ok) pass++
+}
+
+// 1. Every block separated by a blank line: the four marker lines must be
+//    pairwise separated by >= 1 empty line in the rendered transcript.
+const markers = ['hello, list the files', '⚓ Thinking', 'Bash', 'here are the files.']
+const markerLines = markers.map(m => contentLines.findIndex(l => l.includes(m)))
+for (let i = 1; i < markerLines.length; i++) {
+  const gap = markerLines[i]! - markerLines[i - 1]!
+  const between = contentLines.slice(markerLines[i - 1]! + 1, markerLines[i]!)
+  const blankCount = between.filter(l => l.length === 0).length
+  check(
+    `blank line between block ${i - 1} and ${i}`,
+    blankCount >= 1,
+    `markerLines ${markerLines[i - 1]} -> ${markerLines[i]}, blanks=${blankCount}`,
+  )
+}
+
+// 2. User prompt carries the gold bold label (userPromptLabel #FFDF80 in the
+//    dark theme) with no background fill since the Kimi-style restyle.
+check(
+  'user prompt gold bold label',
+  cursorMoved.includes('\x1b[38;2;255;223;128m'),
+  'userPromptLabel gold SGR present in user prompt region',
+)
+
+// 3. Thinking label is grey + italic (the theme's `inactive` grey is how
+//    dimColor renders in this truecolor palette — no SGR-dim is emitted).
+check('thinking dim', cursorMoved.includes('\x1b[38;2;141;149;166m'), 'inactive-grey SGR present')
+check('thinking italic', cursorMoved.includes('\x1b[3m'), 'italic SGR present')
+
+// 3b. All thinking markers must share ONE width: the braille spinner frames
+//     are padded to 2 columns to match the settled ⚓ anchor (U+2693 is
+//     Emoji_Presentation) — a narrower frame shifts the label right by one
+//     column the moment the step settles.
+check(
+  'thinking markers same width',
+  THINKING_SPINNER_FRAMES.every(m => stringWidth(m) === stringWidth(THINKING_SETTLED_MARKER)),
+  `settled ${JSON.stringify(THINKING_SETTLED_MARKER)}=${stringWidth(THINKING_SETTLED_MARKER)}; frames ` +
+    THINKING_SPINNER_FRAMES.map(m => `${JSON.stringify(m)}=${stringWidth(m)}`).join(' '),
+)
+
+// 4. Tool card present.
+check('tool card rendered', contentLines.some(l => l.includes('Bash') && l.includes('ls')), 'Bash("ls") card')
+
+// 5. Tool card carries the settled duration on the header.
+check(
+  'tool duration on header',
+  contentLines.some(l => l.includes('Bash') && l.includes('· 8s')),
+  'Bash(...) · 8s',
+)
+
+// 6. Thinking duration on the folded label (zh locale: 思考).
+check(
+  'thinking duration on folded label',
+  contentLines.some(l => l.includes('⚓ 思考') && l.includes('12s')),
+  '⚓ 思考 · 12s (ctrl+o expand)',
+)
+
+// 7. Terminal tab title carries the ✦ prefix, FlagQAI identity and session
+//    title. Windows writes process.title; other platforms emit OSC 0.
+const renderedTabTitle = process.platform === 'win32' ? process.title : output
+check('FlagQAI tab title', renderedTabTitle.includes('✦ FlagQAI · probe') && !renderedTabTitle.includes('✦ 🐋 probe'))
+
+// 7b. Header splash: pixel whale (half-block glyphs over the DeepSeek-blue
+//     body color), shimmer tagline, model · effort line, cwd, welcome line.
+check(
+  'header pixel whale',
+  cursorMoved.includes('▀') && cursorMoved.includes('48;2;78;111;255'),
+  'half-block whale rows with DeepSeek-blue body',
+)
+check(
+  'header tagline',
+  contentLines.some(l => l.includes('█▀▀▀▄')),
+  'big block-font tagline rows',
+)
+check(
+  'header model effort',
+  contentLines.some(l => l.includes('deepseek-v4-flash') && l.includes('Max effort')),
+  'model · Max effort row',
+)
+check(
+  'header cwd',
+  contentLines.some(l => l.includes('C:/code/demo-project')),
+  'cwd row',
+)
+// 底部欢迎语那一行 1/20 的 mount 会被求 star 彩蛋顶掉（components/splashEggs.ts），
+// 所以"欢迎语在屏上"要认两种文案，否则这条探针会随机变红。
+check(
+  'header welcome',
+  contentLines.some(l => l.includes('探索未至之境') || l.includes('谢谢使用')),
+  '探索未至之境！ / 谢谢使用！…',
+)
+check(
+  'header tip line',
+  contentLines.some(l => l.includes('提示：') && l.includes('/tips')),
+  'tip under the cwd row',
+)
+
+// 8. Status line metrics (pi-bar style): pressure percent/window, think
+//    level, cache hits, tps gauge/sparkline. The footer row also carries
+//    the cwd, so pin it by the model id + cache label (zh locale: 缓存).
+const statusLine = contentLines.find(l => l.includes('deepseek-v4-flash') && l.includes('缓存')) ?? ''
+check('statusline think level', statusLine.includes('max') && !statusLine.includes('think:max'), 'bare effort level (no think: prefix)')
+check('statusline cache', statusLine.includes('缓存 20.5%'), 'cache hit rate, one decimal (3400/16600)')
+check('statusline tps single value', statusLine.includes('tps') && !statusLine.includes('μ') && !statusLine.includes('p95'), `sparkline + one tps number (got: ${statusLine})`)
+check('statusline sparkline blocks', /[▁▂▃▄▅▆▇█]/.test(cursorMoved), 'sparkline glyphs present')
+check('statusline speed color', cursorMoved.includes('\x1b[38;2;202;138;4m') || cursorMoved.includes('\x1b[38;2;78;186;101m'), 'warning/success tps color')
+// 9. Segmented context bar (pi-nano-context algorithm, DeepSeek palette) on
+//    its own first footer row. The bar is fill-only: its one piece of text is
+//    the right-aligned `counts percent` readout (labels were removed
+//    2026-09-10; the per-content-type numbers live on hover —
+//    verify-hover-details I).
+check('context bar bg segments', /48;2;(34|43|52|77|90);\d+;\d+m/.test(cursorMoved), 'DeepSeek-blue segment backgrounds')
+check('context bar usage readout', cursorMoved.includes('17k/1.0M') && cursorMoved.includes('1.7%'),
+  'right-aligned counts + percent, no labels')
+
+// 10. Working-activity line (dsh-working-activity integration): the live
+//     line renders on the status row with the hint still visible, and the
+//     ⏵ self-narration first line is stripped from the transcript body.
+check(
+  'activity line in status',
+  contentLines.some(l => l.includes('正在查看 src/dsh-adapter/channel.ts')),
+  'live working line on the status row',
+)
+check(
+  'activity + hint side by side',
+  contentLines.some(l => l.includes('正在查看 src/dsh-adapter/channel.ts') && l.includes('? 查看快捷键')),
+  'hint stays visible beside the activity line',
+)
+// 指示帧来自 `activityFrames: 'moon8'` 预设本身（月相 emoji），不再断言
+// 旧版的 [·•●] 字符集——那条断言在默认预设改成 emoji 之后就恒红。
+const moonFrames: readonly string[] = activity.FRAME_PRESETS.moon8?.frames ?? []
+check(
+  'activity indicator frame',
+  contentLines.some(l => l.includes('正在查看 src/dsh-adapter/channel.ts')
+    && moonFrames.some(frame => l.startsWith(frame))),
+  // 诊断用：这里打出实际首字符，预设换帧时一眼可见。
+  `line=${JSON.stringify(contentLines.find(l => l.includes('正在查看')) ?? '')}`,
+)
+check(
+  'activity no warn at low usage',
+  !contentLines.some(l => l.includes('⚠')),
+  'no context warning below 80%',
+)
+check(
+  'narration stripped from body',
+  !contentLines.some(l => l.includes('⏵ 修一下状态栏')),
+  '⏵ first line removed from the assistant transcript',
+)
+
+console.log(results.join('\n'))
+console.log(`--- ${pass}/${results.length} passed ---`)
+if (pass < results.length) {
+  console.log('--- transcript (plain, trimmed) ---')
+  console.log(contentLines.slice(0, 40).join('\n'))
+  // Raw frames around the user row to diagnose missing background.
+  const idx = cursorMoved.indexOf('hello, list the files')
+  if (idx >= 0) {
+    console.log('RAW CTX ' + JSON.stringify(cursorMoved.slice(Math.max(0, idx - 120), idx + 260)))
+  } else {
+    console.log('RAW CTX: user text not found in raw frames')
+  }
+}
+
+await instance.unmount()
+// The app's animation timers (title spinner, clock) are torn down by
+// unmount; waitUntilExit can still hang on the empty loop, so race it
+// against a short timeout and force the result exit code.
+await Promise.race([
+  instance.waitUntilExit(),
+  new Promise(resolve => setTimeout(resolve, 300)),
+])
+process.exit(pass === results.length ? 0 : 1)

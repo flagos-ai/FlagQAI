@@ -1,0 +1,14 @@
+{
+  "name": "@flagqai/protocol",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": "./index.mjs",
+    "./agent/*": {
+      "types": "./agent/*.d.mts",
+      "default": "./agent/*.mjs"
+    }
+  }
+}

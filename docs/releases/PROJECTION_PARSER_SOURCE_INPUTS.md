@@ -1,0 +1,7 @@
+# Native projection parser replacement inputs
+
+Issue #93 tracks the source-rights review for the CLI. This private batch replaces `apps/cli/src/dsh-adapter/channel/projection-helpers.ts` without using the imported implementation body as a design input. The inputs were its exported declaration contract, the current translator and subagent-projection call sites, `TodoPanelItem` in the protocol package, and the repository's recorded native event fixtures. Prior exposure to the repository means this is not a strict clean-room or rights-clearance claim.
+
+The functions recognize the native `task` tool, parse `job_output` identifiers and shell/terminal commands from JSON argument objects, recognize a shell background-start acknowledgement, and validate each optional `todo/write` event as one complete list. Malformed optional-plugin data returns no list so it cannot replace a valid Todo snapshot; an empty valid list clears the previous task's snapshot. The new helper retains no session, job or Agent authority; Harness events and the native translator remain authoritative.
+
+`verify:projection-parsers` covers valid and malformed argument shapes, background-ack false positives, and whole-list Todo validation. Existing DSH translation, goal/Todo replay, projection goldens, subagent and background checks cover integration. The wider terminal host, prompt input, presentation components, other adapters and private Git history remain subject to issue #93 and #86.

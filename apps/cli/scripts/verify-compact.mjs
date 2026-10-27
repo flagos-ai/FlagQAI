@@ -1,0 +1,258 @@
+/**
+ * Channel-level verification of the post-compaction behaviour (real Channel
+ * via createChannel + fake ctx/agent, plain node against the compiled lib):
+ *
+ * - the compaction checkpoint renders a localized `compact-done` Divider plus
+ *   a `compact` summary row (defaults FOLDED in the transcript)
+ * - the segmented bar's composition resets immediately (contextSegments), while
+ *   OCCUPANCY is left to the official `contextPressure` projection: this
+ *   composition mounts no token meter, so the fallback sample must stay
+ *   untouched by the checkpoint (the old chars/4 rewrite of lastUsage /
+ *   tokens.input is gone on purpose — see dsh-adapter/context-occupancy.ts)
+ * - MessageList renders the folded summary as one line and the full text
+ *   once expanded (Ctrl+O / message-selection Enter)
+ *
+ * Run with plain node against the compiled lib: `node scripts/verify-compact.mjs`
+ */
+import './lib/default-lang-zh.mjs'
+import { createChannel } from '../lib/types/dsh-adapter/channel.js'
+import { t } from '../lib/types/i18n.js'
+import React from 'react'
+import { render } from '../lib/types/ui.js'
+import { MessageList } from '../lib/types/components/MessageList.js'
+import { Writable, PassThrough } from 'node:stream'
+import { settled, sleep } from './lib/term-test.mjs'
+
+let failed = 0
+function check(name, ok, extra = '') {
+  console.log(`${ok ? 'PASS' : 'FAIL'}: ${name}${extra ? `  (${extra})` : ''}`)
+  if (!ok) failed += 1
+}
+
+const toPlain = s =>
+  s
+    .replace(/\x1b\[(\d+)C/g, (_, n) => ' '.repeat(Number(n)))
+    .replace(/\x1b\[[0-9;?>:]*[a-zA-Z]/g, '')
+    .replace(/\x1b\]9;[^\x07]*\x07/g, '')
+
+// Independent ASCII-only oracle for the channel's segment estimate: the shared
+// `estimateTokens` (src/dsh-adapter/channel/usage.ts) charges pure ASCII at
+// exactly this rate, and every fixture below is ASCII, so this stays an exact
+// expectation. The CJK-aware semantics (and the rates themselves) are pinned
+// separately by scripts/verify-cjk-token-estimate.ts.
+const est = text => Math.ceil(text.length / 4)
+
+// ---- channel-level: seed a pre-compact context, then compact it
+const handlers = new Map()
+const ctx = {
+  on(event, handler) {
+    handlers.set(event, handler)
+    return () => handlers.delete(event)
+  },
+  get() {
+    return undefined
+  },
+  logger: { warn() {} },
+}
+const agent = {
+  id: 'a1',
+  status: 'idle',
+  session: { id: 's1', seq: 0, events: [] },
+  // bindAgent 挂 installModelSelection 需要 agent.ctx 提供"可订阅、返回
+  // 解除函数"的最小面（0.3.6 Shift+Tab 推理等级）。
+  ctx: { on: () => () => {} },
+  followup() {},
+  steer() {},
+}
+const channel = createChannel(ctx, agent, {
+  model: 'deepseek-chat',
+  cwd: '/tmp',
+  provider: 'deepseek',
+  activity: false,
+})
+const emit = (event) => {
+  const handler = handlers.get('session/event')
+  if (handler) handler(agent.session, event)
+}
+
+const SYSTEM = 'SYSTEM-PROMPT-ABCDEFGH'
+const USER_TEXT = 'user question here'
+const ASSISTANT_TEXT = 'assistant answer text'
+const SUMMARY = 'Summary of the entire conversation history up to this point.'
+const LONG_SUMMARY = '这是一个很长的压缩摘要，用来验证折叠后预览会被截断，不会把全文都显示在一行里。'.repeat(3)
+
+emit({ type: 'request/context', seq: 1, data: { contextWindow: 100000 } })
+emit({ type: 'request/header', seq: 2, data: { header: { system: SYSTEM } } })
+emit({ type: 'user/message', seq: 3, data: { source: { kind: 'user' }, content: [{ type: 'text', text: USER_TEXT }] } })
+emit({
+  type: 'assistant/message',
+  seq: 4,
+  data: {
+    message: { content: [{ type: 'text', text: ASSISTANT_TEXT }] },
+    usage: { inputTokens: 5000, outputTokens: 100, cacheReadTokens: 3000, cacheWriteTokens: 0 },
+  },
+})
+
+check('pre-compact tokens.input accumulated', channel.tokens.input === 5000, String(channel.tokens.input))
+check('pre-compact lastUsage set', channel.lastUsage?.input === 5000, JSON.stringify(channel.lastUsage))
+const sysEst = est(SYSTEM)
+const promptEst = est(USER_TEXT)
+const assistantEst = est(ASSISTANT_TEXT)
+check(
+  'pre-compact segments populated',
+  channel.contextSegments.system === sysEst &&
+    channel.contextSegments.prompt === promptEst &&
+    channel.contextSegments.assistant === assistantEst,
+  JSON.stringify(channel.contextSegments),
+)
+
+// The compaction checkpoint (dsh-compact's COMPACT_CHECKPOINT_SOURCE).
+emit({
+  type: 'user/message',
+  seq: 5,
+  data: {
+    source: { kind: 'plugin', plugin: 'compact' },
+    content: [{ type: 'text', text: SUMMARY }],
+  },
+})
+
+const rows = channel.rows
+const compactRow = rows[rows.length - 1]
+const noticeRow = rows[rows.length - 2]
+check('checkpoint renders notice row', noticeRow?.kind === 'notice' && noticeRow?.text === t('compact-done'), JSON.stringify(noticeRow))
+check('checkpoint renders compact row with full summary', compactRow?.kind === 'compact' && compactRow?.text === SUMMARY, JSON.stringify(compactRow))
+
+const summaryEst = est(SUMMARY)
+check(
+  'segments reset to system + summary',
+  channel.contextSegments.system === sysEst &&
+    channel.contextSegments.prompt === summaryEst &&
+    channel.contextSegments.assistant === 0 &&
+    channel.contextSegments.thinking === 0 &&
+    channel.contextSegments.tools === 0,
+  JSON.stringify(channel.contextSegments),
+)
+check(
+  'checkpoint leaves the fallback occupancy sample untouched',
+  channel.lastUsage?.input === 5000 &&
+    channel.lastUsage?.output === 100 &&
+    channel.lastUsage?.cacheRead === 3000 &&
+    channel.lastUsage?.cacheWrite === 0,
+  JSON.stringify(channel.lastUsage),
+)
+check(
+  'checkpoint does not rewrite the cumulative tokens counter',
+  channel.tokens.input === 5000,
+  String(channel.tokens.input),
+)
+check(
+  'no-meter occupancy is the billed sample, never the chars/4 segment guess',
+  channel.contextOccupancy?.source === 'sample' &&
+    channel.contextOccupancy?.usedTokens === 8000 &&
+    channel.contextOccupancy?.contextWindow === 100000,
+  JSON.stringify(channel.contextOccupancy),
+)
+
+// A second compaction with an EMPTY summary: no summary row, prompt cleared.
+emit({
+  type: 'user/message',
+  seq: 6,
+  data: { source: { kind: 'plugin', plugin: 'compact' }, content: [] },
+})
+const rows2 = channel.rows
+check('empty summary adds no compact row', rows2[rows2.length - 1]?.kind === 'notice', JSON.stringify(rows2[rows2.length - 1]))
+check(
+  'empty summary clears the prompt segment',
+  channel.contextSegments.prompt === 0 && channel.lastUsage?.input === 5000,
+  JSON.stringify(channel.lastUsage),
+)
+
+// The segment estimate is CJK-aware (#1170): a Chinese prompt must land in the
+// measured 1–1.5 chars/token band instead of the old ASCII chars/4 — the defect
+// was Chinese sessions being under-counted ~3x, and the projection wiring above
+// is what has to carry the new rate to the bar.
+const CJK_PROMPT = '这是一段中文提问，用来验证分段估算按中文口径计费，而不是英文的四字符一枚。'
+emit({ type: 'user/message', seq: 7, data: { source: { kind: 'user' }, content: [{ type: 'text', text: CJK_PROMPT }] } })
+check(
+  'segments charge Chinese text above the old chars/4 rate',
+  channel.contextSegments.prompt >= Math.ceil(CJK_PROMPT.length / 1.5) &&
+    channel.contextSegments.prompt <= Math.ceil(CJK_PROMPT.length) &&
+    channel.contextSegments.prompt > Math.ceil(CJK_PROMPT.length / 4),
+  `prompt=${channel.contextSegments.prompt} chars=${CJK_PROMPT.length}`,
+)
+
+// ---- render-level: folded by default, full text when expanded
+function makeStreams() {
+  const stdout = new Writable({
+    write(chunk, _enc, cb) {
+      stdout.frames.push(String(chunk))
+      cb()
+    },
+  })
+  stdout.columns = 100
+  stdout.rows = 30
+  stdout.isTTY = true
+  stdout.frames = []
+  const stderr = new Writable({ write(_c, _e, cb) { cb() } })
+  stderr.isTTY = true
+  const stdin = new PassThrough()
+  stdin.isTTY = true
+  stdin.setRawMode = () => stdin
+  stdin.setEncoding = () => stdin
+  stdin.ref = () => stdin
+  stdin.unref = () => stdin
+  return { stdout, stderr, stdin }
+}
+
+const listProps = (expanded) => ({
+  rows: [
+    { id: 1, kind: 'notice', text: t('compact-done') },
+    { id: 2, kind: 'compact', text: LONG_SUMMARY },
+  ],
+  expanded,
+  expandedRows: new Set(),
+  selectedId: null,
+  onToggleRow() {},
+  model: 'deepseek-chat',
+  showAll: true,
+  onToggleAll() {},
+  onLoadOlder() {},
+})
+
+{
+  const { stdout, stderr, stdin } = makeStreams()
+  const instance = await render(
+    React.createElement(MessageList, listProps(false)),
+    { stdout, stderr, stdin, exitOnCtrlC: false, patchConsole: false },
+  )
+  const frame = () => toPlain(stdout.frames.at(-1) ?? '')
+  // 空帧守卫：渲染崩溃时两条 hides 断言会空洞通过（本文件曾因 MessageList
+  // 新增必需 prop 而空帧,只有 shows 报警）。先证明画面存在。
+  await settled(() => frame().includes(t('compact-done')) && frame().includes('摘要已折叠'))
+  // 固定窗:探针 负向断言观察窗：完整摘要若在正向落定之后迟到出现，落定瞬间检查会漏掉。
+  await sleep(200)
+  const shot = frame()
+  check('compact scenario renders at all', shot.includes(t('compact-done')), '')
+  check('folded summary shows the fold line', shot.includes('摘要已折叠'), '')
+  check('folded summary hides the full text', !shot.includes(LONG_SUMMARY), '')
+  instance.unmount()
+}
+
+{
+  const { stdout, stderr, stdin } = makeStreams()
+  const instance = await render(
+    React.createElement(MessageList, listProps(true)),
+    { stdout, stderr, stdin, exitOnCtrlC: false, patchConsole: false },
+  )
+  // Terminal wrap inserts newlines mid-string, so flatten before matching.
+  const frame = () => toPlain(stdout.frames.at(-1) ?? '').replace(/\n/g, '')
+  await settled(() => frame().includes('压缩摘要'))
+  // 固定窗:探针 负向断言观察窗：折叠行若迟到泄漏，落定瞬间检查会漏掉。
+  await sleep(200)
+  const shot = frame()
+  check('expanded summary shows the full text', shot.includes('压缩摘要'), '')
+  check('expanded summary hides the fold line', !shot.includes('摘要已折叠'), '')
+  instance.unmount()
+}
+
+process.exit(failed)

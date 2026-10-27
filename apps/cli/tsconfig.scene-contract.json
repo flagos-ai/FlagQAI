@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "noEmit": true, "rootDir": "." },
+  "files": ["scripts/type-fixtures/scene-public-contract.ts", "src/dsh-adapter/renderer-shims.d.ts", "src/dsh-adapter/session-title-shim.d.ts"],
+  "include": []
+}

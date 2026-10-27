@@ -1,0 +1,194 @@
+/**
+ * Regression check for durable Workspace ownership of TUI-created Sessions.
+ *
+ * Run after build:
+ *   pnpm build && node scripts/verify-workspace-attachment.mjs
+ */
+import assert from 'node:assert/strict'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { Context } from '@deepseek-ai/cordis'
+import Storage from '@deepseek-ai/dsh-storage'
+import * as StorageDomain from '@deepseek-ai/dsh-storage-domain'
+import * as StorageJson from '@deepseek-ai/dsh-storage-json'
+import WorkspaceRegistry from '@deepseek-ai/dsh-workspace'
+import { attachSessionToWorkspace } from '../lib/types/dsh-adapter/workspace.js'
+
+const existingCalls = []
+const existingWorkspace = {
+  async attachSession(sessionId) {
+    existingCalls.push(['attach', sessionId])
+  },
+}
+const existingRegistry = {
+  async resolveByPath(cwd) {
+    existingCalls.push(['resolve', cwd])
+    return existingWorkspace
+  },
+  async create() {
+    throw new Error('existing workspace must not be recreated')
+  },
+}
+assert.equal(
+  await attachSessionToWorkspace(
+    { get: key => key === 'workspaceRegistry' ? existingRegistry : undefined },
+    '/work/existing',
+    'session-existing',
+  ),
+  true,
+)
+assert.deepEqual(existingCalls, [
+  ['resolve', '/work/existing'],
+  ['attach', 'session-existing'],
+])
+
+const createCalls = []
+const createdWorkspace = {
+  async attachSession(sessionId) {
+    createCalls.push(['attach', sessionId])
+  },
+}
+const creatingRegistry = {
+  async resolveByPath(cwd) {
+    createCalls.push(['resolve', cwd])
+    return undefined
+  },
+  async create(cwd) {
+    createCalls.push(['create', cwd])
+    return createdWorkspace
+  },
+}
+assert.equal(
+  await attachSessionToWorkspace(
+    { get: key => key === 'workspaceRegistry' ? creatingRegistry : undefined },
+    '/work/new',
+    'session-new',
+  ),
+  true,
+)
+assert.deepEqual(createCalls, [
+  ['resolve', '/work/new'],
+  ['create', '/work/new'],
+  ['attach', 'session-new'],
+])
+
+assert.equal(
+  await attachSessionToWorkspace({ get: () => undefined }, '/work/bare', 'session-bare'),
+  false,
+)
+
+// Exercise the real four-plugin stack used by the profile patch. The Session
+// is live (the same state immediately after agents.create), so attachSession
+// validates its immutable header and persists the Workspace account.
+const actualRoot = mkdtempSync(join(tmpdir(), 'flagqai-workspace-'))
+const actualCwd = join(actualRoot, 'project')
+mkdirSync(actualCwd)
+const actualHeader = {
+  id: 'session-actual',
+  cwd: actualCwd,
+  createdAt: Date.now(),
+}
+const actualCtx = new Context()
+const disposers = []
+const rememberDisposer = value => {
+  if (typeof value === 'function') disposers.push(value)
+}
+try {
+  rememberDisposer(await actualCtx.plugin(Storage))
+  rememberDisposer(await actualCtx.plugin(StorageJson, { root: join(actualRoot, 'storages') }))
+  rememberDisposer(await actualCtx.plugin(StorageDomain, { backend: 'json' }))
+  rememberDisposer(actualCtx.provide('sessionPersistence', {
+    async list() { return [] },
+  }))
+  rememberDisposer(actualCtx.provide('sessions', {
+    get: id => id === actualHeader.id ? { header: actualHeader } : undefined,
+    list: () => [{ header: actualHeader }],
+  }))
+  rememberDisposer(await actualCtx.plugin(WorkspaceRegistry))
+
+  assert.equal(
+    await attachSessionToWorkspace(actualCtx, actualCwd, actualHeader.id),
+    true,
+  )
+  const actualWorkspace = await actualCtx.workspaceRegistry.resolveByPath(actualCwd)
+  assert.deepEqual(actualWorkspace?.sessionIds, [actualHeader.id])
+} finally {
+  for (const dispose of disposers.reverse()) await dispose()
+  rmSync(actualRoot, { recursive: true, force: true })
+}
+
+const plugin = readFileSync(new URL('../src/dsh-adapter/plugin.ts', import.meta.url), 'utf8')
+const channel = [
+  'channel.ts',
+  'channel/model-switch.ts',
+  'channel/session-resume.ts',
+  'channel/session-rewind.ts',
+  'channel/session-fork.ts',
+  'channel/session-tree-actions.ts',
+  'channel/session-live-adoption.ts',
+  'channel/background-action.ts',
+  'channel/agent-view-projection.ts',
+].map(path => readFileSync(new URL(`../src/dsh-adapter/${path}`, import.meta.url), 'utf8')).join('\n')
+const patch = readFileSync(new URL('../cordis.patch.yml', import.meta.url), 'utf8')
+// Ownership resolves through the session's OWN header cwd, exactly like the
+// `cwd:` handed to `createChannel`. Attaching a resumed session to the LAUNCH
+// directory instead accounts one session in two workspaces whenever the launch
+// directory is an ancestor of the session's (`~/projects` vs
+// `~/projects/app`); the durable ledger then rejects the next boot with
+// "session ... is accounted by both workspace ...". Pin the source expression
+// because the failure only surfaces one boot later, in another process.
+assert.match(
+  plugin,
+  /const ownershipCwd = agent\.session\.header\.cwd \?\? meta\.cwd\r?\n\s+const attached = await attachSessionToWorkspace\(ctx, ownershipCwd, agent\.session\.id\)/,
+  'startup attaches both newly-created and resumed sessions, and a resumed session keeps its own workspace',
+)
+assert.doesNotMatch(
+  plugin,
+  /await attachSessionToWorkspace\(ctx, meta\.cwd, agent\.session\.id\)/,
+  'startup must never account a session in the launch directory workspace',
+)
+assert.doesNotMatch(plugin, /if \(created\)/, 'startup attachment must not skip resumed legacy sessions')
+// The launch-time --resume path mounts the log before the mount publisher is
+// even installed (`startSessionMountHeartbeat` runs later in `apply`), and the
+// publisher never refuses a mount — it publishes the set. So the reservation,
+// taken before any await, is the only thing standing between two terminals
+// doing `--resume <same id>` and a corrupted transcript. Pin the seam, not the
+// prose.
+const claimAt = plugin.indexOf('reserveMount(requestedSessionId)')
+const claimRefusalAt = plugin.indexOf('if (!reserved.ok)')
+const resumeAt = plugin.indexOf('await ctx.agents.resume(')
+assert.ok(claimAt >= 0, 'the launch-time --resume path reserves the session mount')
+assert.ok(claimRefusalAt > claimAt, 'a refused launch-time reservation is handled, not ignored')
+assert.ok(resumeAt > claimRefusalAt, 'the reservation and its refusal precede the resume it guards')
+assert.match(
+  plugin,
+  /reservation\.abandon\(\)/,
+  'a launch-time resume that fails gives its reservation back instead of leaving a phantom holder',
+)
+assert.match(
+  plugin,
+  /reservation\.settle\(\)/,
+  'a launch-time resume that succeeds hands the session to the agent registry',
+)
+assert.equal(
+  [...channel.matchAll(/await attachSessionToWorkspace\(ctx, (?:state\.cwd|targetCwd|deps\.cwd\(\)|handle\.agent\.session\.header\.cwd \?\? state\.cwd|sourceCwd), (?:SessionId\(sessionId\)|childId|sessionId)\)/g)].length,
+  8,
+  'rewind, /resume, /new, model-switch, tree rewindToNode, /fork, and agent-view background paths all attach ownership across extracted actions',
+)
+for (const id of ['storage', 'storage-json', 'storage-domain', 'workspace']) {
+  assert.match(patch, new RegExp(`- id: flagqai-${id}\\n`), `profile patch mounts scoped flagqai-${id}`)
+  assert.match(
+    patch,
+    new RegExp(`flagqai-${id}[\\s\\S]{0,260}entry\\.options\\.id === '${id}'`),
+    `scoped flagqai-${id} yields to the official ${id} row`,
+  )
+}
+assert.match(patch, /root: !!js dshHomePath\('storages'\)/)
+assert.match(
+  patch,
+  /- id: flagqai\n\s+name: '@deepseek-harness-tui\/flagqai'\n[\s\S]{0,240}inject: \[[^\]]*\bworkspaceRegistry\b[^\]]*\]/,
+  'profile waits for WorkspaceRegistry before the TUI creates its startup session',
+)
+
+console.log('verify-workspace-attachment: OK')

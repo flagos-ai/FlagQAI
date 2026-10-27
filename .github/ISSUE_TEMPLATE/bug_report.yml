@@ -1,0 +1,27 @@
+name: Bug report
+description: Report a reproducible CLI, service, or calculation problem.
+body:
+  - type: markdown
+    attributes:
+      value: Please use SECURITY.md for vulnerabilities. Remove credentials, private prompts, personal paths, and session data from examples.
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Commit or package version, OS and architecture, Node.js version, backend, and installation method.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Include a minimal task or script. For scientific results, state the problem, units, reference value, and tolerance.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and observed behavior
+      description: Distinguish local simulation, hardware, scripted fixtures, and live model runs. Include redacted error output if useful.
+    validations:
+      required: true

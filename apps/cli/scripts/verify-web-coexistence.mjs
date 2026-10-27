@@ -1,0 +1,242 @@
+/**
+ * Regression gate for mixed dsh-web + flagqai profiles.
+ *
+ * The installed web-app is always checked. A source checkout named by
+ * DSH_HARNESS_SOURCE_ROOT supplies the source-authoritative prerelease
+ * baseline (opt-in, never discovered: a stale sibling tree would fail the gate
+ * on a version nobody targets); CI requires it instead of silently skipping it.
+ * Scoped TUI host rows must never collide with either bundle generation and
+ * must yield to every official row that generation owns.
+ */
+
+import assert from 'node:assert/strict'
+import { existsSync, readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+import { parse } from 'yaml'
+import { applyEntryPatches } from '@deepseek-ai/cordis-plugin-include'
+import { evaluate } from '@deepseek-ai/cordis-plugin-loader'
+import { prepareUpstreamSourceResolver } from './upstream-source-baseline.mjs'
+
+const yamlOptions = { logLevel: 'silent' }
+const loadPatch = path => parse(readFileSync(path, 'utf8'), yamlOptions)
+const insertedRows = patches => patches.flatMap(patch => Array.isArray(patch?.insert) ? patch.insert : [])
+
+const tuiPath = fileURLToPath(new URL('../cordis.patch.yml', import.meta.url))
+const installedWebPath = fileURLToPath(import.meta.resolve('@deepseek-ai/dsh-web-app/cordis.patch.yml'))
+const installedWebManifest = fileURLToPath(import.meta.resolve('@deepseek-ai/dsh-web-app/package.json'))
+const installedWebVersion = JSON.parse(readFileSync(installedWebManifest, 'utf8')).version
+const baselines = [{
+  label: `installed web-app ${installedWebVersion}`,
+  version: installedWebVersion,
+  baseUrl: pathToFileURL(tuiPath).href,
+  webPath: installedWebPath,
+}]
+
+const sourceRoot = !process.env.DSH_HARNESS_SOURCE_ROOT
+  ? undefined
+  : resolve(process.env.DSH_HARNESS_SOURCE_ROOT)
+const sourceWebPath = sourceRoot === undefined ? '' : join(sourceRoot, 'packages/bundle/web-app/cordis.patch.yml')
+const sourceWebManifest = sourceRoot === undefined ? '' : join(sourceRoot, 'packages/bundle/web-app/package.json')
+const sourceBasePath = sourceRoot === undefined ? '' : join(sourceRoot, 'packages/bundle/base/cordis.patch.yml')
+const requireSourceBaseline = process.env.DSH_REQUIRE_ALPHA_BASELINE === '1'
+if (sourceRoot !== undefined && existsSync(sourceWebPath) && existsSync(sourceWebManifest) && existsSync(sourceBasePath)) {
+  const sourceWebVersion = JSON.parse(readFileSync(sourceWebManifest, 'utf8')).version
+  if (requireSourceBaseline && sourceWebVersion !== '0.2.0-rc.2') {
+    throw new Error(`required source baseline is 0.2.0-rc.2, got ${sourceWebVersion}`)
+  }
+  const resolver = prepareUpstreamSourceResolver(sourceRoot)
+  baselines.push({
+    label: `source web-app ${sourceWebVersion}`,
+    version: sourceWebVersion,
+    baseUrl: resolver.baseUrl,
+    basePath: sourceBasePath,
+    webPath: sourceWebPath,
+  })
+} else if (requireSourceBaseline) {
+  throw new Error(`required source baseline missing under ${sourceRoot ?? '(DSH_HARNESS_SOURCE_ROOT unset)'}`)
+}
+
+const tuiPatches = loadPatch(tuiPath)
+assert.ok(Array.isArray(tuiPatches), 'flagqai patch must be a top-level list')
+
+const evaluateFor = (baseline, expression, entries = []) => evaluate({
+  baseUrl: baseline.baseUrl,
+  loader: { entries: () => entries },
+}, expression)
+
+const shared = [
+  { id: 'storage', name: '@deepseek-ai/dsh-storage' },
+  { id: 'storage-json', name: '@deepseek-ai/dsh-storage-json' },
+  { id: 'storage-domain', name: '@deepseek-ai/dsh-storage-domain' },
+  { id: 'workspace', name: '@deepseek-ai/dsh-workspace' },
+  { id: 'code-runtime', name: '@deepseek-ai/dsh-code-runtime-worker-thread' },
+  { id: 'subagent-model-selection-settings', name: '@deepseek-ai/dsh-tool-subagent/model-selection-settings' },
+  { id: 'agent-presets', name: '@deepseek-ai/dsh-agent-presets' },
+  { id: 'agent-preset-registry', name: '@deepseek-ai/dsh-agent-preset-registry' },
+  { id: 'cordis-host-runner', name: '@deepseek-ai/dsh-cordis-host-runner' },
+  { id: 'webserver', name: '@deepseek-ai/dsh-host-webserver' },
+]
+
+for (const baseline of baselines) {
+  const require = createRequire(baseline.baseUrl)
+  const resolvePackage = specifier => {
+    try {
+      return require.resolve(specifier)
+    } catch (error) {
+      if (
+        error?.code === 'ERR_MODULE_NOT_FOUND'
+        || error?.code === 'MODULE_NOT_FOUND'
+        || error?.code === 'ERR_PACKAGE_PATH_NOT_EXPORTED'
+      ) return undefined
+      throw error
+    }
+  }
+  const presetManifest = resolvePackage('@deepseek-ai/dsh-agent-presets/package.json')
+  const hasRegistry = resolvePackage('@deepseek-ai/dsh-agent-preset-registry/package.json') !== undefined
+  const shippedStandardPreset = presetManifest === undefined
+    ? undefined
+    : join(dirname(presetManifest), 'presets', 'standard', 'agent.cordis.yml')
+  const hasShippedPresets = shippedStandardPreset !== undefined && existsSync(shippedStandardPreset)
+  const shippedOwnsCommandGoal = hasRegistry
+    ? insertedRows(loadPatch(resolvePackage('@deepseek-ai/dsh-web-app/presets/standard.patch.yml')))
+      .some(row => row.config.plugins.some(plugin => plugin.id === 'command-goal'))
+    : hasShippedPresets && loadPatch(shippedStandardPreset).some(row => row?.id === 'command-goal')
+  const hasSubagentModelSelectionSettings = resolvePackage(
+    '@deepseek-ai/dsh-tool-subagent/model-selection-settings',
+  ) !== undefined
+  const hasWebServer = resolvePackage('@deepseek-ai/dsh-host-webserver/package.json') !== undefined
+  const accountRow = { options: { id: 'deepseek-account', name: '@deepseek-ai/dsh-deepseek-account-platform' }, disabled: false }
+  const basePatches = baseline.basePath === undefined ? [] : loadPatch(baseline.basePath)
+  const webPatches = loadPatch(baseline.webPath)
+  assert.ok(Array.isArray(basePatches), `${baseline.label}: base patch must be a top-level list`)
+  assert.ok(Array.isArray(webPatches), `${baseline.label}: web-app patch must be a top-level list`)
+  assert.equal(
+    shippedOwnsCommandGoal,
+    webPatches.some(row => row?.id === 'command-goal' && row?.disabled === true),
+    `${baseline.label}: direct shipped command-goal ownership must match the official web override`,
+  )
+
+  const officialRows = insertedRows([...basePatches, ...webPatches])
+  const composed = applyEntryPatches([], [...basePatches, ...webPatches, ...tuiPatches], () => {})
+  const counts = new Map()
+  for (const row of composed) {
+    if (typeof row?.id !== 'string') continue
+    counts.set(row.id, (counts.get(row.id) ?? 0) + 1)
+  }
+  const duplicates = [...counts].filter(([, count]) => count > 1).map(([id]) => id)
+  assert.deepEqual(
+    duplicates,
+    [],
+    `${baseline.label}: flagqai reuses official loader ids: ${duplicates.join(', ')}`,
+  )
+
+  for (const { id, name } of shared) {
+    const entries = id === 'webserver' ? [accountRow] : []
+    const officialExpected = officialRows.some(row => row?.id === id && row?.name === name)
+    const official = composed.find(row => row?.id === id && row?.name === name)
+    assert.equal(Boolean(official), officialExpected, `${baseline.label}: official ${id} ownership drifted`)
+
+    const scopedId = `flagqai-${id}`
+    const tuiRow = composed.find(row => row?.id === scopedId && row?.name === name)
+    assert.ok(tuiRow, `${baseline.label}: flagqai patch must mount ${scopedId}`)
+    assert.equal(typeof tuiRow.disabled, 'string', `${baseline.label}: ${scopedId} needs a !!js disabled expression`)
+    assert.ok(
+      tuiRow.disabled.includes(`entry.options.id === '${id}'`) && tuiRow.disabled.includes(`'${name}'`),
+      `${baseline.label}: ${scopedId} must yield to ${id}/${name}`,
+    )
+    const unavailable = id === 'agent-preset-registry' ? !hasRegistry
+      : (id === 'agent-presets' || id === 'code-runtime') ? hasRegistry
+        : id === 'subagent-model-selection-settings' ? !hasSubagentModelSelectionSettings
+        : id === 'webserver' ? !hasWebServer
+          : false
+    assert.equal(Boolean(evaluateFor(baseline, tuiRow.disabled, entries)), unavailable,
+      `${baseline.label}: ${scopedId} must follow the installed package generation`)
+    assert.equal(Boolean(evaluateFor(baseline, tuiRow.disabled, [...entries, { options: { id, name }, disabled: false }])), true,
+      `${baseline.label}: ${scopedId} must yield to an enabled official row`)
+    assert.equal(Boolean(evaluateFor(baseline, tuiRow.disabled, [...entries, { options: { id, name }, disabled: true }])), unavailable,
+      `${baseline.label}: a disabled official row does not own ${scopedId}`)
+    if (id === 'webserver') {
+      assert.ok(tuiRow.disabled.includes("require.resolve('@deepseek-ai/dsh-host-webserver/package.json')"),
+        `${baseline.label}: ${scopedId} must probe its own Host package`)
+      assert.equal(Boolean(evaluateFor(baseline, tuiRow.disabled)), true,
+        `${baseline.label}: ${scopedId} must stay disabled without an account service row`)
+      assert.equal(Boolean(evaluateFor(baseline, tuiRow.disabled, [{ ...accountRow, disabled: true }])), true,
+        `${baseline.label}: ${scopedId} must stay disabled when the account service row is disabled`)
+      assert.deepEqual(tuiRow.config, { host: '127.0.0.1', port: 0 },
+        `${baseline.label}: TUI-only callback listener must bind an OS-assigned loopback port`)
+    }
+    if (id === 'subagent-model-selection-settings') {
+      assert.ok(
+        tuiRow.disabled.includes("require.resolve('@deepseek-ai/dsh-tool-subagent/model-selection-settings')"),
+        `${baseline.label}: ${scopedId} must probe its own package subpath`,
+      )
+      assert.equal(
+        tuiRow.disabled.includes('plugin-package-inventory-deepseek'),
+        false,
+        `${baseline.label}: ${scopedId} must not use the optional package inventory row as a capability probe`,
+      )
+
+      const disabledInventory = [{
+        options: {
+          id: 'plugin-package-inventory-deepseek',
+          name: '@deepseek-ai/dsh-plugin-package-inventory-deepseek',
+        },
+        disabled: true,
+      }]
+      assert.equal(
+        Boolean(evaluateFor(baseline, tuiRow.disabled, disabledInventory)),
+        !hasSubagentModelSelectionSettings,
+        `${baseline.label}: ${scopedId} capability must follow the package export, not inventory state`,
+      )
+      if (officialExpected) {
+        assert.equal(
+          Boolean(evaluateFor(baseline, tuiRow.disabled, [{
+            options: { id, name },
+            disabled: false,
+          }])),
+          true,
+          `${baseline.label}: ${scopedId} must yield to an enabled official row`,
+        )
+        assert.equal(
+          Boolean(evaluateFor(baseline, tuiRow.disabled, [{
+            options: { id, name },
+            disabled: true,
+          }])),
+          false,
+          `${baseline.label}: ${scopedId} may serve when the official row is disabled`,
+        )
+      }
+    }
+  }
+
+  const commandGoalPatch = tuiPatches.find(row => row?.id === 'command-goal')
+  assert.equal(typeof commandGoalPatch?.disabled, 'string', `${baseline.label}: command-goal needs a !!js condition`)
+  assert.ok(
+    commandGoalPatch.disabled.includes('.split(/\\r?\\n/u)'),
+    `${baseline.label}: command-goal capability probe must accept LF and CRLF presets`,
+  )
+  assert.equal(
+    Boolean(evaluateFor(baseline, commandGoalPatch.disabled)),
+    shippedOwnsCommandGoal,
+    `${baseline.label}: host command-goal must yield exactly when the shipped standard preset owns it`,
+  )
+
+  const presetRow = composed.find(row => row?.id === 'flagqai-agent-presets')
+  assert.equal(typeof presetRow?.config, 'string', `${baseline.label}: preset config needs a !!js generation condition`)
+  const presetConfig = evaluateFor(baseline, presetRow.config)
+  assert.equal(presetConfig?.default, 'standard', `${baseline.label}: standard remains the default preset`)
+  assert.equal(
+    Object.hasOwn(presetConfig ?? {}, 'roots'),
+    !hasShippedPresets,
+    `${baseline.label}: only package generations without shipped presets need the dsh CLI root`,
+  )
+  if (!hasShippedPresets) {
+    assert.equal(Array.isArray(presetConfig.roots), true, `${baseline.label}: legacy preset roots must be an array`)
+    assert.equal(presetConfig.roots.length, 1, `${baseline.label}: legacy packages need exactly one system preset root`)
+    assert.equal(presetConfig.roots[0]?.trust, 'system', `${baseline.label}: legacy preset root must keep system trust`)
+  }
+}
+
+console.log(`web coexistence OK (${baselines.map(({ label }) => label).join(' + ')})`)

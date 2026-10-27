@@ -1,0 +1,62 @@
+{
+  "name": "@flagqai/harness-adapter",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": "./index.mjs",
+    "./native-session": {
+      "types": "./native-session.d.mts",
+      "default": "./native-session.mjs"
+    },
+    "./child-transcript": {
+      "types": "./child-transcript.d.mts",
+      "default": "./child-transcript.mjs"
+    },
+    "./session-jobs": {
+      "types": "./session-jobs.d.mts",
+      "default": "./session-jobs.mjs"
+    },
+    "./session-subagents": {
+      "types": "./session-subagents.d.mts",
+      "default": "./session-subagents.mjs"
+    },
+    "./session-actions": {
+      "types": "./session-actions.d.mts",
+      "default": "./session-actions.mjs"
+    },
+    "./session-compaction": {
+      "types": "./session-compaction.d.mts",
+      "default": "./session-compaction.mjs"
+    },
+    "./tool-output": {
+      "types": "./tool-output.d.mts",
+      "default": "./tool-output.mjs"
+    },
+    "./native-translator": {
+      "types": "./native-translator.d.mts",
+      "default": "./native-translator.mjs"
+    },
+    "./session-mounts": {
+      "types": "./session-mounts.d.mts",
+      "default": "./session-mounts.mjs"
+    },
+    "./live-session": {
+      "types": "./live-session.d.mts",
+      "default": "./live-session.mjs"
+    },
+    "./persisted-session": {
+      "types": "./persisted-session.d.mts",
+      "default": "./persisted-session.mjs"
+    },
+    "./session-log-access": {
+      "types": "./session-log-access.d.mts",
+      "default": "./session-log-access.mjs"
+    },
+    "./project-skills": {
+      "types": "./project-skills.d.mts",
+      "default": "./project-skills.mjs"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "@flagqai/sdk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Typed JavaScript client for the FlagQAI service protocol.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.mjs"
+    }
+  },
+  "files": [
+    "index.d.ts",
+    "index.mjs",
+    "README.md"
+  ]
+}

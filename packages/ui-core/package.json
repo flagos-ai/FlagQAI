@@ -1,0 +1,45 @@
+{
+  "name": "@flagqai/ui-core",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    "./projection": {
+      "types": "./projection.d.mts",
+      "default": "./projection.mjs"
+    },
+    "./usage": {
+      "types": "./usage.d.mts",
+      "default": "./usage.mjs"
+    },
+    "./live-output": {
+      "types": "./live-output.d.mts",
+      "default": "./live-output.mjs"
+    },
+    "./transcript": {
+      "types": "./transcript.d.mts",
+      "default": "./transcript.mjs"
+    },
+    "./selection-record": {
+      "types": "./selection-record.d.mts",
+      "default": "./selection-record.mjs"
+    },
+    "./activity": {
+      "types": "./activity.d.mts",
+      "default": "./activity.mjs"
+    },
+    "./history-restore": {
+      "types": "./history-restore.d.mts",
+      "default": "./history-restore.mjs"
+    },
+    "./job-format": {
+      "types": "./job-format.d.mts",
+      "default": "./job-format.mjs"
+    },
+    "./agent-messages": {
+      "types": "./agent-messages.d.mts",
+      "default": "./agent-messages.mjs"
+    }
+  }
+}

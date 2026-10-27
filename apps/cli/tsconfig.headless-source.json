@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "declaration": false, "declarationMap": false },
+  "files": ["src/dsh-adapter/server-host.ts", "src/dsh-adapter/session-title-shim.d.ts"],
+  "include": []
+}
