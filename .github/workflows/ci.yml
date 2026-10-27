@@ -35,7 +35,19 @@ jobs:
           cache-dependency-path: apps/cli/pnpm-lock.yaml
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11.10'
+          # Minor version, not an exact patch. `3.11.10` is no longer published
+          # for `macOS 26.6.2 arm64` or `Windows 2025 x64`, and pinning a patch
+          # makes the whole job fail before a single test runs.
+          python-version: '3.11'
+
+      # `flagqai setup` in the installed-first-run acceptance installs the
+      # pinned FlagQuantum MCP through uv. Install it once, before any
+      # acceptance step, instead of per-platform blocks that sat after the
+      # step that needed them.
+      - name: Install pinned uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          version: '0.12.16'
       - run: node docs/releases/verify-fixture-lineage.mjs
       - run: node --test docs/releases/provenance-candidate-status.test.mjs
       - run: node --test docs/releases/verify-clean-initial-import.test.mjs
@@ -65,7 +77,7 @@ jobs:
       - run: node --test docs/releases/release-file-inventory.test.mjs
       - run: node apps/cli/scripts/verify-installed-runtime.mjs
       - run: pnpm --dir apps/cli run verify:package
-      - name: Inventory private release candidate files
+      - name: Inventory release candidate files
         run: node docs/releases/release-file-inventory.mjs --out "${{ runner.temp }}/release-file-inventory.json"
       - uses: actions/upload-artifact@v4
         if: always()
@@ -116,7 +128,6 @@ jobs:
           FLAGQAI_ACCEPTANCE_SCIENCE_SDK: '1'
           FLAGQAI_ACCEPTANCE_PERMISSION_EVIDENCE: '1'
           FLAGQAI_ACCEPTANCE_QUANTUM_FIXTURE: '1'
-          FLAGQAI_ACCEPTANCE_LOCAL_INK_REAL_HOST: ${{ matrix.os == 'macos-latest' && '1' || '0' }}
         run: node apps/cli/scripts/verify-installed-first-run.mjs
         timeout-minutes: 15
       - name: Install Windows PTY test driver
@@ -133,11 +144,6 @@ jobs:
             node scripts/post-install.js
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           } finally { Pop-Location }
-      - name: Install pinned uv for Windows startup
-        if: matrix.os == 'windows-latest'
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
-        with:
-          version: '0.12.16'
       - name: Verify clean Windows install and interactive TUI
         if: matrix.os == 'windows-latest'
         env:
@@ -149,20 +155,10 @@ jobs:
           FLAGQAI_ACCEPTANCE_QUANTUM_FIXTURE: '1'
         run: node apps/cli/scripts/verify-installed-first-run.mjs
         timeout-minutes: 15
-      - name: Install pinned uv for Ubuntu Harness acceptance
-        if: matrix.os == 'ubuntu-latest' && matrix.node == 22
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
-        with:
-          version: '0.12.16'
       - name: Verify installed Harness interactions and Bell task
         if: matrix.os == 'ubuntu-latest' && matrix.node == 22
         run: node apps/cli/scripts/verify-quantum-task.mjs --clean-install --interactions --todo-policy
         timeout-minutes: 15
-      - name: Install pinned uv for FlagQuantum MCP acceptance
-        if: matrix.os == 'macos-latest'
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
-        with:
-          version: '0.12.16'
       - name: Verify pinned FlagQuantum Bell, trainer VQE, research VQE and Harness interactions
         if: matrix.os == 'macos-latest'
         run: node apps/cli/scripts/verify-quantum-task.mjs --clean-install --real-mcp --vqe --research-vqe --interactions
