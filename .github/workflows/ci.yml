@@ -147,6 +147,11 @@ jobs:
       - name: Verify clean Windows install and interactive TUI
         if: matrix.os == 'windows-latest'
         env:
+          # `flagqai setup` installs the pinned Harness, pnpm, and the FlagQuantum
+          # MCP with its Python runtime. The acceptance default of 10 minutes is
+          # enough on macOS; Windows spends longer in the npm install and hit that
+          # bound before setup returned. The knob exists for exactly this.
+          FLAGQAI_ACCEPTANCE_INSTALL_TIMEOUT_MS: '1500000'
           FLAGQAI_ACCEPTANCE_PTY_MODULE: ${{ runner.temp }}/flagqai-pty-harness/node_modules/node-pty
           FLAGQAI_ACCEPTANCE_PROVIDER_WIZARD: '1'
           FLAGQAI_ACCEPTANCE_AGENT_TURN: '1'
@@ -154,7 +159,7 @@ jobs:
           FLAGQAI_ACCEPTANCE_PERMISSION_EVIDENCE: '1'
           FLAGQAI_ACCEPTANCE_QUANTUM_FIXTURE: '1'
         run: node apps/cli/scripts/verify-installed-first-run.mjs
-        timeout-minutes: 15
+        timeout-minutes: 35
       - name: Verify installed Harness interactions and Bell task
         if: matrix.os == 'ubuntu-latest' && matrix.node == 22
         run: node apps/cli/scripts/verify-quantum-task.mjs --clean-install --interactions --todo-policy
