@@ -208,36 +208,60 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
       // Move the focus from "Built-in provider" to "Custom API endpoint" and
       // confirm the move from the rendered pointer before Enter follows.
       //
-      // On Windows the arrow has to be re-entered rather than retried, because
-      // ConPTY does not pass a written escape sequence straight through: it
-      // turns the bytes into individual key events, so `\x1b[B` can reach the
-      // app as ESC and then the rest after a gap. The app flushes a lone ESC
-      // after 50 ms, and Escape cancels the add flow, which is the launchpad
-      // with an empty composer that runs 40622665008, 40625474325 and
-      // 40633146024 all dumped. The parser is not at fault — fed the same
-      // sequence byte by byte it still produces a Down key — so this is the
-      // transport's timing. Nothing has been written before this point, so
-      // opening the wizard again costs three keystrokes and no state.
-      const arrowAttempts = process.platform === 'win32' ? 3 : 1
+      // On Windows a written escape sequence is not reliably delivered as one
+      // key. Runs 40622665008, 40625474325 and 40633146024 all ended on the
+      // launchpad with an empty composer — the screen `runAddFlow` leaves when
+      // it reads Escape — and the failure was identical on every one of three
+      // retries, which is a deterministic split, not a race.
+      //
+      // The parser is not at fault. Probed directly: fed `ESC`, `[`, `B` as
+      // three reads it still yields one Down key; fed `ESC`, flushed, then the
+      // rest, it yields an Escape key followed by the literal text. Both are
+      // the parser doing its job. What decides the outcome is how long the
+      // ESC is held before the remainder arrives, and the ESC window is 50 ms.
+      //
+      // A win32-input-mode record has a much wider window (WIN32_INPUT_GRACE_MS
+      // is 1000 ms), and the parser accepts one split into single bytes. If
+      // ConPTY delivers the bytes we write, that record is the robust form. If
+      // ConPTY instead re-encodes each byte into its own key event, the record
+      // arrives as garbage. One attempt cannot tell those apart, so the
+      // attempts alternate and the failure names what was tried.
+      const DOWN_RECORD = '\u001b[40;80;0;1;0;1_'
+      const arrowForms = process.platform === 'win32'
+        ? [
+            { label: 'a win32-input-mode record', bytes: DOWN_RECORD },
+            { label: 'a raw escape sequence', bytes: '\u001b[B' },
+            { label: 'a win32-input-mode record', bytes: DOWN_RECORD },
+          ]
+        : [{ label: 'a raw escape sequence', bytes: '\u001b[B' }]
       let movedToCustom = false
-      for (let attempt = 1; attempt <= arrowAttempts && !movedToCustom; attempt += 1) {
-        child.write('\u001b[B')
+      const tried = []
+      for (const form of arrowForms) {
+        child.write(form.bytes)
         movedToCustom = await waitForOr(() => exit !== undefined || screenHas('❯ ● Custom API endpoint'), 8000)
-        if (movedToCustom) break
-        const stillChoosing = screenHas('Built-in provider') || screenHas('Custom API endpoint')
-        if (stillChoosing || attempt === arrowAttempts) {
-          throw new Error((stillChoosing
-            ? 'the Down arrow did not move the route choice: the option list is still on screen with the focus elsewhere'
-            : `the route choice screen disappeared after the Down arrow on all ${attempt} attempts: `
-              + 'the escape sequence was not delivered as one key') + '\n--- screen ---\n' + screen())
+        if (movedToCustom) {
+          tried.push(`${form.label}: moved`)
+          break
         }
-        // The flush leaves the rest of the arrow as literal text in the
-        // composer (probed: ESC flushes to one Escape key, then `[B` parses as
-        // the text `[B`). Escape on a non-empty draft clears it, so the command
-        // is not typed on top of that debris.
+        tried.push(`${form.label}: no move`)
+        if (form === arrowForms.at(-1)) break
+        const stillChoosing = screenHas('Built-in provider') || screenHas('Custom API endpoint')
+        if (stillChoosing) {
+          throw new Error('the Down arrow did not move the route choice: the option list is still on screen '
+            + `with the focus elsewhere, after ${form.label}\n--- screen ---\n` + screen())
+        }
+        // Re-entering the wizard is safe: nothing has been persisted at this
+        // point, and Escape on a non-empty draft clears whatever debris the
+        // split left in the composer.
         child.write('\u001b')
-        await waitForOr(() => !screen().includes('[B'), 2000)
+        await waitForOr(() => !screen().includes('[B') && !screen().includes('[40;80'), 2000)
         await openProviderWizard()
+      }
+      if (!movedToCustom) {
+        throw new Error('the route choice screen did not advance on any Down arrow form '
+          + `(${tried.join('; ')}). Either ConPTY re-encodes the bytes we write into separate`
+          + ' key events, so no written form can carry an arrow, or the ESC flush window is'
+          + ' being crossed every time.\n--- screen ---\n' + screen())
       }
       child.write('\r')
       try {
