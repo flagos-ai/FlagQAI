@@ -185,35 +185,59 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
     if (screenHas('Welcome to FlagQAI')) child.write('\u001b')
     await waitFor(() => exit !== undefined || screenHas('Say something, or type'), 30000, 'FlagQAI command prompt', screen)
     assert.equal(exit, undefined, `TUI exited before its command prompt appeared (code ${exit?.exitCode})`)
-    await type('/provider')
-    await waitFor(() => exit !== undefined || screenHas('Add, edit or delete an LLM provider'), 10000, 'provider command selection', screen)
-    child.write('\r')
-    await waitFor(() => exit !== undefined || screenHas('Add a new provider'), 15000, 'installed provider wizard', screen)
-    assert.equal(exit, undefined, `TUI exited before its provider wizard appeared (code ${exit?.exitCode})`)
-    child.write('\r')
-    await waitFor(() => exit !== undefined || (screenHas('Built-in provider') && screenHas('Custom API endpoint')), 10000, 'official and compatible-relay choices', screen)
-    assert.equal(exit, undefined, `TUI exited before provider route choices appeared (code ${exit?.exitCode})`)
+    /**
+     * Open `/provider` and walk to the mode question, which is where the
+     * "Built-in provider" / "Custom API endpoint" choice is. Split out so the
+     * Windows path can re-enter after a cancellation costs it the wizard;
+     * everything up to here writes nothing, which is what makes re-entry safe.
+     */
+    const openProviderWizard = async () => {
+      await type('/provider')
+      await waitFor(() => exit !== undefined || screenHas('Add, edit or delete an LLM provider'), 10000, 'provider command selection', screen)
+      child.write('\r')
+      await waitFor(() => exit !== undefined || screenHas('Add a new provider'), 15000, 'installed provider wizard', screen)
+      assert.equal(exit, undefined, `TUI exited before its provider wizard appeared (code ${exit?.exitCode})`)
+      child.write('\r')
+      await waitFor(() => exit !== undefined || (screenHas('Built-in provider') && screenHas('Custom API endpoint')), 10000, 'official and compatible-relay choices', screen)
+      assert.equal(exit, undefined, `TUI exited before provider route choices appeared (code ${exit?.exitCode})`)
+    }
+    await openProviderWizard()
     if (verifyProviderWizard) {
       const address = endpoint.address()
       assert.ok(address && typeof address !== 'string')
-      // Move the focus from "Built-in provider" to "Custom API endpoint" as its
-      // own key, then confirm the move from the rendered pointer before Enter
-      // follows. A chunk carrying both keys is two keystrokes however it is
-      // written, and looking is the only way to know both arrived. Windows
-      // runs 40622665008 and 40625474325 ended with the wizard cancelled and an
-      // empty composer, which is the screen `runAddFlow` leaves behind when it
-      // reads Escape — so whether the Down arrow arrived is the question worth
-      // answering first, and it has to be answered here rather than four
-      // screens later.
-      child.write('\u001b[B')
-      const movedToCustom = await waitForOr(() => exit !== undefined || screenHas('❯ ● Custom API endpoint'), 8000)
-      if (!movedToCustom) {
+      // Move the focus from "Built-in provider" to "Custom API endpoint" and
+      // confirm the move from the rendered pointer before Enter follows.
+      //
+      // On Windows the arrow has to be re-entered rather than retried, because
+      // ConPTY does not pass a written escape sequence straight through: it
+      // turns the bytes into individual key events, so `\x1b[B` can reach the
+      // app as ESC and then the rest after a gap. The app flushes a lone ESC
+      // after 50 ms, and Escape cancels the add flow, which is the launchpad
+      // with an empty composer that runs 40622665008, 40625474325 and
+      // 40633146024 all dumped. The parser is not at fault — fed the same
+      // sequence byte by byte it still produces a Down key — so this is the
+      // transport's timing. Nothing has been written before this point, so
+      // opening the wizard again costs three keystrokes and no state.
+      const arrowAttempts = process.platform === 'win32' ? 3 : 1
+      let movedToCustom = false
+      for (let attempt = 1; attempt <= arrowAttempts && !movedToCustom; attempt += 1) {
+        child.write('\u001b[B')
+        movedToCustom = await waitForOr(() => exit !== undefined || screenHas('❯ ● Custom API endpoint'), 8000)
+        if (movedToCustom) break
         const stillChoosing = screenHas('Built-in provider') || screenHas('Custom API endpoint')
-        throw new Error(stillChoosing
-          ? 'the Down arrow did not move the route choice: the option list is still on screen with the focus elsewhere\n'
-            + '--- screen ---\n' + screen()
-          : 'the route choice screen disappeared after the Down arrow instead of advancing\n'
-            + '--- screen ---\n' + screen())
+        if (stillChoosing || attempt === arrowAttempts) {
+          throw new Error((stillChoosing
+            ? 'the Down arrow did not move the route choice: the option list is still on screen with the focus elsewhere'
+            : `the route choice screen disappeared after the Down arrow on all ${attempt} attempts: `
+              + 'the escape sequence was not delivered as one key') + '\n--- screen ---\n' + screen())
+        }
+        // The flush leaves the rest of the arrow as literal text in the
+        // composer (probed: ESC flushes to one Escape key, then `[B` parses as
+        // the text `[B`). Escape on a non-empty draft clears it, so the command
+        // is not typed on top of that debris.
+        child.write('\u001b')
+        await waitForOr(() => !screen().includes('[B'), 2000)
+        await openProviderWizard()
       }
       child.write('\r')
       try {
