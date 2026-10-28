@@ -18,10 +18,26 @@ function touchedSessions(home) {
   }
 }
 
+/**
+ * Progress trace for the waits below.
+ *
+ * A failure from this file names the wait that did not complete, which on the
+ * Windows runner has repeatedly been several steps away from the actual close:
+ * the wizard can dismiss between two waits, and the error then describes the
+ * symptom rather than the transition. Logging each wait as it starts and ends
+ * puts the last thing that DID complete next to the failure.
+ */
+const traceStart = Date.now()
+const trace = message => console.log(`[pty] ${message} (${Date.now() - traceStart}ms)`)
+
 async function waitFor(check, timeoutMs, label, screenText) {
+  trace(`wait ${label}`)
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
-    if (check()) return
+    if (check()) {
+      trace(`ok ${label}`)
+      return
+    }
     await delay(100)
   }
   // Include what was on screen. A bare "timed out waiting for X" says the label
@@ -98,17 +114,43 @@ function describeRuntime(root) {
 }
 
 /**
+ * Everything the app printed after `mark`, with escape sequences removed.
+ *
+ * The rendered screen at failure time is 30 s late — notifications have
+ * expired and the frame has been redrawn. The raw stream keeps what was
+ * actually written, including any error notification, which is the difference
+ * between "the confirm cancelled the flow" and "the write failed".
+ */
+function plainSince(output, mark, limit = 1500) {
+  const text = output.slice(mark)
+    .replace(/\u001b\[[0-9;?<>=]*[a-zA-Z]/gu, ' ')
+    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/gu, '')
+    .replace(/[ \t]{2,}/gu, ' ')
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line !== '')
+    .join('\n')
+  return text.length > limit ? `…${text.slice(-limit)}` : text || '(nothing)'
+}
+
+/**
  * Like `waitFor`, but answers whether the condition held instead of throwing.
  * For checks whose absence is itself one of several findings the caller wants
  * to tell apart.
  */
-async function waitForOr(check, timeoutMs) {
+async function waitForOr(check, timeoutMs, label) {
+  trace(`wait ${label}`)
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
-    if (check()) return true
+    if (check()) {
+      trace(`ok ${label}`)
+      return true
+    }
     await delay(100)
   }
-  return check()
+  const held = check()
+  trace(`${held ? 'ok' : 'no'} ${label}`)
+  return held
 }
 
 /**
@@ -304,7 +346,7 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
       const tried = []
       for (const form of arrowForms) {
         child.write(form.bytes)
-        movedToCustom = await waitForOr(() => exit !== undefined || screenHas('❯ ● Custom API endpoint'), 8000)
+        movedToCustom = await waitForOr(() => exit !== undefined || screenHas('❯ ● Custom API endpoint'), 8000, 'arrow moved focus')
         if (movedToCustom) {
           tried.push(`${form.label}: moved`)
           break
@@ -319,8 +361,9 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
         // Re-entering the wizard is safe: nothing has been persisted at this
         // point, and Escape on a non-empty draft clears whatever debris the
         // split left in the composer.
+        trace(`arrow form failed: ${form.label}`)
         child.write('\u001b')
-        await waitForOr(() => !screen().includes('[B') && !screen().includes('[40;80'), 2000)
+        await waitForOr(() => !screen().includes('[B') && !screen().includes('[40;80'), 2000, 'arrow debris cleared')
         await openProviderWizard()
       }
       if (!movedToCustom) {
@@ -370,6 +413,7 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
       // route arrow raced its list.
       await waitFor(() => exit !== undefined || /❯\s*●\s*Write and enable/u.test(screen()), 10000, 'provider confirmation choices', screen)
       child.write('\r')
+      const confirmMark = output.length
       // The switch question is conditional (`!deps.working() && models.length >
       // 0`) and transient: it is asked after the profile write, and a stray
       // second Enter answers it before it can be read. Its absence is therefore
@@ -395,13 +439,14 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
       // and then timed out 90 s later with the board still on screen. The
       // launchpad state is only used below, to describe a failure.
       const switchQuestionShown = await waitForOr(
-        () => exit !== undefined || screenHas('Switch to the new provider now?'), 30000)
+        () => exit !== undefined || screenHas('Switch to the new provider now?'), 30000, 'provider switch question')
       if (!switchQuestionShown) {
         const credential = await askCredential()
         if (credential !== 'written with the key') {
           throw new Error(`the wizard closed without writing the provider `
             + `(credential file: ${credential})\n`
             + `--- runtime tree ---\n${describeRuntime(env.FLAGQAI_CLI_RUNTIME_ROOT)}\n`
+            + `--- output since the confirmation Enter ---\n${plainSince(output, confirmMark)}\n`
             + `--- screen ---\n` + screen())
         }
         // The write landed, so the wizard ran to the end; the question was
