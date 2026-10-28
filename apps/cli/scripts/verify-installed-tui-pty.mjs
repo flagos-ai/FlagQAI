@@ -156,9 +156,13 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
       // deliver them closely enough that the Enter is handled before the
       // selection has moved, which lands on the first route instead of the
       // second — the wizard then never shows the custom route prompt.
-      child.write('\u001b[B')
-      await delay(TYPE_DELAY_MS === 0 ? 0 : 200)
-      child.write('\r')
+      if (process.platform === 'win32') {
+        child.write('\u001b[B')
+        await delay(200)
+        child.write('\r')
+      } else {
+        child.write('\u001b[B\r')
+      }
       await waitFor(() => exit !== undefined || screenHas('Enter a route name'), 10000, 'custom route name', screen)
       await type(routeName)
       await waitFor(() => exit !== undefined || screen().includes(routeName), 10000, 'typed route name', screen)
@@ -196,7 +200,13 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
         await waitFor(() => exit !== undefined || touchedSessions(env.HOME).some(id => !sessionsBeforeSwitch.has(id)),
           90000, 'adopted provider model session', screen)
       }
-      assert.ok(screen().includes(verifyAgentTurn ? 'fixture-model' : `${routeName} · added`))
+      // The wizard question disappears on one render; the status line that
+      // reports the adopted route follows on another. Reading the screen once,
+      // right here, is a race: ubuntu 24 passed it in the same run that ubuntu
+      // 22 failed, with the whole wizard logged as complete before the read.
+      await waitFor(() => exit !== undefined ||
+        screenHas(verifyAgentTurn ? 'fixture-model' : `${routeName} · added`),
+        20000, 'adopted provider route status', screen)
       assert.deepEqual(modelRequests, [{ path: '/v1/models', authorization: 'Bearer fixture-secret-never-send' }])
       const credentialPath = join(env.FLAGQAI_CLI_RUNTIME_ROOT, 'dsh', '.credentials.yaml')
       assert.match(await readFile(credentialPath, 'utf8'), /fixture-secret-never-send/u)
