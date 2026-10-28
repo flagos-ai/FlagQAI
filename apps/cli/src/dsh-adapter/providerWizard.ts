@@ -187,11 +187,13 @@ export async function runProviderWizard(
     return await runAddFlow(deps)
   } catch (error) {
     if (error instanceof UserQuestionError) {
+      traceWizard('ask rejected as a user question error (dismissed)')
       notify(action === 'edit'
         ? t('provider-edit-cancelled')
         : t('provider-cancelled'))
       return 'cancelled'
     }
+    traceWizard('threw', error instanceof Error ? error.message : String(error))
     const err = safeProviderError(error)
     notify(t('provider-write-failed', { err }), { color: 'error', timeoutMs: 8000 })
     return 'failed'
@@ -223,6 +225,7 @@ async function runAddFlow(
   deps: ProviderWizardDeps,
 ): Promise<ProviderWizardOutcome> {
   const { host, ask, notify, pushLocal } = deps
+  traceWizard('add flow begin')
 
   // ── 1. mode ────────────────────────────────────────────────────────
   const modeOptions = [
@@ -390,6 +393,7 @@ async function runAddFlow(
   const detail = host.routeExists(route)
     ? `${previewLines.join('\n')}\n${t('provider-route-exists-warning')}`
     : previewLines.join('\n')
+  traceWizard('confirm ask begin')
   const confirmAnswer = await ask({
     questions: [optionQuestion('confirm', t('provider-q-confirm'), [
       { label: t('provider-opt-confirm-write') },

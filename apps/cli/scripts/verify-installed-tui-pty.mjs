@@ -158,14 +158,17 @@ function describeRuntime(root) {
  * actually written, including any error notification, which is the difference
  * between "the confirm cancelled the flow" and "the write failed".
  */
-function plainSince(output, mark, limit = 1500) {
+function plainSince(output, mark, limit = 6000) {
   const text = output.slice(mark)
     .replace(/\u001b\[[0-9;?<>=]*[a-zA-Z]/gu, ' ')
     .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/gu, '')
     .replace(/[ \t]{2,}/gu, ' ')
     .split('\n')
     .map(line => line.trim())
-    .filter(line => line !== '')
+    // Drop pure frame furniture. A 1500-character tail once kept only the last
+    // repaint and cut the notification that said what happened, so the dump
+    // now keeps short diagnostic lines and bounds the total size instead.
+    .filter(line => line !== '' && (line.length < 200 || /^\[|error|failed|cancel/i.test(line)))
     .join('\n')
   return text.length > limit ? `…${text.slice(-limit)}` : text || '(nothing)'
 }
