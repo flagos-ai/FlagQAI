@@ -38,6 +38,13 @@ Object.assign(env, {
   npm_config_userconfig: join(sandbox, 'empty-npmrc'),
   npm_config_globalconfig: join(sandbox, 'empty-global-npmrc'),
   DSH_TELEMETRY_DISABLED: '1',
+  // `env` is an allowlist, so a diagnostic flag set by the workflow never
+  // reaches the TUI unless it is forwarded here. Committing the trace without
+  // this line cost a 21-minute run: the wizard's steps were written to stderr
+  // and the harness's own log showed none of them.
+  ...(process.env.FLAGQAI_DEBUG_PROVIDER_WIZARD === undefined
+    ? {}
+    : { FLAGQAI_DEBUG_PROVIDER_WIZARD: process.env.FLAGQAI_DEBUG_PROVIDER_WIZARD }),
 })
 let passed = false
 
