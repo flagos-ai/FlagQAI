@@ -128,6 +128,12 @@ jobs:
           FLAGQAI_ACCEPTANCE_SCIENCE_SDK: '1'
           FLAGQAI_ACCEPTANCE_PERMISSION_EVIDENCE: '1'
           FLAGQAI_ACCEPTANCE_QUANTUM_FIXTURE: '1'
+          # Same trace as the Windows step. The wizard reaches
+          # `settings.mutate` and fails there on Windows; this says whether the
+          # platform that passes takes that path at all, which decides whether
+          # this is a Windows-only composition fault or a step both take with
+          # different results.
+          FLAGQAI_DEBUG_PROVIDER_WIZARD: '1'
         run: node apps/cli/scripts/verify-installed-first-run.mjs
         timeout-minutes: 15
       - name: Install Windows PTY test driver
