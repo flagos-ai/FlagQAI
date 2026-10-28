@@ -32,7 +32,8 @@ async function waitFor(check, timeoutMs, label, screenText) {
 }
 
 /**
- * Type text into a PTY, one character at a time on Windows.
+ * Type text into a PTY, one character at a time on Windows, letting the screen
+ * settle before the next one.
  *
  * POSIX PTYs deliver a written chunk as a sequence of key events, so a whole
  * command lands in the composer the way a fast typist would produce it. ConPTY
@@ -41,10 +42,24 @@ async function waitFor(check, timeoutMs, label, screenText) {
  * only `r` in the composer, so the provider menu never opened and the check
  * timed out. Typing character by character removes the coalescing entirely.
  *
+ * A fixed 25 ms gap did not remove the remaining losses. Two later runs typed
+ * `/provider` and got `/pvider` and `/povider` — in both, the characters lost
+ * are the ones immediately after the completion menu opened, which is exactly
+ * where the app is mid-repaint (the whole command list redraws when the filter
+ * narrows). A gap that short is shorter than that repaint. So the wait is now
+ * on the observable condition: no output for QUIET_MS before the next
+ * character, capped so a continuously repainting app cannot stall the run.
+ *
  * Only the multi-character text goes through here. Escape sequences and a lone
  * Enter stay whole, because splitting those changes their meaning.
  */
-const TYPE_DELAY_MS = process.platform === 'win32' ? 25 : 0
+const ONE_CHARACTER_AT_A_TIME = process.platform === 'win32'
+/** How long the screen must be silent before the next character is written. */
+const QUIET_MS = 40
+/** How long to wait for the app to paint a keystroke before moving on. */
+const REACTION_MS = 150
+/** Cap on one settle, so a spinner cannot stall the whole run. */
+const QUIET_CAP_MS = 500
 
 /**
  * Does the rendered screen contain this text, ignoring whitespace?
@@ -65,14 +80,15 @@ function normalisedIncludes(haystack, needle) {
 }
 
 
-async function writeText(child, text) {
-  if (TYPE_DELAY_MS === 0 || text.length < 2) {
+async function writeText(child, text, settle) {
+  if (!ONE_CHARACTER_AT_A_TIME || text.length < 2) {
     child.write(text)
     return
   }
   for (const character of text) {
+    const writtenAt = Date.now()
     child.write(character)
-    await delay(TYPE_DELAY_MS)
+    await settle(writtenAt)
   }
 }
 
@@ -130,8 +146,22 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
       name: 'xterm-256color', cols: 100, rows: 32, cwd,
       env: { ...env, TERM: 'xterm-256color', FLAGQAI_LANG: 'en', DSH_TELEMETRY_MODE: 'DISABLED' },
     })
-    const type = text => writeText(child, text)
+    let lastOutputAt = 0
+    /** Resolve once the repaint caused by a write made at `since` has finished. */
+    const settle = async since => {
+      const started = Date.now()
+      // Phase one: give the keystroke a chance to be painted at all. Without
+      // this, "quiet since the write" is trivially true for the first few
+      // milliseconds and the wait would end before the app reacted.
+      while (lastOutputAt <= since && Date.now() - started < REACTION_MS) await delay(5)
+      // Phase two: wait for that repaint to finish, capped so a spinner or a
+      // streamed turn cannot stall the run.
+      while (Date.now() - started < QUIET_CAP_MS
+        && Date.now() - lastOutputAt < QUIET_MS) await delay(5)
+    }
+    const type = text => writeText(child, text, settle)
     child.onData(data => {
+      lastOutputAt = Date.now()
       output = (output + data).slice(-128 * 1024)
       terminal.write(data)
     })
