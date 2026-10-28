@@ -4,7 +4,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { readFile, stat } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import { createRequire } from 'node:module'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import xterm from '@xterm/headless'
 
@@ -81,7 +81,9 @@ async function waitForStable(check, holdMs, timeoutMs, label, screenText) {
 function describeRuntime(root) {
   const lines = []
   const walk = (dir, depth) => {
-    if (depth > 3) return
+    // node_modules is tens of thousands of files and says nothing here; the
+    // walk used to descend into it and cost minutes before the error printed.
+    if (depth > 2 || basename(dir) === 'node_modules') return
     let entries
     try {
       entries = readdirSync(dir, { withFileTypes: true })
@@ -441,13 +443,25 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
       const switchQuestionShown = await waitForOr(
         () => exit !== undefined || screenHas('Switch to the new provider now?'), 30000, 'provider switch question')
       if (!switchQuestionShown) {
+        // Is the app even alive? Every explanation so far — a cancelled
+        // confirmation, a thrown write, a hung store — predicts a different
+        // answer here, and none of them is visible from the rendered frame.
+        // A keystroke the app echoes proves the event loop is turning; no echo
+        // means it is blocked inside whatever the confirmation started.
+        const responsiveBefore = screen()
+        // A single letter is already all over the frame ("expand", paths), so
+        // the probe is a word no fixture text contains.
+        const PROBE = 'FQPROBE'
+        for (const character of PROBE) child.write(character)
+        const echoed = await waitForOr(() => exit !== undefined || screenHas(PROBE), 5000, 'app echoed a keystroke')
         const credential = await askCredential()
         if (credential !== 'written with the key') {
           throw new Error(`the wizard closed without writing the provider `
-            + `(credential file: ${credential})\n`
+            + `(credential file: ${credential}; app ${echoed ? 'still responds to keys' : 'stopped responding to keys'})\n`
             + `--- runtime tree ---\n${describeRuntime(env.FLAGQAI_CLI_RUNTIME_ROOT)}\n`
             + `--- output since the confirmation Enter ---\n${plainSince(output, confirmMark)}\n`
-            + `--- screen ---\n` + screen())
+            + `--- screen before that keystroke ---\n${responsiveBefore}\n`
+            + `--- screen now ---\n` + screen())
         }
         // The write landed, so the wizard ran to the end; the question was
         // either skipped by its own condition or answered before this read.
