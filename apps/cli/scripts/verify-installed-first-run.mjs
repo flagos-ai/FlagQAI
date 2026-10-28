@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process'
 import { copyFile, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { delimiter, join } from 'node:path'
-import { INSTALLED_RUNTIME } from '../bin/installed-runtime.js'
+import { INSTALLED_RUNTIME, installedPaths } from '../bin/installed-runtime.js'
 import { FLAGQUANTUM_MCP_PACKAGE } from '../bin/quantum-mcp-profile.js'
 import { acceptanceRegistryEnvironment } from './acceptance-install-env.mjs'
 import { packFlagqai } from './pack-flagqai.mjs'
@@ -399,7 +399,7 @@ console.log('PASS installed quantum directory write-and-sync probes')
     const { verifyInstalledTuiPty } = await import('./verify-installed-tui-pty.mjs')
     await verifyInstalledTuiPty({
       entry, cwd: installation, env, modulePath: process.env.FLAGQAI_ACCEPTANCE_PTY_MODULE,
-      profilePatch: join(runtime, 'dsh', 'profiles', 'flagqai', 'cordis.patch.yml'),
+      profilePatch: join(installedPaths(env).profile, 'cordis.patch.yml'),
       verifyProviderWizard: process.env.FLAGQAI_ACCEPTANCE_PROVIDER_WIZARD === '1',
       verifyAgentTurn: process.env.FLAGQAI_ACCEPTANCE_AGENT_TURN === '1',
     })
