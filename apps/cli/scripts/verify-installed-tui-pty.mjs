@@ -290,6 +290,35 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
     response.end(JSON.stringify({ error: { message: 'Unknown local fixture route' } }))
   }) : undefined
   let output = ''
+  /** Set once the child is spawned; cleared in `finally`. */
+  let tracePoller
+  /**
+   * Where the wizard writes its step trace, when tracing is asked for.
+   *
+   * A file, because `Ink.patchStderr` swallows `process.stderr.write` — a
+   * stderr trace is recorded in the debug log and never reaches the terminal,
+   * which is why the first version of this trace printed nothing for three
+   * runs.
+   */
+  const wizardTracePath = process.env.FLAGQAI_DEBUG_PROVIDER_WIZARD === '1'
+    ? join(env.FLAGQAI_CLI_RUNTIME_ROOT, 'provider-wizard-trace.log')
+    : undefined
+  // Tail of that file already echoed to this log.
+  let wizardTracePrinted = 0
+  const echoWizardTrace = () => {
+    if (wizardTracePath === undefined) return
+    let text
+    try {
+      text = readFileSync(wizardTracePath, 'utf8')
+    } catch {
+      return
+    }
+    if (text.length <= wizardTracePrinted) return
+    for (const line of text.slice(wizardTracePrinted).split('\n')) {
+      if (line.trim() !== '') console.log(`[tui] provider-wizard ${line.trim()}`)
+    }
+    wizardTracePrinted = text.length
+  }
   // Monotonic count of characters dropped off the front of `output`. `output`
   // is a ring buffer, so any index into it goes stale the moment the cap is
   // reached — a mark taken as `output.length` stays at the cap forever and
@@ -312,7 +341,11 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
     }
     child = pty.spawn(process.execPath, [entry], {
       name: 'xterm-256color', cols: 100, rows: 32, cwd,
-      env: { ...env, TERM: 'xterm-256color', FLAGQAI_LANG: 'en', DSH_TELEMETRY_MODE: 'DISABLED' },
+      env: {
+        ...env,
+        TERM: 'xterm-256color', FLAGQAI_LANG: 'en', DSH_TELEMETRY_MODE: 'DISABLED',
+        ...(wizardTracePath === undefined ? {} : { FLAGQAI_PROVIDER_WIZARD_TRACE: wizardTracePath }),
+      },
     })
     let lastOutputAt = 0
     /** Resolve once the repaint caused by a write made at `since` has finished. */
@@ -328,6 +361,10 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
         && Date.now() - lastOutputAt < QUIET_MS) await delay(5)
     }
     const type = text => writeText(child, text, settle)
+    // Poll the trace file so its lines appear in the job log while the run is
+    // still going, not only in a failure dump.
+    tracePoller = setInterval(echoWizardTrace, 500)
+    tracePoller.unref?.()
     child.onData(data => {
       lastOutputAt = Date.now()
       output += data
@@ -623,9 +660,11 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
     assert.doesNotMatch(output, /UnhandledPromiseRejection|plugin tree failed to load/u)
     console.log(`PASS installed CLI TUI PTY: ${process.platform}/${process.arch}, draft edit/clear, provider routes${verifyAgentTurn ? ', local Agent turn' : ''}, and /exit returned 0`)
   } catch (error) {
+    echoWizardTrace()
     error.message += `\nLast screen:\n${screen()}\nOutput tail:\n${output.slice(-2000)}`
     throw error
   } finally {
+    if (tracePoller !== undefined) clearInterval(tracePoller)
     if (child && exit === undefined) {
       child.kill()
       await waitFor(() => exit !== undefined, 5000, 'PTY child termination', screen).catch(() => {})
