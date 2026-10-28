@@ -158,8 +158,8 @@ function describeRuntime(root) {
  * actually written, including any error notification, which is the difference
  * between "the confirm cancelled the flow" and "the write failed".
  */
-function plainSince(output, mark, limit = 6000) {
-  const text = output.slice(mark)
+function plainSince(output, mark, droppedChars, limit = 6000) {
+  const text = output.slice(Math.max(0, mark - droppedChars))
     .replace(/\u001b\[[0-9;?<>=]*[a-zA-Z]/gu, ' ')
     .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/gu, '')
     .replace(/[ \t]{2,}/gu, ' ')
@@ -290,6 +290,12 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
     response.end(JSON.stringify({ error: { message: 'Unknown local fixture route' } }))
   }) : undefined
   let output = ''
+  // Monotonic count of characters dropped off the front of `output`. `output`
+  // is a ring buffer, so any index into it goes stale the moment the cap is
+  // reached — a mark taken as `output.length` stays at the cap forever and
+  // `slice(mark)` is then always empty. That is how run 40668237150 reported
+  // "(nothing)" for a window in which the app had plainly printed.
+  let droppedChars = 0
   let exit
   let child
   const screen = () => {
@@ -324,7 +330,18 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
     const type = text => writeText(child, text, settle)
     child.onData(data => {
       lastOutputAt = Date.now()
-      output = (output + data).slice(-128 * 1024)
+      output += data
+      if (output.length > 128 * 1024) {
+        const cut = output.length - 128 * 1024
+        output = output.slice(cut)
+        droppedChars += cut
+      }
+      // Print the wizard's own step trace as it arrives. Waiting for the
+      // failure dump to show it is how three runs in a row reported nothing
+      // while the flow was in fact tracing.
+      for (const line of String(data).matchAll(/\[provider-wizard\][^\r\n]{0,120}/gu)) {
+        console.log(`[tui] ${line[0]}`)
+      }
       terminal.write(data)
     })
     child.onExit(event => { exit = event })
@@ -453,7 +470,7 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
       // route arrow raced its list.
       await waitFor(() => exit !== undefined || /❯\s*●\s*Write and enable/u.test(screen()), 10000, 'provider confirmation choices', screen)
       child.write('\r')
-      const confirmMark = output.length
+      const confirmMark = droppedChars + output.length
       // The switch question is conditional (`!deps.working() && models.length >
       // 0`) and transient: it is asked after the profile write, and a stray
       // second Enter answers it before it can be read. Its absence is therefore
@@ -504,7 +521,7 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
             + `(credential file: ${credential}; app ${echoed ? 'still responds to keys' : 'stopped responding to keys'})\n`
             + `--- lock files ---\n${describeLocks(env.FLAGQAI_CLI_RUNTIME_ROOT)}\n`
             + `--- runtime tree ---\n${describeRuntime(env.FLAGQAI_CLI_RUNTIME_ROOT)}\n`
-            + `--- output since the confirmation Enter ---\n${plainSince(output, confirmMark)}\n`
+            + `--- output since the confirmation Enter ---\n${plainSince(output, confirmMark, droppedChars)}\n`
             + `--- screen now ---\n` + screen())
         }
         // The write landed, so the wizard ran to the end; the question was
