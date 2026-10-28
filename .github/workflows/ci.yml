@@ -53,6 +53,7 @@ jobs:
       - run: node --test docs/releases/verify-clean-initial-import.test.mjs
       - run: pnpm --dir apps/cli install --frozen-lockfile --ignore-scripts
       - run: pnpm --dir apps/cli run compile
+      - run: pnpm --dir apps/cli run verify:standalone-update-checksum
       - run: pnpm --dir apps/cli run verify:ink-reconciler-contract
       - run: pnpm --dir apps/cli run verify:dom-tree-mutations
       - run: pnpm --dir apps/cli run verify:ink-node-state
@@ -203,4 +204,3 @@ jobs:
       - run: pnpm --dir apps/cli run verify:jobs-cache-lifetime
       - run: pnpm --dir apps/cli run verify:jobs-detach-cleanup
       - run: pnpm --dir apps/cli run verify:session-reset-hygiene
-      - run: pnpm --dir apps/cli run verify:standalone-update-checksum
