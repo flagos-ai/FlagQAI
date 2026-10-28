@@ -74,11 +74,24 @@ export type ProviderWizardOutcome = 'added' | 'updated' | 'deleted' | 'signed-ou
 /** Max attempts for validated free-text prompts before giving up. */
 const MAX_RETRY = 3
 
-/** Host and gateway errors may echo credentials or request headers. */
+/**
+ * Message for a failure, without echoing anything that may carry credentials.
+ *
+ * Gateway errors can quote a request and its headers, so anything that came
+ * back from the network is replaced with a generic hint. A local throw is a
+ * different animal: it is raised by our own seams or by the host's store, it
+ * has no response body, and its text is the only thing that says what went
+ * wrong. Replacing those too is how "dsh: profile reload requires the root
+ * Include entry" reached the user as "check endpoint access and the local
+ * credential store" — a message that points at nothing.
+ */
+const LOCAL_ERROR_PREFIXES = ['dsh:', 'dsh-auth:', 'flagqai:', 'atomic-write:']
+
 function safeProviderError(error: unknown): string {
   const message = error instanceof Error ? error.message : ''
   // These exact OAuth codes are useful to the user and carry no response body.
   if (message === 'invalid_grant' || message === 'access_denied') return message
+  if (LOCAL_ERROR_PREFIXES.some(prefix => message.startsWith(prefix))) return message
   return t('provider-error-safe-detail')
 }
 

@@ -57,6 +57,7 @@ const GATES = [
   'verify:scientific-run-sdk',
   'verify:flagquantum-policy',
   'verify:provider-manager',
+  'verify:provider-error-message',
   'verify:web-context',
   'verify:web-session-view',
   'verify:remote-attach',
