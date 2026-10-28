@@ -269,6 +269,7 @@
     "verify:composer-text-geometry": "node --import tsx/esm scripts/verify-composer-text-geometry.mjs",
     "verify:input-selection": "node --import tsx/esm scripts/verify-input-selection.tsx",
     "verify:input-batch": "node --import tsx/esm scripts/verify-input-batch.ts",
+    "verify:batched-prompt-input": "node scripts/verify-batched-prompt-input.mjs",
     "verify:prompt-undo": "node scripts/verify-prompt-undo.mjs",
     "verify:vim-mode": "node scripts/verify-vim-mode.mjs",
     "verify:local-image-store": "node --test scripts/local-image-store.test.mjs",

@@ -129,6 +129,7 @@ const GATES = [
   'verify:composer-text-geometry',
   'verify:input-selection',
   'verify:input-batch',
+  'verify:batched-prompt-input',
   'verify:prompt-undo',
   'verify:vim-mode',
   'verify:image-downsample',
