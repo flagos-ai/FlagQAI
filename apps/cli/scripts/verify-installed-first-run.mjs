@@ -296,8 +296,9 @@ console.log('PASS installed plugin panels and download deadline')
   await writeFile(managedProbe, `import { useInstalledRuntime } from './bin/installed-runtime.js'\nawait useInstalledRuntime(process.env)\nconsole.log(JSON.stringify({ command: process.env.FLAGQAI_MANAGED_MCP_EXECUTABLE, home: process.env.DSH_HOME }))\n`)
   try {
     const resolved = JSON.parse(run(process.execPath, [managedProbe], installation).trim())
-    assert.equal(resolved.command, join(runtime, 'quantum-bin', process.platform === 'win32' ? 'flagquantum-mcp-server.exe' : 'flagquantum-mcp-server'))
-    assert.equal(resolved.home, join(runtime, 'dsh'))
+    // setup may expand a Windows 8.3 TEMP path; assert filesystem identity.
+    assert.equal(await realpath(resolved.command), await realpath(join(runtime, 'quantum-bin', process.platform === 'win32' ? 'flagquantum-mcp-server.exe' : 'flagquantum-mcp-server')))
+    assert.equal(await realpath(resolved.home), await realpath(join(runtime, 'dsh')))
   } finally { await rm(managedProbe, { force: true }) }
   if (process.env.FLAGQAI_ACCEPTANCE_QUANTUM_PREFLIGHT === '1') {
     const preflight = run(process.execPath, [entry, 'quantum', '--check', 'Solve a VQE ground state'], installation)
