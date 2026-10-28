@@ -133,6 +133,18 @@ const wkey = (name: string, mods: Partial<KeySummary> = {}, seq?: string): KeySu
 })
 const wchar = (c: string, mods: Partial<KeySummary> = {}): KeySummary => wkey(c, mods, c)
 
+// ConPTY can wrap a VT navigation sequence in synthesized character records.
+// Decode it as one key rather than clearing the draft on the leading Escape.
+for (const sequence of ['\x1b[A', '\x1b[B', '\x1b[C', '\x1b[D', '\x1b[H', '\x1b[F', '\x1b[1;5D', '\x1b[3~']) {
+  const encoded = [...sequence].map(ch => `${CSI}0;0;${ch.charCodeAt(0)};1;0;1_`).join('')
+  const expected = new Feeder().feed(sequence)
+  for (let split = 0; split <= encoded.length; split++) {
+    const feeder = new Feeder()
+    const actual = [...feeder.feed(encoded.slice(0, split)), ...feeder.feed(encoded.slice(split))]
+    check(`synthesized navigation stays atomic (${JSON.stringify(sequence)}, split=${split})`, actual, expected)
+  }
+}
+
 // --- 1. the issue's probe bytes ---------------------------------------------
 
 {

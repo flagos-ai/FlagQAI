@@ -281,6 +281,19 @@ check(
   JSON.stringify(submitted),
 )
 
+// Reproduce the installed Windows PTY edit after provider setup. ConPTY
+// sends the VT arrow as synthesized records, followed by a Backspace record.
+const beforeNavigation = submitted.length
+const synthesizedLeft = [...'\x1b[D'].map(ch => win32Record(0, 0, ch.charCodeAt(0))).join('')
+stdin.write('FQEDITXYZ' + synthesizedLeft + win32Record(8, 14, 8))
+await sleep(100) // 固定窗:pacing edit batch before Enter
+stdin.write('\r')
+check(
+  'synthesized ConPTY Left and Backspace preserve the edited draft',
+  await settled(() => submitted.length === beforeNavigation + 1 && submitted.at(-1) === 'FQEDITXZ'),
+  JSON.stringify(submitted.at(-1)),
+)
+
 instance.unmount()
 
 if (failed > 0) {

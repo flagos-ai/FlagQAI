@@ -188,6 +188,9 @@ jobs:
       # the only one that exercises that composition. It stays below the PTY
       # acceptance on purpose: a failure here would stop the job before the
       # Windows acceptance runs, and that run is what currently needs to report.
+      - name: Verify synthesized Windows keyboard input
+        working-directory: apps/cli
+        run: node --import tsx/esm scripts/verify-win32-input.tsx
       - run: pnpm --dir apps/cli run verify:batched-prompt-input
       - run: pnpm --dir apps/cli run verify:plugin-panels
       - run: pnpm --dir apps/cli run verify:panel-selection
