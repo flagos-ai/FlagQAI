@@ -116,9 +116,11 @@ function describeLocks(root) {
 function describeRuntime(root) {
   const lines = []
   const walk = (dir, depth) => {
-    // node_modules is tens of thousands of files and says nothing here; the
-    // walk used to descend into it and cost minutes before the error printed.
-    if (depth > 2 || basename(dir) === 'node_modules') return
+    // node_modules is tens of thousands of files and says nothing here. Depth
+    // 4 covers `dsh/profiles/<profile>/` where the config editor keeps
+    // `package.json.lock` — at depth 2 the lock listing could not see the very
+    // lock a stalled write would be holding.
+    if (depth > 4 || basename(dir) === 'node_modules') return
     let entries
     try {
       entries = readdirSync(dir, { withFileTypes: true })
@@ -318,6 +320,30 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
       if (line.trim() !== '') console.log(`[tui] provider-wizard ${line.trim()}`)
     }
     wizardTracePrinted = text.length
+  }
+  /**
+   * The wizard's last recorded step, once the settings write has settled one
+   * way or the other; undefined while it is still pending.
+   */
+  const wizardTraceSince = () => {
+    if (wizardTracePath === undefined) return undefined
+    let text
+    try {
+      text = readFileSync(wizardTracePath, 'utf8')
+    } catch {
+      return undefined
+    }
+    const match = /^.*(settings mutate (?:done|failed|threw)).*$/mu.exec(text)
+    return match?.[1]
+  }
+  const wizardLastStep = () => {
+    if (wizardTracePath === undefined) return '(no trace)'
+    try {
+      const lines = readFileSync(wizardTracePath, 'utf8').trim().split('\n')
+      return lines.at(-1)?.trim() ?? '(empty)'
+    } catch {
+      return '(no trace)'
+    }
   }
   // Monotonic count of characters dropped off the front of `output`. `output`
   // is a ring buffer, so any index into it goes stale the moment the cap is
@@ -544,6 +570,14 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
       const switchQuestionShown = await waitForOr(
         () => exit !== undefined || screenHas('Switch to the new provider now?'), switchWaitMs, 'provider switch question')
       if (!switchQuestionShown) {
+        // The trace put the stall inside `settings.mutate` — the kernel's
+        // config editor, which recomposes the whole plugin tree. "No answer
+        // yet" and "never answers" are different findings, and only time
+        // separates them, so give it a further four minutes and report which
+        // of the two happened instead of guessing from the absence.
+        const settled = await waitForOr(
+          () => exit !== undefined || wizardTraceSince() !== undefined,
+          process.platform === 'win32' ? 240_000 : 60_000, 'settings mutate settled')
         // Is the app even alive? A keystroke it echoes proves the event loop
         // is turning, so the wizard promise alone is pending; no echo means
         // the loop is blocked inside whatever the confirmation started. Runs
@@ -555,7 +589,9 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
         const credential = await askCredential()
         if (credential !== 'written with the key') {
           throw new Error(`the wizard closed without writing the provider `
-            + `(credential file: ${credential}; app ${echoed ? 'still responds to keys' : 'stopped responding to keys'})\n`
+            + `(credential file: ${credential}; app ${echoed ? 'still responds to keys' : 'stopped responding to keys'}; `
+            + `settings write ${settled ? `settled: ${wizardTraceSince()}` : 'still pending after the extra wait'}; `
+            + `last wizard step: ${wizardLastStep()})\n`
             + `--- lock files ---\n${describeLocks(env.FLAGQAI_CLI_RUNTIME_ROOT)}\n`
             + `--- runtime tree ---\n${describeRuntime(env.FLAGQAI_CLI_RUNTIME_ROOT)}\n`
             + `--- output since the confirmation Enter ---\n${plainSince(output, confirmMark, droppedChars)}\n`

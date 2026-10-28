@@ -299,9 +299,12 @@ export function createSettingsHosts(ctx: Context, assertActive: () => void = () 
             // landed between describe and mutate); anything else propagates
             // so the wizard can report and roll back the credential.
             const code = (error as { code?: unknown })?.code
+            traceWizard('settings mutate failed',
+              `${String(code)} ${error instanceof Error ? error.message : String(error)}`)
             if (code !== 'SETTINGS_CONFLICT') throw error
             assertActive()
             await withHostRootCapability(() => settings.mutate(namespace, ops, revision()))
+            traceWizard('settings mutate done')
           }
         },
         async mutateProfile(route, ops) {
