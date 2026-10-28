@@ -32,6 +32,32 @@ async function waitFor(check, timeoutMs, label, screenText) {
 }
 
 /**
+ * Like `waitFor`, but the condition has to keep holding for `holdMs`.
+ *
+ * For negative conditions — "this panel is gone", "this text is no longer
+ * shown" — a single true reading proves nothing: the frame is being rewritten,
+ * and the text can be absent from the buffer mid-repaint while the panel is
+ * still up and still waiting for a key. Requiring the absence to survive a
+ * short window turns the check into something only a real state change can
+ * satisfy.
+ */
+async function waitForStable(check, holdMs, timeoutMs, label, screenText) {
+  const deadline = Date.now() + timeoutMs
+  let holdingSince
+  while (Date.now() < deadline) {
+    if (check()) {
+      holdingSince ??= Date.now()
+      if (Date.now() - holdingSince >= holdMs) return
+    } else {
+      holdingSince = undefined
+    }
+    await delay(50)
+  }
+  const tail = typeof screenText === 'function' ? screenText() : ''
+  throw new Error(`Timed out waiting for ${label} to hold for ${holdMs}ms${tail ? `\n--- screen ---\n${tail}` : ''}`)
+}
+
+/**
  * List the runtime directory with sizes, plus which files mention the fixture
  * route. The wizard's writes are durable and land under here, so when the
  * screen no longer shows a wizard the files say which step ran.
@@ -359,20 +385,22 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
           return 'absent'
         }
       }
-      // Wait for whichever comes first: the switch panel, or the wizard
-      // closing back to the launchpad. Both are outcomes of the confirmation,
-      // and telling them apart here keeps a cancelled wizard from being
-      // reported as a missing panel ten seconds later.
-      const atLaunchpad = () => screenHas('Setup skipped') && !screenHas('Write this provider configuration?')
-      await waitForOr(() => exit !== undefined
-        || screenHas('Switch to the new provider now?')
-        || atLaunchpad(), 15000)
-      const switchQuestionShown = screenHas('Switch to the new provider now?')
+      // Wait for the switch question on its own merits. An earlier version
+      // also returned as soon as the launchpad was visible, to fail fast when
+      // the wizard had closed — but the launchpad is *always* visible behind
+      // the wizard, so that condition was true the moment the confirmation
+      // panel unmounted, before this question had rendered. The wait then gave
+      // up, skipped its Enter, and the panel appeared afterwards and sat
+      // unanswered: ubuntu 22 and macOS run 40642249333 both logged the NOTE
+      // and then timed out 90 s later with the board still on screen. The
+      // launchpad state is only used below, to describe a failure.
+      const switchQuestionShown = await waitForOr(
+        () => exit !== undefined || screenHas('Switch to the new provider now?'), 30000)
       if (!switchQuestionShown) {
         const credential = await askCredential()
         if (credential !== 'written with the key') {
-          throw new Error(`${atLaunchpad() ? 'the wizard closed back to the launchpad' : 'the wizard stalled'} `
-            + `without writing the provider (credential file: ${credential})\n`
+          throw new Error(`the wizard closed without writing the provider `
+            + `(credential file: ${credential})\n`
             + `--- runtime tree ---\n${describeRuntime(env.FLAGQAI_CLI_RUNTIME_ROOT)}\n`
             + `--- screen ---\n` + screen())
         }
@@ -389,7 +417,13 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
           await waitFor(() => exit !== undefined || /❯\s*● Keep the current model/u.test(screen()), 10000, 'keep-current-model choice', screen)
         }
         child.write('\r')
-        await waitFor(() => exit !== undefined || !screenHas('Switch to the new provider now?'), 10000, 'completed provider wizard', screen)
+        // The panel is inside a repainting frame, so "not on screen" is true
+        // for a moment even when the question is still unanswered — and a
+        // spurious pass here leaves the app waiting on a keyboard that will
+        // never arrive. Require the absence to hold before treating the
+        // question as answered.
+        await waitForStable(() => exit !== undefined || !screenHas('Switch to the new provider now?'),
+          1500, 15000, 'completed provider wizard', screen)
       }
       if (verifyAgentTurn) {
         // The question disappears before Harness adopts the fork. Wait for
