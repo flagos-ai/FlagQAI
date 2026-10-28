@@ -42,6 +42,25 @@ async function waitFor(check, timeoutMs, label) {
  */
 const TYPE_DELAY_MS = process.platform === 'win32' ? 25 : 0
 
+/**
+ * Does the rendered screen contain this text, ignoring whitespace?
+ *
+ * ConPTY does not always write the cell under a space: the renderer moves the
+ * cursor past it and the cell keeps whatever was there before. The characters
+ * are all present and in order, but `includes` on the extracted row text fails
+ * because the separator is blank rather than ' '. The Windows run showed
+ * `Add, edit or delet e a` for exactly this reason while the menu was open.
+ *
+ * Comparing with whitespace removed keeps the check meaningful — every word and
+ * its order still has to match — without depending on how a space cell was
+ * painted.
+ */
+function normalisedIncludes(haystack, needle) {
+  const normalise = value => value.replace(/\s+/gu, '')
+  return normalise(haystack).includes(normalise(needle))
+}
+
+
 async function writeText(child, text) {
   if (TYPE_DELAY_MS === 0 || text.length < 2) {
     child.write(text)
@@ -95,6 +114,7 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
     const buffer = terminal.buffer.active
     return Array.from({ length: 32 }, (_, index) => buffer.getLine(buffer.baseY + index)?.translateToString(true) ?? '').join('\n')
   }
+  const screenHas = text => normalisedIncludes(screen(), text)
   try {
     if (endpoint) {
       await new Promise((resolve, reject) => {
@@ -112,53 +132,53 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
       terminal.write(data)
     })
     child.onExit(event => { exit = event })
-    await waitFor(() => exit !== undefined || screen().includes('Welcome to FlagQAI') || screen().includes('Say something, or type'), 90000, 'FlagQAI first screen')
+    await waitFor(() => exit !== undefined || screenHas('Welcome to FlagQAI') || screenHas('Say something, or type'), 90000, 'FlagQAI first screen')
     if (exit !== undefined) throw new Error(`TUI exited before its first screen appeared (code ${exit.exitCode})`)
-    if (screen().includes('Welcome to FlagQAI')) child.write('\u001b')
-    await waitFor(() => exit !== undefined || screen().includes('Say something, or type'), 30000, 'FlagQAI command prompt')
+    if (screenHas('Welcome to FlagQAI')) child.write('\u001b')
+    await waitFor(() => exit !== undefined || screenHas('Say something, or type'), 30000, 'FlagQAI command prompt')
     assert.equal(exit, undefined, `TUI exited before its command prompt appeared (code ${exit?.exitCode})`)
     await type('/provider')
-    await waitFor(() => exit !== undefined || screen().includes('Add, edit or delete an LLM provider'), 10000, 'provider command selection')
+    await waitFor(() => exit !== undefined || screenHas('Add, edit or delete an LLM provider'), 10000, 'provider command selection')
     child.write('\r')
-    await waitFor(() => exit !== undefined || screen().includes('Add a new provider'), 15000, 'installed provider wizard')
+    await waitFor(() => exit !== undefined || screenHas('Add a new provider'), 15000, 'installed provider wizard')
     assert.equal(exit, undefined, `TUI exited before its provider wizard appeared (code ${exit?.exitCode})`)
     child.write('\r')
-    await waitFor(() => exit !== undefined || (screen().includes('Built-in provider') && screen().includes('Custom API endpoint')), 10000, 'official and compatible-relay choices')
+    await waitFor(() => exit !== undefined || (screenHas('Built-in provider') && screenHas('Custom API endpoint')), 10000, 'official and compatible-relay choices')
     assert.equal(exit, undefined, `TUI exited before provider route choices appeared (code ${exit?.exitCode})`)
     if (verifyProviderWizard) {
       const address = endpoint.address()
       assert.ok(address && typeof address !== 'string')
       child.write('\u001b[B\r')
-      await waitFor(() => exit !== undefined || screen().includes('Enter a route name'), 10000, 'custom route name')
+      await waitFor(() => exit !== undefined || screenHas('Enter a route name'), 10000, 'custom route name')
       await type(routeName)
       await waitFor(() => exit !== undefined || screen().includes(routeName), 10000, 'typed route name')
       child.write('\r')
-      await waitFor(() => exit !== undefined || screen().includes('Enter the API key'), 10000, 'custom API key')
+      await waitFor(() => exit !== undefined || screenHas('Enter the API key'), 10000, 'custom API key')
       await type('fixture-secret-never-send')
       await delay(250)
       assert.ok(!output.includes('fixture-secret-never-send'), 'the API key must be masked while typing')
       child.write('\r')
-      await waitFor(() => exit !== undefined || screen().includes('Enter the baseURL'), 10000, 'custom endpoint')
+      await waitFor(() => exit !== undefined || screenHas('Enter the baseURL'), 10000, 'custom endpoint')
       await type(`http://127.0.0.1:${address.port}/v1`)
       await waitFor(() => exit !== undefined || screen().includes(`/v1`), 10000, 'typed custom endpoint')
       child.write('\r')
-      await waitFor(() => exit !== undefined || screen().includes('Choose the wire protocol'), 10000, 'custom protocol')
+      await waitFor(() => exit !== undefined || screenHas('Choose the wire protocol'), 10000, 'custom protocol')
       child.write('\r')
-      await waitFor(() => exit !== undefined || screen().includes('Select the models to enable'), 20000, 'local model discovery')
+      await waitFor(() => exit !== undefined || screenHas('Select the models to enable'), 20000, 'local model discovery')
       assert.match(screen(), /fixture-model/u)
       child.write(' ')
       await delay(100)
       child.write('\r')
-      await waitFor(() => exit !== undefined || screen().includes('Write this provider configuration?'), 10000, 'provider confirmation')
+      await waitFor(() => exit !== undefined || screenHas('Write this provider configuration?'), 10000, 'provider confirmation')
       child.write('\r')
-      await waitFor(() => exit !== undefined || screen().includes('Switch to the new provider now?'), 10000, 'provider switch choice')
+      await waitFor(() => exit !== undefined || screenHas('Switch to the new provider now?'), 10000, 'provider switch choice')
       const sessionsBeforeSwitch = new Set(touchedSessions(env.HOME))
       if (!verifyAgentTurn) {
         child.write('\u001b[B')
         await waitFor(() => exit !== undefined || /❯\s*● Keep the current model/u.test(screen()), 10000, 'keep-current-model choice')
       }
       child.write('\r')
-      await waitFor(() => exit !== undefined || !screen().includes('Switch to the new provider now?'), 10000, 'completed provider wizard')
+      await waitFor(() => exit !== undefined || !screenHas('Switch to the new provider now?'), 10000, 'completed provider wizard')
       if (verifyAgentTurn) {
         // The question disappears before Harness adopts the fork. Wait for
         // the durable session touch made after adoption, not a transient Ink
@@ -185,7 +205,7 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
       }
     } else {
       child.write('\u001b')
-      await waitFor(() => exit !== undefined || !screen().includes('Custom API endpoint'), 10000, 'provider wizard dismissal')
+      await waitFor(() => exit !== undefined || !screenHas('Custom API endpoint'), 10000, 'provider wizard dismissal')
       assert.equal(exit, undefined, `TUI exited while dismissing its provider wizard (code ${exit?.exitCode})`)
     }
     // Exercise the installed composer as a user would, without submitting a
