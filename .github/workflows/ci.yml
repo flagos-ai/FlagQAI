@@ -153,6 +153,9 @@ jobs:
           # bound before setup returned. The knob exists for exactly this.
           FLAGQAI_ACCEPTANCE_INSTALL_TIMEOUT_MS: '1500000'
           FLAGQAI_ACCEPTANCE_PTY_MODULE: ${{ runner.temp }}/flagqai-pty-harness/node_modules/node-pty
+          # Names the last wizard step that returned, so a flow that neither
+          # finishes nor reports on this host stops being invisible.
+          FLAGQAI_DEBUG_PROVIDER_WIZARD: '1'
           FLAGQAI_ACCEPTANCE_PROVIDER_WIZARD: '1'
           FLAGQAI_ACCEPTANCE_AGENT_TURN: '1'
           FLAGQAI_ACCEPTANCE_SCIENCE_SDK: '1'

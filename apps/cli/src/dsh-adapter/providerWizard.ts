@@ -199,6 +199,21 @@ export async function runProviderWizard(
 }
 
 /**
+ * Step trace for the wizard, off unless `FLAGQAI_DEBUG_PROVIDER_WIZARD=1`.
+ *
+ * A wizard that neither finishes nor reports leaves nothing to read: the
+ * rendered frame is the launchpad either way, and its notifications may not
+ * render at all when `/provider` was opened from a screen without a
+ * transcript. Writing each step to stderr names the last await that returned,
+ * which is the one fact every diagnosis from a bare screen had to guess at.
+ */
+function traceWizard(step: string, detail?: string): void {
+  if (process.env.FLAGQAI_DEBUG_PROVIDER_WIZARD !== '1') return
+  const suffix = detail === undefined ? '' : ` ${detail}`
+  process.stderr.write(`[provider-wizard] ${step}${suffix}\n`)
+}
+
+/**
  * The guided add flow behind `/provider`'s "Add a new provider" branch:
  * mode (catalog / custom / optional OAuth), route, API key, endpoint /
  * protocol, model discovery + selection, confirm, then persist with
@@ -381,7 +396,9 @@ async function runAddFlow(
       { label: t('provider-opt-confirm-cancel') },
     ], { detail, hideCustomInput: true })],
   })
+  traceWizard('confirm answered', JSON.stringify(answerSelected(confirmAnswer, 'confirm')))
   if (answerSelected(confirmAnswer, 'confirm')[0] !== t('provider-opt-confirm-write')) {
+    traceWizard('confirm was not the write option; cancelling')
     notify(t('provider-cancelled'))
     return 'cancelled'
   }
@@ -389,13 +406,17 @@ async function runAddFlow(
   // ── 8. persist: credential first (rollbackable), then the profile ──
   let wroteCredential = false
   let previousCredential: string | undefined
+  traceWizard('persist begin', `shadowed=${String(shadowed)} key=${apiKey !== undefined}`)
   if (!shadowed && apiKey !== undefined) {
     // Capture any pre-existing value BEFORE overwriting: when the profile
     // write below fails, rollback must restore it — an unconditional unset
     // would destroy the old key of the route being overwritten.
+    traceWizard('credential read begin')
     previousCredential = await host.readCredential(ref)
+    traceWizard('credential read done')
     await host.writeCredential(ref, apiKey)
     wroteCredential = true
+    traceWizard('credential write done')
   }
   const profile = buildProfile({
     isCatalog,
@@ -408,8 +429,10 @@ async function runAddFlow(
     catalogDiscovery: discovery.catalog,
     capabilityEntries: capabilities.entries,
   })
+  traceWizard('profile write begin')
   try {
     await host.writeProfile(route, profile)
+    traceWizard('profile write done')
   } catch (error) {
     if (wroteCredential) {
       try {
@@ -436,17 +459,22 @@ async function runAddFlow(
       : []),
   ])
   notify(t('provider-success', { route }), { color: 'success' })
+  traceWizard('success notified', `working=${String(deps.working())} models=${models.length}`)
 
   if (!deps.working() && models.length > 0) {
     const target = models[0]!
+    traceWizard('switch question begin')
     const switchAnswer = await ask({
       questions: [optionQuestion('switch', t('provider-q-switch'), [
         { label: t('provider-opt-switch-now', { model: target }) },
         { label: t('provider-opt-switch-keep') },
       ], { hideCustomInput: true })],
     })
+    traceWizard('switch answered')
     if (answerSelected(switchAnswer, 'switch')[0] === t('provider-opt-switch-now', { model: target })) {
+      traceWizard('switch model begin')
       await deps.switchModel(route, target)
+      traceWizard('switch model done')
     }
   }
   return 'added'
