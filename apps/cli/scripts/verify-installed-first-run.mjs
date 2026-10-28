@@ -410,6 +410,7 @@ console.log('PASS installed quantum directory write-and-sync probes')
   if (passed || process.env.FLAGQAI_ACCEPTANCE_KEEP_SANDBOX !== '1') {
     try {
       await rm(sandbox, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 })
+      console.log('First-run sandbox cleanup complete')
     } catch (cleanupError) {
       // A throw here replaces whatever was already propagating, so a locked
       // directory would report itself instead of the test result. Windows run

@@ -704,6 +704,10 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
     if (child && exit === undefined) {
       child.kill()
       await waitFor(() => exit !== undefined, 5000, 'PTY child termination', screen).catch(() => {})
+    } else if (child && process.platform === 'win32') {
+      // node-pty 1.1.0 closes its output socket on natural exit, but only kill()
+      // disposes the ConPTY worker. Release it after checking the real exit code.
+      child.kill()
     }
     terminal.dispose()
     if (endpoint) await new Promise(resolve => endpoint.close(resolve))
