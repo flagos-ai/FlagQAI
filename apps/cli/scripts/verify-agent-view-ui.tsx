@@ -384,7 +384,15 @@ console.log('--- S4: esc layering + queue/steer ---')
       await settled(() => frame.screen().includes('draft stays'))
       frame.stdin.write('\r')
       check('S4 失败保留草稿', await settled(() => failLog.length === 1 && frame.screen().includes('draft stays')), 'log=' + JSON.stringify(failLog))
-      check('S4 失败 notice 稳定理由 + 草稿保留说明', frame.screen().includes(t('agent-message-target-not-resumable')) && frame.screen().includes(t('agent-message-draft-retained')))
+      // The notice is a separate render from the rejected submit: the failed
+      // control call and the log entry settle first, the composer's notice
+      // state follows on the next commit. Reading the screen synchronously
+      // here passed on macOS and Linux and failed on Windows, where the extra
+      // commit had not landed yet. Wait for it the way every other screen
+      // assertion in this file does.
+      check('S4 失败 notice 稳定理由 + 草稿保留说明', await settled(() =>
+        frame.screen().includes(t('agent-message-target-not-resumable')) &&
+        frame.screen().includes(t('agent-message-draft-retained'))), frame.lines().slice(-4).join('|'))
     },
   )
   // no composer → Esc exits immediately
