@@ -1,6 +1,6 @@
 /** Exercise the installed CLI in a real PTY without a live provider credential. */
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { readFile, stat } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import { createRequire } from 'node:module'
@@ -29,6 +29,46 @@ async function waitFor(check, timeoutMs, label, screenText) {
   // is on the wrong screen" and "the text is drawn differently than expected".
   const tail = typeof screenText === 'function' ? screenText() : ''
   throw new Error(`Timed out waiting for ${label}${tail ? `\n--- screen ---\n${tail}` : ''}`)
+}
+
+/**
+ * List the runtime directory with sizes, plus which files mention the fixture
+ * route. The wizard's writes are durable and land under here, so when the
+ * screen no longer shows a wizard the files say which step ran.
+ */
+function describeRuntime(root) {
+  const lines = []
+  const walk = (dir, depth) => {
+    if (depth > 3) return
+    let entries
+    try {
+      entries = readdirSync(dir, { withFileTypes: true })
+    } catch {
+      return
+    }
+    for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
+      const path = join(dir, entry.name)
+      if (entry.isDirectory()) {
+        lines.push(`${'  '.repeat(depth)}${entry.name}/`)
+        walk(path, depth + 1)
+        continue
+      }
+      let size = '?'
+      let mentionsRoute = false
+      try {
+        const text = readFileSync(path, 'utf8')
+        size = String(text.length)
+        mentionsRoute = text.includes('fixture-gateway')
+      } catch {
+        try {
+          size = String(statSync(path).size)
+        } catch {}
+      }
+      lines.push(`${'  '.repeat(depth)}${entry.name} (${size}${mentionsRoute ? ', mentions fixture-gateway' : ''})`)
+    }
+  }
+  walk(root, 0)
+  return lines.join('\n') || '(empty)'
 }
 
 /**
@@ -298,6 +338,11 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
       await delay(100)
       child.write('\r')
       await waitFor(() => exit !== undefined || screenHas('Write this provider configuration?'), 10000, 'provider confirmation', screen)
+      // Enter is only meaningful once the options are on screen: the panel
+      // takes submitOptions on Enter, and that reads the focused row. Waiting
+      // for the header alone let the key race the rows, the same way the
+      // route arrow raced its list.
+      await waitFor(() => exit !== undefined || /❯\s*●\s*Write and enable/u.test(screen()), 10000, 'provider confirmation choices', screen)
       child.write('\r')
       // The switch question is conditional (`!deps.working() && models.length >
       // 0`) and transient: it is asked after the profile write, and a stray
@@ -314,13 +359,22 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
           return 'absent'
         }
       }
-      const switchQuestionShown = await waitForOr(
-        () => exit !== undefined || screenHas('Switch to the new provider now?'), 10000)
+      // Wait for whichever comes first: the switch panel, or the wizard
+      // closing back to the launchpad. Both are outcomes of the confirmation,
+      // and telling them apart here keeps a cancelled wizard from being
+      // reported as a missing panel ten seconds later.
+      const atLaunchpad = () => screenHas('Setup skipped') && !screenHas('Write this provider configuration?')
+      await waitForOr(() => exit !== undefined
+        || screenHas('Switch to the new provider now?')
+        || atLaunchpad(), 15000)
+      const switchQuestionShown = screenHas('Switch to the new provider now?')
       if (!switchQuestionShown) {
         const credential = await askCredential()
         if (credential !== 'written with the key') {
-          throw new Error(`the add flow did not write the provider after confirmation `
-            + `(credential file: ${credential})\n--- screen ---\n` + screen())
+          throw new Error(`${atLaunchpad() ? 'the wizard closed back to the launchpad' : 'the wizard stalled'} `
+            + `without writing the provider (credential file: ${credential})\n`
+            + `--- runtime tree ---\n${describeRuntime(env.FLAGQAI_CLI_RUNTIME_ROOT)}\n`
+            + `--- screen ---\n` + screen())
         }
         // The write landed, so the wizard ran to the end; the question was
         // either skipped by its own condition or answered before this read.
