@@ -1744,6 +1744,7 @@ const dict = {
   'provider-rollback-failed': { zh: '密钥回滚失败，请手动检查 ~/.dsh/.credentials.yaml', en: 'Key rollback failed — check ~/.dsh/.credentials.yaml manually' },
   'provider-error-safe-detail': { zh: '请检查接口访问权限和本地凭据存储后重试', en: 'Check endpoint access and the local credential store, then retry' },
   'provider-write-failed': { zh: 'provider 配置写入失败 · {{{err}}}', en: 'Failed to write the provider configuration · {{{err}}}' },
+  'provider-wizard-error': { zh: 'provider 向导因错误中断 · {{{err}}}', en: 'The provider wizard stopped on an error · {{{err}}}' },
   'provider-cancelled': { zh: '已取消添加 provider', en: 'Provider setup cancelled' },
   'provider-success': { zh: 'provider {{route}} 已添加', en: 'Provider {{route}} added' },
   'provider-switch-hint': { zh: '运行 /model 可切换到新 provider 的模型', en: 'Run /model to switch to the new provider’s models' },

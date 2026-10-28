@@ -2875,9 +2875,15 @@ export function Chat({
             void channel.listModels().then(setModels)
             void channel.listProviders().then(setProviderInfos).catch(() => setProviderInfos([]))
           }
-        }).catch(() => {
-          // The wizard notifies on every handled failure; this only swallows
-          // an unexpected reject so it never surfaces as an unhandled promise.
+        }).catch((error: unknown) => {
+          // Was `.catch(() => {})`, on the reasoning that the wizard notifies
+          // every handled failure. A throw between those failure checks — the
+          // credential read or write before the profile write, both outside
+          // the wizard's own try — was therefore swallowed with no message at
+          // all, so the flow looked like a cancellation and the reason was
+          // lost. Name it instead; this path is only reached on a crash.
+          const detail = error instanceof Error ? error.message : String(error)
+          channel.notify(t('provider-wizard-error', { err: detail }), { color: 'error', timeoutMs: 8000 })
         })
         return true
       }
