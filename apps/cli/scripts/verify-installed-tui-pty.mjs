@@ -18,13 +18,17 @@ function touchedSessions(home) {
   }
 }
 
-async function waitFor(check, timeoutMs, label) {
+async function waitFor(check, timeoutMs, label, screenText) {
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
     if (check()) return
     await delay(100)
   }
-  throw new Error(`Timed out waiting for ${label}`)
+  // Include what was on screen. A bare "timed out waiting for X" says the label
+  // never appeared but not what did, which is the difference between "the app
+  // is on the wrong screen" and "the text is drawn differently than expected".
+  const tail = typeof screenText === 'function' ? screenText() : ''
+  throw new Error(`Timed out waiting for ${label}${tail ? `\n--- screen ---\n${tail}` : ''}`)
 }
 
 /**
@@ -132,59 +136,65 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
       terminal.write(data)
     })
     child.onExit(event => { exit = event })
-    await waitFor(() => exit !== undefined || screenHas('Welcome to FlagQAI') || screenHas('Say something, or type'), 90000, 'FlagQAI first screen')
+    await waitFor(() => exit !== undefined || screenHas('Welcome to FlagQAI') || screenHas('Say something, or type'), 90000, 'FlagQAI first screen', screen)
     if (exit !== undefined) throw new Error(`TUI exited before its first screen appeared (code ${exit.exitCode})`)
     if (screenHas('Welcome to FlagQAI')) child.write('\u001b')
-    await waitFor(() => exit !== undefined || screenHas('Say something, or type'), 30000, 'FlagQAI command prompt')
+    await waitFor(() => exit !== undefined || screenHas('Say something, or type'), 30000, 'FlagQAI command prompt', screen)
     assert.equal(exit, undefined, `TUI exited before its command prompt appeared (code ${exit?.exitCode})`)
     await type('/provider')
-    await waitFor(() => exit !== undefined || screenHas('Add, edit or delete an LLM provider'), 10000, 'provider command selection')
+    await waitFor(() => exit !== undefined || screenHas('Add, edit or delete an LLM provider'), 10000, 'provider command selection', screen)
     child.write('\r')
-    await waitFor(() => exit !== undefined || screenHas('Add a new provider'), 15000, 'installed provider wizard')
+    await waitFor(() => exit !== undefined || screenHas('Add a new provider'), 15000, 'installed provider wizard', screen)
     assert.equal(exit, undefined, `TUI exited before its provider wizard appeared (code ${exit?.exitCode})`)
     child.write('\r')
-    await waitFor(() => exit !== undefined || (screenHas('Built-in provider') && screenHas('Custom API endpoint')), 10000, 'official and compatible-relay choices')
+    await waitFor(() => exit !== undefined || (screenHas('Built-in provider') && screenHas('Custom API endpoint')), 10000, 'official and compatible-relay choices', screen)
     assert.equal(exit, undefined, `TUI exited before provider route choices appeared (code ${exit?.exitCode})`)
     if (verifyProviderWizard) {
       const address = endpoint.address()
       assert.ok(address && typeof address !== 'string')
-      child.write('\u001b[B\r')
-      await waitFor(() => exit !== undefined || screenHas('Enter a route name'), 10000, 'custom route name')
-      await type(routeName)
-      await waitFor(() => exit !== undefined || screen().includes(routeName), 10000, 'typed route name')
+      // The arrow and the Enter are two keys. Written as one chunk, ConPTY can
+      // deliver them closely enough that the Enter is handled before the
+      // selection has moved, which lands on the first route instead of the
+      // second — the wizard then never shows the custom route prompt.
+      child.write('\u001b[B')
+      await delay(TYPE_DELAY_MS === 0 ? 0 : 200)
       child.write('\r')
-      await waitFor(() => exit !== undefined || screenHas('Enter the API key'), 10000, 'custom API key')
+      await waitFor(() => exit !== undefined || screenHas('Enter a route name'), 10000, 'custom route name', screen)
+      await type(routeName)
+      await waitFor(() => exit !== undefined || screen().includes(routeName), 10000, 'typed route name', screen)
+      child.write('\r')
+      await waitFor(() => exit !== undefined || screenHas('Enter the API key'), 10000, 'custom API key', screen)
       await type('fixture-secret-never-send')
       await delay(250)
       assert.ok(!output.includes('fixture-secret-never-send'), 'the API key must be masked while typing')
       child.write('\r')
-      await waitFor(() => exit !== undefined || screenHas('Enter the baseURL'), 10000, 'custom endpoint')
+      await waitFor(() => exit !== undefined || screenHas('Enter the baseURL'), 10000, 'custom endpoint', screen)
       await type(`http://127.0.0.1:${address.port}/v1`)
-      await waitFor(() => exit !== undefined || screen().includes(`/v1`), 10000, 'typed custom endpoint')
+      await waitFor(() => exit !== undefined || screen().includes(`/v1`), 10000, 'typed custom endpoint', screen)
       child.write('\r')
-      await waitFor(() => exit !== undefined || screenHas('Choose the wire protocol'), 10000, 'custom protocol')
+      await waitFor(() => exit !== undefined || screenHas('Choose the wire protocol'), 10000, 'custom protocol', screen)
       child.write('\r')
-      await waitFor(() => exit !== undefined || screenHas('Select the models to enable'), 20000, 'local model discovery')
+      await waitFor(() => exit !== undefined || screenHas('Select the models to enable'), 20000, 'local model discovery', screen)
       assert.match(screen(), /fixture-model/u)
       child.write(' ')
       await delay(100)
       child.write('\r')
-      await waitFor(() => exit !== undefined || screenHas('Write this provider configuration?'), 10000, 'provider confirmation')
+      await waitFor(() => exit !== undefined || screenHas('Write this provider configuration?'), 10000, 'provider confirmation', screen)
       child.write('\r')
-      await waitFor(() => exit !== undefined || screenHas('Switch to the new provider now?'), 10000, 'provider switch choice')
+      await waitFor(() => exit !== undefined || screenHas('Switch to the new provider now?'), 10000, 'provider switch choice', screen)
       const sessionsBeforeSwitch = new Set(touchedSessions(env.HOME))
       if (!verifyAgentTurn) {
         child.write('\u001b[B')
-        await waitFor(() => exit !== undefined || /❯\s*● Keep the current model/u.test(screen()), 10000, 'keep-current-model choice')
+        await waitFor(() => exit !== undefined || /❯\s*● Keep the current model/u.test(screen()), 10000, 'keep-current-model choice', screen)
       }
       child.write('\r')
-      await waitFor(() => exit !== undefined || !screenHas('Switch to the new provider now?'), 10000, 'completed provider wizard')
+      await waitFor(() => exit !== undefined || !screenHas('Switch to the new provider now?'), 10000, 'completed provider wizard', screen)
       if (verifyAgentTurn) {
         // The question disappears before Harness adopts the fork. Wait for
         // the durable session touch made after adoption, not a transient Ink
         // notification that terminal repainting may split or erase.
         await waitFor(() => exit !== undefined || touchedSessions(env.HOME).some(id => !sessionsBeforeSwitch.has(id)),
-          90000, 'adopted provider model session')
+          90000, 'adopted provider model session', screen)
       }
       assert.ok(screen().includes(verifyAgentTurn ? 'fixture-model' : `${routeName} · added`))
       assert.deepEqual(modelRequests, [{ path: '/v1/models', authorization: 'Bearer fixture-secret-never-send' }])
@@ -200,37 +210,37 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
         if (screen().includes('This terminal hosts several sessions')) {
           child.write('\u001b')
           await waitFor(() => exit !== undefined || !screen().includes('This terminal hosts several sessions'),
-            10000, 'session composer after model switch')
+            10000, 'session composer after model switch', screen)
         }
       }
     } else {
       child.write('\u001b')
-      await waitFor(() => exit !== undefined || !screenHas('Custom API endpoint'), 10000, 'provider wizard dismissal')
+      await waitFor(() => exit !== undefined || !screenHas('Custom API endpoint'), 10000, 'provider wizard dismissal', screen)
       assert.equal(exit, undefined, `TUI exited while dismissing its provider wizard (code ${exit?.exitCode})`)
     }
     // Exercise the installed composer as a user would, without submitting a
     // message or touching a model endpoint. This is a black-box contract for
     // a future independently implemented input surface.
     await type('FQEDITXYZ')
-    await waitFor(() => exit !== undefined || screen().includes('FQEDITXYZ'), 10000, 'typed draft')
+    await waitFor(() => exit !== undefined || screen().includes('FQEDITXYZ'), 10000, 'typed draft', screen)
     assert.equal(exit, undefined, `TUI exited while typing a draft (code ${exit?.exitCode})`)
     child.write('\u001b[D\u007f')
-    await waitFor(() => exit !== undefined || screen().includes('FQEDITXZ'), 10000, 'left-arrow and backspace editing')
+    await waitFor(() => exit !== undefined || screen().includes('FQEDITXZ'), 10000, 'left-arrow and backspace editing', screen)
     assert.equal(exit, undefined, `TUI exited while editing a draft (code ${exit?.exitCode})`)
     child.write('\u0003')
-    await waitFor(() => exit !== undefined || !screen().includes('FQEDITXZ'), 10000, 'draft clearing')
+    await waitFor(() => exit !== undefined || !screen().includes('FQEDITXZ'), 10000, 'draft clearing', screen)
     assert.equal(exit, undefined, `TUI exited while clearing a draft (code ${exit?.exitCode})`)
     child.write('/config')
-    await waitFor(() => exit !== undefined || screen().includes('Show the active FlagQAI profile configuration'), 10000, 'config command selection')
+    await waitFor(() => exit !== undefined || screen().includes('Show the active FlagQAI profile configuration'), 10000, 'config command selection', screen)
     child.write('\r')
-    await waitFor(() => exit !== undefined || screen().replace(/\s+/gu, '').includes(profilePatch), 10000, 'active managed profile path')
+    await waitFor(() => exit !== undefined || screen().replace(/\s+/gu, '').includes(profilePatch), 10000, 'active managed profile path', screen)
     assert.equal(exit, undefined, `TUI exited before /config reported its active profile (code ${exit?.exitCode})`)
     if (verifyAgentTurn) {
       child.write('Give a one-line acknowledgement for this local acceptance task.')
-      await waitFor(() => exit !== undefined || screen().includes('local acceptance task'), 10000, 'agent task draft')
+      await waitFor(() => exit !== undefined || screen().includes('local acceptance task'), 10000, 'agent task draft', screen)
       child.write('\r')
       await waitFor(() => exit !== undefined || (agentRequests.length > 0 && screen().includes('FLAGQAI_PTY_AGENT_READY')),
-        90000, 'installed TUI Agent response')
+        90000, 'installed TUI Agent response', screen)
       assert.equal(exit, undefined, `TUI exited before its Agent responded (code ${exit?.exitCode})`)
       assert.ok(agentRequests.length > 0, 'the submitted TUI task must reach the local model')
       for (const request of agentRequests) {
@@ -243,10 +253,10 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
       assert.ok(!output.includes('fixture-secret-never-send'), 'the API key must stay out of the Agent transcript')
     }
     child.write('/exit')
-    await waitFor(() => exit !== undefined || (screen().includes('/exit') && screen().includes('Exit FlagQAI')), 10000, 'FlagQAI exit command selection')
+    await waitFor(() => exit !== undefined || (screen().includes('/exit') && screen().includes('Exit FlagQAI')), 10000, 'FlagQAI exit command selection', screen)
     assert.equal(exit, undefined, `TUI exited before /exit could be selected (code ${exit?.exitCode})`)
     child.write('\r')
-    await waitFor(() => exit !== undefined, 30000, 'TUI exit')
+    await waitFor(() => exit !== undefined, 30000, 'TUI exit', screen)
     assert.equal(exit.exitCode, 0, `TUI /exit returned ${exit.exitCode}; last screen:\n${screen()}`)
     assert.doesNotMatch(output, /UnhandledPromiseRejection|plugin tree failed to load/u)
     console.log(`PASS installed CLI TUI PTY: ${process.platform}/${process.arch}, draft edit/clear, provider routes${verifyAgentTurn ? ', local Agent turn' : ''}, and /exit returned 0`)
@@ -256,7 +266,7 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
   } finally {
     if (child && exit === undefined) {
       child.kill()
-      await waitFor(() => exit !== undefined, 5000, 'PTY child termination').catch(() => {})
+      await waitFor(() => exit !== undefined, 5000, 'PTY child termination', screen).catch(() => {})
     }
     terminal.dispose()
     if (endpoint) await new Promise(resolve => endpoint.close(resolve))
