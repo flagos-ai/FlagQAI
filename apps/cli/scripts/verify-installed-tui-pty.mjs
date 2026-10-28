@@ -193,7 +193,23 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
       } else {
         child.write('\u001b[B\r')
       }
-      await waitFor(() => exit !== undefined || screenHas('Enter a route name'), 10000, 'custom route name', screen)
+      try {
+        await waitFor(() => exit !== undefined || screenHas('Enter a route name'), 10000, 'custom route name', screen)
+      } catch (error) {
+        // Two different defects reported the same way until now. If the choice
+        // screen is gone, the wizard did not fail to paint the next prompt: it
+        // was cancelled, and `runAddFlow` cancels on Escape with nothing
+        // written. That makes "the Down arrow was delivered as a bare Esc" the
+        // reading to check first, and it is not something a longer timeout
+        // fixes. Windows run 40622665008 ended exactly here, with the screen
+        // showing the launchpad and an empty composer.
+        if (!screenHas('Custom API endpoint')) {
+          throw new Error('the provider wizard closed after the Down arrow instead of advancing: '
+            + 'Esc cancels the add flow, so the arrow arrived as a bare Escape rather than a Down key\n'
+            + error.message)
+        }
+        throw error
+      }
       await type(routeName)
       await waitFor(() => exit !== undefined || screen().includes(routeName), 10000, 'typed route name', screen)
       child.write('\r')

@@ -63,13 +63,6 @@ jobs:
       - run: pnpm --dir apps/cli run verify:drag-protocol
       - run: pnpm --dir apps/cli run verify:resize-reflow
       - run: pnpm --dir apps/cli run verify:tool-tooltip-gating
-      # The provider wizard in the installed PTY acceptance types a command into
-      # a ConPTY that re-encodes every keystroke as a win32-input-mode record.
-      # Several of those records can arrive in one stdin read, and this gate is
-      # the only one that exercises that composition. It was registered in
-      # run-ci-group.mjs but that runner is not part of this workflow, so the
-      # path had no guard on any platform.
-      - run: pnpm --dir apps/cli run verify:batched-prompt-input
       - run: pnpm --dir apps/cli run verify:agent-view-ui
       - run: pnpm --dir apps/cli run verify:display-settings
       - run: node --test apps/cli/scripts/package-boundary.test.mjs
@@ -179,6 +172,13 @@ jobs:
         if: matrix.os == 'ubuntu-latest' && matrix.node == 22
         run: node apps/cli/scripts/verify-quantum-task.mjs --clean-install --gateway --interactions --todo-policy
         timeout-minutes: 15
+      # The provider wizard in the installed PTY acceptance types a command into
+      # a ConPTY that re-encodes every keystroke as a win32-input-mode record,
+      # and several of those records can arrive in one stdin read. This gate is
+      # the only one that exercises that composition. It stays below the PTY
+      # acceptance on purpose: a failure here would stop the job before the
+      # Windows acceptance runs, and that run is what currently needs to report.
+      - run: pnpm --dir apps/cli run verify:batched-prompt-input
       - run: pnpm --dir apps/cli run verify:plugin-panels
       - run: pnpm --dir apps/cli run verify:panel-selection
       - run: pnpm --dir apps/cli run verify:panel-registration
