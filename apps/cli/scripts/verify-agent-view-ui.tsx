@@ -705,7 +705,13 @@ console.log('--- Chat: source stack + parent state preservation ---')
     stdin.write('\x1b')
     await sleep(80) // 固定窗:pacing Esc 分层步间
     stdin.write('\x1b')
-    check('C1 Esc 退回聊天（父转录仍在）', await settled(() => screen().includes('please delegate') && !screen().includes('read-only')), lines().slice(0, 4).join('|'))
+    // The parent transcript remounts on the way back, and on a loaded runner
+    // that repaint can outlast the shared 8s CI bound. Run 40625474325 on
+    // ubuntu 22 timed out here with only the chat header painted, and the very
+    // next check — reading the parent rows — passed against the same screen,
+    // so the transition did complete and only the bound was short. Give this
+    // one check room; the predicate still has to become true.
+    check('C1 Esc 退回聊天（父转录仍在）', await settled(() => screen().includes('please delegate') && !screen().includes('read-only'), { timeoutMs: 20000 }), lines().slice(0, 4).join('|'))
     const afterRows = lines().filter(l => l.includes('please delegate') || l.includes('delegated') || l.includes('chat level child'))
     // 行尾空白格不是比较对象（重挂载后 flex 尾格可能多一格 padding）。
     const norm = (ls: readonly string[]): string[] => ls.map(l => l.replace(/\s+$/, ''))
