@@ -32,6 +32,20 @@ async function waitFor(check, timeoutMs, label, screenText) {
 }
 
 /**
+ * Like `waitFor`, but answers whether the condition held instead of throwing.
+ * For checks whose absence is itself one of several findings the caller wants
+ * to tell apart.
+ */
+async function waitForOr(check, timeoutMs) {
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    if (check()) return true
+    await delay(100)
+  }
+  return check()
+}
+
+/**
  * Type text into a PTY, one character at a time on Windows, letting the screen
  * settle before the next one.
  *
@@ -182,30 +196,36 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
     if (verifyProviderWizard) {
       const address = endpoint.address()
       assert.ok(address && typeof address !== 'string')
-      // The arrow and the Enter are two keys. Written as one chunk, ConPTY can
-      // deliver them closely enough that the Enter is handled before the
-      // selection has moved, which lands on the first route instead of the
-      // second — the wizard then never shows the custom route prompt.
-      if (process.platform === 'win32') {
-        child.write('\u001b[B')
-        await delay(200)
-        child.write('\r')
-      } else {
-        child.write('\u001b[B\r')
+      // Move the focus from "Built-in provider" to "Custom API endpoint" as its
+      // own key, then confirm the move from the rendered pointer before Enter
+      // follows. A chunk carrying both keys is two keystrokes however it is
+      // written, and looking is the only way to know both arrived. Windows
+      // runs 40622665008 and 40625474325 ended with the wizard cancelled and an
+      // empty composer, which is the screen `runAddFlow` leaves behind when it
+      // reads Escape — so whether the Down arrow arrived is the question worth
+      // answering first, and it has to be answered here rather than four
+      // screens later.
+      child.write('\u001b[B')
+      const movedToCustom = await waitForOr(() => exit !== undefined || screenHas('❯ ● Custom API endpoint'), 8000)
+      if (!movedToCustom) {
+        const stillChoosing = screenHas('Built-in provider') || screenHas('Custom API endpoint')
+        throw new Error(stillChoosing
+          ? 'the Down arrow did not move the route choice: the option list is still on screen with the focus elsewhere\n'
+            + '--- screen ---\n' + screen()
+          : 'the route choice screen disappeared after the Down arrow instead of advancing\n'
+            + '--- screen ---\n' + screen())
       }
+      child.write('\r')
       try {
         await waitFor(() => exit !== undefined || screenHas('Enter a route name'), 10000, 'custom route name', screen)
       } catch (error) {
-        // Two different defects reported the same way until now. If the choice
-        // screen is gone, the wizard did not fail to paint the next prompt: it
-        // was cancelled, and `runAddFlow` cancels on Escape with nothing
-        // written. That makes "the Down arrow was delivered as a bare Esc" the
-        // reading to check first, and it is not something a longer timeout
-        // fixes. Windows run 40622665008 ended exactly here, with the screen
-        // showing the launchpad and an empty composer.
+        // The focus move above passed, so the arrow reached the app. What is
+        // left is Enter not landing; these are candidates the screen cannot
+        // separate, not a diagnosis.
         if (!screenHas('Custom API endpoint')) {
-          throw new Error('the provider wizard closed after the Down arrow instead of advancing: '
-            + 'Esc cancels the add flow, so the arrow arrived as a bare Escape rather than a Down key\n'
+          throw new Error('the wizard left the route choice without showing a route prompt '
+            + '(candidates, unverified: Enter dismissed the question, another key reached the wizard, '
+            + 'or the add flow was cancelled after the focus move)\n'
             + error.message)
         }
         throw error
