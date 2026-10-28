@@ -74,6 +74,41 @@ async function waitForStable(check, holdMs, timeoutMs, label, screenText) {
 }
 
 /**
+ * Every `*.lock` file under the runtime root, with its recorded holder.
+ *
+ * `withFileLock` coordinates writers through a `<file>.lock` sibling naming the
+ * holder PID, and a stale one costs a full 120 s wait before the writer gives
+ * up. Listing them (and the PID they name) says whether a contended lock is
+ * what a stalled write was waiting for.
+ */
+function describeLocks(root) {
+  const found = []
+  const walk = (dir, depth) => {
+    if (depth > 3 || basename(dir) === 'node_modules') return
+    let entries
+    try {
+      entries = readdirSync(dir, { withFileTypes: true })
+    } catch {
+      return
+    }
+    for (const entry of entries) {
+      const path = join(dir, entry.name)
+      if (entry.isDirectory()) {
+        walk(path, depth + 1)
+      } else if (entry.name.endsWith('.lock')) {
+        let holder = '?'
+        try {
+          holder = readFileSync(path, 'utf8').trim()
+        } catch {}
+        found.push(`${path} (holder pid ${holder})`)
+      }
+    }
+  }
+  walk(root, 0)
+  return found.join('\n') || '(none)'
+}
+
+/**
  * List the runtime directory with sizes, plus which files mention the fixture
  * route. The wizard's writes are durable and land under here, so when the
  * screen no longer shows a wizard the files say which step ran.
@@ -440,17 +475,23 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
       // unanswered: ubuntu 22 and macOS run 40642249333 both logged the NOTE
       // and then timed out 90 s later with the board still on screen. The
       // launchpad state is only used below, to describe a failure.
+      // 150 s on Windows, not 30. The credential store serializes writers
+      // through `withFileLock(..., { waitMs: 120_000 })`, so a contended write
+      // legitimately takes up to two minutes before it either succeeds or
+      // raises the lock-timeout error the wizard would then report. Waiting
+      // 30 s and killing the app cannot observe either outcome — it only sees
+      // "nothing yet", which is what runs 40648607421 and 40655515845 both
+      // reported. On Unix the question arrives in under a second, so the
+      // longer bound costs nothing there.
+      const switchWaitMs = process.platform === 'win32' ? 150_000 : 30_000
       const switchQuestionShown = await waitForOr(
-        () => exit !== undefined || screenHas('Switch to the new provider now?'), 30000, 'provider switch question')
+        () => exit !== undefined || screenHas('Switch to the new provider now?'), switchWaitMs, 'provider switch question')
       if (!switchQuestionShown) {
-        // Is the app even alive? Every explanation so far — a cancelled
-        // confirmation, a thrown write, a hung store — predicts a different
-        // answer here, and none of them is visible from the rendered frame.
-        // A keystroke the app echoes proves the event loop is turning; no echo
-        // means it is blocked inside whatever the confirmation started.
-        const responsiveBefore = screen()
-        // A single letter is already all over the frame ("expand", paths), so
-        // the probe is a word no fixture text contains.
+        // Is the app even alive? A keystroke it echoes proves the event loop
+        // is turning, so the wizard promise alone is pending; no echo means
+        // the loop is blocked inside whatever the confirmation started. Runs
+        // 40655515845 answered "responds" at 51 s, which rules out a blocking
+        // write and points at an await that has not settled yet.
         const PROBE = 'FQPROBE'
         for (const character of PROBE) child.write(character)
         const echoed = await waitForOr(() => exit !== undefined || screenHas(PROBE), 5000, 'app echoed a keystroke')
@@ -458,9 +499,9 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
         if (credential !== 'written with the key') {
           throw new Error(`the wizard closed without writing the provider `
             + `(credential file: ${credential}; app ${echoed ? 'still responds to keys' : 'stopped responding to keys'})\n`
+            + `--- lock files ---\n${describeLocks(env.FLAGQAI_CLI_RUNTIME_ROOT)}\n`
             + `--- runtime tree ---\n${describeRuntime(env.FLAGQAI_CLI_RUNTIME_ROOT)}\n`
             + `--- output since the confirmation Enter ---\n${plainSince(output, confirmMark)}\n`
-            + `--- screen before that keystroke ---\n${responsiveBefore}\n`
             + `--- screen now ---\n` + screen())
         }
         // The write landed, so the wizard ran to the end; the question was
