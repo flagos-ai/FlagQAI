@@ -2,9 +2,10 @@ import { spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { access, cp, mkdir, mkdtemp, readFile, rename, rm, statfs, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { dirname, delimiter, join, resolve } from 'node:path'
+import { dirname, delimiter, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { resolveNpmCli } from './npm-cli.js'
+import { resolveRuntimeRoot } from './runtime-root.js'
 import { isMap, parseDocument } from 'yaml'
 import harnessOverrides from './runtime-profile-overrides.json' with { type: 'json' }
 import { FLAGQUANTUM_MCP_INSTALL_ARGS, FLAGQUANTUM_MCP_INSTALL_ID, FLAGQUANTUM_MCP_PACKAGE, FLAGQUANTUM_MCP_TORCH_ARGS } from './quantum-mcp-profile.js'
@@ -33,7 +34,7 @@ export function requireUvTorchBackendSupport(help) {
   }
 }
 export function installedPaths(env = process.env, home = homedir()) {
-  const root = resolve(env.FLAGQAI_CLI_RUNTIME_ROOT || join(home, '.flagqai', 'cli'))
+  const root = resolveRuntimeRoot(env.FLAGQAI_CLI_RUNTIME_ROOT || join(home, '.flagqai', 'cli'))
   const runtime = join(root, 'runtime')
   const dshHome = join(root, 'dsh')
   const profile = join(dshHome, 'profiles', 'flagqai')

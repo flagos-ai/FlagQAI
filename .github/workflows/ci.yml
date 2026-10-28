@@ -75,6 +75,7 @@ jobs:
       - run: node apps/cli/scripts/verify-guide.mjs
       - run: node --test docs/releases/registry-license-inventory.test.mjs
       - run: node --test docs/releases/release-file-inventory.test.mjs
+      - run: node --test apps/cli/scripts/runtime-root.test.mjs
       - run: node apps/cli/scripts/verify-installed-runtime.mjs
       - run: pnpm --dir apps/cli run verify:package
       - name: Inventory release candidate files

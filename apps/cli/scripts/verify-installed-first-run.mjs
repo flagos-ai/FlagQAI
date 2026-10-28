@@ -94,6 +94,41 @@ try {
   })
   assert.equal(updateAfterSetup.status, 1, 'unpublished preview must reject self-update even with a ready profile')
   assert.match(updateAfterSetup.stderr, /flagqai setup --refresh/u)
+  // A Windows TEMP path can contain an 8.3 username. Node and the Harness
+  // resolver must still share app-boot's module-local root Include registry.
+  const identityProbe = join(installedRoot, 'verify-harness-module-identity.mjs')
+  await writeFile(identityProbe, `
+import assert from 'node:assert/strict'
+import { createRequire } from 'node:module'
+import { writeFile, rm } from 'node:fs/promises'
+import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
+import { installedPaths } from './bin/installed-runtime.js'
+const paths = installedPaths()
+const require = createRequire(join(paths.runtime, 'package.json'))
+const boot = await import(pathToFileURL(require.resolve('@deepseek-ai/dsh-app-boot')).href)
+const { Context } = await import(pathToFileURL(require.resolve('@deepseek-ai/cordis')).href)
+process.env.DSH_HOME = paths.dshHome
+const { prepareProfile, INSTALL_ANCHOR } = await import(pathToFileURL(require.resolve('@deepseek-ai/dsh/profile-boot')).href)
+const resolution = await boot.createRuntimeResolution({ installAnchor: INSTALL_ANCHOR, profile: prepareProfile('flagqai', false) })
+const probe = join(paths.profile, 'verify-app-boot-identity.mjs')
+const ctx = new Context()
+try {
+  await writeFile(probe, "export { reconcileProfilePatches } from '@deepseek-ai/dsh-app-boot'\\n")
+  await ctx.plugin(boot.PluginPackages, { resolution })
+  const profileBoot = await import(pathToFileURL(probe).href)
+  assert.equal(profileBoot.reconcileProfilePatches, boot.reconcileProfilePatches,
+    'profile edits must use the same app-boot module as Harness startup')
+  console.log('PASS installed Harness module identity')
+} finally {
+  await ctx.fiber.dispose()
+  await rm(probe, { force: true })
+}
+`)
+  try {
+    assert.match(run(process.execPath, [identityProbe], installation), /PASS installed Harness module identity/u)
+    console.log('PASS installed Harness module identity')
+  } finally { await rm(identityProbe, { force: true }) }
   const managedCli = join(runtime, 'dsh', 'profiles', 'flagqai', 'node_modules', '@flagqai', 'cli')
   const wrapProbe = join(managedCli, 'verify-installed-wrap.mjs')
   await writeFile(wrapProbe, `
