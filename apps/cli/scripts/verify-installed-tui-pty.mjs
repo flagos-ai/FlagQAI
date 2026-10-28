@@ -299,14 +299,44 @@ export async function verifyInstalledTuiPty({ entry, cwd, env, modulePath, profi
       child.write('\r')
       await waitFor(() => exit !== undefined || screenHas('Write this provider configuration?'), 10000, 'provider confirmation', screen)
       child.write('\r')
-      await waitFor(() => exit !== undefined || screenHas('Switch to the new provider now?'), 10000, 'provider switch choice', screen)
-      const sessionsBeforeSwitch = new Set(touchedSessions(env.HOME))
-      if (!verifyAgentTurn) {
-        child.write('\u001b[B')
-        await waitFor(() => exit !== undefined || /❯\s*● Keep the current model/u.test(screen()), 10000, 'keep-current-model choice', screen)
+      // The switch question is conditional (`!deps.working() && models.length >
+      // 0`) and transient: it is asked after the profile write, and a stray
+      // second Enter answers it before it can be read. Its absence is therefore
+      // not by itself a failure — the credential file is what says whether the
+      // add flow actually wrote.
+      const askCredential = async () => {
+        const path = join(env.FLAGQAI_CLI_RUNTIME_ROOT, 'dsh', '.credentials.yaml')
+        try {
+          return (await readFile(path, 'utf8')).includes('fixture-secret-never-send')
+            ? 'written with the key'
+            : 'present without the key'
+        } catch {
+          return 'absent'
+        }
       }
-      child.write('\r')
-      await waitFor(() => exit !== undefined || !screenHas('Switch to the new provider now?'), 10000, 'completed provider wizard', screen)
+      const switchQuestionShown = await waitForOr(
+        () => exit !== undefined || screenHas('Switch to the new provider now?'), 10000)
+      if (!switchQuestionShown) {
+        const credential = await askCredential()
+        if (credential !== 'written with the key') {
+          throw new Error(`the add flow did not write the provider after confirmation `
+            + `(credential file: ${credential})\n--- screen ---\n` + screen())
+        }
+        // The write landed, so the wizard ran to the end; the question was
+        // either skipped by its own condition or answered before this read.
+        // Continue to the durable assertions rather than gambling on seeing a
+        // transient panel.
+        console.log('NOTE: the switch question was not shown; the provider was written')
+      }
+      const sessionsBeforeSwitch = new Set(touchedSessions(env.HOME))
+      if (switchQuestionShown) {
+        if (!verifyAgentTurn) {
+          child.write('\u001b[B')
+          await waitFor(() => exit !== undefined || /❯\s*● Keep the current model/u.test(screen()), 10000, 'keep-current-model choice', screen)
+        }
+        child.write('\r')
+        await waitFor(() => exit !== undefined || !screenHas('Switch to the new provider now?'), 10000, 'completed provider wizard', screen)
+      }
       if (verifyAgentTurn) {
         // The question disappears before Harness adopts the fork. Wait for
         // the durable session touch made after adoption, not a transient Ink
