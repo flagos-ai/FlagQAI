@@ -9,3 +9,8 @@ They are brand identifiers, not original FlagQAI artwork.
   (header asset from https://flagos.net/).
 
 Retrieved on 2026-10-29. Preserve the original proportions and artwork.
+
+The source release inventory permits only the BAAI PNG at this exact path and
+Git blob `ec4fef2eb6f643242adab89d00cf618209eb4716`. Replacing the file requires
+another review. These optional Web assets are excluded from the CLI tarball;
+its binary/artwork restriction is unchanged.

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { digestPackageContents, isBinary, parseGitBlobs, parseGitTree, validateArchiveMembers } from './release-file-inventory.mjs'
+import { digestPackageContents, isBinary, isReviewedSourceBinary, reviewedSourceBinaries, parseGitBlobs, parseGitTree, validateArchiveMembers } from './release-file-inventory.mjs'
 
 const first = 'a'.repeat(40)
 const second = 'b'.repeat(40)
@@ -50,4 +50,12 @@ test('tar members must match the npm report without escaping the package root', 
   assert.throws(() => validateArchiveMembers(['package/../secret', 'package/LICENSE'], expected), /unsafe tar member/u)
   assert.throws(() => validateArchiveMembers(['package/LICENSE', 'package/LICENSE'], expected), /duplicate tar members/u)
   assert.throws(() => validateArchiveMembers(['package/LICENSE'], expected), /differ/u)
+})
+
+test('reviewed Web branding requires both exact path and immutable content identity', () => {
+  const path = 'apps/web/public/assets/baai-logo-white.png'
+  assert.equal(isReviewedSourceBinary({path,oid:reviewedSourceBinaries[path],binary:true}),true)
+  assert.equal(isReviewedSourceBinary({path,oid:'0'.repeat(40),binary:true}),false)
+  assert.equal(isReviewedSourceBinary({path:'apps/web/public/unknown.png',oid:reviewedSourceBinaries[path],binary:true}),false)
+  assert.equal(isReviewedSourceBinary({path:'apps/cli/lib/portrait.png',oid:reviewedSourceBinaries[path],binary:true}),false)
 })
