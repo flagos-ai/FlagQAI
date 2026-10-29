@@ -167,7 +167,10 @@ const backend = {
           { type: "session.status", status },
         );
         void (async () => {
-          if (process.env.FQ_TEST_BRIDGE === "1") {
+          if (
+            process.env.FQ_TEST_BRIDGE === "1" ||
+            process.env.FQ_TEST_PYTHON === "1"
+          ) {
             const marker = "\n\n<workspace_controls>\n";
             const at = input.text.lastIndexOf(marker);
             const controls =
@@ -245,18 +248,89 @@ const backend = {
               return JSON.parse(output).result;
             };
             const current = await command("status");
+            const pythonWorkflow = process.env.FQ_TEST_PYTHON === "1";
+            if (pythonWorkflow && current.language !== "python")
+              throw new Error("Select Python before this acceptance task.");
             const shared = await command("model.share", [
               "--expected-hash",
               current.source_hash,
             ]);
             await delay(5000);
-            const source =
-              'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\ncreg c[2];\n// Scripted integration fixture; no model or real compute.\nh q[0];\ncx q[0],q[1];\nmeasure q[0] -> c[0];\nmeasure q[1] -> c[1];';
+            const source = pythonWorkflow
+              ? [
+                  "import flagquantum as fq",
+                  "",
+                  "# Scripted Agent input; computation uses the actual SDK.",
+                  "circuit = fq.Circuit(3).h(0).cx(0, 1).cx(1, 2)",
+                  ...(turn > 1 ? ["circuit.x(2)"] : []),
+                  "result = fq.run(circuit, outputs=fq.counts(),",
+                  "    options=fq.ExecutionOptions(shots=1024, seed=42))",
+                  "print(result.counts)",
+                  'fq.save("acceptance.fqx", result.plan, result=result)',
+                  "",
+                ].join("\n")
+              : 'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\ncreg c[2];\n// Scripted integration fixture; no model or real compute.\nh q[0];\ncx q[0],q[1];\nmeasure q[0] -> c[0];\nmeasure q[1] -> c[1];';
             await writeFile(join(testWorkspace, shared.file.path), source);
             const model = await command("model.read", [
               "--model-id",
               shared.file.id,
             ]);
+            if (pythonWorkflow) {
+              const started = await command("python.run", [
+                "--model-id",
+                model.id,
+                "--revision",
+                model.revision,
+              ]);
+              let run;
+              const deadline = Date.now() + 120000;
+              do {
+                if (Date.now() > deadline)
+                  throw new Error("Python acceptance exceeded 120 seconds.");
+                await delay(1000);
+                run = await command("python.read", [
+                  "--run-id",
+                  started.python_run.id,
+                ]);
+              } while (["queued", "running"].includes(run.status));
+              if (run.status !== "completed" || run.experiments?.length !== 1)
+                throw new Error(
+                  "Python acceptance failed: " + JSON.stringify(run),
+                );
+              const artifact = await command("experiment.read", [
+                "--experiment-id",
+                run.experiments[0].id,
+              ]);
+              if (
+                artifact.program.origin.run_id !== run.id ||
+                artifact.program.origin.source !== source ||
+                artifact.program.origin.source_hash !== run.source_hash
+              )
+                throw new Error(
+                  "Experiment does not match the executed source.",
+                );
+              await command("focus", [
+                "--page",
+                "program",
+                "--program-id",
+                artifact.program.id,
+              ]);
+              await streamText(
+                `Scripted Agent acceptance; actual FlagQuantum computation. Run ${run.id}, experiment ${artifact.program.id}, source ${run.source_hash}. Counts: ${JSON.stringify(artifact.job.result.counts)}. No model was called.`,
+                2,
+              );
+              status = "idle";
+              emit(
+                {
+                  type: "turn.end",
+                  turn,
+                  reason: { kind: "completed" },
+                  time: Date.now(),
+                },
+                { type: "session.status", status },
+              );
+              return;
+            }
             const compiled = await command("compile", [
               "--model-id",
               model.id,
@@ -686,7 +760,7 @@ await server.listen();
 const python = spawn(
   "python3",
   [
-    process.env.FQ_TEST_BRIDGE === "1"
+    process.env.FQ_TEST_BRIDGE === "1" && process.env.FQ_TEST_PYTHON !== "1"
       ? "packages/quantum-workspace/tests/bridge_host.py"
       : "packages/quantum-workspace/serve.py",
   ],

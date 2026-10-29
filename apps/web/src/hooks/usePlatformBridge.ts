@@ -25,7 +25,20 @@ export function usePlatformBridge(
   });
   const seen = useRef(new Set<number>());
   const [actions, setActions] = useState<PlatformAction[]>([]);
-  const [follow, setFollow] = useState(false);
+  const [follow, setFollow] = useState(() => {
+    try {
+      return localStorage.getItem("fq-follow-agent-v1") === "on";
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem("fq-follow-agent-v1", follow ? "on" : "off");
+    } catch {
+      // Following still works when browser storage is unavailable.
+    }
+  }, [follow]);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
   const [backend, setBackend] = useState("");
@@ -158,6 +171,10 @@ export function usePlatformBridge(
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout>,
       cursor = 0;
+    // Restore action cards and resources without replaying old navigation.
+    // The endpoint paginates at 100 records, so drain the historical pages
+    // before following new events. A Running action can still settle later.
+    let hydrating = true;
     const poll = async () => {
       try {
         const records = await platformAPI.events(
@@ -216,6 +233,7 @@ export function usePlatformBridge(
           }
           if (
             record.status === "completed" &&
+            !hydrating &&
             record.origin !== "ui" &&
             followRef.current &&
             (result?.python_run ||
@@ -226,6 +244,7 @@ export function usePlatformBridge(
           )
             openRef.current(record);
         }
+        if (records.length < 100) hydrating = false;
         if (records.length)
           setActions((previous) => {
             const map = new Map(previous.map((item) => [item.id, item]));

@@ -141,6 +141,24 @@ development fixture, never a production fallback or an Agent response generator.
 The script requires an existing CLI build for the shared projector; stop it after
 testing. Production always uses the configured native backend.
 
+For the Python-to-Quantum acceptance, set `FQ_TEST_PYTHON=1` and configure
+`FQ_COMPUTE_TRANSPORT=local`, `FQ_LOCAL_PYTHON` and `FQ_EXPERIMENT_PYTHON` to an
+existing environment with FlagQuantum and PyTorch. Use isolated ports through
+`FQ_TEST_PORT` and `FQ_TEST_AGENT_PORT`. Select Python, connect to **Scripted
+protocol test**, enable **Follow Agent**, and send a task. This fixture writes a
+fixed three-qubit GHZ script through the linked file, runs the real SDK via the
+native command adapter, saves `acceptance.fqx`, checks its execution identity and
+opens Quantum. A second task adds X on qubit 2 while keeping the filename. Its
+counts must change from `000`/`111` to `001`/`110`. The text does not control a
+model: generation is scripted, computation is real, and no model is called.
+Typing in the editor after **Editor linked** and before the file update exercises
+draft protection and **Review changes**.
+
+**Follow Agent** defaults to Off and remembers the user's choice in this browser.
+On refresh or reconnection, historical actions restore their cards and resources
+without replaying navigation. Newly arriving actions can still follow normally.
+The selected page, archived circuit and unsaved draft remain intact.
+
 ### Live Agent edits in the Model editor
 
 Choose **Share with Agent** in Model to create a new dedicated OpenQASM file under

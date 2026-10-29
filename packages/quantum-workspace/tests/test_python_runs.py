@@ -1,7 +1,9 @@
 """Actual subprocess execution; no model calls and no quantum provider dependency."""
 import json
+import hashlib
 from pathlib import Path
 import sys
+import subprocess
 import tempfile
 import threading
 import time
@@ -126,6 +128,67 @@ result = fq.run(circuit, outputs=fq.counts(), options=fq.ExecutionOptions(shots=
 fq.save('bell.fqx', result.plan, result=result)
 print('saved', result.counts, flush=True)
 """
+
+    def test_native_http_python_fqx_workflow_keeps_each_execution_identity(self):
+        """Run the real command/HTTP/SDK chain twice, reusing one filename."""
+        server = create_server(self.settings, self.quantum)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        identity = {'client': 'acceptance-client', 'session': 'acceptance-session'}
+        adapter = Path(__file__).resolve().parents[1] / 'workbench.py'
+        base = 'http://127.0.0.1:%d' % server.server_port
+        def request(path, data=None):
+            body = None if data is None else json.dumps(data).encode()
+            with urlopen(Request(base + path, data=body, headers={'Content-Type': 'application/json'}), timeout=10) as response:
+                return json.load(response)
+        sequence = 0
+        def command(operation, *args, key=None, succeeds=True):
+            nonlocal sequence
+            sequence += 1
+            result = subprocess.run([sys.executable, str(adapter), '--port', str(server.server_port),
+                '--client', identity['client'], '--session', identity['session'],
+                '--request-id', key or 'action-%d' % sequence, operation, *args],
+                capture_output=True, text=True, timeout=15)
+            self.assertEqual(result.returncode, 0 if succeeds else 1, result.stdout + result.stderr)
+            return json.loads(result.stdout).get('result')
+        records = []
+        try:
+            for index, source in enumerate([self.SOURCE, self.SOURCE.replace('result = fq.run', 'circuit.x(1)\nresult = fq.run')]):
+                request('/api/workspace/context', {**identity, 'source': source, 'name': 'Acceptance', 'language': 'python', 'page': 'model', 'dirty': True})
+                status = command('status')
+                shared = command('model.share', '--expected-hash', status['source_hash'])['file']
+                model = command('model.read', '--model-id', shared['id'])
+                command('python.run', '--model-id', model['id'], '--revision', 'obsolete', succeeds=False)
+                args = ('--model-id', model['id'], '--revision', model['revision'])
+                started = command('python.run', *args, key='run-%d' % index)['python_run']
+                self.assertEqual(command('python.run', *args, key='run-%d' % index)['python_run']['id'], started['id'])
+                deadline = time.monotonic() + 20
+                while True:
+                    run = command('python.read', '--run-id', started['id'])
+                    if run['status'] not in ('queued', 'running'): break
+                    if time.monotonic() > deadline: self.fail('Native Python run did not settle')
+                    time.sleep(.05)
+                self.assertEqual(run['status'], 'completed', run)
+                self.assertEqual(run['collection_status'], 'completed', run)
+                self.assertEqual(len(run['experiments']), 1)
+                reference = run['experiments'][0]
+                self.assertEqual(reference['filename'], 'bell.fqx')
+                artifact = command('experiment.read', '--experiment-id', reference['id'])
+                origin = artifact['program']['origin']
+                self.assertEqual((origin['run_id'], origin['source'], origin['source_hash']),
+                    (run['id'], source, hashlib.sha256(source.encode()).hexdigest()))
+                self.assertEqual(artifact['program']['experiment']['sha256'], reference['sha256'])
+                job = command('job.read', '--job-id', artifact['job']['id'])
+                self.assertEqual(set(job['result']['counts']), {'00', '11'} if index == 0 else {'01', '10'})
+                self.assertEqual(sum(job['result']['counts'].values()), 128)
+                focused = command('focus', '--page', 'program', '--program-id', artifact['program']['id'])
+                self.assertEqual(focused['program_id'], artifact['program']['id'])
+                records.append(artifact)
+            self.assertNotEqual(records[0]['program']['id'], records[1]['program']['id'])
+            self.assertEqual(command('experiment.read', '--experiment-id', records[0]['program']['id']), records[0])
+            self.assertEqual(self.quantum.adapter.calls, [])
+        finally:
+            server.shutdown()
+            server.server_close()
 
     def test_collects_multiple_real_sdk_files_and_links_the_exact_python_snapshot(self):
         source = self.SOURCE + "from pathlib import Path\nPath('nested').mkdir()\nfq.save('nested/circuit.fqx', circuit)\n"
