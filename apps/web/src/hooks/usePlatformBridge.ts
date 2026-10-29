@@ -259,7 +259,7 @@ export function usePlatformBridge(
             schema: "flagqai.workspace-controls.v1",
             command: [
               "python3",
-              "packages/quantum-workspace/platform.py",
+              "packages/quantum-workspace/workbench.py",
               "--port",
               location.port,
               "--client",

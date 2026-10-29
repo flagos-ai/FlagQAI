@@ -120,6 +120,13 @@ with tempfile.TemporaryDirectory() as directory:
         with self.assertRaises(BridgeConflict):
             self.action('compile', 'interrupted', source=SOURCE)
         self.assertEqual(self.adapter.calls, [])
+    def test_native_entry_directory_does_not_shadow_stdlib_platform(self):
+        directory=Path(__file__).resolve().parents[1]
+        result=subprocess.run([sys.executable,'-B','-c',
+            'import platform,uuid; assert callable(platform.system); print(platform.system()); print(uuid.uuid4())'],
+            cwd=directory,capture_output=True,text=True,timeout=5)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+
     def test_http_and_native_command_adapter_share_the_same_operations(self):
         server=create_server(self.settings,self.service)
         threading.Thread(target=server.serve_forever,daemon=True).start()
@@ -131,7 +138,7 @@ with tempfile.TemporaryDirectory() as directory:
             with urlopen(request,timeout=5) as response:return json.load(response)
         try:
             post('/api/workspace/context',self.context)
-            script=Path(__file__).resolve().parents[1]/'platform.py'
+            script=Path(__file__).resolve().parents[1]/'workbench.py'
             result=subprocess.run([sys.executable,str(script),'--port',str(port),'--client','client-1','--session','session-1','status'],capture_output=True,text=True,timeout=5)
             self.assertEqual(result.returncode,0,result.stdout+result.stderr)
             status=json.loads(result.stdout)['result']

@@ -48,7 +48,7 @@ without automatic duplicate retries.
 
 - Web type checking and production build passed.
 - Web test suite: 107 passed.
-- Quantum workspace backend suite: 74 passed with the configured SDK; the
+- Quantum workspace backend suite: 75 passed with the configured SDK; the
   standard-library-only run passes with 16 SDK-dependent tests skipped.
 - Staged CLI package boundary verification and clean installed-runtime acceptance passed.
 - Unified launcher verified with both an existing Agent and an owned Agent on
@@ -59,3 +59,11 @@ without automatic duplicate retries.
 Local, ignored evidence is retained under `.flagqai/verification/`, including
 `acceptance-live.py`, `acceptance-live.json`, `acceptance-protected-draft.png`,
 `acceptance-offline.png`, and `acceptance-real-result.png`.
+
+## CI portability follow-up
+
+The internal native-tool entry is `packages/quantum-workspace/workbench.py`.
+It deliberately avoids `platform.py`: Python 3.11 on Linux imports the standard
+library `platform` module while initializing `uuid`. A same-named entry file in
+that directory shadows it. Regression coverage imports both standard modules
+from the adapter directory and exercises the actual HTTP command round trip.

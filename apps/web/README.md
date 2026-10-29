@@ -367,7 +367,7 @@ When a native session is connected, the Web publishes a bounded current-workbenc
 snapshot to its existing localhost host. Agent messages carry lightweight controls
 (the command prefix, selected model, dirty state and actual compute transport),
 not an automatic copy of the entire source. The native Harness can use its normal
-shell tool to invoke `packages/quantum-workspace/platform.py`. This adapter calls
+shell tool to invoke `packages/quantum-workspace/workbench.py`. This adapter calls
 the same application service used by the Compile and Run buttons; it introduces
 no Agent scheduler, model client, arbitrary-code endpoint or alternate session log.
 

@@ -192,7 +192,7 @@ const backend = {
             const command = async (operation, values = []) => {
               const callId = "platform-" + ++seq;
               const args = [
-                "packages/quantum-workspace/platform.py",
+                "packages/quantum-workspace/workbench.py",
                 "--port",
                 String(testPort),
                 "--client",
