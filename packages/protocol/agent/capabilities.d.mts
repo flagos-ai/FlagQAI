@@ -304,6 +304,10 @@ export interface SessionCapabilities {
     } | undefined;
   };
   readonly compact?: {
+    readonly policy?: {
+      read(): { enabled: boolean; thresholdRatio: number; scope: 'session' };
+      update(input: { enabled: boolean; thresholdRatio: number }): Promise<{ enabled: boolean; thresholdRatio: number; scope: 'session' }>;
+    };
     run(): Promise<void | {
       compacted: boolean;
     }>;

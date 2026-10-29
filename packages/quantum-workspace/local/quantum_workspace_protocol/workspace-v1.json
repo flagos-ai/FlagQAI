@@ -1,0 +1,9 @@
+{
+  "version": "quantum-workspace.v1",
+  "source_format": "openqasm",
+  "source_bit_order": "q0_first",
+  "limits": {"source_bytes": 32768, "request_bytes": 40000, "qubits": 16, "gates": 2000, "shots": 100000, "seed": 2147483647},
+  "job_statuses": ["queued", "running", "completed", "failed"],
+  "routes": {"health": "/api/health", "compile": "/api/compile", "jobs": "/api/jobs"},
+  "events": ["request.started", "request.completed", "request.failed"]
+}

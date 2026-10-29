@@ -1,0 +1,19 @@
+{
+  "apps/web/src/domain/model-lint.js": "43806f7b240c69e1307c87a781155dfeffe12897b6917f5a2b325b90524955c5",
+  "apps/web/src/domain/circuit-tree.js": "2e040d52dd1c35d8fa59201887849c5627b9730317503a333b0d012b91e2de01",
+  "apps/web/src/legacy/algorithms.js": "8b75e2eff2e50e17b8436db24a083bb41f563218a160734a0a09b724c1cfc0ff",
+  "apps/server/workspace_server/service.py": "3624930187ff8af346cea8b6170d792794ffb0b3f1bfbd8e8b166612675efd60",
+  "apps/server/workspace_server/config.py": "31e6cc801d48d6f0ee49267c745750c4bf07ee7d392e52f9d90f5019346f79c2",
+  "apps/server/workspace_server/__init__.py": "f083df49a7840c8954b115ebead6935e03a9f339fec3ebd847833d9a8fed8a5b",
+  "apps/server/workspace_server/http.py": "53959b7877736755420afaa118f771c11603ba1e68b6a5b0ff183a86b7daa863",
+  "apps/server/workspace_server/job_store.py": "f7819b9cfb8d00df250eddc9828d4c39cf2c78ed7ae2a2784e133e01465c580b",
+  "packages/quantum-adapter/src/flagquantum_adapter/ssh_cpu.py": "6c89a1e3ef867b148845d6ecdda19f0091b74d9b3ea32c741f6afcf38a0a6115",
+  "packages/quantum-adapter/src/flagquantum_adapter/__init__.py": "5ebf7faa8820e33303887b77dafc16b8b240fb6648d7e9a8c2446e8891215929",
+  "packages/quantum-adapter/src/flagquantum_adapter/model_metadata.py": "0d46c007c25c0b77a61ce13d4f1dae21fb89e5a196c7097c5801f8b02c54000a",
+  "packages/quantum-adapter/src/flagquantum_adapter/remote_worker.py": "1e7e1b2639337da11b1eccfb636a3596b64ab0f86feb234f0e3b3c8404f16833",
+  "packages/protocol/src/quantum_workspace_protocol/__init__.py": "1811ea912f23017a4190ae601f1bf346f6c6009325aab0c32351abb531eca3ac",
+  "packages/protocol/src/quantum_workspace_protocol/workspace-v1.json": "504eeb80fbe24f452a93b88e3860ef34a9af7199307d7118c4bfaa4cc96967e7",
+  "apps/web/public/assets/flagquantum-wordmark.svg": "9341a6e424e7a8e5c0656decbf6132eab05532399b706b588b05d4816586fbb9",
+  "apps/web/public/assets/brand-quantum.svg": "c284a7c024ce4866e27b524c4d6320f93f81f395501af0238bddf97c1cd69f65",
+  "apps/web/public/assets/flagqai-agent.svg": "c284a7c024ce4866e27b524c4d6320f93f81f395501af0238bddf97c1cd69f65"
+}

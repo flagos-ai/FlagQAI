@@ -261,6 +261,7 @@ function createSessionBinding(resourceId, session, onError, release, createView)
   return {
     controls: () => sessionControls(session),
     publishControls,
+    publishView() { if (view !== undefined) publish(view.snapshot(), {wake:'sync'}); },
     changingModel: false,
     preparingInput: false,
     acting: false,
@@ -433,7 +434,7 @@ export function createFlagQaiServer(options = {}) {
                 const occupancy = guarded.kind === "free" && backendOccupied.has(summary.id)
                   ? { kind: "occupied" }
                   : guarded;
-                return { actions: { archive: backend.catalog.deleteAction === "archive" && typeof backend.catalog.delete === "function" }, ...sessionCatalogResource(
+                return { actions: { rename: typeof backend.catalog.rename === "function" || !!active?.session.capabilities?.rename, archive: backend.catalog.deleteAction === "archive" && typeof backend.catalog.delete === "function" }, ...sessionCatalogResource(
                   { ...summary, backendId },
                   {
                     ...(active === undefined ? {} : { resourceId: active.resourceId }),
@@ -449,6 +450,34 @@ export function createFlagQaiServer(options = {}) {
         }))).flat().sort((a, b) => b.updatedAt - a.updatedAt);
         json(response, 200, { sessions: rows });
         return;
+      }
+
+      if (method === "POST" && segments.length === 4 && segments[0] === "catalog" && segments[3] === "rename") {
+        const [backendId, sessionId] = segments.slice(1, 3);
+        if (!registry.ids.includes(backendId)) throw new HttpError(404, "backend_not_found", "Unknown backend");
+        const input = parseSessionAction(await readJson(request));
+        const backend = await registry.load(backendId);
+        const summary = (await backend.catalog?.list({ allProjects: true }))?.find(item => item.id === sessionId);
+        if (!summary) throw new HttpError(404, "session_not_found", "Session not found");
+        const active = [...sessions.values()].find(item => item.session.ref.backendId === backendId && item.session.ref.sessionId === sessionId);
+        if (active) {
+          if (active.acting || active.compacting || active.changingModel || active.preparingInput || active.session.status !== "idle" || active.pendingPermissions.size || active.pendingQuestions.size) throw new HttpError(409, "session_busy", "Finish the current turn and pending decisions first");
+          if (!active.session.capabilities?.rename) throw new HttpError(409, "rename_unsupported", "This backend does not support renaming an open session");
+          active.acting = true;
+          try { await active.session.capabilities.rename.rename(input.title); }
+          catch { throw new HttpError(409, "rename_failed", "Could not rename this session"); }
+          finally { active.acting = false; }
+        } else {
+          if (typeof backend.catalog?.rename !== "function") throw new HttpError(409, "rename_unsupported", "This backend does not support offline renaming");
+          const reservation = sessionGuard === undefined ? undefined : await sessionGuard.reserve(backendId, sessionId);
+          if (reservation?.ok === false) throw new HttpError(409, "session_occupied", "This session is open in another process");
+          try {
+            if ((await backend.catalog.occupiedIds?.({ allProjects: true }))?.has(sessionId)) throw new HttpError(409, "session_occupied", "This session is open in another process");
+            await backend.catalog.rename(sessionId, input.title, summary.cwd);
+          } catch (error) { if(error instanceof HttpError) throw error; throw new HttpError(409, "rename_failed", "Could not rename this session"); }
+          finally { reservation?.abandon(); reservation?.release(); }
+        }
+        json(response, 200, { title: input.title }); return;
       }
 
       if (method === "POST" && segments.length === 4 && segments[0] === "catalog" && segments[3] === "archive") {
@@ -613,6 +642,19 @@ export function createFlagQaiServer(options = {}) {
             finally { binding.acting = false; binding.publishControls(); }
             return;
           }
+        }
+        if (segments.length === 3 && segments[2] === 'compaction-policy' && ['GET', 'POST'].includes(method)) {
+          const policy = binding.session.capabilities?.compact?.policy;
+          if (!policy) throw new HttpError(409, 'compaction_policy_unsupported', 'This backend does not expose live compaction settings.');
+          if (method === 'GET') { json(response, 200, {policy: policy.read()}); return; }
+          if (binding.session.status !== 'idle' || binding.compacting || binding.pendingPermissions.size || binding.pendingQuestions.size) throw new HttpError(409, 'session_busy', 'Finish the current turn and pending decisions first');
+          const input = await readJson(request);
+          if (!input || typeof input.enabled !== 'boolean' || !Number.isFinite(input.thresholdRatio) || input.thresholdRatio < .5 || input.thresholdRatio > .95 || Object.keys(input).some(key => !['enabled','thresholdRatio'].includes(key))) throw new HttpError(400, 'invalid_compaction_policy', 'Choose an enabled flag and threshold between 50% and 95%.');
+          binding.acting = true;
+          try { const updated = await policy.update(input); binding.publishView(); json(response, 200, {policy:updated}); }
+          catch { throw new HttpError(409, 'compaction_policy_failed', 'Native compaction settings were not saved.'); }
+          finally { binding.acting = false; }
+          return;
         }
         if (method === "POST" && segments.length === 3 && segments[2] === 'compact') {
           const capability = binding.session.capabilities?.compact;

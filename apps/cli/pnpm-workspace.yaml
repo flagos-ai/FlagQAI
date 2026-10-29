@@ -265,3 +265,5 @@ minimumReleaseAgeExclude:
   - '@anthropic-ai/claude-agent-sdk-win32-arm64@0.3.287'
   - '@anthropic-ai/claude-agent-sdk-win32-x64@0.3.287'
   - '@anthropic-ai/claude-agent-sdk@0.3.287'
+patchedDependencies:
+  '@deepseek-ai/dsh-compaction-basic@0.2.1-rc.2': patches/@deepseek-ai__dsh-compaction-basic@0.2.1-rc.2.patch

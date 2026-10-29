@@ -14,6 +14,16 @@ const root = fileURLToPath(new URL('../../', import.meta.url))
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex')
 const decode = new TextDecoder('utf-8', { fatal: true })
 
+// Owner-approved official brand asset, source-only; provenance is recorded beside it.
+// Both path and Git content identity must match. CLI package binaries remain rejected.
+export const reviewedSourceBinaries = Object.freeze({
+  'apps/web/public/assets/baai-logo-white.png': 'ec4fef2eb6f643242adab89d00cf618209eb4716',
+})
+export function isReviewedSourceBinary(file) {
+  return file.binary === true && reviewedSourceBinaries[file.path] === file.oid
+}
+
+
 export function parseGitTree(buffer) {
   assert.equal(buffer.at(-1), 0, 'Git tree output must end with NUL')
   const entries = []
@@ -130,12 +140,12 @@ export async function createReleaseFileInventory({ destination, ref = 'HEAD' }) 
     }
     const findings = {
       sourceNonFiles: sourceFiles.filter(file => file.type !== 'blob' || !['100644', '100755'].includes(file.mode)).map(file => file.path),
-      sourceBinary: sourceFiles.filter(file => file.binary).map(file => file.path),
+      sourceBinary: sourceFiles.filter(file => file.binary && !isReviewedSourceBinary(file)).map(file => file.path),
       packageBinary: packageFiles.filter(file => file.binary).map(file => file.path),
     }
     const report = {
       schema: 'flagqai-release-file-inventory-v1', commit, tree,
-      source: { count: sourceFiles.length, files: sourceFiles },
+      source: { count: sourceFiles.length, files: sourceFiles, reviewedBinary: sourceFiles.filter(isReviewedSourceBinary).map(({path, oid}) => ({path, oid})) },
       package: { name: packageReport.name, version: packageReport.version,
         archiveSha256: sha256(await readFile(packageReport.path)),
         contentSha256: digestPackageContents(packageFiles), count: packageFiles.length, files: packageFiles },

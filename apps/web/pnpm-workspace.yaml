@@ -1,0 +1,3 @@
+# esbuild uses its pinned platform optional dependency; do not execute postinstall.
+allowBuilds:
+  esbuild: false

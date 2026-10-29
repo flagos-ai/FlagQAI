@@ -1,8 +1,9 @@
 # Contributing to FlagQAI
 
 FlagQAI currently focuses on the CLI, its Harness adapter, the local service,
-and scientific and quantum workflows. Web and Desktop implementations are
-outside this release's scope.
+and scientific and quantum workflows. The optional React quantum workbench is
+source-only and separately built in `apps/web`; it is not included in the CLI
+release artifact. Desktop remains outside this release's scope.
 
 ## Development
 
