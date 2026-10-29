@@ -7,6 +7,12 @@
     "cli:install": "pnpm --dir apps/cli install --frozen-lockfile",
     "cli:build": "pnpm --dir apps/cli run compile",
     "cli:verify": "node --test apps/cli/scripts/package-boundary.test.mjs apps/cli/scripts/bundled-notices.test.mjs && npm --prefix apps/cli run verify:package",
-    "cli": "node apps/cli/bin/flagqai.js"
+    "cli": "node apps/cli/bin/flagqai.js",
+    "web:install": "pnpm --dir apps/web install --frozen-lockfile",
+    "web:build": "pnpm --dir apps/web build",
+    "web:check": "pnpm --dir apps/web typecheck && pnpm --dir apps/web test",
+    "web": "python3 packages/quantum-workspace/dev.py",
+    "web:doctor": "python3 packages/quantum-workspace/dev.py --check",
+    "web:test:backend": "python3 -m unittest discover -s packages/quantum-workspace/tests -v"
   }
 }

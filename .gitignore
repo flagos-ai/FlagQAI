@@ -19,3 +19,7 @@ apps/cli/vendor/mathjax-tex-svg/lib/
 __pycache__/
 *.py[cod]
 .DS_Store
+
+# Optional source-only Web application
+apps/web/dist/
+packages/quantum-workspace/.local/

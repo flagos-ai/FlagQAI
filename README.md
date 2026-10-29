@@ -323,3 +323,14 @@ See [third-party notices](THIRD_PARTY_NOTICES.md),
 [CLI distribution notices](apps/cli/OPEN_SOURCE_NOTICES.md), and
 [upstream provenance](apps/cli/UPSTREAM.md) for details. The repository-level
 license does not replace the licenses of imported components.
+
+
+## Optional quantum workspace Web source
+
+The optional React workbench lives in [`apps/web`](apps/web/README.md) following the
+owner's explicit Web product decision. It preserves the local quantum editor,
+recursive circuit visualization and CPU task/result workflow. Build and run it
+with `pnpm web:install`, `pnpm web:build`, `pnpm web:doctor`, and `pnpm web`; it is not included in the native CLI
+release tarball. Agent execution, sessions and permissions remain owned by Harness.
+See [`docs/architecture/QUANTUM_WORKSPACE_WEB.md`](docs/architecture/QUANTUM_WORKSPACE_WEB.md)
+for the integration and provenance boundary.

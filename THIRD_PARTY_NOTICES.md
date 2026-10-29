@@ -27,3 +27,21 @@ FlagQAI-authored additions use Apache-2.0, whose text is in this repository's
 `LICENSE` and the CLI package's `apps/cli/LICENSES/FlagQAI-Apache-2.0.txt`.
 See `apps/cli/UPSTREAM.md` and `apps/cli/OPEN_SOURCE_NOTICES.md` for the
 package-level attribution and the deliberately excluded artwork.
+
+## Optional Web source application
+
+The separately built optional Web application uses React and React DOM 19.3.0
+(MIT; copyright Meta Platforms, Inc. and affiliates). Its build preserves their
+license banners and includes the full license in `apps/web/public/THIRD_PARTY_LICENSES.txt`.
+TypeScript, esbuild, Prettier and type declarations are development-only dependencies
+of `apps/web`; their installed packages retain their own licenses. They are not added
+to the CLI release dependency tree. Official FlagQuantum vector marks are first-party
+product branding approved for this workbench, not imported portrait or animation assets.
+
+The optional Web transcript uses marked 18.0.7 (MIT), also used by the CLI. Its
+full license is retained in apps/web/public/THIRD_PARTY_LICENSES.txt. Markdown
+tokens are rendered as React elements without executing HTML.
+
+The optional Web formula renderer uses KaTeX 0.19.1 and its bundled fonts
+(MIT; Khan Academy and contributors). Its full license is included in
+apps/web/public/THIRD_PARTY_LICENSES.txt; CSS and fonts are served locally.
