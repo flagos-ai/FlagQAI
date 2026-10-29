@@ -1,0 +1,1704 @@
+{
+  "schemaVersion": 2,
+  "comparisonPoint": "after_preparation_before_gate",
+  "sdkVersion": "0.4.0",
+  "torchVersion": "2.13.0",
+  "device": "cpu",
+  "generatedAt": "2026-10-29T12:02:19.393728+00:00",
+  "bitOrder": "q0_first",
+  "examples": {
+    "id": {
+      "source": "import flagquantum as fq\n\n# Qubits start in |0>.\ncircuit = fq.Circuit(1)\n\n# Apply ID (Circuit.i in the Python SDK).\ncircuit.i(0)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"id.fqx\", result.plan, result=result)",
+      "qubits": 1,
+      "before": [
+        {
+          "state": "0",
+          "real": 1.0,
+          "imag": 0.0,
+          "probability": 1.0
+        },
+        {
+          "state": "1",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "0",
+          "real": 1.0,
+          "imag": 0.0,
+          "probability": 1.0
+        },
+        {
+          "state": "1",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        }
+      ]
+    },
+    "i": {
+      "source": "import flagquantum as fq\n\n# Qubits start in |0>.\ncircuit = fq.Circuit(1)\n\n# Apply I.\ncircuit.i(0)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"i.fqx\", result.plan, result=result)",
+      "qubits": 1,
+      "before": [
+        {
+          "state": "0",
+          "real": 1.0,
+          "imag": 0.0,
+          "probability": 1.0
+        },
+        {
+          "state": "1",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "0",
+          "real": 1.0,
+          "imag": 0.0,
+          "probability": 1.0
+        },
+        {
+          "state": "1",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        }
+      ]
+    },
+    "h": {
+      "source": "import flagquantum as fq\n\n# Qubits start in |0>.\ncircuit = fq.Circuit(1)\n\n# Apply H.\ncircuit.h(0)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"h.fqx\", result.plan, result=result)",
+      "qubits": 1,
+      "before": [
+        {
+          "state": "0",
+          "real": 1.0,
+          "imag": 0.0,
+          "probability": 1.0
+        },
+        {
+          "state": "1",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "0",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "1",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        }
+      ]
+    },
+    "x": {
+      "source": "import flagquantum as fq\n\n# Qubits start in |0>.\ncircuit = fq.Circuit(1)\n\n# Apply X.\ncircuit.x(0)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"x.fqx\", result.plan, result=result)",
+      "qubits": 1,
+      "before": [
+        {
+          "state": "0",
+          "real": 1.0,
+          "imag": 0.0,
+          "probability": 1.0
+        },
+        {
+          "state": "1",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "0",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "1",
+          "real": 1.0,
+          "imag": 0.0,
+          "probability": 1.0
+        }
+      ]
+    },
+    "y": {
+      "source": "import flagquantum as fq\n\n# Qubits start in |0>.\ncircuit = fq.Circuit(1)\n\n# Apply Y.\ncircuit.y(0)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"y.fqx\", result.plan, result=result)",
+      "qubits": 1,
+      "before": [
+        {
+          "state": "0",
+          "real": 1.0,
+          "imag": 0.0,
+          "probability": 1.0
+        },
+        {
+          "state": "1",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "0",
+          "real": 0.0,
+          "imag": -0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "1",
+          "real": 0.0,
+          "imag": 1.0,
+          "probability": 1.0
+        }
+      ]
+    },
+    "z": {
+      "source": "import flagquantum as fq\n\n# Qubits start in |0>.\ncircuit = fq.Circuit(1)\n\n# Demo preparation, not part of Z: use superposition so the relative phase is visible.\ncircuit.h(0)\n\n# Apply Z.\ncircuit.z(0)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"z.fqx\", result.plan, result=result)",
+      "qubits": 1,
+      "before": [
+        {
+          "state": "0",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "1",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "0",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "1",
+          "real": -0.7071067690849304,
+          "imag": -6.181723932741079e-08,
+          "probability": 0.4999999701976776
+        }
+      ]
+    },
+    "s": {
+      "source": "import flagquantum as fq\n\n# Qubits start in |0>.\ncircuit = fq.Circuit(1)\n\n# Demo preparation, not part of S: use superposition so the relative phase is visible.\ncircuit.h(0)\n\n# Apply S.\ncircuit.s(0)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"s.fqx\", result.plan, result=result)",
+      "qubits": 1,
+      "before": [
+        {
+          "state": "0",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "1",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "0",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "1",
+          "real": -3.0908619663705394e-08,
+          "imag": 0.7071067690849304,
+          "probability": 0.4999999701976776
+        }
+      ]
+    },
+    "sdg": {
+      "source": "import flagquantum as fq\n\n# Qubits start in |0>.\ncircuit = fq.Circuit(1)\n\n# Demo preparation, not part of SDG: use superposition so the relative phase is visible.\ncircuit.h(0)\n\n# Apply SDG.\ncircuit.sdg(0)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"sdg.fqx\", result.plan, result=result)",
+      "qubits": 1,
+      "before": [
+        {
+          "state": "0",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "1",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "0",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "1",
+          "real": -3.0908619663705394e-08,
+          "imag": -0.7071067690849304,
+          "probability": 0.4999999701976776
+        }
+      ]
+    },
+    "t": {
+      "source": "import flagquantum as fq\n\n# Qubits start in |0>.\ncircuit = fq.Circuit(1)\n\n# Demo preparation, not part of T: use superposition so the relative phase is visible.\ncircuit.h(0)\n\n# Apply T.\ncircuit.t(0)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"t.fqx\", result.plan, result=result)",
+      "qubits": 1,
+      "before": [
+        {
+          "state": "0",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "1",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "0",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "1",
+          "real": 0.4999999701976776,
+          "imag": 0.4999999701976776,
+          "probability": 0.49999991059303284
+        }
+      ]
+    },
+    "tdg": {
+      "source": "import flagquantum as fq\n\n# Qubits start in |0>.\ncircuit = fq.Circuit(1)\n\n# Demo preparation, not part of TDG: use superposition so the relative phase is visible.\ncircuit.h(0)\n\n# Apply TDG.\ncircuit.tdg(0)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"tdg.fqx\", result.plan, result=result)",
+      "qubits": 1,
+      "before": [
+        {
+          "state": "0",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "1",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "0",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "1",
+          "real": 0.4999999701976776,
+          "imag": -0.4999999701976776,
+          "probability": 0.49999991059303284
+        }
+      ]
+    },
+    "sx": {
+      "source": "import flagquantum as fq\n\n# Qubits start in |0>.\ncircuit = fq.Circuit(1)\n\n# Apply SX.\ncircuit.sx(0)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"sx.fqx\", result.plan, result=result)",
+      "qubits": 1,
+      "before": [
+        {
+          "state": "0",
+          "real": 1.0,
+          "imag": 0.0,
+          "probability": 1.0
+        },
+        {
+          "state": "1",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "0",
+          "real": 0.5,
+          "imag": 0.5,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "1",
+          "real": 0.5,
+          "imag": -0.5,
+          "probability": 0.4999999701976776
+        }
+      ]
+    },
+    "sxdg": {
+      "source": "import flagquantum as fq\n\n# Qubits start in |0>.\ncircuit = fq.Circuit(1)\n\n# Apply SXDG.\ncircuit.sxdg(0)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"sxdg.fqx\", result.plan, result=result)",
+      "qubits": 1,
+      "before": [
+        {
+          "state": "0",
+          "real": 1.0,
+          "imag": 0.0,
+          "probability": 1.0
+        },
+        {
+          "state": "1",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "0",
+          "real": 0.5,
+          "imag": -0.5,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "1",
+          "real": 0.5,
+          "imag": 0.5,
+          "probability": 0.4999999701976776
+        }
+      ]
+    },
+    "rx": {
+      "source": "import flagquantum as fq\nfrom math import pi\n\n# Qubits start in |0>.\ncircuit = fq.Circuit(1)\n\n# Apply RX. Angles are in radians.\ncircuit.rx(0, pi / 2)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"rx.fqx\", result.plan, result=result)",
+      "qubits": 1,
+      "before": [
+        {
+          "state": "0",
+          "real": 1.0,
+          "imag": 0.0,
+          "probability": 1.0
+        },
+        {
+          "state": "1",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "0",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "1",
+          "real": 0.0,
+          "imag": -0.7071067690849304,
+          "probability": 0.4999999701976776
+        }
+      ]
+    },
+    "ry": {
+      "source": "import flagquantum as fq\nfrom math import pi\n\n# Qubits start in |0>.\ncircuit = fq.Circuit(1)\n\n# Apply RY. Angles are in radians.\ncircuit.ry(0, pi / 2)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"ry.fqx\", result.plan, result=result)",
+      "qubits": 1,
+      "before": [
+        {
+          "state": "0",
+          "real": 1.0,
+          "imag": 0.0,
+          "probability": 1.0
+        },
+        {
+          "state": "1",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "0",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "1",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        }
+      ]
+    },
+    "rz": {
+      "source": "import flagquantum as fq\nfrom math import pi\n\n# Qubits start in |0>.\ncircuit = fq.Circuit(1)\n\n# Demo preparation, not part of RZ: use superposition so the relative phase is visible.\ncircuit.h(0)\n\n# Apply RZ. Angles are in radians.\ncircuit.rz(0, pi / 2)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"rz.fqx\", result.plan, result=result)",
+      "qubits": 1,
+      "before": [
+        {
+          "state": "0",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "1",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "0",
+          "real": 0.4999999701976776,
+          "imag": -0.4999999701976776,
+          "probability": 0.49999991059303284
+        },
+        {
+          "state": "1",
+          "real": 0.4999999701976776,
+          "imag": 0.4999999701976776,
+          "probability": 0.49999991059303284
+        }
+      ]
+    },
+    "p": {
+      "source": "import flagquantum as fq\nfrom math import pi\n\n# Qubits start in |0>.\ncircuit = fq.Circuit(1)\n\n# Demo preparation, not part of P: use superposition so the relative phase is visible.\ncircuit.h(0)\n\n# Apply P (Circuit.phase in the Python SDK). Angles are in radians.\ncircuit.phase(0, pi / 2)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"p.fqx\", result.plan, result=result)",
+      "qubits": 1,
+      "before": [
+        {
+          "state": "0",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "1",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "0",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "1",
+          "real": -3.0908619663705394e-08,
+          "imag": 0.7071067690849304,
+          "probability": 0.4999999701976776
+        }
+      ]
+    },
+    "u1": {
+      "source": "import flagquantum as fq\nfrom math import pi\n\n# Qubits start in |0>.\ncircuit = fq.Circuit(1)\n\n# Demo preparation, not part of U1: use superposition so the relative phase is visible.\ncircuit.h(0)\n\n# Apply U1. Angles are in radians.\ncircuit.u1(0, pi / 2)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"u1.fqx\", result.plan, result=result)",
+      "qubits": 1,
+      "before": [
+        {
+          "state": "0",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "1",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "0",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "1",
+          "real": -3.0908619663705394e-08,
+          "imag": 0.7071067690849304,
+          "probability": 0.4999999701976776
+        }
+      ]
+    },
+    "u2": {
+      "source": "import flagquantum as fq\nfrom math import pi\n\n# Qubits start in |0>.\ncircuit = fq.Circuit(1)\n\n# Apply U2. Angles are in radians.\ncircuit.u2(0, pi / 2, 0)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"u2.fqx\", result.plan, result=result)",
+      "qubits": 1,
+      "before": [
+        {
+          "state": "0",
+          "real": 1.0,
+          "imag": 0.0,
+          "probability": 1.0
+        },
+        {
+          "state": "1",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "0",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "1",
+          "real": -3.0908619663705394e-08,
+          "imag": 0.7071067690849304,
+          "probability": 0.4999999701976776
+        }
+      ]
+    },
+    "u3": {
+      "source": "import flagquantum as fq\nfrom math import pi\n\n# Qubits start in |0>.\ncircuit = fq.Circuit(1)\n\n# Apply U3. Angles are in radians.\ncircuit.u3(0, pi / 2, 0, pi / 4)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"u3.fqx\", result.plan, result=result)",
+      "qubits": 1,
+      "before": [
+        {
+          "state": "0",
+          "real": 1.0,
+          "imag": 0.0,
+          "probability": 1.0
+        },
+        {
+          "state": "1",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "0",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "1",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        }
+      ]
+    },
+    "u": {
+      "source": "import flagquantum as fq\nfrom math import pi\n\n# Qubits start in |0>.\ncircuit = fq.Circuit(1)\n\n# Apply U (Circuit.u3 in the Python SDK). Angles are in radians.\ncircuit.u3(0, pi / 2, 0, pi / 4)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"u.fqx\", result.plan, result=result)",
+      "qubits": 1,
+      "before": [
+        {
+          "state": "0",
+          "real": 1.0,
+          "imag": 0.0,
+          "probability": 1.0
+        },
+        {
+          "state": "1",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "0",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "1",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        }
+      ]
+    },
+    "cx": {
+      "source": "import flagquantum as fq\n\n# Qubits start in |00>.\ncircuit = fq.Circuit(2)\n\n# Demo preparation, not part of CX: set the first qubit to 1 to enable the controlled operation.\ncircuit.x(0)\n\n# Apply CX.\ncircuit.cx(0, 1)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"cx.fqx\", result.plan, result=result)",
+      "qubits": 2,
+      "before": [
+        {
+          "state": "00",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "01",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "10",
+          "real": 1.0,
+          "imag": 0.0,
+          "probability": 1.0
+        },
+        {
+          "state": "11",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "00",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "01",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "10",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "11",
+          "real": 1.0,
+          "imag": 0.0,
+          "probability": 1.0
+        }
+      ]
+    },
+    "cy": {
+      "source": "import flagquantum as fq\n\n# Qubits start in |00>.\ncircuit = fq.Circuit(2)\n\n# Demo preparation, not part of CY: set the first qubit to 1 to enable the controlled operation.\ncircuit.x(0)\n\n# Apply CY.\ncircuit.cy(0, 1)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"cy.fqx\", result.plan, result=result)",
+      "qubits": 2,
+      "before": [
+        {
+          "state": "00",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "01",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "10",
+          "real": 1.0,
+          "imag": 0.0,
+          "probability": 1.0
+        },
+        {
+          "state": "11",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "00",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "01",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "10",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "11",
+          "real": 0.0,
+          "imag": 1.0,
+          "probability": 1.0
+        }
+      ]
+    },
+    "cz": {
+      "source": "import flagquantum as fq\n\n# Qubits start in |00>.\ncircuit = fq.Circuit(2)\n\n# Demo preparation, not part of CZ: set the first qubit to 1 to enable the controlled operation.\ncircuit.x(0)\n# Prepare the target in superposition to expose its relative phase.\ncircuit.h(1)\n\n# Apply CZ.\ncircuit.cz(0, 1)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"cz.fqx\", result.plan, result=result)",
+      "qubits": 2,
+      "before": [
+        {
+          "state": "00",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "01",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "10",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "11",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "00",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "01",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "10",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "11",
+          "real": -0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        }
+      ]
+    },
+    "ch": {
+      "source": "import flagquantum as fq\nfrom math import pi\n\n# Qubits start in |00>.\ncircuit = fq.Circuit(2)\n\n# Demo preparation, not part of CH: set the first qubit to 1 to enable the controlled operation.\ncircuit.x(0)\n\n# Apply CH using equivalent native gates, not preparation.\n# H = Ry(pi/2) P(pi); apply the controlled factors.\ncircuit.cphase(0, 1, pi).cry(0, 1, pi / 2)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"ch.fqx\", result.plan, result=result)",
+      "qubits": 2,
+      "before": [
+        {
+          "state": "00",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "01",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "10",
+          "real": 1.0,
+          "imag": 0.0,
+          "probability": 1.0
+        },
+        {
+          "state": "11",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "00",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "01",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "10",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "11",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        }
+      ]
+    },
+    "cp": {
+      "source": "import flagquantum as fq\nfrom math import pi\n\n# Qubits start in |00>.\ncircuit = fq.Circuit(2)\n\n# Demo preparation, not part of CP: set the first qubit to 1 to enable the controlled operation.\ncircuit.x(0)\n# Prepare the target in superposition to expose its relative phase.\ncircuit.h(1)\n\n# Apply CP (Circuit.cphase in the Python SDK). Angles are in radians.\ncircuit.cphase(0, 1, pi / 2)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"cp.fqx\", result.plan, result=result)",
+      "qubits": 2,
+      "before": [
+        {
+          "state": "00",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "01",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "10",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "11",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "00",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "01",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "10",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "11",
+          "real": -3.0908619663705394e-08,
+          "imag": 0.7071067690849304,
+          "probability": 0.4999999701976776
+        }
+      ]
+    },
+    "crx": {
+      "source": "import flagquantum as fq\nfrom math import pi\n\n# Qubits start in |00>.\ncircuit = fq.Circuit(2)\n\n# Demo preparation, not part of CRX: set the first qubit to 1 to enable the controlled operation.\ncircuit.x(0)\n\n# Apply CRX. Angles are in radians.\ncircuit.crx(0, 1, pi / 2)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"crx.fqx\", result.plan, result=result)",
+      "qubits": 2,
+      "before": [
+        {
+          "state": "00",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "01",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "10",
+          "real": 1.0,
+          "imag": 0.0,
+          "probability": 1.0
+        },
+        {
+          "state": "11",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "00",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "01",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "10",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "11",
+          "real": 0.0,
+          "imag": -0.7071067690849304,
+          "probability": 0.4999999701976776
+        }
+      ]
+    },
+    "cry": {
+      "source": "import flagquantum as fq\nfrom math import pi\n\n# Qubits start in |00>.\ncircuit = fq.Circuit(2)\n\n# Demo preparation, not part of CRY: set the first qubit to 1 to enable the controlled operation.\ncircuit.x(0)\n\n# Apply CRY. Angles are in radians.\ncircuit.cry(0, 1, pi / 2)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"cry.fqx\", result.plan, result=result)",
+      "qubits": 2,
+      "before": [
+        {
+          "state": "00",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "01",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "10",
+          "real": 1.0,
+          "imag": 0.0,
+          "probability": 1.0
+        },
+        {
+          "state": "11",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "00",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "01",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "10",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "11",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        }
+      ]
+    },
+    "crz": {
+      "source": "import flagquantum as fq\nfrom math import pi\n\n# Qubits start in |00>.\ncircuit = fq.Circuit(2)\n\n# Demo preparation, not part of CRZ: set the first qubit to 1 to enable the controlled operation.\ncircuit.x(0)\n# Prepare the target in superposition to expose its relative phase.\ncircuit.h(1)\n\n# Apply CRZ. Angles are in radians.\ncircuit.crz(0, 1, pi / 2)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"crz.fqx\", result.plan, result=result)",
+      "qubits": 2,
+      "before": [
+        {
+          "state": "00",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "01",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "10",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "11",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "00",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "01",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "10",
+          "real": 0.4999999701976776,
+          "imag": -0.4999999701976776,
+          "probability": 0.49999991059303284
+        },
+        {
+          "state": "11",
+          "real": 0.4999999701976776,
+          "imag": 0.4999999701976776,
+          "probability": 0.49999991059303284
+        }
+      ]
+    },
+    "cu1": {
+      "source": "import flagquantum as fq\nfrom math import pi\n\n# Qubits start in |00>.\ncircuit = fq.Circuit(2)\n\n# Demo preparation, not part of CU1: set the first qubit to 1 to enable the controlled operation.\ncircuit.x(0)\n# Prepare the target in superposition to expose its relative phase.\ncircuit.h(1)\n\n# Apply CU1 using equivalent native gates, not preparation.\n# Controlled U1 is a controlled phase; angles are in radians.\ncircuit.cphase(0, 1, pi / 2)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"cu1.fqx\", result.plan, result=result)",
+      "qubits": 2,
+      "before": [
+        {
+          "state": "00",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "01",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "10",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "11",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "00",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "01",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "10",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "11",
+          "real": -3.0908619663705394e-08,
+          "imag": 0.7071067690849304,
+          "probability": 0.4999999701976776
+        }
+      ]
+    },
+    "cu3": {
+      "source": "import flagquantum as fq\nfrom math import pi\n\n# Qubits start in |00>.\ncircuit = fq.Circuit(2)\n\n# Demo preparation, not part of CU3: set the first qubit to 1 to enable the controlled operation.\ncircuit.x(0)\n\n# Apply CU3 using equivalent native gates, not preparation.\n# U3(theta, phi, lambda) = P(phi) Ry(theta) P(lambda).\ntheta, phi, lbd = pi / 2, 0, pi / 4\ncircuit.cphase(0, 1, lbd)\ncircuit.cry(0, 1, theta)\ncircuit.cphase(0, 1, phi)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"cu3.fqx\", result.plan, result=result)",
+      "qubits": 2,
+      "before": [
+        {
+          "state": "00",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "01",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "10",
+          "real": 1.0,
+          "imag": 0.0,
+          "probability": 1.0
+        },
+        {
+          "state": "11",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "00",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "01",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "10",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "11",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        }
+      ]
+    },
+    "swap": {
+      "source": "import flagquantum as fq\n\n# Qubits start in |00>.\ncircuit = fq.Circuit(2)\n\n# Demo preparation, not part of SWAP: make the two states different so the exchange is visible.\ncircuit.x(0)\n\n# Apply SWAP.\ncircuit.swap(0, 1)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"swap.fqx\", result.plan, result=result)",
+      "qubits": 2,
+      "before": [
+        {
+          "state": "00",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "01",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "10",
+          "real": 1.0,
+          "imag": 0.0,
+          "probability": 1.0
+        },
+        {
+          "state": "11",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "00",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "01",
+          "real": 1.0,
+          "imag": 0.0,
+          "probability": 1.0
+        },
+        {
+          "state": "10",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "11",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        }
+      ]
+    },
+    "ccx": {
+      "source": "import flagquantum as fq\n\n# Qubits start in |000>.\ncircuit = fq.Circuit(3)\n\n# Demo preparation, not part of CCX: set both controls to 1 so the target flips.\ncircuit.x(0).x(1)\n\n# Apply CCX.\ncircuit.ccx(0, 1, 2)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"ccx.fqx\", result.plan, result=result)",
+      "qubits": 3,
+      "before": [
+        {
+          "state": "000",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "001",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "010",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "011",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "100",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "101",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "110",
+          "real": 1.0,
+          "imag": 0.0,
+          "probability": 1.0
+        },
+        {
+          "state": "111",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "000",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "001",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "010",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "011",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "100",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "101",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "110",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "111",
+          "real": 1.0,
+          "imag": 0.0,
+          "probability": 1.0
+        }
+      ]
+    },
+    "cswap": {
+      "source": "import flagquantum as fq\n\n# Qubits start in |000>.\ncircuit = fq.Circuit(3)\n\n# Demo preparation, not part of CSWAP: enable the control and make the targets different.\ncircuit.x(0).x(1)\n\n# Apply CSWAP.\ncircuit.cswap(0, 1, 2)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"cswap.fqx\", result.plan, result=result)",
+      "qubits": 3,
+      "before": [
+        {
+          "state": "000",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "001",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "010",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "011",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "100",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "101",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "110",
+          "real": 1.0,
+          "imag": 0.0,
+          "probability": 1.0
+        },
+        {
+          "state": "111",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "000",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "001",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "010",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "011",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "100",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "101",
+          "real": 1.0,
+          "imag": 0.0,
+          "probability": 1.0
+        },
+        {
+          "state": "110",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "111",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        }
+      ]
+    },
+    "rxx": {
+      "source": "import flagquantum as fq\nfrom math import pi\n\n# Qubits start in |00>.\ncircuit = fq.Circuit(2)\n\n# Apply RXX. Angles are in radians.\ncircuit.rxx(0, 1, pi / 2)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"rxx.fqx\", result.plan, result=result)",
+      "qubits": 2,
+      "before": [
+        {
+          "state": "00",
+          "real": 1.0,
+          "imag": 0.0,
+          "probability": 1.0
+        },
+        {
+          "state": "01",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "10",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "11",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "00",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "01",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "10",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "11",
+          "real": 0.0,
+          "imag": -0.7071067690849304,
+          "probability": 0.4999999701976776
+        }
+      ]
+    },
+    "ryy": {
+      "source": "import flagquantum as fq\nfrom math import pi\n\n# Qubits start in |00>.\ncircuit = fq.Circuit(2)\n\n# Apply RYY. Angles are in radians.\ncircuit.ryy(0, 1, pi / 2)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"ryy.fqx\", result.plan, result=result)",
+      "qubits": 2,
+      "before": [
+        {
+          "state": "00",
+          "real": 1.0,
+          "imag": 0.0,
+          "probability": 1.0
+        },
+        {
+          "state": "01",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "10",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "11",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "00",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "01",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "10",
+          "real": 0.0,
+          "imag": 0.0,
+          "probability": 0.0
+        },
+        {
+          "state": "11",
+          "real": 0.0,
+          "imag": 0.7071067690849304,
+          "probability": 0.4999999701976776
+        }
+      ]
+    },
+    "rzz": {
+      "source": "import flagquantum as fq\nfrom math import pi\n\n# Qubits start in |00>.\ncircuit = fq.Circuit(2)\n\n# Demo preparation, not part of RZZ: superpose both qubits to expose the ZZ phase interaction.\ncircuit.h(0).h(1)\n\n# Apply RZZ. Angles are in radians.\ncircuit.rzz(0, 1, pi / 2)\n\n# Simulate and inspect amplitudes, including relative phases.\nresult = fq.run(circuit)\nprint(result.statevector())\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"rzz.fqx\", result.plan, result=result)",
+      "qubits": 2,
+      "before": [
+        {
+          "state": "00",
+          "real": 0.4999999701976776,
+          "imag": 0.0,
+          "probability": 0.2499999701976776
+        },
+        {
+          "state": "01",
+          "real": 0.4999999701976776,
+          "imag": 0.0,
+          "probability": 0.2499999701976776
+        },
+        {
+          "state": "10",
+          "real": 0.4999999701976776,
+          "imag": 0.0,
+          "probability": 0.2499999701976776
+        },
+        {
+          "state": "11",
+          "real": 0.4999999701976776,
+          "imag": 0.0,
+          "probability": 0.2499999701976776
+        }
+      ],
+      "kind": "statevector",
+      "amplitudes": [
+        {
+          "state": "00",
+          "real": 0.3535533547401428,
+          "imag": -0.3535533547401428,
+          "probability": 0.24999994039535522
+        },
+        {
+          "state": "01",
+          "real": 0.3535533547401428,
+          "imag": 0.3535533547401428,
+          "probability": 0.24999994039535522
+        },
+        {
+          "state": "10",
+          "real": 0.3535533547401428,
+          "imag": 0.3535533547401428,
+          "probability": 0.24999994039535522
+        },
+        {
+          "state": "11",
+          "real": 0.3535533547401428,
+          "imag": -0.3535533547401428,
+          "probability": 0.24999994039535522
+        }
+      ]
+    },
+    "measure": {
+      "source": "import flagquantum as fq\n\n# Qubits start in |0>.\ncircuit = fq.Circuit(1)\n\n# Demo preparation, not part of MEASURE: create a state with both possible measurement outcomes.\ncircuit.h(0)\n\n# Measure q0 in the computational basis: 1024 shots, reproducible seed.\nresult = fq.run(\n    circuit, outputs=fq.counts(qubits=[0]),\n    options=fq.ExecutionOptions(shots=1024, seed=42),\n)\nprint(result.counts)\n\n# Save this executed example for circuit and result inspection in the workbench.\nfq.save(\"measure.fqx\", result.plan, result=result)",
+      "qubits": 1,
+      "before": [
+        {
+          "state": "0",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        },
+        {
+          "state": "1",
+          "real": 0.7071067690849304,
+          "imag": 0.0,
+          "probability": 0.4999999701976776
+        }
+      ],
+      "kind": "counts",
+      "counts": {
+        "0": 518,
+        "1": 506
+      },
+      "shots": 1024,
+      "seed": 42
+    }
+  }
+}
