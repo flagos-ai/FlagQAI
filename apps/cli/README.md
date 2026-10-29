@@ -22,20 +22,35 @@ FlagQAI Apache-2.0 notices.
 See [distribution notices](./OPEN_SOURCE_NOTICES.md) and the
 [release checklist](../../docs/releases/CLI_FIRST_RELEASE.md).
 
+## FlagQAI and FlagQuantum
+
+[FlagQuantum](https://github.com/flagos-ai/FlagQuantum) develops the quantum
+framework. This CLI supplies terminal interaction, a local service and the
+integration/evidence boundary over DeepSeek Harness. Harness owns Agent
+execution, tools, permissions and session persistence. Quantum calls use the
+pinned `flagquantum-mcp-server==0.3.2` distribution under managed Python 3.12;
+setup does not check out FlagQuantum `main`. Only the integrated and tested
+capabilities are FlagQAI support claims. See the
+[architecture boundary](https://github.com/flagos-ai/FlagQAI/blob/main/docs/ARCHITECTURE.md#relationship-to-flagquantum).
+
 ## First use from a package
 
-Clean installation and interactive terminal checks pass on macOS arm64
-and Linux arm64/x64 in the tested environments. FlagQuantum 0.3.1 has no
-Linux arm64 wheel, so that platform currently needs a C/C++ build toolchain
-for `flagqai setup`; a minimal image without one fails before the interactive
-checks. On Debian-based Linux arm64, install `build-essential` before setup;
-the [Linux arm64 acceptance recipe](../../docs/releases/LINUX_ARM64_ACCEPTANCE.md)
-records the tested image and commands.
-The macOS API checks also cover the real pinned quantum runtime and a
-scripted compatibility gateway. Remaining platform gates are
-listed in the
-[readiness report](../../docs/releases/OPEN_SOURCE_READINESS.md) before trying
-the preview installation below.
+The hosted PR #1 acceptance baseline passed on Ubuntu Node 22/24, macOS
+Node 24 and Windows Node 24. Clean installation and interactive Agent checks
+ran on Linux x64 Node 22, macOS arm64 Node 24 and Windows x64 Node 24;
+Ubuntu Node 24 covers source/package checks without the installed PTY path.
+The [acceptance status](https://github.com/flagos-ai/FlagQAI/blob/main/docs/releases/ACCEPTANCE_STATUS.md)
+records the exact source tree, hosted jobs, artifact hashes and coverage.
+Linux arm64 has separate historical source-build evidence and a pin-specific
+C/C++ toolchain requirement in the [acceptance recipe](../../docs/releases/LINUX_ARM64_ACCEPTANCE.md).
+
+Windows startup, provider persistence, draft editing, one local scripted Agent
+turn and normal exit passed. This does not verify Windows sandbox confinement:
+its configuration still uses `danger-full-access` and approval `never`.
+The hosted model endpoints are local fixtures, not live provider acceptance.
+The macOS job separately exercises the real pinned MCP and bounded numerical
+checks. Remaining release decisions are in the
+[release checklist](../../docs/releases/CLI_FIRST_RELEASE.md).
 
 The npm package is not published yet. To try the built tarball locally:
 
