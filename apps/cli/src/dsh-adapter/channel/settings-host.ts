@@ -6,6 +6,7 @@ import { isReservedCredentialRef } from '../credentialRefGuard.js'
 import type { OAuthProviderStatus, OAuthSetupHost, ProfilePathOp, ProviderSetupHost } from '../providerWizard.js'
 import type { SettingsHost } from '../settingsEditor.js'
 import { withHostRootCapability } from '../host-access.js'
+import { traceWizard } from '../wizard-trace.js'
 import { settingsValue } from '../compat/settings.js'
 
 export function createSettingsHosts(ctx: Context, assertActive: () => void = () => undefined): Pick<ChannelState, 'settingsHost' | 'providerSetup' | 'oauthProviderStatuses' | 'backendAuth'> {
@@ -288,15 +289,22 @@ export function createSettingsHosts(ctx: Context, assertActive: () => void = () 
           const ops = [{ op: 'set' as const, path: ['providers', route], value: profile }]
           try {
             assertActive()
-            await withHostRootCapability(() => settings.mutate(namespace, ops, revision()))
+            traceWizard('settings revision begin', namespace)
+            const expected = revision()
+            traceWizard('settings mutate begin')
+            await withHostRootCapability(() => settings.mutate(namespace, ops, expected))
+            traceWizard('settings mutate done')
           } catch (error) {
             // One retry on a stale-revision conflict (a concurrent write
             // landed between describe and mutate); anything else propagates
             // so the wizard can report and roll back the credential.
             const code = (error as { code?: unknown })?.code
+            traceWizard('settings mutate failed',
+              `${String(code)} ${error instanceof Error ? error.message : String(error)}`)
             if (code !== 'SETTINGS_CONFLICT') throw error
             assertActive()
             await withHostRootCapability(() => settings.mutate(namespace, ops, revision()))
+            traceWizard('settings mutate done')
           }
         },
         async mutateProfile(route, ops) {

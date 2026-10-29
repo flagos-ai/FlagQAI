@@ -103,6 +103,9 @@ const realAssetBytes = makeAssetArchive('legit-new-binary\n')
 const evilAssetBytes = makeAssetArchive('evil-tampered-binary\n')
 const realDigest = createHash('sha256').update(realAssetBytes).digest('hex')
 const ASSET_NAME = (updateModule.getStandaloneAssetName as () => string)()
+const FOREIGN_ASSET_NAME = process.platform === 'win32'
+  ? 'flagqai-standalone-linux-x64.tar.gz'
+  : 'flagqai-standalone-win-x64.zip'
 
 const server = http.createServer(async (req, res) => {
   const url = req.url ?? ''
@@ -118,10 +121,8 @@ const server = http.createServer(async (req, res) => {
       assets.push({ name: `${ASSET_NAME}.sha256`, browser_download_url: `http://127.0.0.1:${serverPort()}/${ASSET_NAME}.sha256` })
     }
     if (sidecarMode === 'foreign') {
-      // 外来旁注：另一平台资产（win zip）的 .sha256——它的 digest 登记
-      // 的是 win 资产，拿来校验 linux 资产必然 mismatch（fail-closed 误拒
-      // 无辜用户的更新）。
-      assets.push({ name: 'flagqai-standalone-win-x64.zip.sha256', browser_download_url: `http://127.0.0.1:${serverPort()}/flagqai-standalone-win-x64.zip.sha256` })
+      // The foreign sidecar must belong to a different platform on every host.
+      assets.push({ name: `${FOREIGN_ASSET_NAME}.sha256`, browser_download_url: `http://127.0.0.1:${serverPort()}/${FOREIGN_ASSET_NAME}.sha256` })
     }
     res.writeHead(200, { 'content-type': 'application/json' })
     res.end(JSON.stringify({ tag_name: 'v9.9.9', assets }))
@@ -518,9 +519,13 @@ try { rmSync(scratch, { recursive: true, force: true }) } catch { /* best effort
 function makeAssetArchive(memberContent: string): Buffer {
   const dir = join(scratch, 'asset-src')
   mkdirSync(dir, { recursive: true })
-  writeFileSync(join(dir, 'flagqai'), memberContent)
-  const archive = join(scratch, 'asset.tar.gz')
-  execFileSync('tar', ['-czf', archive, '-C', dir, 'flagqai'])
+  const windows = process.platform === 'win32'
+  const binaryName = windows ? 'flagqai.exe' : 'flagqai'
+  writeFileSync(join(dir, binaryName), memberContent)
+  const archive = join(scratch, windows ? 'asset.zip' : 'asset.tar.gz')
+  execFileSync('tar', windows
+    ? ['-a', '-cf', archive, '-C', dir, binaryName]
+    : ['-czf', archive, '-C', dir, binaryName])
   return Buffer.from([...readFileSync(archive)])
 }
 

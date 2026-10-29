@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process'
 import { copyFile, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { delimiter, join } from 'node:path'
-import { INSTALLED_RUNTIME } from '../bin/installed-runtime.js'
+import { INSTALLED_RUNTIME, installedPaths } from '../bin/installed-runtime.js'
 import { FLAGQUANTUM_MCP_PACKAGE } from '../bin/quantum-mcp-profile.js'
 import { acceptanceRegistryEnvironment } from './acceptance-install-env.mjs'
 import { packFlagqai } from './pack-flagqai.mjs'
@@ -38,6 +38,13 @@ Object.assign(env, {
   npm_config_userconfig: join(sandbox, 'empty-npmrc'),
   npm_config_globalconfig: join(sandbox, 'empty-global-npmrc'),
   DSH_TELEMETRY_DISABLED: '1',
+  // `env` is an allowlist, so a diagnostic flag set by the workflow never
+  // reaches the TUI unless it is forwarded here. Committing the trace without
+  // this line cost a 21-minute run: the wizard's steps were written to stderr
+  // and the harness's own log showed none of them.
+  ...(process.env.FLAGQAI_DEBUG_PROVIDER_WIZARD === undefined
+    ? {}
+    : { FLAGQAI_DEBUG_PROVIDER_WIZARD: process.env.FLAGQAI_DEBUG_PROVIDER_WIZARD }),
 })
 let passed = false
 
@@ -87,6 +94,41 @@ try {
   })
   assert.equal(updateAfterSetup.status, 1, 'unpublished preview must reject self-update even with a ready profile')
   assert.match(updateAfterSetup.stderr, /flagqai setup --refresh/u)
+  // A Windows TEMP path can contain an 8.3 username. Node and the Harness
+  // resolver must still share app-boot's module-local root Include registry.
+  const identityProbe = join(installedRoot, 'verify-harness-module-identity.mjs')
+  await writeFile(identityProbe, `
+import assert from 'node:assert/strict'
+import { createRequire } from 'node:module'
+import { writeFile, rm } from 'node:fs/promises'
+import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
+import { installedPaths } from './bin/installed-runtime.js'
+const paths = installedPaths()
+const require = createRequire(join(paths.runtime, 'package.json'))
+const boot = await import(pathToFileURL(require.resolve('@deepseek-ai/dsh-app-boot')).href)
+const { Context } = await import(pathToFileURL(require.resolve('@deepseek-ai/cordis')).href)
+process.env.DSH_HOME = paths.dshHome
+const { prepareProfile, INSTALL_ANCHOR } = await import(pathToFileURL(require.resolve('@deepseek-ai/dsh/profile-boot')).href)
+const resolution = await boot.createRuntimeResolution({ installAnchor: INSTALL_ANCHOR, profile: prepareProfile('flagqai', false) })
+const probe = join(paths.profile, 'verify-app-boot-identity.mjs')
+const ctx = new Context()
+try {
+  await writeFile(probe, "export { reconcileProfilePatches } from '@deepseek-ai/dsh-app-boot'\\n")
+  await ctx.plugin(boot.PluginPackages, { resolution })
+  const profileBoot = await import(pathToFileURL(probe).href)
+  assert.equal(profileBoot.reconcileProfilePatches, boot.reconcileProfilePatches,
+    'profile edits must use the same app-boot module as Harness startup')
+  console.log('PASS installed Harness module identity')
+} finally {
+  await ctx.fiber.dispose()
+  await rm(probe, { force: true })
+}
+`)
+  try {
+    assert.match(run(process.execPath, [identityProbe], installation), /PASS installed Harness module identity/u)
+    console.log('PASS installed Harness module identity')
+  } finally { await rm(identityProbe, { force: true }) }
   const managedCli = join(runtime, 'dsh', 'profiles', 'flagqai', 'node_modules', '@flagqai', 'cli')
   const wrapProbe = join(managedCli, 'verify-installed-wrap.mjs')
   await writeFile(wrapProbe, `
@@ -254,8 +296,9 @@ console.log('PASS installed plugin panels and download deadline')
   await writeFile(managedProbe, `import { useInstalledRuntime } from './bin/installed-runtime.js'\nawait useInstalledRuntime(process.env)\nconsole.log(JSON.stringify({ command: process.env.FLAGQAI_MANAGED_MCP_EXECUTABLE, home: process.env.DSH_HOME }))\n`)
   try {
     const resolved = JSON.parse(run(process.execPath, [managedProbe], installation).trim())
-    assert.equal(resolved.command, join(runtime, 'quantum-bin', process.platform === 'win32' ? 'flagquantum-mcp-server.exe' : 'flagquantum-mcp-server'))
-    assert.equal(resolved.home, join(runtime, 'dsh'))
+    // setup may expand a Windows 8.3 TEMP path; assert filesystem identity.
+    assert.equal(await realpath(resolved.command), await realpath(join(runtime, 'quantum-bin', process.platform === 'win32' ? 'flagquantum-mcp-server.exe' : 'flagquantum-mcp-server')))
+    assert.equal(await realpath(resolved.home), await realpath(join(runtime, 'dsh')))
   } finally { await rm(managedProbe, { force: true }) }
   if (process.env.FLAGQAI_ACCEPTANCE_QUANTUM_PREFLIGHT === '1') {
     const preflight = run(process.execPath, [entry, 'quantum', '--check', 'Solve a VQE ground state'], installation)
@@ -356,7 +399,7 @@ console.log('PASS installed quantum directory write-and-sync probes')
     const { verifyInstalledTuiPty } = await import('./verify-installed-tui-pty.mjs')
     await verifyInstalledTuiPty({
       entry, cwd: installation, env, modulePath: process.env.FLAGQAI_ACCEPTANCE_PTY_MODULE,
-      profilePatch: join(runtime, 'dsh', 'profiles', 'flagqai', 'cordis.patch.yml'),
+      profilePatch: join(installedPaths(env).profile, 'cordis.patch.yml'),
       verifyProviderWizard: process.env.FLAGQAI_ACCEPTANCE_PROVIDER_WIZARD === '1',
       verifyAgentTurn: process.env.FLAGQAI_ACCEPTANCE_AGENT_TURN === '1',
     })
@@ -365,7 +408,18 @@ console.log('PASS installed quantum directory write-and-sync probes')
   passed = true
 } finally {
   if (passed || process.env.FLAGQAI_ACCEPTANCE_KEEP_SANDBOX !== '1') {
-    await rm(sandbox, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 })
+    try {
+      await rm(sandbox, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 })
+      console.log('First-run sandbox cleanup complete')
+    } catch (cleanupError) {
+      // A throw here replaces whatever was already propagating, so a locked
+      // directory would report itself instead of the test result. Windows run
+      // 40648607421 lost a 25-minute run that way: the only error in the log
+      // was `EBUSY rmdir ...runtime`, with no trace of what actually failed.
+      // Cleanup is best-effort; the runner discards the sandbox anyway.
+      console.error(`could not remove the probe sandbox (${sandbox}): `
+        + `${cleanupError instanceof Error ? cleanupError.message : String(cleanupError)}`)
+    }
   } else {
     console.error(`First-run probe retained its isolated files at ${sandbox}`)
   }

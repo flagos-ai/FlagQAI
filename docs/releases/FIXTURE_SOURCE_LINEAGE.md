@@ -1,8 +1,8 @@
 # Imported CLI test fixture lineage
 
-The CLI repository tracks 86 paths under `apps/cli/scripts/fixtures/`:
-Claude, Codex, and DSH protocol transcripts and their expected outputs.
-Every current file has the **same path and Git blob ID** in the pinned
+The CLI repository tracks 12 paths under `apps/cli/scripts/fixtures/`: DSH
+protocol transcripts and their expected outputs. Every current file has the
+**same path and Git blob ID** in the pinned
 [dsh-TUI import](https://github.com/ccch1mneyyy/dsh-TUI/commit/c2eee95218d1decfce138f7d31ef7099cc391d00)
 and in the original private FlagQAI extraction commit
 `02a4d24e0dda0e9b8b28b7a1a1a826538538ee8f`. This establishes byte-for-byte
@@ -11,7 +11,13 @@ original recorded model traces or grant additional redistribution rights.
 The dsh-TUI MIT import notice remains in `apps/cli/LICENSE` and
 `apps/cli/UPSTREAM.md`.
 
-`fixture-source-blobs.json` pins the 86 blob IDs and both source commits.
+The inventory covered **86** paths until the deferred agent backends were
+removed: that change deleted the 53 `claude/` and 21 `codex/` transcripts along
+with the backend source they exercised, leaving the 12 `dsh/` files. The four
+pinned source identifiers below are unchanged, because they describe where
+these files came from rather than how many of them remain.
+
+`fixture-source-blobs.json` pins the 12 blob IDs and both source commits.
 The offline CI check compares the **working files**, the tracked file set,
 and a basic email/API-token pattern screen against that inventory:
 

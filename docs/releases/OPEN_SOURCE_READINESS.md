@@ -248,10 +248,11 @@ matches were reviewed as generic fixture/test paths or examples. This is a
 pattern-based current-tree screen, not exhaustive secret detection or an audit
 of the private repository's historical objects.
 
-All **86 pinned imported test fixtures** passed the existing blob-lineage and
-basic address/token check. Their imported origin remains documented in
-[fixture lineage](FIXTURE_SOURCE_LINEAGE.md); a matching hash is not an
-independent rights decision.
+All **12 pinned imported test fixtures** that remain after the deferred
+backend removal passed the existing blob-lineage and basic address/token check;
+the inventory covered 86 before that removal. Their imported origin remains
+documented in [fixture lineage](FIXTURE_SOURCE_LINEAGE.md); a matching hash is
+not an independent rights decision.
 
 The fresh upstream candidate check used the complete Git Trees response for
 fixed import `c2eee95218d1decfce138f7d31ef7099cc391d00`. Of 57 historical

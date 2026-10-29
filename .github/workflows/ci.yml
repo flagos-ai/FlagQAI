@@ -35,12 +35,25 @@ jobs:
           cache-dependency-path: apps/cli/pnpm-lock.yaml
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11.10'
+          # Minor version, not an exact patch. `3.11.10` is no longer published
+          # for `macOS 26.6.2 arm64` or `Windows 2025 x64`, and pinning a patch
+          # makes the whole job fail before a single test runs.
+          python-version: '3.11'
+
+      # `flagqai setup` in the installed-first-run acceptance installs the
+      # pinned FlagQuantum MCP through uv. Install it once, before any
+      # acceptance step, instead of per-platform blocks that sat after the
+      # step that needed them.
+      - name: Install pinned uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          version: '0.12.16'
       - run: node docs/releases/verify-fixture-lineage.mjs
       - run: node --test docs/releases/provenance-candidate-status.test.mjs
       - run: node --test docs/releases/verify-clean-initial-import.test.mjs
       - run: pnpm --dir apps/cli install --frozen-lockfile --ignore-scripts
       - run: pnpm --dir apps/cli run compile
+      - run: pnpm --dir apps/cli run verify:standalone-update-checksum
       - run: pnpm --dir apps/cli run verify:ink-reconciler-contract
       - run: pnpm --dir apps/cli run verify:dom-tree-mutations
       - run: pnpm --dir apps/cli run verify:ink-node-state
@@ -63,9 +76,10 @@ jobs:
       - run: node apps/cli/scripts/verify-guide.mjs
       - run: node --test docs/releases/registry-license-inventory.test.mjs
       - run: node --test docs/releases/release-file-inventory.test.mjs
+      - run: node --test apps/cli/scripts/runtime-root.test.mjs
       - run: node apps/cli/scripts/verify-installed-runtime.mjs
       - run: pnpm --dir apps/cli run verify:package
-      - name: Inventory private release candidate files
+      - name: Inventory release candidate files
         run: node docs/releases/release-file-inventory.mjs --out "${{ runner.temp }}/release-file-inventory.json"
       - uses: actions/upload-artifact@v4
         if: always()
@@ -116,7 +130,12 @@ jobs:
           FLAGQAI_ACCEPTANCE_SCIENCE_SDK: '1'
           FLAGQAI_ACCEPTANCE_PERMISSION_EVIDENCE: '1'
           FLAGQAI_ACCEPTANCE_QUANTUM_FIXTURE: '1'
-          FLAGQAI_ACCEPTANCE_LOCAL_INK_REAL_HOST: ${{ matrix.os == 'macos-latest' && '1' || '0' }}
+          # Same trace as the Windows step. The wizard reaches
+          # `settings.mutate` and fails there on Windows; this says whether the
+          # platform that passes takes that path at all, which decides whether
+          # this is a Windows-only composition fault or a step both take with
+          # different results.
+          FLAGQAI_DEBUG_PROVIDER_WIZARD: '1'
         run: node apps/cli/scripts/verify-installed-first-run.mjs
         timeout-minutes: 15
       - name: Install Windows PTY test driver
@@ -133,36 +152,29 @@ jobs:
             node scripts/post-install.js
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           } finally { Pop-Location }
-      - name: Install pinned uv for Windows startup
-        if: matrix.os == 'windows-latest'
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
-        with:
-          version: '0.12.16'
       - name: Verify clean Windows install and interactive TUI
         if: matrix.os == 'windows-latest'
         env:
+          # `flagqai setup` installs the pinned Harness, pnpm, and the FlagQuantum
+          # MCP with its Python runtime. The acceptance default of 10 minutes is
+          # enough on macOS; Windows spends longer in the npm install and hit that
+          # bound before setup returned. The knob exists for exactly this.
+          FLAGQAI_ACCEPTANCE_INSTALL_TIMEOUT_MS: '1500000'
           FLAGQAI_ACCEPTANCE_PTY_MODULE: ${{ runner.temp }}/flagqai-pty-harness/node_modules/node-pty
+          # Names the last wizard step that returned, so a flow that neither
+          # finishes nor reports on this host stops being invisible.
+          FLAGQAI_DEBUG_PROVIDER_WIZARD: '1'
           FLAGQAI_ACCEPTANCE_PROVIDER_WIZARD: '1'
           FLAGQAI_ACCEPTANCE_AGENT_TURN: '1'
           FLAGQAI_ACCEPTANCE_SCIENCE_SDK: '1'
           FLAGQAI_ACCEPTANCE_PERMISSION_EVIDENCE: '1'
           FLAGQAI_ACCEPTANCE_QUANTUM_FIXTURE: '1'
         run: node apps/cli/scripts/verify-installed-first-run.mjs
-        timeout-minutes: 15
-      - name: Install pinned uv for Ubuntu Harness acceptance
-        if: matrix.os == 'ubuntu-latest' && matrix.node == 22
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
-        with:
-          version: '0.12.16'
+        timeout-minutes: 35
       - name: Verify installed Harness interactions and Bell task
         if: matrix.os == 'ubuntu-latest' && matrix.node == 22
         run: node apps/cli/scripts/verify-quantum-task.mjs --clean-install --interactions --todo-policy
         timeout-minutes: 15
-      - name: Install pinned uv for FlagQuantum MCP acceptance
-        if: matrix.os == 'macos-latest'
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
-        with:
-          version: '0.12.16'
       - name: Verify pinned FlagQuantum Bell, trainer VQE, research VQE and Harness interactions
         if: matrix.os == 'macos-latest'
         run: node apps/cli/scripts/verify-quantum-task.mjs --clean-install --real-mcp --vqe --research-vqe --interactions
@@ -171,6 +183,16 @@ jobs:
         if: matrix.os == 'ubuntu-latest' && matrix.node == 22
         run: node apps/cli/scripts/verify-quantum-task.mjs --clean-install --gateway --interactions --todo-policy
         timeout-minutes: 15
+      # The provider wizard in the installed PTY acceptance types a command into
+      # a ConPTY that re-encodes every keystroke as a win32-input-mode record,
+      # and several of those records can arrive in one stdin read. This gate is
+      # the only one that exercises that composition. It stays below the PTY
+      # acceptance on purpose: a failure here would stop the job before the
+      # Windows acceptance runs, and that run is what currently needs to report.
+      - name: Verify synthesized Windows keyboard input
+        working-directory: apps/cli
+        run: node --import tsx/esm scripts/verify-win32-input.tsx
+      - run: pnpm --dir apps/cli run verify:batched-prompt-input
       - run: pnpm --dir apps/cli run verify:plugin-panels
       - run: pnpm --dir apps/cli run verify:panel-selection
       - run: pnpm --dir apps/cli run verify:panel-registration
@@ -182,4 +204,3 @@ jobs:
       - run: pnpm --dir apps/cli run verify:jobs-cache-lifetime
       - run: pnpm --dir apps/cli run verify:jobs-detach-cleanup
       - run: pnpm --dir apps/cli run verify:session-reset-hygiene
-      - run: pnpm --dir apps/cli run verify:standalone-update-checksum

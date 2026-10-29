@@ -34,7 +34,12 @@ export async function assertNoOrphanedCompiledSources(root) {
         for (const sourceSuffix of ['.ts', '.tsx']) {
           try { await access(join(source, `${stem}${sourceSuffix}`)); found = true; break } catch { /* try the other source extension */ }
         }
-        if (!found) throw new Error(`Stale compiled CLI module: lib/types/${name}. Run npm run compile before packing.`)
+        if (!found) {
+          // Report the path with forward slashes on every platform. This message
+          // is matched by tests and read by people, and Windows `join` yields
+          // backslashes; the rest of this file normalizes separators the same way.
+          throw new Error(`Stale compiled CLI module: lib/types/${name.replaceAll('\\', '/')}. Run npm run compile before packing.`)
+        }
       }
     }
   }

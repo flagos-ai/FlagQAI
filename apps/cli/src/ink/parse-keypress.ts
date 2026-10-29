@@ -1513,9 +1513,8 @@ function synthesizedWin32Char(key: ParsedKey): string | undefined {
  *   3. mouse report — SGR (1006), with the X10 report as the legacy
  *      compatibility fallback.
  *
- * A sequence that falls through all three is a record body or a keypress, and
- * only the caller can tell which (`parseReassembledWin32Protocol` for records,
- * the token loop for VT input), so that dispatch stays with the caller.
+ * A sequence that falls through all three may be a keyboard sequence. The
+ * caller decodes known keypresses and preserves unclaimed record characters.
  */
 function claimProtocolSequence(sequence: string): ParsedInput | null {
   const dropPath = osc8DropPath(sequence)
@@ -1538,6 +1537,12 @@ function parseReassembledWin32Protocol(sequence: string): ParsedInput | null {
 
   if (SGR_MOUSE_RE.test(sequence) || (sequence.length === 6 && sequence.startsWith('\x1b[M'))) {
     return parseKeypress(sequence)
+  }
+  // ConPTY also synthesizes complete VT keyboard sequences. Reuse the normal
+  // decoder so navigation is atomic; unknown sequences keep their literal keys.
+  if (sequence.startsWith('\x1b[')) {
+    const key = parseKeypress(sequence)
+    if (key.name) return key
   }
   return null
 }

@@ -20,6 +20,7 @@ export type { ProviderSetupHost, CatalogProviderCandidate, ConfiguredProvider, P
  */
 
 import { t } from '../i18n.js'
+import { traceWizard } from './wizard-trace.js'
 import { isReservedCredentialRef } from './credentialRefGuard.js'
 import {
   UserQuestionError,
@@ -73,11 +74,24 @@ export type ProviderWizardOutcome = 'added' | 'updated' | 'deleted' | 'signed-ou
 /** Max attempts for validated free-text prompts before giving up. */
 const MAX_RETRY = 3
 
-/** Host and gateway errors may echo credentials or request headers. */
+/**
+ * Message for a failure, without echoing anything that may carry credentials.
+ *
+ * Gateway errors can quote a request and its headers, so anything that came
+ * back from the network is replaced with a generic hint. A local throw is a
+ * different animal: it is raised by our own seams or by the host's store, it
+ * has no response body, and its text is the only thing that says what went
+ * wrong. Replacing those too is how "dsh: profile reload requires the root
+ * Include entry" reached the user as "check endpoint access and the local
+ * credential store" — a message that points at nothing.
+ */
+const LOCAL_ERROR_PREFIXES = ['dsh:', 'dsh-auth:', 'flagqai:', 'atomic-write:']
+
 function safeProviderError(error: unknown): string {
   const message = error instanceof Error ? error.message : ''
   // These exact OAuth codes are useful to the user and carry no response body.
   if (message === 'invalid_grant' || message === 'access_denied') return message
+  if (LOCAL_ERROR_PREFIXES.some(prefix => message.startsWith(prefix))) return message
   return t('provider-error-safe-detail')
 }
 
@@ -187,16 +201,20 @@ export async function runProviderWizard(
     return await runAddFlow(deps)
   } catch (error) {
     if (error instanceof UserQuestionError) {
+      traceWizard('ask rejected as a user question error (dismissed)')
       notify(action === 'edit'
         ? t('provider-edit-cancelled')
         : t('provider-cancelled'))
       return 'cancelled'
     }
+    traceWizard('threw', error instanceof Error ? error.message : String(error))
     const err = safeProviderError(error)
     notify(t('provider-write-failed', { err }), { color: 'error', timeoutMs: 8000 })
     return 'failed'
   }
 }
+
+/**
 
 /**
  * The guided add flow behind `/provider`'s "Add a new provider" branch:
@@ -208,6 +226,7 @@ async function runAddFlow(
   deps: ProviderWizardDeps,
 ): Promise<ProviderWizardOutcome> {
   const { host, ask, notify, pushLocal } = deps
+  traceWizard('add flow begin')
 
   // ── 1. mode ────────────────────────────────────────────────────────
   const modeOptions = [
@@ -375,13 +394,16 @@ async function runAddFlow(
   const detail = host.routeExists(route)
     ? `${previewLines.join('\n')}\n${t('provider-route-exists-warning')}`
     : previewLines.join('\n')
+  traceWizard('confirm ask begin')
   const confirmAnswer = await ask({
     questions: [optionQuestion('confirm', t('provider-q-confirm'), [
       { label: t('provider-opt-confirm-write') },
       { label: t('provider-opt-confirm-cancel') },
     ], { detail, hideCustomInput: true })],
   })
+  traceWizard('confirm answered', JSON.stringify(answerSelected(confirmAnswer, 'confirm')))
   if (answerSelected(confirmAnswer, 'confirm')[0] !== t('provider-opt-confirm-write')) {
+    traceWizard('confirm was not the write option; cancelling')
     notify(t('provider-cancelled'))
     return 'cancelled'
   }
@@ -389,13 +411,17 @@ async function runAddFlow(
   // ── 8. persist: credential first (rollbackable), then the profile ──
   let wroteCredential = false
   let previousCredential: string | undefined
+  traceWizard('persist begin', `shadowed=${String(shadowed)} key=${apiKey !== undefined}`)
   if (!shadowed && apiKey !== undefined) {
     // Capture any pre-existing value BEFORE overwriting: when the profile
     // write below fails, rollback must restore it — an unconditional unset
     // would destroy the old key of the route being overwritten.
+    traceWizard('credential read begin')
     previousCredential = await host.readCredential(ref)
+    traceWizard('credential read done')
     await host.writeCredential(ref, apiKey)
     wroteCredential = true
+    traceWizard('credential write done')
   }
   const profile = buildProfile({
     isCatalog,
@@ -408,8 +434,10 @@ async function runAddFlow(
     catalogDiscovery: discovery.catalog,
     capabilityEntries: capabilities.entries,
   })
+  traceWizard('profile write begin')
   try {
     await host.writeProfile(route, profile)
+    traceWizard('profile write done')
   } catch (error) {
     if (wroteCredential) {
       try {
@@ -436,17 +464,22 @@ async function runAddFlow(
       : []),
   ])
   notify(t('provider-success', { route }), { color: 'success' })
+  traceWizard('success notified', `working=${String(deps.working())} models=${models.length}`)
 
   if (!deps.working() && models.length > 0) {
     const target = models[0]!
+    traceWizard('switch question begin')
     const switchAnswer = await ask({
       questions: [optionQuestion('switch', t('provider-q-switch'), [
         { label: t('provider-opt-switch-now', { model: target }) },
         { label: t('provider-opt-switch-keep') },
       ], { hideCustomInput: true })],
     })
+    traceWizard('switch answered')
     if (answerSelected(switchAnswer, 'switch')[0] === t('provider-opt-switch-now', { model: target })) {
+      traceWizard('switch model begin')
       await deps.switchModel(route, target)
+      traceWizard('switch model done')
     }
   }
   return 'added'

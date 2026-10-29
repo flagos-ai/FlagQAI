@@ -12,11 +12,17 @@ const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8'
 const tracked = git('ls-files', '-z', '--', prefix).split('\0').filter(Boolean)
 const names = Object.keys(manifest.fixtures)
 
+// The reviewed inventory. It covered 86 imported fixtures until the deferred
+// agent backends were removed in #425, which deleted the 53 `claude/` and 21
+// `codex/` transcripts and left the 12 `dsh/` ones. This count is pinned so a
+// silent edit to the manifest fails here rather than passing a weaker check.
+const REVIEWED_FIXTURE_COUNT = 12
+
 function fail(message) {
   throw new Error(`Fixture lineage: ${message}`)
 }
 
-if (names.length !== 86 || tracked.length !== names.length) fail(`expected 86 tracked fixtures, found ${tracked.length} and ${names.length} manifest entries`)
+if (names.length !== REVIEWED_FIXTURE_COUNT || tracked.length !== names.length) fail(`expected ${REVIEWED_FIXTURE_COUNT} tracked fixtures, found ${tracked.length} and ${names.length} manifest entries`)
 if (manifest.upstreamCommit !== 'c2eee95218d1decfce138f7d31ef7099cc391d00'
   || manifest.upstreamTree !== '62741b9b8b9dfab1dfb0ca28f065af140119613e'
   || manifest.extractionCommit !== '02a4d24e0dda0e9b8b28b7a1a1a826538538ee8f'
