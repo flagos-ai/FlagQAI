@@ -44,6 +44,22 @@ exact capability and validator that ran.
 FlagQAI does not issue a general scientific-validity verdict, and no part of
 this release is designed to produce one.
 
+## Relationship to FlagQuantum
+
+[FlagQuantum](https://github.com/flagos-ai/FlagQuantum) is the separate
+Python/PyTorch quantum-computing framework. FlagQAI is the user-facing CLI
+and local service that integrates selected quantum capabilities into
+Harness-owned Agent workflows and presents their execution evidence.
+DeepSeek Harness owns the Agent loop, tools, permissions and durable sessions;
+FlagQuantum supplies quantum computation through the MCP integration.
+
+`flagqai setup` installs the pinned `flagquantum-mcp-server==0.3.2` distribution
+under managed Python 3.12. It does not clone FlagQuantum or track its `main`
+branch. Framework features and backend validation in FlagQuantum do not
+become FlagQAI capabilities automatically: exposure, compatibility and
+end-to-end evidence must be verified for the pinned integration. See the
+[repository ownership and integration boundary](docs/ARCHITECTURE.md#relationship-to-flagquantum).
+
 ## What you can do today
 
 | Area | Available now |
@@ -237,18 +253,21 @@ overhead rather than producing a shorter circuit.
 calculation documented here runs on a local simulator, and routing is verified
 against synthetic coupling maps rather than a live device.
 
-**Platforms.** Clean-install and terminal checks pass on macOS arm64 and Linux
-arm64/x64 in the tested environments. Linux arm64 builds FlagQuantum 0.3.1 from
-source and needs a C/C++ toolchain; a minimal image without one fails during
-`flagqai setup`. The tested image and commands are in the
-[Linux arm64 acceptance recipe](docs/releases/LINUX_ARM64_ACCEPTANCE.md).
-**Windows is not verified**, and the current Windows composition defaults are
-not claimed to be sandbox-confined.
+**Platforms and hosted CI.** The source candidate merged by
+[PR #1](https://github.com/flagos-ai/FlagQAI/pull/1) passed the hosted Ubuntu
+Node 22/24, macOS Node 24 and Windows Node 24 jobs. Clean installed CLI,
+provider configuration, draft editing, a local scripted Agent turn and normal
+exit were verified on Linux x64 Node 22, macOS arm64 Node 24 and Windows x64
+Node 24. Ubuntu Node 24 runs source/package checks without that installed PTY
+path. The [acceptance status](docs/releases/ACCEPTANCE_STATUS.md) pins the
+commit, job links, package hashes and per-platform scientific coverage.
+Linux arm64 has separate [historical source-build acceptance](docs/releases/LINUX_ARM64_ACCEPTANCE.md),
+including its pin-specific compiler requirement; it is outside that hosted matrix.
 
-**Hosted CI.** GitHub Actions has not produced a result for this repository:
-its runs executed zero steps because of an account billing restriction. The
-verification recorded here is local, and local checks are not a substitute for
-a hosted matrix.
+Windows functional acceptance does not establish sandbox confinement. Its
+current configuration still uses `danger-full-access` with approval `never`.
+The hosted passes use local scripted model endpoints and do not verify live
+model providers, QPUs or every FlagQuantum backend.
 
 **Publication.** The npm package sets `"private": true` and is intentionally
 unpublishable. Removing that flag is a separate, reviewed release decision.
@@ -269,7 +288,8 @@ Work toward the next edition, in the order it blocks the positioning above:
    evidence for each step.
 4. Extend bounded execution to a tested hardware path, with the same evidence
    discipline that the simulator routes already follow.
-5. Verify Windows and restore hosted CI.
+5. Maintain the hosted acceptance matrix and separately verify the Windows
+   permission/confinement policy before changing its support claims.
 
 These are development directions, not available features.
 
@@ -282,6 +302,8 @@ These are development directions, not available features.
 - [Local service](packages/server/README.md),
   [protocol](packages/protocol/README.md), and
   [SDK](packages/sdk/README.md): integration contracts.
+- [Acceptance status](docs/releases/ACCEPTANCE_STATUS.md): exact hosted evidence,
+  publication state, platform coverage and remaining limits.
 - [Release checklist](docs/releases/CLI_FIRST_RELEASE.md): source review,
   dependency review, and platform acceptance.
 

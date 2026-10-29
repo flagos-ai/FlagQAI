@@ -1,5 +1,33 @@
 # Open-source readiness review
 
+## Current status: 2026-10-29
+
+The [current release and acceptance status](ACCEPTANCE_STATUS.md) records the
+four passing hosted jobs for the merged PR #1 source tree, including Windows
+clean installation and ConPTY interaction. The earlier statements below about
+zero-step billing failures and unverified Windows apply to their historical
+candidates; they are no longer the current operational status.
+
+Public source is available in `flagos-ai/FlagQAI`. The CLI remains a private
+npm development preview. Functional Windows acceptance does not establish
+sandbox confinement: the configuration still selects `danger-full-access`
+and approval `never`. CI success records no new source-rights disposition;
+the unresolved source/dependency review in this audit still needs an explicit
+resolution for a distributable release. Historical issue numbers refer to the
+maintainers' earlier tracker, not necessarily this public repository.
+
+Use the [current release checklist](CLI_FIRST_RELEASE.md) for next steps and
+the [architecture](../ARCHITECTURE.md#relationship-to-flagquantum) for the
+FlagQAI/FlagQuantum/Harness responsibility boundary.
+
+## Historical audit and acceptance records
+
+The records below retain their original candidate IDs, dates, results and
+release decisions. Their proposed public-import procedure describes the
+pre-import state; it is not an instruction to repeat an import or rewrite the
+current public repository. No historical local result has been relabeled as
+a new hosted or scientific pass.
+
 Reviewed on **2026-10-16**, updated **2026-10-23 (Asia/Shanghai)** for the planned source import into
 `flagos-ai/FlagQAI`. The initial audit baseline was CLI main
 `e34e9068f489913f3e70cd509b7802f7bf6edac8`, tree
@@ -30,7 +58,7 @@ perform a real VQE calculation. The reproducible toolchain and commands are in
 [Linux arm64 installed acceptance](LINUX_ARM64_ACCEPTANCE.md). This establishes
 the source-build path with a compiler, not a compiler-free installation.
 
-## Priority and release decision
+### Priority and release decision
 
 **The current candidate is not ready for a public CLI release.** Complete the
 P0 items before importing a reviewed public snapshot with installation claims.
@@ -58,7 +86,7 @@ the resumption decision alone.
 | **P2** | Public collaboration settings | Contribution/security files and issue templates are now present locally. The repository settings are outside this source change. | Configure maintainers, branch protection/rulesets and private vulnerability reporting in the target organization. Verify the security contact and reporting channel before launch. |
 | **P2** | npm and standalone distribution | CLI and internal packages deliberately remain `private: true`; no stable package or native release assets are available. | Source-only release may keep these guards. For npm publication, separately review the package boundary and version, then publish and test the real registry artifact. For standalone executables, review bundled native dependencies and the updater's missing-checksum compatibility policy. |
 
-## Managed Harness 0.2.1 transition
+### Managed Harness 0.2.1 transition
 
 The managed installation now pins Harness `0.2.1-rc.2` and its published
 plugin cohort. The `dsh-invariants` companion remains at its last published
@@ -121,7 +149,7 @@ writes credentials; this ordering is part of the acceptance contract. This
 Linux run used a deterministic MCP fixture and local model, not the real
 FlagQuantum distribution or a paid provider. Windows remains unverified.
 
-## Product naming follow-up
+### Product naming follow-up
 
 The maintainer subsequently requested unifying product naming without old
 configuration compatibility. [The naming record](FLAGQAI_NAMING.md) identifies
@@ -131,7 +159,7 @@ this naming-only follow-up supersedes the previous restoration's exact package
 hash. Historical acceptance results below describe their pinned candidates;
 new naming-candidate validation is recorded separately.
 
-### Naming-candidate validation
+#### Naming-candidate validation
 
 Runtime commit `b7a66bc66f99d98d1b1cf2947e7df57ce3582ad9` builds with Node
 24.19.0 and pnpm 11.26.0. Its complete local regression passed **146/146 gates**
@@ -160,7 +188,7 @@ prior platform results below describe their earlier pinned candidates.
 The maintainer deferred remaining source replacements and hosted/Windows
 execution. Later report-only edits do not change this tested package payload.
 
-## Fixes prepared in this branch
+### Fixes prepared in this branch
 
 - Replace the root README with the science/quantum overview, accurate local
   packaging instructions, Bell example, and executable Python recording example.
@@ -184,7 +212,7 @@ execution. Later report-only edits do not change this tested package payload.
   checking that the real private preview makes no registry request. The
   production preview update guard remains unchanged.
 
-## Follow-up fixes under acceptance
+### Follow-up fixes under acceptance
 
 - Managed npm setup now pins `cordis-plugin-loader@1.0.5` and
   `cordis-plugin-include@1.0.9`, matching the source lockfile. Profile pnpm
@@ -212,9 +240,9 @@ execution. Later report-only edits do not change this tested package payload.
   unreachable private objects, non-license base contents, and license
   replacement. CI runs these tests. No source was uploaded.
 
-## Verification and observed limits
+### Verification and observed limits
 
-### Source and package checks
+#### Source and package checks
 
 - Frozen source dependency installation and compilation succeeded. A repeat
   with Node.js **24.19.0** and pnpm **11.26.0** checks the documented toolchain.
@@ -232,7 +260,7 @@ execution. Later report-only edits do not change this tested package payload.
   helper: integral `1.9999999836`, absolute error `1.645e-08`, recorded status
   `passed`, with result, metadata, checkpoint, and manifest files generated.
 
-### Source/privacy inventory
+#### Source/privacy inventory
 
 The committed baseline contains **3,079 tracked entries** and its staged
 tarball **2,891 files**. The inventory reported no non-file source entries,
@@ -261,7 +289,7 @@ at the old path, **11** are absent, and **0** are exact-blob relocations.
 This is a lineage classification. Modified and absent files can retain
 affected portions; the result does not establish independent authorship.
 
-### Installed acceptance
+#### Installed acceptance
 
 The final package was installed with npm in an isolated directory/home using
 Node.js 24.19.0. The subsequent managed Harness setup failed on the missing
@@ -286,7 +314,7 @@ retains one strict review finding for the optional registry-supplied libvips
 binary; its hash matches the earlier evidence. See
 [the refreshed dependency record](REGISTRY_DEPENDENCY_LICENSES.md#2026-10-16-cli-candidate-refresh).
 
-### Successful macOS cold acceptance (2026-10-17)
+#### Successful macOS cold acceptance (2026-10-17)
 
 The fresh macOS arm64 Node.js 24.19.0 run completed with exit 0 after the
 full Harness profile-cohort fix. The input tarball SHA-256 was
@@ -360,7 +388,7 @@ is not executable there. It also requests the provider wizard and one
 scripted Agent turn. This recipe is syntax-checked but Windows remains
 unverified until a real Windows job runs.
 
-### Packed-content privacy screen
+#### Packed-content privacy screen
 
 A current staged tarball with 2,892 files was screened for private-key blocks,
 GitHub/provider token patterns, AWS access IDs, absolute user paths, and
@@ -370,7 +398,7 @@ example in compiled `ErrorOverview.js`; it is not a developer's real path.
 This complements the source-tree scan; it is pattern-based evidence rather
 than exhaustive secret detection or a review of old private Git objects.
 
-### Exact runtime-candidate verification
+#### Exact runtime-candidate verification
 
 Runtime commit `aa2830bb2dfd992a3bd4ce798e2104604b239e8d` was rebuilt
 with Node 24.19.0 and pnpm 11.26.0 after the private PR was created.
@@ -389,7 +417,7 @@ The draft PR remains private and does not merge or approve the release.
 Account administration and source-rights evidence remain external inputs;
 no local test result substitutes for either.
 
-### Stable-runtime restoration after deferred migration
+#### Stable-runtime restoration after deferred migration
 
 On 2026-10-17, the maintainer requested retaining the verified runtime and
 stopping the remaining source replacements. The uncommitted official Yoga
@@ -404,7 +432,7 @@ fixture reported 1,600 rows against 1,800 expected. This was unresolved at
 restoration time and is fixed by the subsequent correction below. The
 historical 146-gate result did not cover this probe.
 
-### Word-wrap height correction
+#### Word-wrap height correction
 
 Runtime commit `3b008972eeba5fde583b8858c512e0ffacaa1f61` fixes the subsequent
 long-text discrepancy. Plain-text measurement now counts the rows produced by
@@ -443,7 +471,7 @@ runtime commit above do not change the tested package payload. These results
 do not add Windows, hosted CI, real-provider, or real-MCP coverage; source-rights
 issues remain unresolved.
 
-### Update deadline and plugin-panel completion
+#### Update deadline and plugin-panel completion
 
 Runtime commit `d142f7982c67d8e2066bca979918e7f2cd22d71c` fixes three additional
 issues without replacing the renderer or Yoga:
@@ -490,7 +518,7 @@ Evidence is retained outside the repository in the sibling
 change the tested payload. These results add no Windows, hosted CI,
 real-provider, or real-MCP coverage; source-rights review remains unresolved.
 
-### Registry-backed panel selection
+#### Registry-backed panel selection
 
 Candidate `3264e361e5c54782a4578bbb0eba1e1744e0bc4e` includes runtime fix
 `2e7e023cb950dc4497c1d43648d7065129df2218` and the installed-probe path fix.
@@ -532,7 +560,7 @@ the sibling `FlagQAI-opensource-audit-evidence` directory, including
 change this payload. No new Windows, hosted CI or real-MCP pass is claimed;
 source-rights review and deferred replacements are unchanged.
 
-### Owned panel-registration publication
+#### Owned panel-registration publication
 
 Candidate `a01d95c82fb9bd6de3066532c1a23084d78c1e89` fixes missing plugin
 `registered` notifications. Ownership and the default enabled state are now
@@ -573,7 +601,7 @@ Documentation-only follow-ups do not change the tested package payload. No
 engine, dependency or source-replacement migration is included. No new Windows,
 hosted CI or real-MCP coverage is claimed; source-rights review remains open.
 
-### Reentrant panel replacement and shared open limits
+#### Reentrant panel replacement and shared open limits
 
 Candidate `3e5019fb9f0b7086b756e68e52f5e6fca5b1c614` fixes two further plugin-panel
 issues. Disposal and failed-registration cleanup now remove ownership/enabled
@@ -617,7 +645,7 @@ renderer, Yoga or dependency migration is included. Windows/hosted execution
 and source replacements remain deferred; source-rights review remains open.
 These results do not add real-provider or real-MCP coverage.
 
-### Host panel removal notifications
+#### Host panel removal notifications
 
 Candidate `f72f254844f22ba1346cbdd0c67b2c6c7efa1690` fixes host subscribers losing plugin
 `unregistered` events after the store deletes an entry. The store captures the
@@ -657,7 +685,7 @@ payload. Renderer, Yoga and dependencies are unchanged. Source replacements
 remain deferred and source-rights review remains unresolved. No new Windows,
 hosted CI, real-provider or real-MCP coverage is claimed.
 
-### Malformed MCP preflight messages
+#### Malformed MCP preflight messages
 
 Candidate `e691f574aedb4f6b63476d3f1054283a9f4d98d1` rejects null, scalar and array MCP
 messages before response-ID lookup. A null JSON message previously raised an
@@ -680,7 +708,7 @@ remain deferred and source-rights review remains unresolved. Evidence, including
 the original crash and `quantum-envelope-completion-audit.json`, is retained in
 the sibling `FlagQAI-opensource-audit-evidence` directory.
 
-### Secret questionnaire answers in durable exports
+#### Secret questionnaire answers in durable exports
 
 Runtime fix `87c452a726c5b5823f16043a05ea83dd8427e108`, with final test candidate
 `fc929bfd89f47a6d48be8ecc5efa7157abbb33e4`, prevents `/export` from writing marked-secret
@@ -713,7 +741,7 @@ No new PTY, real-provider, real-MCP, QPU, Windows or hosted-CI coverage is claim
 Renderer, Yoga and dependencies are unchanged. Source replacements remain
 deferred and source-rights review remains unresolved.
 
-### Question cancellation lifetime and listener retention
+#### Question cancellation lifetime and listener retention
 
 Candidate `0e7ae8b46e28f2501f654176306464a8e5ec59b0` rejects already-aborted question
 requests before they enter the queue or become visible. It preserves the
@@ -742,7 +770,7 @@ evidence. Evidence and the reproduction are retained with
 Renderer, Yoga and dependencies are unchanged; source replacements remain
 deferred and source-rights review remains unresolved.
 
-### Scientific worker diagnostic redaction at the output limit
+#### Scientific worker diagnostic redaction at the output limit
 
 Candidate `3daa3b179472c713fb6f92b5b9dee153d213ea4f` redacts complete
 worker stderr before applying the existing 2,000-character error-message limit.
@@ -768,7 +796,7 @@ is retained in the sibling audit directory as
 `science-redaction-completion-audit.json`. Renderer, Yoga and dependencies are
 unchanged. Source-rights #86/#93 and deferred release infrastructure remain open.
 
-### Background-job cache eviction and session reset
+#### Background-job cache eviction and session reset
 
 Candidate `83922b960870f07b8bc158256389354093297b5a` releases kernel output
 read state when terminal jobs are evicted from the bounded history. Previously,
@@ -797,7 +825,7 @@ is retained in the sibling directory as `jobs-cache-completion-audit.json`.
 Renderer, Yoga and dependencies remain unchanged; source-rights #86/#93 and
 deferred release infrastructure remain open.
 
-### Exhaustive background-job subscription cleanup
+#### Exhaustive background-job subscription cleanup
 
 Candidate `5428d06a1428a623c9c8b009b0e8ee33fe664a42` attempts every job-service
 unsubscriber even when an earlier one throws. Detach revokes the attachment
@@ -825,7 +853,7 @@ hashes are retained as `jobs-detach-completion-audit.json` in the sibling audit
 directory. Renderer, Yoga and dependencies remain unchanged; source-rights
 #86/#93 and deferred release infrastructure remain open.
 
-### Alternate Harness installed-profile acceptance
+#### Alternate Harness installed-profile acceptance
 
 For an explicitly installed Harness host, the opt-in
 `verify-quantum-task.mjs --fresh-profile-install` probe now packs the current
@@ -847,7 +875,7 @@ FlagQuantum MCP one-step VQE call. The VQE runner independently checked the
 responses came from a local scripted fixture. This proves neither a paid-model
 workflow nor Windows support, and does not yet change the managed install pin.
 
-## Final export procedure
+### Final export procedure
 
 1. Resolve the current-source rights and public dependency gates.
 2. Apply any remaining fixes, freeze the candidate, and record its exact commit,
