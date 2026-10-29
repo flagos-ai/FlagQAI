@@ -209,3 +209,19 @@ See [Settings](settings/README.md) and [Readiness](readiness/README.md).
 and exact managed-launcher migration. Settings routes and source entrypoints
 share this application; native ACP remains Harness-owned. See
 [the channel contract](channels/README.md).
+
+The catalog rename endpoint (`POST /v1/catalog/{backendId}/{sessionId}/rename`,
+`{ "title": "New title" }`) updates an offline native title without opening a
+session. It honors ownership guards and the backend's rename capability; open
+sessions use their live rename capability only when idle. Responses never contain
+conversation content. Catalog actions advertise `rename` independently of archive.
+
+### Session automatic compaction policy
+
+`GET /v1/sessions/{id}/compaction-policy` reads the native per-Agent policy;
+`POST` updates `enabled` and `thresholdRatio` only while the session is idle.
+Unsupported capabilities, active work and malformed native values are rejected.
+This uses the native pressure/compaction hooks, not a browser token estimator or
+a second compaction loop. The optional source workspace carries its reviewed
+`dsh-compaction-basic` patch; unpatched installations report the capability as
+unavailable. Browser preferences never claim that a native policy is enabled.

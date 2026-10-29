@@ -35,6 +35,7 @@ export function createWebSessionView(session: AgentSession) {
     ['new', 'resume', 'settings', 'help', 'status', 'context'].includes(command.name) || (command.name === 'compact' && session.capabilities?.compact !== undefined),
   ).map(({ name, description }) => ({ name, description }))
   const context = () => ({
+    autoPolicy: session.capabilities?.compact?.policy?.read(),
     occupancy: resolveContextOccupancy(native?.contextPressure?.(), state.lastUsage, state.contextWindow, projector.contextUsage()),
     compaction: state.compaction,
     compactSupported: session.capabilities?.compact !== undefined,

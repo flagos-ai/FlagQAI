@@ -1,0 +1,2 @@
+# Unified patch context prefixes precede upstream tab indentation and blank lines.
+apps/cli/patches/*.patch whitespace=-space-before-tab,-blank-at-eol

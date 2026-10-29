@@ -216,6 +216,8 @@ export function createFlagQaiClient(options = {}) {
     async setSessionPlan(id, input, options = {}) {
       return jsonRequest(`${API_PREFIX}/sessions/${encodeURIComponent(id)}/plan`, 200, jsonBody(input, options.signal));
     },
+    async getCompactionPolicy(id, options = {}) { return jsonRequest(`${API_PREFIX}/sessions/${encodeURIComponent(id)}/compaction-policy`, 200, {signal:options.signal}); },
+    async setCompactionPolicy(id, input, options = {}) { return jsonRequest(`${API_PREFIX}/sessions/${encodeURIComponent(id)}/compaction-policy`, 200, jsonBody(input, options.signal)); },
     async compactSession(id, options = {}) {
       return jsonRequest(`${API_PREFIX}/sessions/${encodeURIComponent(id)}/compact`, 200, jsonBody({}, options.signal));
     },
@@ -224,6 +226,9 @@ export function createFlagQaiClient(options = {}) {
     },
     async forkSession(id, input = {}, options = {}) {
       return jsonRequest(`${API_PREFIX}/sessions/${encodeURIComponent(id)}/fork`, 201, jsonBody(input, options.signal));
+    },
+    async renameCatalogSession(backendId, sessionId, title, options = {}) {
+      return jsonRequest(`${API_PREFIX}/catalog/${encodeURIComponent(backendId)}/${encodeURIComponent(sessionId)}/rename`, 200, jsonBody({ title }, options.signal));
     },
     async archiveSession(backendId, sessionId, options = {}) {
       return jsonRequest(`${API_PREFIX}/catalog/${encodeURIComponent(backendId)}/${encodeURIComponent(sessionId)}/archive`, 200, jsonBody({}, options.signal));

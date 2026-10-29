@@ -129,7 +129,7 @@ export interface SessionCatalogResource {
   availability: "available" | "active" | "occupied";
   resourceId?: string;
   ownerPid?: number;
-  actions?: { archive: boolean };
+  actions?: { archive: boolean; rename?: boolean };
 }
 export interface SessionSubagentView {
   id: string;
@@ -170,6 +170,7 @@ export interface SessionResource {
   status: SessionStatus;
   capabilities: string[];
 }
+export interface AutoCompactionPolicy { enabled: boolean; thresholdRatio: number; scope: 'session' }
 /** Derived presentation from the same projector as the terminal client. */
 export interface SessionViewRow {
   id: number;
@@ -178,11 +179,18 @@ export interface SessionViewRow {
   anchor?: string;
   text: string;
   label?: string;
+  subagent?: {
+    agentId: string; description: string; status: string; startedAt?: number;
+    durationMs?: number; model?: string; summary?: string; outputLines?: string[]; error?: string;
+  };
   reasoningTokens?: number;
+  durationMs?: number;
   tool?: {
     callId: string;
     name: string;
     status: string;
+    startedAt?: number;
+    durationMs?: number;
     argsText?: string;
     argsFull?: string;
     resultText?: string;
@@ -193,7 +201,7 @@ export interface SessionViewRow {
     callView?: unknown;
     resultView?: unknown;
   };
-  turnUsage?: { input?: number; output?: number };
+  turnUsage?: { input?: number; output?: number; durationMs?: number; outcome?: 'completed' | 'interrupted' | 'error' };
 }
 export interface SessionTodoItem {
   content: string;
@@ -215,6 +223,7 @@ export interface SessionViewEvent {
     occupancy?: { usedTokens: number; contextWindow?: number; source: 'projection' | 'backend' | 'sample' };
     compaction?: { startedAt: number; phase: 'prefill' | 'summary'; outputChars: number; cancellable: boolean };
     compactSupported: boolean;
+    autoPolicy?: AutoCompactionPolicy;
   };
   tps?: number;
   commands: Array<{ name: string; description: string }>;
@@ -273,9 +282,12 @@ export interface FlagQaiClient {
   setSessionPlan(id: string, input: { active: boolean }, options?: RequestOptions): Promise<SessionControls>;
   getSessionControls(id: string, options?: RequestOptions): Promise<SessionControls>;
   setSessionControl(id: string, input: { kind: 'effort'; id: string | null } | { kind: 'mode'; id: string }, options?: RequestOptions): Promise<SessionControls>;
+  getCompactionPolicy(id: string, options?: RequestOptions): Promise<{policy: AutoCompactionPolicy}>;
+  setCompactionPolicy(id: string, input: {enabled: boolean; thresholdRatio: number}, options?: RequestOptions): Promise<{policy: AutoCompactionPolicy}>;
   compactSession(id: string, options?: RequestOptions): Promise<{ outcome: 'compacted' | 'unchanged' | 'requested' }>;
   renameSession(id: string, title: string, options?: RequestOptions): Promise<{ title: string }>;
   forkSession(id: string, input?: { anchor?: string; title?: string }, options?: RequestOptions): Promise<{ ref: { backendId: string; sessionId: string }; cwd: string }>;
+  renameCatalogSession(backendId: string, sessionId: string, title: string, options?: RequestOptions): Promise<{ title: string }>;
   archiveSession(backendId: string, sessionId: string, options?: RequestOptions): Promise<{ archived: true }>;
   sessionContext(id: string, options?: RequestOptions): Promise<{ files: boolean; images: 'supported' | 'unsupported' | 'unknown'; maxImageBytes?: number; maxImages?: number }>;
   workspaceFiles(id: string, query?: string, options?: RequestOptions): Promise<Array<{ path: string; kind: 'file' | 'directory' }>>;

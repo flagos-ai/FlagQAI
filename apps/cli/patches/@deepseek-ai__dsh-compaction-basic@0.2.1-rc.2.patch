@@ -1,0 +1,86 @@
+diff --git a/lib/index.js b/lib/index.js
+index 68c560bb0c9b9caa606db63befdb968132932c00..3973e385e06f4ae8e07fc226edebba82b43b98dd 100644
+--- a/lib/index.js
++++ b/lib/index.js
+@@ -818,13 +818,26 @@ var BasicCompactionEngine = class extends CompactionEngine {
+ 	});
+ 	/** Resolved and validated compaction configuration. */
+ 	config;
++	sessionPolicies = new WeakMap();
++	policyConfig(agent) { return this.sessionPolicies.get(agent) ?? this.config; }
++	readAutoPolicy(agent) {
++		const config = this.policyConfig(agent), target = routedTarget(agent.session);
++		return { enabled: config.auto, thresholdRatio: target === void 0 ? config.thresholdRatio : resolveTargetPolicy(config, target).thresholdRatio };
++	}
++	setAutoPolicy(agent, policy) {
++		if (agent.status !== "idle") throw new Error("Finish the current turn before changing compaction policy");
++		if (typeof policy.enabled !== "boolean" || !Number.isFinite(policy.thresholdRatio) || policy.thresholdRatio < .5 || policy.thresholdRatio > .95) throw new Error("Use an enabled flag and a threshold between 50% and 95%");
++		const candidate = resolveConfig({ ...this.config, auto: policy.enabled, thresholdRatio: policy.thresholdRatio, modelPolicies: this.config.modelPolicies.map(row => ({...row, thresholdRatio: policy.thresholdRatio})) });
++		this.sessionPolicies.set(agent, candidate);
++		return this.readAutoPolicy(agent);
++	}
+ 	warnedPressureConfigTargets = /* @__PURE__ */ new Set();
+ 	overflowRetries = /* @__PURE__ */ new WeakMap();
+ 	overflowAgents = /* @__PURE__ */ new WeakMap();
+ 	constructor(ctx, config = {}) {
+ 		super(ctx);
+ 		this.config = resolveConfig(config);
+-		if (this.config.auto) this._registerAutomaticCompaction();
++		this._registerAutomaticCompaction();
+ 	}
+ 	/**
+ 	* Register automatic between-step pressure and model-request overflow
+@@ -837,6 +850,7 @@ var BasicCompactionEngine = class extends CompactionEngine {
+ 			ctx.logger.info(`compaction (${trigger}): shadowed ${result.shadowedSeqs.length} surface nodes (seqs ${result.shadowedRange.start}-${result.shadowedRange.end}, ~${result.shadowedTokenCount} tokens)`);
+ 		};
+ 		ctx.on("agent/pre-step", async ({ agent, signal }, next) => {
++			if (!this.policyConfig(agent).auto) return next();
+ 			if (!signal.aborted) try {
+ 				const result = await this.compactIfNeeded(agent, "pressure", signal);
+ 				if (result !== null) logResult(result, "step pressure");
+@@ -859,11 +873,11 @@ var BasicCompactionEngine = class extends CompactionEngine {
+ 			if (agent !== void 0) this.overflowRetries.delete(agent);
+ 		});
+ 		ctx.on("agent/request-error", async ({ agent, failure, signal }, next) => {
+-			if (failure.code !== CONTEXT_WINDOW_EXCEEDED_CODE || signal.aborted) return next();
++			if (!this.policyConfig(agent).auto || failure.code !== CONTEXT_WINDOW_EXCEEDED_CODE || signal.aborted) return next();
+ 			this.overflowAgents.set(agent.session, agent);
+ 			const target = routedTarget(agent.session);
+ 			if (target === void 0) return next();
+-			const policy = resolveTargetPolicy(this.config, target);
++			const policy = resolveTargetPolicy(this.policyConfig(agent), target);
+ 			const retries = this.overflowRetries.get(agent) ?? 0;
+ 			if (retries >= policy.maxOverflowRetries) return next();
+ 			const generation = agent.session.surface.replaceGeneration;
+@@ -898,7 +912,7 @@ var BasicCompactionEngine = class extends CompactionEngine {
+ 	*/
+ 	async summarize(input, agent, signal) {
+ 		const target = conversationTarget(agent);
+-		const config = target === void 0 ? this.config : resolveTargetPolicy(this.config, target);
++		const config = target === void 0 ? this.policyConfig(agent) : resolveTargetPolicy(this.policyConfig(agent), target);
+ 		return summarizeWithLlm(this.ctx, config, input, agent, signal);
+ 	}
+ 	/**
+@@ -914,7 +928,7 @@ var BasicCompactionEngine = class extends CompactionEngine {
+ 	async compactIfNeeded(agent, trigger, signal) {
+ 		const target = routedTarget(agent.session);
+ 		if (target === void 0) return null;
+-		const policy = resolveTargetPolicy(this.config, target);
++		const policy = resolveTargetPolicy(this.policyConfig(agent), target);
+ 		const meter = this.ctx.tokenMeter;
+ 		let measurement = meter.measure(agent.session);
+ 		switch (trigger) {
+diff --git a/lib/types/index.d.ts b/lib/types/index.d.ts
+index 5547de3e796e15d24a8bc1ffc6b713b01eff7b5e..d99cf6df87959e72d6dd4148adbda26177af5e27 100644
+--- a/lib/types/index.d.ts
++++ b/lib/types/index.d.ts
+@@ -26,6 +26,9 @@ export declare class BasicCompactionEngine extends CompactionEngine {
+     static Config: z<BasicCompactionConfig>;
+     /** Resolved and validated compaction configuration. */
+     readonly config: ResolvedConfig;
++    /** FlagQAI: session-scoped live automatic compaction policy. */
++    readAutoPolicy(agent: Agent): { enabled: boolean; thresholdRatio: number };
++    setAutoPolicy(agent: Agent, policy: { enabled: boolean; thresholdRatio: number }): { enabled: boolean; thresholdRatio: number };
+     private readonly warnedPressureConfigTargets;
+     private readonly overflowRetries;
+     private readonly overflowAgents;
