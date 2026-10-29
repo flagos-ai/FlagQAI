@@ -591,3 +591,39 @@ SDK. Existing saved drafts are not rewritten; **Load save/load example** creates
 the updated built-in example through the existing draft-preserving Model action.
 Legacy scripts using the injected `flagquantum_web.publish` still work, but new
 examples use only the official SDK API.
+
+### Recovering an active Agent conversation
+
+Refreshing reattaches the stored native session; it never submits the question
+again. If the Agent service is temporarily unavailable at startup, the workbench
+retries with a 1–10 second backoff and shows **Restoring your conversation**.
+An existing SSE connection resumes with its event cursor. Transcript rows stay
+visible during a transient disconnect, but sending waits for a fresh native
+`session.view` snapshot. A missing Web resource resumes the same native session
+ID; forbidden, missing or occupied durable sessions show an error rather than
+silently creating a replacement conversation. A service restart does not imply
+that the backend task survived: its native history remains authoritative.
+
+Before sending, the current tab retains only its in-flight request ID, resource,
+original payload and composer text in `sessionStorage`. This is not a second
+conversation history. A successful receipt or a matching native `user.message`
+ID clears it. Restored native confirmation clears the original composer text
+only if the user has not typed a newer draft. Similar text is not confirmation.
+If delivery remains unknown, **Retry original message** sends the exact original
+payload and ID after the user checks history; there is no automatic POST retry.
+A changed native resource disables retry because server-side deduplication is
+scoped to that resource. Inspect its history before explicitly choosing another
+chat. Reload recovery depends on the tab's browser storage being available.
+
+For isolated fault acceptance, set `FQ_TEST_RECOVERY=1` when starting
+`scripts/agent-protocol-fixture.mjs`. The test-only loopback proxy uses
+`FQ_TEST_PROXY_PORT` (default: `FQ_TEST_AGENT_PORT + 1`). Its
+`/__fixture/network` endpoint accepts JSON `{ "offline": true }` to interrupt
+connections, `{ "offline": false }` to restore them, or
+`{ "dropNextReceipt": true }` to let the next message reach the backend while
+dropping its receipt/events and taking the proxy offline. GET returns native
+submission counts and session IDs. The visible prompt `reject ...` returns a
+scripted rejection, allowing an explicit idempotent retry to be verified. This
+proxy, counters and fixed delay are development fixtures only; no model is called
+and no production service imports them. Hidden attachment/control metadata does
+not trigger fixture permission, question or cancellation commands.

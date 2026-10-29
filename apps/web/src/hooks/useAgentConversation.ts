@@ -10,6 +10,13 @@ import type {
 import { FlagQaiApiError } from "../../../../packages/sdk/index.mjs";
 import { harnessClient, workspaceAgentConfig } from "../api/harness";
 import { applyAgentRecord, emptyAgentView } from "../state/agent-view";
+import {
+  DELIVERY_KEY,
+  deliveryWasObserved,
+  readPendingDelivery,
+  recoverNativeSession,
+  type PendingDelivery,
+} from "../state/agent-recovery";
 const KEY = "fq-agent-session-v1";
 type Reference = Pick<
   SessionResource,
@@ -32,7 +39,13 @@ function remember(session: SessionResource) {
 }
 function stored(): Reference | null {
   try {
-    return JSON.parse(localStorage.getItem(KEY) || "null");
+    const value = JSON.parse(localStorage.getItem(KEY) || "null");
+    return value &&
+      ["id", "backendId", "sessionId", "cwd"].every(
+        (key) => typeof value[key] === "string" && value[key].length > 0,
+      )
+      ? value
+      : null;
   } catch {
     return null;
   }
@@ -61,11 +74,26 @@ export function useAgentConversation() {
     generation = useRef(0),
     mounted = useRef(true),
     operation = useRef(false);
-  const outbound = useRef<{
-    session: string;
-    clientMessageId: string;
-    text: string;
-  } | null>(null);
+  const [pendingDelivery, setPendingDelivery] = useState(() => {
+    try {
+      return readPendingDelivery(sessionStorage);
+    } catch {
+      return null;
+    }
+  });
+  const outbound = useRef<PendingDelivery | null>(pendingDelivery);
+  const observedDeliveries = useRef(new Set<string>());
+  const [confirmedDraft, setConfirmedDraft] = useState<string | null>(null);
+  const delivery = (value: PendingDelivery | null) => {
+    outbound.current = value;
+    setPendingDelivery(value);
+    try {
+      if (value) sessionStorage.setItem(DELIVERY_KEY, JSON.stringify(value));
+      else sessionStorage.removeItem(DELIVERY_KEY);
+    } catch {
+      /* In-memory retry remains available if storage is unavailable. */
+    }
+  };
   const attach = useCallback((resource: SessionResource) => {
     stream.current?.abort();
     const controller = new AbortController();
@@ -94,6 +122,15 @@ export function useAgentConversation() {
             if (controller.signal.aborted || active.current?.id !== resource.id)
               return;
             cursor.current = Math.max(cursor.current, record.id);
+            const pending = outbound.current;
+            if (
+              pending &&
+              deliveryWasObserved(pending, resource.id, record.event)
+            ) {
+              observedDeliveries.current.add(pending.clientMessageId);
+              setConfirmedDraft(pending.draft);
+              delivery(null);
+            }
             setView((previous) => applyAgentRecord(previous, record));
             retries = 0;
           }
@@ -102,12 +139,18 @@ export function useAgentConversation() {
           );
         } catch (problem) {
           if (controller.signal.aborted) return;
+          // Retain transcript rows, but require a fresh native snapshot before
+          // accepting input after reconnect; opening HTTP alone is insufficient.
+          setView((previous) => ({ ...previous, projected: false }));
           if (
             problem instanceof FlagQaiApiError &&
             [403, 404].includes(problem.status)
           ) {
             setError(message(problem));
-            setPhase("ready");
+            stream.current = null;
+            // The native service may have restarted. Rebind the same durable
+            // conversation through connect(), never create another task.
+            setPhase(problem.status === 404 ? "offline" : "ready");
             return;
           }
           setPhase("reconnecting");
@@ -150,24 +193,15 @@ export function useAgentConversation() {
           ? backend
           : available[0]?.id;
         setBackend(selected);
-        setPhase("ready");
         const reference = stored();
         if (reference?.cwd === config.cwd) {
-          try {
-            const existing = await harnessClient.getSession(reference.id);
-            if (mounted.current && ticket === generation.current)
-              attach(existing);
-            return;
-          } catch (problem) {
-            if (!(problem instanceof FlagQaiApiError) || problem.status !== 404)
-              throw problem;
-          }
-          const resumed = await harnessClient.openSession({
-            backendId: reference.backendId,
-            cwd: config.cwd,
-            sessionId: reference.sessionId,
-          });
-          if (mounted.current && ticket === generation.current) attach(resumed);
+          const existing = await recoverNativeSession(
+            harnessClient,
+            reference,
+            config.cwd,
+          );
+          if (mounted.current && ticket === generation.current)
+            attach(existing);
           return;
         }
         if (create) {
@@ -176,11 +210,16 @@ export function useAgentConversation() {
             cwd: config.cwd,
           });
           if (mounted.current && ticket === generation.current) attach(opened);
-        }
+        } else setPhase("ready");
       } catch (problem) {
         if (mounted.current && ticket === generation.current) {
-          setPhase("offline");
-          if (!quiet) setError(message(problem));
+          const blocked =
+            problem instanceof FlagQaiApiError &&
+            problem.status >= 400 &&
+            problem.status < 500 &&
+            problem.status !== 429;
+          setPhase(blocked ? "ready" : stored() ? "reconnecting" : "offline");
+          if (!quiet || blocked) setError(message(problem));
         }
       } finally {
         operation.current = false;
@@ -202,6 +241,28 @@ export function useAgentConversation() {
       stream.current?.abort();
     };
   }, []);
+  useEffect(() => {
+    if (
+      !["offline", "reconnecting"].includes(phase) ||
+      !stored() ||
+      (stream.current && !stream.current.signal.aborted)
+    )
+      return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+    let attempts = 0;
+    const retry = async () => {
+      if (cancelled) return;
+      await connect(false, true);
+      if (!cancelled)
+        timer = setTimeout(retry, Math.min(1000 * 2 ** attempts++, 10000));
+    };
+    timer = setTimeout(retry, 1000);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [phase, connect]);
   const choose = async (item?: SessionCatalogResource) => {
     if (
       operation.current ||
@@ -237,7 +298,7 @@ export function useAgentConversation() {
         active.current?.sessionId !== opened.sessionId ||
         active.current?.backendId !== opened.backendId
       )
-        outbound.current = null;
+        delivery(null);
       attach(opened);
       // A metadata refresh failure must not undo an already successful adoption.
       try {
@@ -255,7 +316,7 @@ export function useAgentConversation() {
       if (mounted.current) setBusy(false);
     }
   };
-  const send = async (text: string) => {
+  const send = async (text: string, draft = text) => {
     const current = active.current;
     if (
       !current ||
@@ -281,8 +342,10 @@ export function useAgentConversation() {
       session: current.id,
       clientMessageId: crypto.randomUUID(),
       text,
+      draft,
     };
-    outbound.current = input;
+    delivery(input);
+    setConfirmedDraft(null);
     setSending(true);
     setCompactionNotice("");
     setError("");
@@ -292,21 +355,25 @@ export function useAgentConversation() {
         text: input.text,
         placement: "turn",
       });
-      outbound.current = null;
+      delivery(null);
+      observedDeliveries.current.delete(input.clientMessageId);
       if (!receipt.accepted)
         throw new Error(
           receipt.reason || "The Agent did not accept this message.",
         );
       return true;
     } catch (problem) {
+      if (observedDeliveries.current.delete(input.clientMessageId)) return true;
       if (
         problem instanceof FlagQaiApiError &&
         [400, 403, 404].includes(problem.status)
       )
-        outbound.current = null;
+        delivery(null);
       setError(
         message(problem) +
-          " Your draft is retained. Retrying identical input uses the same delivery ID.",
+          (outbound.current
+            ? " Your draft is retained. Retry original message uses the same delivery ID."
+            : " Your draft is retained."),
       );
       return false;
     } finally {
@@ -473,6 +540,12 @@ export function useAgentConversation() {
     clearError: () => setError(""),
     busy,
     sending,
+    pendingDelivery,
+    confirmedDraft,
+    retryDelivery: () =>
+      outbound.current
+        ? send(outbound.current.text, outbound.current.draft)
+        : Promise.resolve(false),
     answering,
     compacting,
     compactionNotice,
