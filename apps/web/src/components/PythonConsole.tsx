@@ -21,6 +21,7 @@ export function PythonConsole({
 }) {
   const { run, error } = python;
   const logs = useRef<HTMLPreElement>(null);
+  const upload = useRef<HTMLInputElement>(null);
   const [follow, setFollow] = useState(true);
   const [repairing, setRepairing] = useState(false),
     [repairError, setRepairError] = useState("");
@@ -116,6 +117,44 @@ export function PythonConsole({
         </section>
       )}
       <div className="fq-python-result-toolbar">
+        {run && (
+          <small>
+            Run {run.id.slice(0, 8)} · execution{" "}
+            {run.execution_status || run.status} · collection{" "}
+            {run.collection_status || "pending"}
+          </small>
+        )}
+        <button
+          disabled={python.importing || python.recovering}
+          onClick={() => upload.current?.click()}
+        >
+          {python.importing ? "Importing…" : "Import .fqx"}
+        </button>
+        {run?.collection_errors?.some((item) => item.file_id) && (
+          <button
+            disabled={
+              python.recovering ||
+              python.importing ||
+              run?.collection_status === "collecting"
+            }
+            onClick={() => void python.recollect()}
+          >
+            {python.recovering ? "Retrying collection…" : "Retry collection"}
+          </button>
+        )}
+
+        <input
+          hidden
+          type="file"
+          accept=".fqx"
+          ref={upload}
+          aria-label="Import saved experiment"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) void python.importFile(file);
+            event.target.value = "";
+          }}
+        />
         <small>
           {run?.runtime
             ? `Python ${run.runtime.python} · ${run.environment.transport}`
@@ -169,8 +208,24 @@ export function PythonConsole({
               aria-label={reference.filename}
               key={reference.id}
             >
-              <span title={reference.filename}>{reference.filename}</span>
+              <span
+                title={`${reference.filename} · SHA-256 ${reference.sha256} · run ${run.id}`}
+              >
+                {reference.filename}
+                <small>
+                  {" "}
+                  ·{" "}
+                  {python.previews[reference.id]?.status === "loading"
+                    ? "Loading preview…"
+                    : python.previews[reference.id]?.status === "failed"
+                      ? "Preview failed"
+                      : python.previews[reference.id]?.status === "loaded"
+                        ? "Loaded in Quantum"
+                        : "Saved · preview pending"}
+                </small>
+              </span>
               <button
+                disabled={python.previews[reference.id]?.status !== "loaded"}
                 onClick={() =>
                   void python.openExperiment(reference.id, "program")
                 }
@@ -179,6 +234,7 @@ export function PythonConsole({
               </button>
               {reference.has_result ? (
                 <button
+                  disabled={python.previews[reference.id]?.status !== "loaded"}
                   onClick={() =>
                     void python.openExperiment(reference.id, "jobs")
                   }
@@ -187,6 +243,12 @@ export function PythonConsole({
                 </button>
               ) : (
                 <small>Circuit only · no saved result</small>
+              )}
+              {python.previews[reference.id]?.status === "failed" && (
+                <span role="alert">
+                  {python.previews[reference.id].error}{" "}
+                  <button onClick={python.retryLoading}>Retry loading</button>
+                </span>
               )}
             </div>
           ))}
@@ -205,6 +267,11 @@ export function PythonConsole({
           <p>
             Python execution: {run.execution_status || run.status}. Collection
             errors are separate from the script exit status.
+          </p>
+          <p>
+            {run.collection_errors.some((item) => item.file_id)
+              ? "Complete files are retained locally. Retry parsing them without executing Python."
+              : "No complete file was retained for these errors. Import an original .fqx file or rerun the script."}
           </p>
           {run.collection_errors.map((item, index) => (
             <p key={index}>
@@ -254,7 +321,7 @@ export function PythonConsole({
           <span className="muted">
             {run?.status === "running"
               ? "Waiting for output…"
-              : "Run Python to see stdout, errors and published artifacts here."}
+              : "Run Python to see stdout, errors and saved experiments here."}
           </span>
         )}
         {run?.truncated && <span>\nOutput truncated at 64 KiB.</span>}
@@ -267,6 +334,8 @@ export function PythonConsole({
           <p>
             No .fqx files were saved by this run. Use fq.save("bell.fqx",
             result.plan, result=result) to display a circuit and results here.
+            You can also import an existing .fqx file; it will be labeled as a
+            separate import.
           </p>
         )}
       {run?.artifact?.statevector && (

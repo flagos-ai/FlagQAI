@@ -1,6 +1,8 @@
 """Single-file Python task service with bounded logs, cancellation and SDK artifacts."""
 import ast
 import base64
+import hashlib
+import stat
 from concurrent.futures import ThreadPoolExecutor
 import json
 import math
@@ -38,6 +40,7 @@ class PythonRuns:
         self.pool = ThreadPoolExecutor(max_workers=1)
         self.lock = threading.RLock()
         self.active = {}
+        self.recollecting = set()
 
     @staticmethod
     def validate(source):
@@ -85,6 +88,48 @@ class PythonRuns:
         if not run or not any(item.get('file_id') == file_id for item in run.get('collection_errors', [])):
             raise FileNotFoundError('Saved task file not found.')
         return self.settings.database_path.parent / 'python-artifacts' / run['id'] / (file_id + '.fqx')
+
+    def recollect(self, run_id):
+        """Retry retained preview files only; never execute Python again."""
+        with self.lock:
+            run = self.get(run_id)
+            if not run: raise ValueError('Python task not found.')
+            if run_id in self.active or run_id in self.recollecting:
+                raise ValueError('Wait for execution or collection to finish.')
+            retained = [item for item in run.get('collection_errors', []) if item.get('file_id')]
+            if not retained: raise ValueError('No complete retained files can be retried. Import an existing .fqx file or rerun the script.')
+            self.recollecting.add(run_id)
+            previous_status = run.get('collection_status', 'failed')
+        try:
+            errors = [item for item in run['collection_errors'] if not item.get('file_id')]
+            run['collection_status'] = 'collecting'
+            self.store.put(run)
+            for item in retained:
+                try:
+                    path = self.collection_file(run_id, item['file_id'])
+                    if not stat.S_ISREG(path.lstat().st_mode) or path.stat().st_size > 16 * 1024 * 1024:
+                        raise ValueError('Retained experiment is not a bounded regular file.')
+                    content = path.read_bytes()
+                    if hashlib.sha256(content).hexdigest() != item['file_id']:
+                        raise ValueError('Retained experiment checksum changed; import the original file instead.')
+                    record = self.experiments.import_file(content, Path(item['filename']).name,
+                                                         python_run=run, task_path=item['filename'])
+                    run.setdefault('experiments', []).append({
+                        'id': record['id'], 'filename': item['filename'], 'sha256': item['file_id'],
+                        'has_result': record['program']['experiment']['has_result']})
+                except (ValueError, OSError) as error:
+                    errors.append({**item, 'message': str(error)[:1000]})
+            run['collection_errors'] = errors
+            run['collection_status'] = ('partial' if errors and (run.get('experiments') or run.get('artifact'))
+                                        else 'failed' if errors else 'completed')
+            run['collection_retried_at'] = time.time()
+            self.store.put(run)
+            return run
+        finally:
+            if run.get('collection_status') == 'collecting':
+                run['collection_status'] = previous_status
+                self.store.put(run)
+            with self.lock: self.recollecting.discard(run_id)
 
     def command(self):
         worker = (Path(__file__).parent/'python_worker.py').read_text()

@@ -665,3 +665,31 @@ native command adapter, edits the dedicated file, runs actual FlagQuantum and
 opens the saved experiment. The dependency example removes an unused nonexistent
 demo import, not a required dependency; no package is installed. This does not
 test production model diagnosis or promise that environment failures are code fixes.
+
+### Recovering saved Python experiments
+
+Python output distinguishes script execution, archive collection, and per-file
+preview loading. A script may succeed without saving an experiment, or save valid
+files alongside a broken archive. One failed preview does not hide healthy files.
+
+- **Retry collection** reparses complete files retained after a preview/import
+  failure. It calls `POST /api/python/runs/:id/collect` and never executes the
+  Python source again. Checksums are verified before parsing. The run ID, source,
+  exit status, logs and execution timestamps remain unchanged. Successful files
+  keep their identities; subsequent retries process only remaining errors.
+- **Retry loading** reloads an already imported archive's preview and verifies its
+  file hash, source snapshot and run ID before adding it to the workbench.
+- **Import .fqx** opens an existing local file without computation. This is an
+  independent import, not evidence that the selected Python run produced it.
+  Source drafts and editor links are preserved. The 16 MiB upload limit applies.
+
+Incomplete transfers, omitted/oversized files, and scripts that did not save any
+`.fqx` cannot be recovered from the temporary execution directory after it has
+been removed. The UI explains when an original file import or a new run is needed.
+A corrupt archive may continue to fail on retry; its original download remains
+available. Configure the host's SDK interpreter separately when parsing requires
+an environment repair; retry does not install packages or change runtimes.
+
+Quantum and saved Results show the file hash, run ID and task-relative path.
+Different files with the same basename remain separate artifacts. Source version
+labels indicate when the current editor has changed since that execution.
