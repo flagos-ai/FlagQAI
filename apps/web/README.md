@@ -627,3 +627,41 @@ scripted rejection, allowing an explicit idempotent retry to be verified. This
 proxy, counters and fixed delay are development fixtures only; no model is called
 and no production service imports them. Hidden attachment/control metadata does
 not trigger fixture permission, question or cancellation commands.
+
+### Repairing a failed Python execution
+
+Select a failed task in **Python run history**. The console summarizes its real
+stderr and identifies the last `main.py` traceback frame. **Go to line** selects
+that line only when the editor still matches the executed source. Otherwise,
+**View failed source** shows the execution snapshot without replacing the editor.
+
+**Ask Agent to fix** creates a dedicated Python exchange file from that failed
+snapshot and stages a removable attachment plus an editable repair prompt. It
+does not send a message or run code. The attachment records run ID, source hash,
+exit code, available runtime identity and up to 12,000 characters from the tail
+of the available logs, explicitly marking truncation. Failed source is kept up
+to the backend's full 32 KiB limit (ordinary references remain 16,000 characters).
+Attachment preview includes the executed source and saved logs.
+
+An existing chat draft is never replaced: a dialog offers **Append repair
+request** or **Cancel**. If all four attachment slots are occupied, remove one
+before adding the failed run. The staged request waits for **Send** and uses the
+configured native Agent, with its existing permissions and model costs. Source
+and logs are data, not instructions; the prompt asks for explanation, minimal
+edits, verification and approval before package installation or upgrades.
+
+The dedicated file uses normal editor synchronization. A newer editor draft
+stays intact and incoming fixes use **Review changes**. The Agent can test the
+corrected shared file without replacing that browser draft; accepting changes
+updates the editor explicitly. Rerunning Python and saving `.fqx` creates a new
+run/experiment with its own execution identity. The old failure and logs remain
+in history; editing code alone does not turn a failed execution into a success.
+
+For no-model acceptance, configure the existing local SDK runtime and set
+`FQ_TEST_REPAIR=1` on the scripted protocol fixture. It only repairs marked
+trusted examples `# repair-case: syntax`, `# repair-case: dependency` and
+`# repair-case: sdk-parameter`, verifies the original failed run through the
+native command adapter, edits the dedicated file, runs actual FlagQuantum and
+opens the saved experiment. The dependency example removes an unused nonexistent
+demo import, not a required dependency; no package is installed. This does not
+test production model diagnosis or promise that environment failures are code fixes.

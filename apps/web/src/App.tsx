@@ -18,16 +18,24 @@ import { JobsPage } from "./pages/JobsPage";
 import { useQuantumWorkspace } from "./hooks/useQuantumWorkspace";
 import { usePanelSize } from "./hooks/usePanelSize";
 import type { Page } from "./contracts/quantum-workspace";
+import { editorFiles } from "./api/editor-files";
+import {
+  pythonRepairRequest,
+  type PythonRepairRequest,
+} from "./state/python-failure";
 
 export default function App() {
   const agent = useAgentConversation();
   const [pendingAttachment, setPendingAttachment] = useState<AgentAttachment>();
+  const [pendingRepair, setPendingRepair] = useState<PythonRepairRequest>();
   const { state, dispatch, compile, run, setActionContext, backendLabel } =
       useQuantumWorkspace(),
     [sidebarWidth, setSidebarWidth] = usePanelSize("sidebar", 280, 170, 480),
     [guide, setGuide] = useState(false),
     [uploadError, setUploadError] = useState("");
   const bridge = usePlatformBridge(state, dispatch, agent);
+  const latest = useRef(state);
+  latest.current = state;
   useEffect(() => {
     setActionContext(
       bridge.ready && bridge.session
@@ -106,6 +114,8 @@ export default function App() {
           bridge={bridge}
           jobs={state.jobs}
           pendingAttachment={pendingAttachment}
+          pendingRepair={pendingRepair}
+          onRepairConsumed={() => setPendingRepair(undefined)}
           onAttachmentConsumed={() => setPendingAttachment(undefined)}
           references={[
             ...state.models.map((model) => ({
@@ -369,6 +379,26 @@ export default function App() {
               python={python}
               editorSync={editorSync}
               backendLabel={backendLabel}
+              onRepairPython={async (failed) => {
+                const snapshot = state;
+                const file = await editorFiles.create(failed.source, "python");
+                const request = pythonRepairRequest(failed, file);
+                if (
+                  latest.current.name !== snapshot.name ||
+                  latest.current.language !== "python"
+                )
+                  throw Error(
+                    "The active model changed. Open the failed Python run and try again.",
+                  );
+                dispatch({
+                  type: "link-editor",
+                  name: snapshot.name,
+                  expectedSource: failed.source,
+                  file,
+                });
+                setPendingRepair(request);
+                dispatch({ type: "agent", open: true });
+              }}
               onAttachSelection={(source, startLine, endLine) => {
                 setPendingAttachment({
                   id: "selection-" + crypto.randomUUID(),

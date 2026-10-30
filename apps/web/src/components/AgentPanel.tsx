@@ -31,6 +31,7 @@ import { AgentSettings } from "./AgentSettings";
 import { AgentAutoCompaction } from "./AgentAutoCompaction";
 import { AgentContextUsage } from "./AgentContextUsage";
 import { AgentTranscript } from "./AgentTranscript";
+import type { PythonRepairRequest } from "../state/python-failure";
 const DRAFT_KEY = "fq-agent-prompt-draft-v1";
 const suggestions = [
   {
@@ -98,6 +99,8 @@ export function AgentPanel({
   onClose,
   references = [],
   pendingAttachment,
+  pendingRepair,
+  onRepairConsumed,
   onAttachmentConsumed,
 }: {
   name: string;
@@ -111,6 +114,8 @@ export function AgentPanel({
   onClose: () => void;
   references?: AgentAttachment[];
   pendingAttachment?: AgentAttachment;
+  pendingRepair?: PythonRepairRequest;
+  onRepairConsumed?: () => void;
   onAttachmentConsumed?: () => void;
 }) {
   const roster = useAgentSubagents(
@@ -145,6 +150,26 @@ export function AgentPanel({
   });
   const [attachmentError, setAttachmentError] = useState("");
   const [preview, setPreview] = useState<AgentAttachment | null>(null);
+  const [repairOffer, setRepairOffer] = useState<PythonRepairRequest | null>(
+    null,
+  );
+  const consumedRepair = useRef<string | null>(null);
+  const applyRepair = (request: PythonRepairRequest) => {
+    if (attachments.length >= 4) {
+      setAttachmentError(
+        "Remove a code reference before adding the failed run. The repair request has not been inserted.",
+      );
+      return;
+    }
+    addAttachment(request.attachment);
+    setDraft((current) =>
+      current.trim() ? current + "\n\n" + request.prompt : request.prompt,
+    );
+    setAttachmentError("");
+    setRepairOffer(null);
+    onRepairConsumed?.();
+    input.current?.focus();
+  };
   const [caret, setCaret] = useState(draft.length);
   const [referenceIndex, setReferenceIndex] = useState(0);
   const [referenceDismissed, setReferenceDismissed] = useState(false);
@@ -176,6 +201,18 @@ export function AgentPanel({
     onAttachmentConsumed?.();
     input.current?.focus();
   }, [pendingAttachment]);
+  useEffect(() => {
+    if (!pendingRepair || consumedRepair.current === pendingRepair.id) return;
+    if (attachments.length >= 4) {
+      setAttachmentError(
+        "Remove a code reference to attach the failed Python run. Your chat draft is unchanged.",
+      );
+      return;
+    }
+    consumedRepair.current = pendingRepair.id;
+    if (draft.trim()) setRepairOffer(pendingRepair);
+    else applyRepair(pendingRepair);
+  }, [pendingRepair, attachments.length]);
   const mention = referenceQuery(draft, caret);
   const candidates = [
     {
@@ -339,6 +376,49 @@ export function AgentPanel({
   const running = agent.view.working || agent.sending;
   return (
     <section className="fq-agent-panel" aria-label="FlagQAI Agent workspace">
+      {repairOffer && (
+        <Modal
+          className="fq-attachment-preview"
+          label="Add Python repair request"
+          onClose={() => {
+            setRepairOffer(null);
+            onRepairConsumed?.();
+          }}
+        >
+          <header>
+            <h2>Add Python repair request</h2>
+            <CloseButton
+              label="Close repair request"
+              onClick={() => {
+                setRepairOffer(null);
+                onRepairConsumed?.();
+              }}
+            />
+          </header>
+          <p>
+            Your chat draft is already filled. Keep it and append the repair
+            instructions with the failed source and logs, or cancel without
+            changing it.
+          </p>
+          <p>{repairOffer.attachment.failure?.summary}</p>
+          <footer>
+            <button
+              onClick={() => {
+                setRepairOffer(null);
+                onRepairConsumed?.();
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              className="primary"
+              onClick={() => applyRepair(repairOffer)}
+            >
+              Append repair request
+            </button>
+          </footer>
+        </Modal>
+      )}
       {autoCompactionOpen && (
         <AgentAutoCompaction
           key={agent.session?.id}
@@ -600,13 +680,29 @@ export function AgentPanel({
           </header>
           <p>
             Snapshot attached to your next message
-            {preview.truncated ? " · Truncated to 16,000 characters" : ""}
+            {preview.truncated ? " · Source truncated" : ""}
           </p>
           <CodeExample
             title={preview.name}
             code={preview.source}
             language={preview.language || "qasm"}
           />
+          {preview.failure && (
+            <>
+              <p>
+                Failed run {preview.failure.runId} ·{" "}
+                {preview.failure.sourceHash} · {preview.failure.summary}
+              </p>
+              <CodeExample
+                title={
+                  "Failure logs" +
+                  (preview.failure.logsTruncated ? " (tail, truncated)" : "")
+                }
+                code={preview.failure.logs}
+                language="plain"
+              />
+            </>
+          )}
         </Modal>
       )}
       <div className="fq-agent-composer">

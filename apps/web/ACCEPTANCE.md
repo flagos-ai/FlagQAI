@@ -130,3 +130,45 @@ runtime checks passed. Ignored evidence is under `.flagqai/verification/`:
 `agent-recovery-completed-offline.json` and
 `agent-recovery-completed.png`. These validate protocol recovery, not production
 model reasoning or recovery of a terminated backend process.
+
+## Python failure-to-repair acceptance — 2026-10-30
+
+The isolated workbench on 4261 and scripted native service on 4161 used real
+FlagQuantum 0.4.0 CPU execution (Python 3.12.14). No model was called, no package
+was installed and normal 4096/4188 services were preserved.
+
+| Failure | Observed diagnostic | Repair verification |
+| --- | --- | --- |
+| Syntax | `SyntaxError: '(' was never closed`, line 4 | Failed source/log attachment previewed; dedicated file repaired and actual Bell experiment saved. |
+| Missing demo dependency | `ModuleNotFoundError`, line 2 | Unused demo import removed; real SDK rerun completed without installing anything. |
+| SDK parameter | `flagquantum.errors.ValidationError` for qubit 99 outside `[0, 1]`, line 5 | Corrected circuit executed and saved with two gates and recorded measurements. |
+
+- All three failed records, source hashes and stderr logs remained unchanged.
+- All three scripted repairs completed with actual counts `00: 518`, `11: 506`
+  and distinct experiment IDs. Accepting a repair and clicking **Run Python**
+  created a fourth successful execution and another independent artifact.
+- Each saved record's origin run ID, exact source/SHA-256, original `.fqx`
+  download SHA-256 and two-gate compiled circuit were checked.
+- A newer unsaved editor draft survived edits and automatic navigation; Quantum
+  showed **Differs from editor**. Review displayed both versions; **Keep my draft**
+  preserved it, and a later **Accept Agent changes** applied the corrected code
+  before the manual rerun.
+- An existing chat draft triggered the append/cancel dialog. Cancel kept both
+  drafts and inserted no attachment; append retained the original chat text.
+- Preparation staged data only; the test explicitly pressed **Send**.
+- Python attachments now collapse under their question, rather than exposing
+  their JSON envelope in the transcript.
+- Fixed historical Python action replay replacing the manually selected failed
+  run after refresh. With Follow Agent On and several later successful actions,
+  the selected failure and its repair button remained available after hydration.
+
+Web suite: 116 tests passed, including traceback classification, long failed
+source retention, bounded log tails, stale file rejection and draft protection.
+Typecheck, build, CLI staged-package and clean installed-runtime checks passed.
+Ignored evidence under `.flagqai/verification/` includes
+`python-repair-failures.json`, `python-repair-acceptance.json` and
+`python-repair-review.png` and `python-repair-entry.png`.
+
+This verifies UI, native protocol and actual SDK execution. Scripted repairs are
+restricted to the three marked examples; production model repair quality and
+installation of genuinely required missing dependencies were not evaluated.

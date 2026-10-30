@@ -222,7 +222,7 @@ export function splitWorkspaceContext(text: string) {
     if (
       !["model", "program"].includes(context.kind) ||
       typeof context.name !== "string" ||
-      context.format !== "OpenQASM" ||
+      !["OpenQASM", "Python"].includes(context.format) ||
       typeof context.source !== "string" ||
       typeof context.truncated !== "boolean"
     )
