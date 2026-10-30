@@ -15,6 +15,7 @@ let testModel = "scripted-test (no LLM)";
 const testProviders = new Map();
 const testPort = Number(process.env.FQ_TEST_PORT || 4190);
 const testAgentPort = Number(process.env.FQ_TEST_AGENT_PORT || 4097);
+let submissionCount = 0;
 const backend = {
   descriptor: { id: "ui-fixture", label: "Scripted protocol test" },
   detect: async () => ({ installed: true, auth: "ok" }),
@@ -146,6 +147,18 @@ const backend = {
         return { outcome: "confirmed", stillQueued: [] };
       },
       submit: async (input) => {
+        submissionCount++;
+        const requestText = input.text.split(
+          /\n\n<workspace_(?:controls|context)>\n/,
+        )[0];
+        if (
+          process.env.FQ_TEST_RECOVERY === "1" &&
+          /^reject\b/i.test(requestText)
+        )
+          return {
+            accepted: false,
+            reason: "Scripted rejection for receipt recovery",
+          };
         cancelled = false;
         if (process.env.FQ_TEST_CONTEXT === "1")
           emit(
@@ -442,14 +455,14 @@ const backend = {
             time: Date.now(),
             argsJson: '{"file":"README.md"}',
           });
-          await delay(350);
+          await delay(process.env.FQ_TEST_RECOVERY === "1" ? 20000 : 350);
           emit({
             type: "tool.output",
             callId,
             text: "Reading local fixture context…\n",
             time: Date.now(),
           });
-          if (input.text.includes("permission")) {
+          if (requestText.includes("permission")) {
             status = "requires-action";
             const requestId = "permission-" + turn;
             permission = { callId, requestId };
@@ -474,7 +487,7 @@ const backend = {
             );
             return;
           }
-          if (input.text.includes("question")) {
+          if (requestText.includes("question")) {
             status = "requires-action";
             question = "question-" + turn;
             emit(
@@ -497,7 +510,7 @@ const backend = {
             );
             return;
           }
-          if (input.text.includes("cancel")) {
+          if (requestText.includes("cancel")) {
             while (!cancelled) {
               await delay(400);
             }
@@ -757,6 +770,22 @@ const server = createFlagQaiServer({
   eventHeartbeatMs: 500,
 });
 await server.listen();
+const proxy =
+  process.env.FQ_TEST_RECOVERY === "1"
+    ? await (
+        await import("./recovery-proxy.mjs")
+      ).recoveryProxy(
+        Number(process.env.FQ_TEST_PROXY_PORT || testAgentPort + 1),
+        testAgentPort,
+        () => ({
+          submissionCount,
+          sessions: [...records.values()].map((session) => ({
+            id: session.ref.sessionId,
+            status: session.status,
+          })),
+        }),
+      )
+    : null;
 const python = spawn(
   "python3",
   [
@@ -770,7 +799,11 @@ const python = spawn(
       ...process.env,
       FQ_AGENT_CWD: testWorkspace,
       FQ_PORT: String(testPort),
-      FQ_HARNESS_PORT: String(testAgentPort),
+      FQ_HARNESS_PORT: String(
+        proxy
+          ? Number(process.env.FQ_TEST_PROXY_PORT || testAgentPort + 1)
+          : testAgentPort,
+      ),
       FQ_DATABASE_PATH: join(testWorkspace, "jobs.sqlite3"),
     },
     stdio: ["ignore", "pipe", "pipe"],
@@ -783,6 +816,7 @@ console.log(
 );
 const stop = async () => {
   python.kill("SIGINT");
+  await proxy?.close();
   await server.close();
   await rm(testWorkspace, { recursive: true, force: true });
   process.exit(0);

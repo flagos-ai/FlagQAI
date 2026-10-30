@@ -98,3 +98,35 @@ rejects stale revisions, checks request-ID retry deduplication, and verifies exa
 execution identity plus retained earlier results. Local ignored evidence:
 `.flagqai/verification/closed-loop-acceptance.json` and
 `.flagqai/verification/closed-loop-draft-review.png`.
+
+## Active Agent recovery — 2026-10-30
+
+Isolated scripted native protocol services and a loopback fault proxy verified
+refresh and network loss without making any model or quantum compute call.
+The normal 4096/4188 services were not restarted or reconfigured.
+
+| Scenario | Observed outcome |
+| --- | --- |
+| Refresh during a running task | Same native session, original question, Todo/subagent status and tool output restored; one backend submission. |
+| Disconnect events, then refresh while offline | Restoring state and automatic backoff; bringing the proxy online restored the original running tool without clicking Connect or resending. |
+| Backend accepted input but receipt/events were lost | In-flight ID and payload survived refresh. Native history confirmed the original user-message ID; submission count remained one. |
+| Type a newer composer draft while offline | Recovery cleared uncertainty but retained the new draft verbatim. |
+| Task completes while disconnected | Final answer and completed tool history restored; process folded into Worked for. |
+| Rejection receipt lost, refresh, then explicit retry | Original payload/ID returned the original rejection. Backend submissions stayed at two, not three; the rejected draft stayed in the composer. |
+
+Repairs: startup retry for stored sessions; resource-404 rebinding without a new
+conversation; fresh-snapshot gating after stream failure; per-tab in-flight
+delivery persistence; native message-ID confirmation; explicit original-request
+retry; and a restoration placeholder. Fixture trigger matching now excludes
+hidden workspace metadata, whose `python.cancel` text previously held generic
+scripted turns open unexpectedly.
+
+Web regression suite: 112 tests passed, including exact native-session recovery,
+transient/denied access, original payload restoration and strict native message-ID
+correlation. Typecheck, production build, CLI staged package and clean installed
+runtime checks passed. Ignored evidence is under `.flagqai/verification/`:
+`agent-recovery-running.json`, `agent-recovery-lost-receipt.json`,
+`agent-recovery-confirmed.json`, `agent-recovery-explicit-retry.json`,
+`agent-recovery-completed-offline.json` and
+`agent-recovery-completed.png`. These validate protocol recovery, not production
+model reasoning or recovery of a terminated backend process.

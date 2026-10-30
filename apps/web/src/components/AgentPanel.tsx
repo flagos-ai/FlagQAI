@@ -237,6 +237,10 @@ export function AgentPanel({
     composing = useRef(false);
   useAutoGrowTextarea(input, draft);
   useEffect(() => {
+    if (agent.confirmedDraft !== null)
+      setDraft((current) => (current === agent.confirmedDraft ? "" : current));
+  }, [agent.confirmedDraft]);
+  useEffect(() => {
     try {
       localStorage.setItem(DRAFT_KEY, draft);
 
@@ -308,6 +312,7 @@ export function AgentPanel({
       ready &&
       !agent.view.working &&
       !agent.sending &&
+      !agent.pendingDelivery &&
       !pending &&
       !agent.busy &&
       !agent.view.context?.compaction &&
@@ -324,7 +329,7 @@ export function AgentPanel({
       attachmentMessage(submitted, snapshot),
       bridge.controls,
     );
-    if (await agent.send(text)) {
+    if (await agent.send(text, submitted)) {
       setDraft((current) => (current === submitted ? "" : current));
       setAttachments((current) => consumeAttachments(current, snapshot));
     }
@@ -487,6 +492,33 @@ export function AgentPanel({
           </svg>
         </button>
       </div>
+      {agent.pendingDelivery && !agent.sending && (
+        <div className="fq-agent-error" role="status">
+          <span>
+            {ready && agent.pendingDelivery.session !== agent.session?.id
+              ? "The native session resource changed. Check its history before starting a new chat; this message will not be resent."
+              : "Message delivery is unconfirmed. Check the conversation before retrying; refresh will not resend it."}
+          </span>
+          <button
+            disabled={
+              !ready ||
+              running ||
+              !!pending ||
+              agent.busy ||
+              agent.pendingDelivery.session !== agent.session?.id
+            }
+            onClick={async () => {
+              const original = agent.pendingDelivery;
+              if (original && (await agent.retryDelivery()))
+                setDraft((current) =>
+                  current === original.draft ? "" : current,
+                );
+            }}
+          >
+            Retry original message
+          </button>
+        </div>
+      )}
       {agent.error && (
         <div className="fq-agent-error" role="alert">
           <span>{agent.error}</span>
@@ -510,39 +542,46 @@ export function AgentPanel({
         >
           <div className="fq-agent-empty-thread">
             <div className="fq-agent-welcome">
-              <h2>How can I help?</h2>
+              <h2>
+                {["connecting", "reconnecting"].includes(agent.phase)
+                  ? "Restoring your conversation…"
+                  : "How can I help?"}
+              </h2>
               <p>
-                Ask about your model, explore a circuit, or work through an
-                idea.
+                {["connecting", "reconnecting"].includes(agent.phase)
+                  ? "Waiting for native session history. An existing task may still be running; no message is being resent."
+                  : "Ask about your model, explore a circuit, or work through an idea."}
               </p>
             </div>
-            <div className="fq-agent-suggestions">
-              <small>TRY A QUESTION</small>
-              {suggestions.map((task) => (
-                <button
-                  key={task.title}
-                  onClick={() => {
-                    setDraft((previous) =>
-                      previous.trim()
-                        ? previous + "\n\n" + task.prompt
-                        : task.prompt,
-                    );
-                    input.current?.focus();
-                  }}
-                >
-                  <span className="fq-agent-task-icon">
-                    <TaskIcon name={task.icon} />
-                  </span>
-                  <span>
-                    <b>{task.title}</b>
-                    <small>{task.detail}</small>
-                  </span>
-                  <span className="fq-agent-task-arrow" aria-hidden="true">
-                    ↗
-                  </span>
-                </button>
-              ))}
-            </div>
+            {!["connecting", "reconnecting"].includes(agent.phase) && (
+              <div className="fq-agent-suggestions">
+                <small>TRY A QUESTION</small>
+                {suggestions.map((task) => (
+                  <button
+                    key={task.title}
+                    onClick={() => {
+                      setDraft((previous) =>
+                        previous.trim()
+                          ? previous + "\n\n" + task.prompt
+                          : task.prompt,
+                      );
+                      input.current?.focus();
+                    }}
+                  >
+                    <span className="fq-agent-task-icon">
+                      <TaskIcon name={task.icon} />
+                    </span>
+                    <span>
+                      <b>{task.title}</b>
+                      <small>{task.detail}</small>
+                    </span>
+                    <span className="fq-agent-task-arrow" aria-hidden="true">
+                      ↗
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -858,18 +897,18 @@ export function AgentPanel({
             }
           />
           <div className="fq-agent-follow-controls">
-          <AgentSubagentDock
-            children={children}
-            sessionId={agent.session?.id}
-          />
-          <button
-            role="switch"
-            aria-checked={bridge.follow}
-            title="Follow Agent navigation; existing drafts are preserved"
-            onClick={() => bridge.setFollow(!bridge.follow)}
-          >
-            Follow Agent <span>{bridge.follow ? "On" : "Off"}</span>
-          </button>
+            <AgentSubagentDock
+              children={children}
+              sessionId={agent.session?.id}
+            />
+            <button
+              role="switch"
+              aria-checked={bridge.follow}
+              title="Follow Agent navigation; existing drafts are preserved"
+              onClick={() => bridge.setFollow(!bridge.follow)}
+            >
+              Follow Agent <span>{bridge.follow ? "On" : "Off"}</span>
+            </button>
           </div>
           {saved && !agent.sending && !copied && (
             <small className="fq-sr-only">Draft saved locally</small>
