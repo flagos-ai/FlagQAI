@@ -1,35 +1,62 @@
 import { useEffect, useRef, useState } from "react";
 import type { PythonWorkspace } from "../hooks/usePythonWorkspace";
 import type { WorkspaceAction } from "../contracts/quantum-workspace";
+import type { PythonRun } from "../api/python-runs";
+import { pythonFailure } from "../state/python-failure";
+import { Modal } from "./Modal";
+import { CloseButton } from "./CloseButton";
+import { CodeExample } from "./CodeExample";
 export function PythonConsole({
   python,
   source,
   dispatch,
   onLocate,
+  onRepair,
 }: {
   python: PythonWorkspace;
   source: string;
   dispatch: React.Dispatch<WorkspaceAction>;
   onLocate: (line: number) => void;
+  onRepair: (run: PythonRun) => Promise<void>;
 }) {
   const { run, error } = python;
   const logs = useRef<HTMLPreElement>(null);
   const [follow, setFollow] = useState(true);
+  const [repairing, setRepairing] = useState(false),
+    [repairError, setRepairError] = useState("");
+  const [failedSource, setFailedSource] = useState<PythonRun | null>(null);
   useEffect(() => {
     if (follow && logs.current)
       logs.current.scrollTop = logs.current.scrollHeight;
   }, [run?.logs, follow]);
-  const traceback =
-    run?.logs
-      .filter((log) => log.stream === "stderr")
-      .map((log) => log.text)
-      .join("") || "";
-  const lines = [
-    ...traceback.matchAll(/File "(?:[^"\n]*\/)?main\.py", line (\d+)/g),
-  ];
-  const line = Number(lines.at(-1)?.[1]);
+  const failure = run ? pythonFailure(run) : null;
+  const line = failure?.line;
   return (
     <section className="fq-python-console" aria-label="Python output">
+      {failedSource && (
+        <Modal
+          className="fq-attachment-preview"
+          label="Failed Python source"
+          onClose={() => setFailedSource(null)}
+        >
+          <header>
+            <h2>Failed Python source</h2>
+            <CloseButton
+              label="Close failed source"
+              onClick={() => setFailedSource(null)}
+            />
+          </header>
+          <p>
+            Run {failedSource.id} · {failedSource.source_hash} · Your current
+            editor is unchanged.
+          </p>
+          <CodeExample
+            title="Executed Python snapshot"
+            code={failedSource.source}
+            language="python"
+          />
+        </Modal>
+      )}
       <div className="fq-pane-title">
         PYTHON OUTPUT <span>{run?.status || "Ready"}</span>
         <select
@@ -49,6 +76,45 @@ export function PythonConsole({
           ))}
         </select>
       </div>
+      {failure && run && (
+        <section
+          className="fq-python-collection-errors"
+          aria-label="Python failure"
+        >
+          <b>{failure.summary}</b>
+          <p>
+            Failed run {run.id.slice(0, 8)}
+            {failure.line ? ` · line ${failure.line}` : ""}.{" "}
+            {run.source !== source
+              ? "The editor has changed. Repair uses the failed snapshot and preserves your draft."
+              : "Prepare a repair request with this execution's source and logs."}
+          </p>
+          <button onClick={() => setFailedSource(run)}>
+            View failed source
+          </button>{" "}
+          <button
+            disabled={repairing}
+            onClick={async () => {
+              setRepairing(true);
+              setRepairError("");
+              try {
+                await onRepair(run);
+              } catch (problem) {
+                setRepairError(
+                  problem instanceof Error
+                    ? problem.message
+                    : "Cannot prepare repair request.",
+                );
+              } finally {
+                setRepairing(false);
+              }
+            }}
+          >
+            {repairing ? "Preparing…" : "Ask Agent to fix"}
+          </button>
+          {repairError && <p role="alert">{repairError}</p>}
+        </section>
+      )}
       <div className="fq-python-result-toolbar">
         <small>
           {run?.runtime

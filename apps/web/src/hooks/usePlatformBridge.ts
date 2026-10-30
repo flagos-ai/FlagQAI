@@ -189,7 +189,7 @@ export function usePlatformBridge(
           if (seen.current.has(record.seq)) continue;
           seen.current.add(record.seq);
           const result = record.result;
-          if (result?.python_run)
+          if (result?.python_run && !hydrating)
             dispatch({ type: "python-run", id: result.python_run.id });
           if (result?.program)
             dispatch({ type: "import-agent-program", program: result.program });

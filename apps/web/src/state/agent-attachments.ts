@@ -1,3 +1,4 @@
+import type { PythonFailure } from "./python-failure";
 export type AgentAttachment = {
   id: string;
   name: string;
@@ -7,6 +8,7 @@ export type AgentAttachment = {
   workspaceFile?: string;
   selection?: { startLine: number; endLine: number };
   truncated?: boolean;
+  failure?: PythonFailure;
 };
 export const ATTACHMENT_KEY = "fq-agent-attachments-v1";
 export function referenceQuery(text: string, caret: number) {
@@ -20,10 +22,22 @@ export function referenceQuery(text: string, caret: number) {
     : null;
 }
 export function attachmentSnapshot(item: AgentAttachment): AgentAttachment {
+  const limit = item.failure ? 32768 : 16000;
   return {
     ...item,
-    source: item.source.slice(0, 16000),
-    truncated: !!item.truncated || item.source.length > 16000,
+    source: item.source.slice(0, limit),
+    truncated: !!item.truncated || item.source.length > limit,
+    ...(item.failure
+      ? {
+          failure: {
+            ...item.failure,
+            summary: item.failure.summary.slice(0, 800),
+            logs: item.failure.logs.slice(-12000),
+            logsTruncated:
+              item.failure.logsTruncated || item.failure.logs.length > 12000,
+          },
+        }
+      : {}),
   };
 }
 export function restoreAttachments(raw: string | null): AgentAttachment[] {

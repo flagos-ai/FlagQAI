@@ -21,6 +21,7 @@ import type {
   Diagnostic,
 } from "../contracts/quantum-workspace";
 import { download } from "../state/exports";
+import type { PythonRun } from "../api/python-runs";
 
 export function ModelPage({
   state,
@@ -29,11 +30,13 @@ export function ModelPage({
   editorSync,
   python,
   onAttachSelection,
+  onRepairPython,
   backendLabel = "Configured CPU backend",
 }: {
   editorSync: EditorSync;
   python: PythonWorkspace;
   backendLabel?: string;
+  onRepairPython: (run: PythonRun) => Promise<void>;
   onAttachSelection: (
     source: string,
     startLine: number,
@@ -391,6 +394,7 @@ export function ModelPage({
                       lines[line - 1]?.length || 1,
                     )
                   }
+                  onRepair={onRepairPython}
                 />
               ) : (
                 <>
