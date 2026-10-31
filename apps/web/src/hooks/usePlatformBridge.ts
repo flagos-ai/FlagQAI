@@ -1,3 +1,5 @@
+import { readExperiment } from "../api/experiments";
+import { platformNavigation } from "../state/platform-navigation";
 import { quantumAPI } from "../api/quantum-workspace";
 import { useEffect, useRef, useState } from "react";
 import type {
@@ -24,6 +26,7 @@ export function usePlatformBridge(
     }
   });
   const seen = useRef(new Set<number>());
+  const baseline = useRef<number | undefined>(undefined);
   const [actions, setActions] = useState<PlatformAction[]>([]);
   const [follow, setFollow] = useState(() => {
     try {
@@ -48,57 +51,26 @@ export function usePlatformBridge(
   followRef.current = follow;
   const session = agent.session?.sessionId;
   const turnSeq = agent.view.lastUserSeq;
-  const open = async (action: PlatformAction) => {
-    const result = action.result;
-    if (!result) return;
-    if (result.file && action.operation === "model.create")
-      dispatch({
-        type: "open-agent-model",
-        model: {
-          name: result.name || "Agent model",
-          source: result.file.source,
-          language: result.file.id.endsWith(".py") ? "python" : "qasm",
-        },
-        file: result.file,
+  const open = async (action: PlatformAction, allowed = () => true) => {
+    try {
+      const changes = await platformNavigation(action, current.current, {
+        experiment: readExperiment,
+        job: quantumAPI.job,
       });
-    if (result.python_run) {
-      dispatch({ type: "python-run", id: result.python_run.id });
-      dispatch({ type: "language", language: "python" });
-      dispatch({ type: "navigate", page: "model" });
-    }
-    if (result.program) {
-      dispatch({ type: "import-agent-program", program: result.program });
-      const existing = current.current.programs.find(
-        (p) => p.id === result.program!.id,
+      if (allowed()) for (const change of changes) dispatch(change);
+    } catch (problem) {
+      if (!allowed()) return;
+      setError(
+        "Could not open Agent target: " +
+          (problem instanceof Error ? problem.message : String(problem)),
       );
-      dispatch({ type: "program", id: existing?.id || result.program.id });
-      dispatch({ type: "navigate", page: "program" });
     }
-    if (result.job) {
-      try {
-        dispatch({
-          type: "merge-jobs",
-          jobs: [await quantumAPI.job(result.job.id)],
-        });
-      } catch (problem) {
-        setError(String(problem));
-        return;
-      }
-      dispatch({ type: "job", id: result.job.id });
-      dispatch({ type: "navigate", page: "jobs" });
-    }
-    if (result.page) {
-      if (result.program_id)
-        dispatch({ type: "program", id: result.program_id });
-      if (result.job_id) dispatch({ type: "job", id: result.job_id });
-      dispatch({ type: "navigate", page: result.page as Page });
-    }
-    dispatch({ type: "agent", open: true });
   };
   const openRef = useRef(open);
   openRef.current = open;
   useEffect(() => {
     seen.current.clear();
+    baseline.current = undefined;
     setActions([]);
     setReady(false);
     setError("");
@@ -130,6 +102,24 @@ export function usePlatformBridge(
           controller.signal,
         );
         if (controller.signal.aborted) return;
+        if (baseline.current === undefined) {
+          // Establish history before enabling Send. Actions created after this
+          // watermark must follow even if they arrive in the first polling batch.
+          let watermark = 0;
+          while (true) {
+            const records = await platformAPI.events(
+              client,
+              session,
+              watermark,
+              controller.signal,
+            );
+            if (controller.signal.aborted) return;
+            for (const record of records)
+              watermark = Math.max(watermark, record.seq);
+            if (records.length < 100) break;
+          }
+          baseline.current = watermark;
+        }
         setReady(true);
         setError("");
         setBackend(result.backend.transport + " · " + result.backend.backend);
@@ -171,10 +161,8 @@ export function usePlatformBridge(
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout>,
       cursor = 0;
-    // Restore action cards and resources without replaying old navigation.
-    // The endpoint paginates at 100 records, so drain the historical pages
-    // before following new events. A Running action can still settle later.
-    let hydrating = true;
+    // Restore old cards/resources, but follow only events newer than the
+    // pre-Send watermark. A Running action settles with a new sequence.
     const poll = async () => {
       try {
         const records = await platformAPI.events(
@@ -189,7 +177,7 @@ export function usePlatformBridge(
           if (seen.current.has(record.seq)) continue;
           seen.current.add(record.seq);
           const result = record.result;
-          if (result?.python_run && !hydrating)
+          if (result?.python_run && record.seq > (baseline.current ?? Infinity))
             dispatch({ type: "python-run", id: result.python_run.id });
           if (result?.program)
             dispatch({ type: "import-agent-program", program: result.program });
@@ -233,7 +221,7 @@ export function usePlatformBridge(
           }
           if (
             record.status === "completed" &&
-            !hydrating &&
+            record.seq > (baseline.current ?? Infinity) &&
             record.origin !== "ui" &&
             followRef.current &&
             (result?.python_run ||
@@ -242,9 +230,11 @@ export function usePlatformBridge(
               result?.page ||
               record.operation === "model.create")
           )
-            openRef.current(record);
+            await openRef.current(
+              record,
+              () => !controller.signal.aborted && followRef.current,
+            );
         }
-        if (records.length < 100) hydrating = false;
         if (records.length)
           setActions((previous) => {
             const map = new Map(previous.map((item) => [item.id, item]));
@@ -290,6 +280,7 @@ export function usePlatformBridge(
               "--session",
               session,
             ],
+            followAgent: follow,
             page: state.page,
             language: state.language || "qasm",
             model: state.name,
@@ -308,7 +299,7 @@ export function usePlatformBridge(
             ),
             backend,
             usage:
-              'Projects: when project metadata is present, edit actual files under the displayed project root using native file tools; project.inspect --project-id ID returns input hashes and paths, and project.run --project-id ID --entry PATH --expected-hash HASH executes a frozen multi-file snapshot. Never overwrite an unsaved browser draft; disk changes are reviewed independently. Python: use model.create --language python for .py files; python.run --model-id ID --revision REV submits Python; python.read --run-id ID retrieves live logs, collection_errors and experiments references; experiment.read --experiment-id ID reads a saved circuit and its recorded result; python.cancel --run-id ID stops it. Use fq.save("result.fqx", result.plan, result=result) to save actual SDK experiments. Files are automatically collected only from this fresh task directory; multiple files are supported. Check collection_status and collection_errors separately from Python exit status. Never send Python to compile or QASM run. Use the native shell tool with this command prefix and --request-id UUID before mutating operations. status reads current state; draft.read reads the browser snapshot; model.share --expected-hash HASH creates a linked file safely; model.create --source-file WORKSPACE_FILE --name NAME creates a new model; model.read --model-id ID returns revision and path; compile --model-id ID --revision REV returns program.id; run --program-id ID --shots N --seed N returns job.id; job.read --job-id ID returns real status/results. Reuse request IDs for retries. Do not overwrite a browser draft. Do not claim success before receiving an actual result. Compute backend is shown explicitly; never substitute a manual simulation.',
+              'Projects: when project metadata is present, edit actual files under the displayed project root using native file tools; project.inspect --project-id ID returns input hashes and paths, and project.run --project-id ID --entry PATH --expected-hash HASH executes a frozen multi-file snapshot. Never overwrite an unsaved browser draft; disk changes are reviewed independently. Python: use model.create --language python for .py files; python.run --model-id ID --revision REV submits Python; python.read --run-id ID retrieves live logs, collection_errors and experiments references; experiment.read --experiment-id ID reads a saved circuit and its recorded result; python.cancel --run-id ID stops it. Use fq.save("result.fqx", result.plan, result=result) to save actual SDK experiments. Files are automatically collected only from this fresh task directory; multiple files are supported. Check collection_status and collection_errors separately from Python exit status. Never send Python to compile or QASM run. Use the native shell tool with this command prefix and --request-id UUID before mutating operations. For visible workflow milestones, use focus --page model, focus --page program --program-id ID, or focus --page jobs --job-id ID after verifying the target. Focus follows only when the user enables Follow Agent. status reads current state; draft.read reads the browser snapshot; model.share --expected-hash HASH creates a linked file safely; model.create --source-file WORKSPACE_FILE --name NAME creates a new model; model.read --model-id ID returns revision and path; compile --model-id ID --revision REV returns program.id; run --program-id ID --shots N --seed N returns job.id; job.read --job-id ID returns real status/results. Reuse request IDs for retries. Do not overwrite a browser draft. Do not claim success before receiving an actual result. Compute backend is shown explicitly; never substitute a manual simulation.',
           }
         : undefined,
   };

@@ -366,6 +366,92 @@ const backend = {
             };
             if (
               process.env.FQ_E2E_CONTROL_DIR &&
+              requestText.trim() === "follow acceptance"
+            ) {
+              const barrier = async (name) => {
+                const deadline = Date.now() + 60000;
+                while (existsSync(join(process.env.FQ_E2E_CONTROL_DIR, name))) {
+                  if (Date.now() > deadline)
+                    throw Error("Follow acceptance barrier timed out.");
+                  await delay(100);
+                }
+              };
+              const sourceFolder = await mkdtemp(
+                join(root, ".flagqai-follow-test-"),
+              );
+              const path = join(sourceFolder, "follow-example.py");
+              let created;
+              try {
+                await writeFile(
+                  path,
+                  'import flagquantum as fq\ncircuit = fq.Circuit(2).h(0).cx(0, 1).x(1)\nresult = fq.run(circuit, outputs=fq.counts(), options=fq.ExecutionOptions(shots=128, seed=42))\nfq.save("follow.fqx", result.plan, result=result)\n',
+                );
+                created = await command("model.create", [
+                  "--language",
+                  "python",
+                  "--source-file",
+                  path,
+                  "--name",
+                  "Follow Bell",
+                ]);
+              } finally {
+                await rm(sourceFolder, { recursive: true, force: true });
+              }
+              await barrier("hold-follow-model");
+              const started = await command("python.run", [
+                "--model-id",
+                created.file.id,
+                "--revision",
+                created.file.revision,
+              ]);
+              let run;
+              const deadline = Date.now() + 90000;
+              do {
+                if (Date.now() > deadline)
+                  throw Error("Follow SDK run timed out.");
+                await delay(400);
+                run = await command("python.read", [
+                  "--run-id",
+                  started.python_run.id,
+                ]);
+              } while (["queued", "running"].includes(run.status));
+              if (run.status !== "completed" || run.experiments?.length !== 1)
+                throw Error(JSON.stringify(run));
+              const artifact = await command("experiment.read", [
+                "--experiment-id",
+                run.experiments[0].id,
+              ]);
+              await command("focus", [
+                "--page",
+                "program",
+                "--program-id",
+                artifact.program.id,
+              ]);
+              await barrier("hold-follow-result");
+              await command("focus", [
+                "--page",
+                "jobs",
+                "--job-id",
+                artifact.job.id,
+              ]);
+              await streamText(
+                "Follow acceptance completed using the actual SDK. No model was called.",
+                2,
+              );
+              status = "idle";
+              emit(
+                {
+                  type: "turn.end",
+                  turn,
+                  reason: { kind: "completed" },
+                  time: Date.now(),
+                },
+                { type: "session.status", status },
+              );
+              return;
+            }
+            if (
+              process.env.FQ_E2E_CONTROL_DIR &&
               controls.project &&
               /project acceptance/i.test(input.text)
             ) {

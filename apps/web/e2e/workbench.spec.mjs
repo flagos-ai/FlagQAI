@@ -944,3 +944,128 @@ test("native decisions, uncertain stops and reconnect preserve one task without 
     start.submissionCount + 5,
   );
 });
+
+test("Follow Agent from Execution handles the first action batch, cold archive focus and Follow Off", async ({
+  page,
+}) => {
+  await editor(page).fill(draft);
+  const agent = page.getByRole("button", {
+    name: "FlagQAI Agent",
+    exact: true,
+  });
+  if ((await agent.getAttribute("aria-expanded")) !== "true")
+    await agent.click();
+  // Delay the first live poll so it contains newly created actions, not just
+  // history. Real protocol/SDK traffic is delayed, never replaced by fixtures.
+  let identity;
+  await page.route("**/api/workspace/context", async (route) => {
+    identity = route.request().postDataJSON();
+    await route.continue();
+  });
+  let polls = 0,
+    releasePoll;
+  const pollGate = new Promise((resolve) => {
+    releasePoll = resolve;
+  });
+  await page.route("**/api/workspace/events?*", async (route) => {
+    if (++polls === 2) await pollGate;
+    await route.continue();
+  });
+  const modelBarrier = join(
+    process.env.FQ_E2E_CONTROL_DIR,
+    "hold-follow-model",
+  );
+  const resultBarrier = join(
+    process.env.FQ_E2E_CONTROL_DIR,
+    "hold-follow-result",
+  );
+  await writeFile(modelBarrier, "Observe model navigation");
+  await writeFile(resultBarrier, "Observe circuit navigation");
+  try {
+    await page
+      .getByRole("button", { name: "Connect Agent", exact: true })
+      .click();
+    await expect(
+      page.getByRole("status", { name: "Connected", exact: true }),
+    ).toBeVisible();
+    const follow = page.getByRole("switch", { name: /Follow Agent/ });
+    if ((await follow.getAttribute("aria-checked")) !== "true")
+      await follow.click();
+    await page.getByRole("button", { name: "EXECUTION", exact: true }).click();
+    const input = page.getByRole("textbox", {
+      name: "Message FlagQAI",
+      exact: true,
+    });
+    await input.fill("follow acceptance");
+    await page
+      .getByRole("button", { name: "Send message", exact: true })
+      .click();
+    await expect
+      .poll(async () => {
+        if (!identity) return false;
+        const actions = await get(
+          page,
+          `/api/workspace/events?client=${identity.client}&session=${identity.session}&after=0`,
+        );
+        return actions.some(
+          (action) =>
+            action.operation === "model.create" &&
+            action.status === "completed",
+        );
+      })
+      .toBe(true);
+    releasePoll();
+    await expect(page).toHaveURL(/#model$/);
+    await expect(editor(page)).toHaveValue(
+      /circuit = fq.Circuit\(2\).h\(0\).cx\(0, 1\).x\(1\)/,
+    );
+    await rm(modelBarrier, { force: true });
+    await expect(page).toHaveURL(/#program$/, { timeout: 90000 });
+    await expect(
+      page.getByRole("button", { name: "Inspect X gate 3", exact: true }),
+    ).toBeVisible();
+    const archive = await page
+      .getByRole("link", { name: "Download original .fqx ↓" })
+      .getAttribute("href");
+    await rm(resultBarrier, { force: true });
+    await expect(page).toHaveURL(/#jobs$/);
+    await expect(
+      page.getByRole("link", { name: "Download original .fqx ↓" }),
+    ).toHaveAttribute("href", archive);
+    await expect(page.getByRole("table")).toContainText("01");
+    await expect(page.getByRole("table")).toContainText("10");
+    await expect(
+      page.getByRole("status", { name: "Connected", exact: true }),
+    ).toBeVisible();
+    await follow.click();
+    await page.getByRole("button", { name: "EXECUTION", exact: true }).click();
+    await input.fill("follow acceptance");
+    await page
+      .getByRole("button", { name: "Send message", exact: true })
+      .click();
+    await expect(page.locator(".fq-agent-message.assistant")).toHaveCount(2, {
+      timeout: 90000,
+    });
+    await expect(
+      page.getByRole("status", { name: "Connected", exact: true }),
+    ).toBeVisible();
+    await expect(page).toHaveURL(/#execution$/);
+    await page.reload();
+    await expect(page).toHaveURL(/#execution$/);
+    await expect(agent).toHaveAttribute("aria-expanded", "true");
+    await page
+      .getByRole("button", { name: "Show model library", exact: true })
+      .click();
+    await page.getByRole("button", { name: "MODEL", exact: true }).click();
+    await expect(
+      page.getByRole("button", {
+        name: /Draft · Python Bell pair/,
+        exact: false,
+      }),
+    ).toBeVisible();
+  } finally {
+    releasePoll();
+    await rm(modelBarrier, { force: true });
+    await rm(resultBarrier, { force: true });
+  }
+});
