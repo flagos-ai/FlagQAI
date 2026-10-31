@@ -592,6 +592,11 @@ test("workspace restores file view and folds; keyboard file search and save-and-
   await editor(page).press("Control+p");
   const search = page.getByRole("combobox", { name: "Find file", exact: true });
   await search.fill("helper");
+  expect(
+    await page
+      .locator(".fq-quick-open")
+      .evaluate((element) => element.scrollWidth <= element.clientWidth + 1),
+  ).toBe(true);
   await search.press("ArrowDown");
   await search.press("Enter");
   await expect(editor(page)).toHaveValue(helper);
