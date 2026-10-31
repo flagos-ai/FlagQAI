@@ -40,7 +40,7 @@ function FileTree({
       {directories.map((folder) => (
         <details
           className="fq-project-folder"
-          key={folder}
+          key={`${folder}:${searching ? "search" : "tree"}`}
           open={searching || !folders.closed.includes(prefix + folder)}
           onToggle={(event) => {
             if (!searching)

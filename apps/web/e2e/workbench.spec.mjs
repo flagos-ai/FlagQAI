@@ -589,6 +589,14 @@ test("workspace restores file view and folds; keyboard file search and save-and-
     .filter({ has: page.locator("summary").filter({ hasText: /^src$/ }) });
   await folder.locator("summary").click();
   await expect(folder).not.toHaveAttribute("open");
+  await page
+    .getByRole("textbox", { name: "Find project file", exact: true })
+    .fill("src");
+  await expect(folder).toHaveAttribute("open");
+  await page
+    .getByRole("textbox", { name: "Find project file", exact: true })
+    .fill("");
+  await expect(folder).not.toHaveAttribute("open");
   await editor(page).press("Control+p");
   const search = page.getByRole("combobox", { name: "Find file", exact: true });
   await search.fill("helper");
