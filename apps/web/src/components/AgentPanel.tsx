@@ -347,6 +347,7 @@ export function AgentPanel({
     (!!localCommand && !commandDisabled(localCommand)) ||
     (commandQuery(draft.trim()) === null &&
       ready &&
+      !!bridge.controls &&
       !agent.view.working &&
       !agent.sending &&
       !agent.pendingDelivery &&
@@ -956,9 +957,11 @@ export function AgentPanel({
                     ? "Open Agent settings"
                     : !ready
                       ? "Connect to FlagQAI to send"
-                      : pending
-                        ? "Answer the pending request first"
-                        : "Send (Enter)"
+                      : !bridge.controls
+                        ? bridge.error || "Connecting workbench controls…"
+                        : pending
+                          ? "Answer the pending request first"
+                          : "Send (Enter)"
                 }
               >
                 <svg
@@ -978,6 +981,7 @@ export function AgentPanel({
             )}
           </div>
         </div>
+        {ready && bridge.error && <small role="alert">{bridge.error}</small>}
         <div className="fq-agent-draft-meta">
           <AgentContextUsage
             view={agent.view}
