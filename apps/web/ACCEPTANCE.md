@@ -172,3 +172,32 @@ Ignored evidence under `.flagqai/verification/` includes
 This verifies UI, native protocol and actual SDK execution. Scripted repairs are
 restricted to the three marked examples; production model repair quality and
 installation of genuinely required missing dependencies were not evaluated.
+
+### 2026-10-31: retained archive recovery and independent imports
+
+- Web: 118 tests, TypeScript check, production build and changed-source formatting passed.
+  The repository-wide formatter still reports two unchanged baseline files:
+  `src/workspace.css` and `src/data/gate-example-results.json`.
+  Backend: 81 tests plus the new real-SDK recovery acceptance passed. Staged CLI
+  package verification (2646 files / 32 entry targets) and clean installed-runtime
+  acceptance passed. No model calls or package publishing were performed.
+- Real FlagQuantum 0.4.0 on Python 3.12 / CPU: simulated an unavailable preview
+  parser while a real script saved `first/bell.fqx`, `second/bell.fqx` and an invalid
+  archive. Initial execution completed (exit 0); collection failed. Restoring the
+  parser and choosing **Retry collection** recovered both valid files, retaining
+  the invalid file's error and download. Counts were `00: 70, 11: 58` (128 shots).
+- The two valid files share their exact bytes/hash but receive distinct artifact
+  identities and retain their original task paths. Recovery leaves the original
+  run's ID, source/hash, logs, exit code and finish time unchanged. Reopening the
+  service before retry is covered by the real-SDK test. Repeated retries do not
+  duplicate healthy artifacts. Unit coverage includes checksum changes, missing
+  files, parser errors, concurrent retry rejection and retained scan errors.
+- Browser acceptance on isolated port 4261: recovery, per-file circuit/result
+  navigation, matching file/run provenance, editor mismatch indicator, refresh
+  with a selected historical run/result, and dirty Python draft preservation were
+  verified. A manually imported recovered archive opened immediately as an
+  **Independent file import**, without attributing it to the selected run.
+- Reader failure and mismatched-provenance coverage verifies that a failed
+  preview does not hide a healthy sibling and a retry only reads saved archives.
+  Browser file-import acceptance used a genuine `.fqx`; it did not simulate a
+  successful parser or compute result.

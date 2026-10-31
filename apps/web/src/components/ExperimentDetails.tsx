@@ -17,6 +17,14 @@ export function ExperimentDetails({ info }: { info: ExperimentInfo }) {
             ? "Recorded result · no execution performed"
             : "Circuit only · no result saved"}
       </p>
+      <p className="fq-experiment-provenance">
+        <code title={`File SHA-256: ${info.sha256}`}>
+          {info.sha256.slice(0, 8)}
+        </code>
+        {info.python_run
+          ? ` · run ${info.python_run.id.slice(0, 8)} · ${info.python_run.task_path}`
+          : " · Independent file import"}
+      </p>
       <a
         className="link"
         href={experimentFileURL(info.id)}

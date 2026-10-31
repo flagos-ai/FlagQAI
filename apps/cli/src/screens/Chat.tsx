@@ -1332,10 +1332,14 @@ export function Chat({
     const leavingView = priorAgentView.current !== null && agentView === null
     priorAgentView.current = agentView
     if (leavingView) {
-      // The borrowed view can leave a border cell outside the returning
-      // transcript's narrower bounds; a one-shot redraw clears that cell.
+      // Redraw after the returning transcript's refs and layout effects have
+      // committed. forceRedraw renders synchronously; doing it inside this
+      // layout effect can paint an incomplete ScrollBox and cache blank rows.
+      // Keep the full clear for cells left outside the borrowed view's bounds.
       const ink = instances.get(process.stdout) ?? instances.values().next().value
-      ink?.forceRedraw()
+      let active = true
+      queueMicrotask(() => { if (active) ink?.forceRedraw() })
+      return () => { active = false }
     }
   }, [agentView])
   const openAgentView = React.useCallback((agentId: string, source: AgentViewSource): void => {

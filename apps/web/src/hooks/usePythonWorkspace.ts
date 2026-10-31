@@ -1,5 +1,6 @@
 import { matchesPythonExperiment } from "../state/python-workspace";
-import { readExperiment } from "../api/experiments";
+import { importExperiment, readExperiment } from "../api/experiments";
+import { loadPythonExperiments } from "../api/python-experiments";
 import { quantumAPI } from "../api/quantum-workspace";
 import { useEffect, useRef, useState } from "react";
 import { pythonAPI, type PythonRun } from "../api/python-runs";
@@ -19,6 +20,17 @@ export function usePythonWorkspace(
   const [environment, setEnvironment] = useState<PythonRun["environment"]>();
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [recovering, setRecovering] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [refreshVersion, setRefreshVersion] = useState(0);
+  const [previews, setPreviews] = useState<{
+    runId: string;
+    files: Record<
+      string,
+      { status: "loading" | "loaded" | "failed"; error?: string }
+    >;
+  }>({ runId: "", files: {} });
+  const recoveryLock = useRef(false);
   const currentRunId = useRef(state.pythonRunId);
   currentRunId.current = state.pythonRunId;
   const lock = useRef(false),
@@ -57,19 +69,58 @@ export function usePythonWorkspace(
             program: result.artifact.program,
           });
         }
-        for (const reference of result.experiments || []) {
-          const key = result.id + ":" + reference.id;
-          if (seen.current.has(key)) continue;
-          const record = await readExperiment(reference.id, controller.signal);
-          if (controller.signal.aborted) return;
-          if (!matchesPythonExperiment(result, reference, record))
-            throw Error(
-              "Saved experiment does not match this Python source snapshot.",
-            );
-          seen.current.add(key);
-          dispatch({ type: "import-experiment", record });
+        const pending = (result.experiments || []).filter(
+          (reference) => !seen.current.has(result.id + ":" + reference.id),
+        );
+        setPreviews((previous) => ({
+          runId: result.id,
+          files: {
+            ...(previous.runId === result.id ? previous.files : {}),
+            ...Object.fromEntries(
+              (result.experiments || []).map((item) => [
+                item.id,
+                {
+                  status: seen.current.has(result.id + ":" + item.id)
+                    ? ("loaded" as const)
+                    : ("loading" as const),
+                },
+              ]),
+            ),
+          },
+        }));
+        const loaded = await loadPythonExperiments(
+          { ...result, experiments: pending },
+          readExperiment,
+          controller.signal,
+        );
+        if (controller.signal.aborted) return;
+        for (const item of loaded) {
+          if (item.record) {
+            seen.current.add(result.id + ":" + item.id);
+            dispatch({ type: "import-experiment", record: item.record });
+          }
         }
-        if (["queued", "running"].includes(result.status))
+        setPreviews((previous) => ({
+          runId: result.id,
+          files: {
+            ...(previous.runId === result.id ? previous.files : {}),
+            ...Object.fromEntries(
+              loaded.map((item) => [
+                item.id,
+                {
+                  status: item.record
+                    ? ("loaded" as const)
+                    : ("failed" as const),
+                  error: item.error,
+                },
+              ]),
+            ),
+          },
+        }));
+        if (
+          ["queued", "running"].includes(result.status) ||
+          result.collection_status === "collecting"
+        )
           timer = setTimeout(refresh, 400);
       } catch (problem) {
         if (!controller.signal.aborted) {
@@ -84,7 +135,42 @@ export function usePythonWorkspace(
       controller.abort();
       clearTimeout(timer);
     };
-  }, [state.pythonRunId, dispatch]);
+  }, [state.pythonRunId, refreshVersion, dispatch]);
+  const recollect = async () => {
+    if (!run || recoveryLock.current) return;
+    recoveryLock.current = true;
+    setRecovering(true);
+    setError("");
+    try {
+      await pythonAPI.collect(run.id);
+      if (currentRunId.current === run.id)
+        setRefreshVersion((value) => value + 1);
+    } catch (problem) {
+      if (currentRunId.current === run.id) setError(String(problem));
+    } finally {
+      recoveryLock.current = false;
+      setRecovering(false);
+    }
+  };
+  const importFile = async (file: File) => {
+    if (recoveryLock.current) return;
+    recoveryLock.current = true;
+    setImporting(true);
+    setError("");
+    try {
+      const record = await importExperiment(file);
+      dispatch({ type: "import-experiment", record, open: true });
+    } catch (problem) {
+      setError(
+        problem instanceof Error
+          ? problem.message
+          : "Cannot import experiment.",
+      );
+    } finally {
+      recoveryLock.current = false;
+      setImporting(false);
+    }
+  };
   const start = async () => {
     if (lock.current) return;
     lock.current = true;
@@ -172,6 +258,12 @@ export function usePythonWorkspace(
     environment,
     error,
     submitting,
+    recovering,
+    importing,
+    previews: previews.runId === state.pythonRunId ? previews.files : {},
+    retryLoading: () => setRefreshVersion((value) => value + 1),
+    recollect,
+    importFile,
     start,
     cancel,
     openCircuit,

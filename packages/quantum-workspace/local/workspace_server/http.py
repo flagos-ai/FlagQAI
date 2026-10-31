@@ -239,15 +239,17 @@ def create_server(settings, service):
                     return self.reply({'error': str(error)}, 400)
                 except OSError:
                     return self.reply({'error': 'Cannot store experiment. Check the local SDK runtime and disk access.'}, 503)
-            if self.path in ('/api/python/check', '/api/python/runs') or re.fullmatch(r'/api/python/runs/[a-zA-Z0-9-]+/cancel', self.path):
+            if self.path in ('/api/python/check', '/api/python/runs') or re.fullmatch(r'/api/python/runs/[a-f0-9-]{36}/(?:cancel|collect)', self.path):
                 try:
                     length = int(self.headers.get('Content-Length', '0'))
                     if self.headers.get('Content-Type','').split(';')[0] != 'application/json' or not 0 < length <= 256*1024: raise ValueError('Use a bounded JSON request.')
                     data = json.loads(self.rfile.read(length))
                     if self.path == '/api/python/check': return self.reply({'diagnostic':python_runs.validate(data.get('source'))})
                     if self.path.endswith('/cancel'): return self.reply(python_runs.cancel(self.path.split('/')[-2]))
+                    if self.path.endswith('/collect'): return self.reply(python_runs.recollect(self.path.split('/')[-2]))
                     return self.reply(python_runs.submit(data), 202)
                 except (ValueError, TypeError, AttributeError) as error: return self.reply({'error':str(error)}, 400)
+                except OSError: return self.reply({'error':'Cannot read retained experiments. Check local disk access.'}, 503)
             if self.path in ('/api/workspace/context', '/api/workspace/actions'):
                 try:
                     if self.headers.get('Content-Type', '').split(';')[0] != 'application/json': raise ValueError('Use application/json.')

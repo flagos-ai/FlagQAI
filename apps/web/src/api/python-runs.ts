@@ -83,6 +83,8 @@ export const pythonAPI = {
   list: () => request<PythonRun[]>("runs"),
   cancel: (id: string) =>
     request<PythonRun>("runs/" + encodeURIComponent(id) + "/cancel", {}),
+  collect: (id: string) =>
+    request<PythonRun>("runs/" + encodeURIComponent(id) + "/collect", {}),
   environment: () => request<PythonRun["environment"]>("environment"),
   check: (source: string, signal?: AbortSignal) =>
     request<{
