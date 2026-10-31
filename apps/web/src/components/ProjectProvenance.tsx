@@ -12,9 +12,12 @@ export function ProjectProvenance({
 }) {
   if (!project) return null;
   const current = state.project?.id === project.id ? state.project : undefined;
+  const entryDraft =
+    current?.snapshot_hash === project.disk_hash &&
+    project.disk_hash !== project.snapshot_hash;
   const changed =
     current?.snapshot_hash &&
-    current.snapshot_hash !== project.disk_hash &&
+    !entryDraft &&
     current.snapshot_hash !== project.snapshot_hash;
   const drafts = state.projectTabs?.some(
     (tab) => tab.project.id === project.id && projectDirty(tab),
@@ -31,11 +34,13 @@ export function ProjectProvenance({
       <p role="status">
         {changed
           ? "Project files changed since this run. Run the entry again to update results."
-          : drafts
-            ? "Unsaved project drafts exist. This result belongs to the recorded input snapshot."
-            : current
-              ? "Project disk inputs match the recorded snapshot."
-              : "Saved project snapshot"}
+          : entryDraft
+            ? "This run includes an entry draft. Saved disk inputs differ from that snapshot."
+            : drafts
+              ? "Unsaved project drafts exist. This result belongs to the recorded input snapshot."
+              : current
+                ? "Project disk inputs match the recorded snapshot."
+                : "Saved project snapshot"}
       </p>
       <details>
         <summary>Recorded input files · {project.files.length}</summary>
