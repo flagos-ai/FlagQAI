@@ -305,3 +305,20 @@ installation of genuinely required missing dependencies were not evaluated.
 - The eleventh Chromium case asserts this entire repair/review/undo/rerun flow,
   immutable prior artifacts, provenance and restored session/editor/result state.
   This verifies protocol wiring and computation, not model reasoning quality.
+
+### Native run controls and recovery
+
+- Status uses native projection and pending requests: Working, waiting for
+  permission, waiting for an answer, synchronization and reconnection remain
+  distinct. Pending decisions are disabled until the stream is synchronized.
+- Stop has an immediate in-flight guard and does not share connection busy state.
+  A successful HTTP cancellation receipt is never treated as proof of termination;
+  native control/end events confirm stopped. Unknown/failed outcomes retain retry
+  and disclose any native queued messages. No automatic stop retry is introduced.
+- The twelfth Chromium case rejects a permission, stops a pending question,
+  exercises unknown/failed cancellation, drops/reconnects the live stream, and
+  checks that neither messages nor stop calls duplicate. Editor and unsent chat
+  drafts survive. A test barrier holds a turn alive after its confirmed receipt
+  to verify Stopping persists until native termination.
+- Manual isolated browser acceptance verified the same waiting, retry and delayed
+  stop behavior. Fixtures are explicitly gated, scripted and make no model calls.

@@ -1,3 +1,4 @@
+import { agentRunStatus, stopFeedback } from "../state/agent-run-status";
 import { AgentWorkspaceActions } from "./AgentWorkspaceActions";
 import type { PlatformBridge } from "../hooks/usePlatformBridge";
 import type { QuantumJob } from "../contracts/quantum-workspace";
@@ -139,7 +140,13 @@ function Questions({
       ))}
       <div className="fq-agent-interaction-actions">
         <button
-          disabled={!!agent.answering}
+          disabled={
+            !!agent.answering ||
+            agent.phase !== "connected" ||
+            agent.stopping ||
+            agent.view.stop === "stopping" ||
+            !agent.view.projected
+          }
           onClick={() =>
             void agent.answer(request.requestId, "cancel-question")
           }
@@ -149,6 +156,10 @@ function Questions({
         <button
           disabled={
             !!agent.answering ||
+            agent.phase !== "connected" ||
+            agent.stopping ||
+            agent.view.stop === "stopping" ||
+            !agent.view.projected ||
             answers.some(
               (answer) => !answer.selected.length && !answer.custom.trim(),
             )
@@ -180,6 +191,7 @@ export function AgentTranscript({
   jobs: QuantumJob[];
 }) {
   const turns = progressTurns(agent.view, roster);
+  const stopNotice = stopFeedback(agent.view.stop, agent.view.stopQueued);
   const viewport = useRef<HTMLDivElement>(null);
   const content = useRef<HTMLDivElement>(null);
   const questions = useRef(new Map<number, HTMLDivElement>());
@@ -393,7 +405,13 @@ export function AgentTranscript({
                   .map((option) => (
                     <button
                       key={option.id}
-                      disabled={!!agent.answering}
+                      disabled={
+                        !!agent.answering ||
+                        agent.phase !== "connected" ||
+                        agent.stopping ||
+                        agent.view.stop === "stopping" ||
+                        !agent.view.projected
+                      }
                       onClick={() =>
                         void agent.answer(
                           request.requestId,
@@ -425,17 +443,19 @@ export function AgentTranscript({
               agent={agent}
             />
           ))}
-          {agent.view.working && (
+          {(agent.view.working ||
+            Object.keys(agent.view.permissions).length > 0 ||
+            Object.keys(agent.view.questions).length > 0) && (
             <div className="fq-agent-live" role="status">
               <span aria-hidden="true" className="fq-activity-marker active">
                 ◌
               </span>{" "}
-              Working…
+              {agentRunStatus(agent)}
             </div>
           )}
-          {agent.view.stop && agent.view.stop !== "none" && (
-            <small className="fq-agent-stop-state">
-              Stop: {agent.view.stop}
+          {stopNotice && (
+            <small className="fq-agent-stop-state" role="status">
+              {stopNotice}
             </small>
           )}
         </div>

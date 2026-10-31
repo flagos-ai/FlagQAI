@@ -28,6 +28,7 @@ export type AgentView = {
   contextWindow?: number;
   context?: SessionViewEvent["context"];
   stop?: string;
+  stopQueued?: number;
   permissions: Record<string, PermissionRequestView>;
   questions: Record<string, QuestionRequestView>;
 };
@@ -203,8 +204,12 @@ export function applyAgentRecord(
   } else if (event.type === "question.settled") {
     next.questions = { ...previous.questions };
     delete next.questions[event.requestId as string];
-  } else if (event.type === "session.control")
+  } else if (event.type === "session.control") {
     next.stop = event.state as string;
+    next.stopQueued = Array.isArray(event.stillQueued)
+      ? event.stillQueued.length
+      : 0;
+  }
   return next;
 }
 

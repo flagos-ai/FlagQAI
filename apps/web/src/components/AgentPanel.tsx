@@ -1,3 +1,4 @@
+import { agentRunStatus } from "../state/agent-run-status";
 import type { PlatformBridge } from "../hooks/usePlatformBridge";
 import type { QuantumJob } from "../contracts/quantum-workspace";
 import {
@@ -350,6 +351,8 @@ export function AgentPanel({
       !!bridge.controls &&
       !agent.view.working &&
       !agent.sending &&
+      !agent.stopping &&
+      agent.view.stop !== "stopping" &&
       !agent.pendingDelivery &&
       !pending &&
       !agent.busy &&
@@ -374,7 +377,13 @@ export function AgentPanel({
   };
   const hasThread =
     agent.view.order.length > 0 || pending > 0 || agent.view.working;
-  const running = agent.view.working || agent.sending;
+  const running =
+    agent.view.working ||
+    agent.sending ||
+    agent.stopping ||
+    agent.view.stop === "stopping" ||
+    pending > 0;
+  const runStatus = agentRunStatus(agent);
   return (
     <section className="fq-agent-panel" aria-label="FlagQAI Agent workspace">
       {repairOffer && (
@@ -467,46 +476,17 @@ export function AgentPanel({
             agent.phase === "connected" ? "Reconnect Agent" : "Connect Agent"
           }
           title={
-            (agent.compacting || agent.view.context?.compaction
-              ? "Compacting…"
-              : agent.busy
-                ? "Connecting…"
-                : agent.phase === "reconnecting"
-                  ? "Reconnecting…"
-                  : ready
-                    ? pending
-                      ? "Needs attention"
-                      : running
-                        ? "Working"
-                        : "Connected"
-                    : "Not connected") +
+            runStatus +
             " · Click to " +
             (agent.phase === "connected" ? "reconnect" : "connect")
           }
           onClick={() => void agent.connect()}
         >
-          <span
-            role="status"
-            aria-label={
-              ready
-                ? pending
-                  ? "Needs attention"
-                  : running
-                    ? "Working"
-                    : "Connected"
-                : "Not connected"
-            }
-          >
-            <i className={agent.busy || running ? "active" : ""} />
-            {!ready && (
-              <span>
-                {agent.busy
-                  ? "Connecting…"
-                  : agent.phase === "reconnecting"
-                    ? "Retrying…"
-                    : "Connect"}
-              </span>
-            )}
+          <span role="status" aria-label={runStatus}>
+            <i
+              className={ready && (agent.stopping || running) ? "active" : ""}
+            />
+            {runStatus !== "Connected" && <span>{runStatus}</span>}
           </span>
         </button>
         <button
@@ -932,9 +912,21 @@ export function AgentPanel({
             {running ? (
               <button
                 className="fq-agent-send"
-                disabled={agent.busy || agent.view.stop === "stopping"}
+                disabled={
+                  !ready ||
+                  agent.busy ||
+                  agent.stopping ||
+                  agent.view.stop === "stopping"
+                }
                 onClick={() => void agent.stop()}
                 aria-label="Stop Agent"
+                title={
+                  agent.stopping || agent.view.stop === "stopping"
+                    ? "Waiting for native stop confirmation"
+                    : !ready
+                      ? "Reconnect to check the task before stopping"
+                      : "Stop Agent; retain existing code and results"
+                }
               >
                 <svg
                   viewBox="0 0 20 20"
