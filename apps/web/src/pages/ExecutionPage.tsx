@@ -1,3 +1,4 @@
+import { UIIcon } from "../components/UIIcon";
 import type {
   WorkspaceAction,
   WorkspaceState,
@@ -34,7 +35,12 @@ export function ExecutionPage({
           disabled={state.busy || !valid}
           onClick={run}
         >
-          {state.busy ? "Submitting…" : "Run →"}
+          <UIIcon
+            name={state.busy ? "refresh" : "play"}
+            className={state.busy ? "fq-ui-busy" : ""}
+            size={14}
+          />
+          {state.busy ? "Submitting…" : "Run"}
         </button>
       </div>
       <div className="fq-content-pad">

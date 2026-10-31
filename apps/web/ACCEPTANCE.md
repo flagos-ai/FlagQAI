@@ -277,3 +277,15 @@ installation of genuinely required missing dependencies were not evaluated.
 - Added a tenth Chromium case covering the long-file viewport, directory folds,
   library-tab recovery, quick-open keyboard selection, page navigation, stable
   tab ordering and save-and-run via Ctrl+Enter with actual SDK output.
+
+
+### IDE visual consistency
+
+- Shared SVG control icons, quieter toolbar utilities, one primary toolbar action,
+  pressed-state feedback, running-state icons, shared dialog/close styling and
+  reduced border/shadow emphasis preserve the existing resizable layout.
+- Manual isolated browser inspection covers Model, Quantum and Gate reference.
+  Gate family colors, measurement symbols, code highlighting, copy actions and
+  artifact navigation retain their existing meaning and behavior.
+- Existing ten-case Chromium acceptance uses semantic command names after removal
+  of decorative glyphs; state/protocol checks and packaging acceptance are retained.

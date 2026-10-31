@@ -1,3 +1,4 @@
+import { UIIcon } from "./UIIcon";
 import { useMemo, useRef, useState } from "react";
 import type { ProjectInfo } from "../state/project-workspace";
 import { findProjectFiles } from "../state/workspace-continuity";
@@ -111,7 +112,10 @@ export function QuickOpen({
             }}
           >
             <span aria-hidden="true">
-              {file.kind === "artifact" ? "◇" : "‹›"}
+              <UIIcon
+                name={file.kind === "artifact" ? "circuit" : "file"}
+                size={14}
+              />
             </span>
             <span>
               <b>{file.path.split("/").at(-1)}</b>

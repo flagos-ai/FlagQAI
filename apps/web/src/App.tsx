@@ -1,3 +1,4 @@
+import { UIIcon } from "./components/UIIcon";
 import { QuickOpen } from "./components/QuickOpen";
 import { workspaceShortcut } from "./state/workspace-continuity";
 import { useProjectWorkspace } from "./hooks/useProjectWorkspace";
@@ -219,7 +220,8 @@ export default function App() {
               disabled={state.busy || importing}
               onClick={() => programUpload.current?.click()}
             >
-              {importing ? "Importing experiment…" : "↥ Upload Quantum Program"}
+              <UIIcon name="upload" size={14} />
+              {importing ? "Importing experiment…" : "Upload Quantum Program"}
             </button>
             <small>OpenQASM .qasm · Experiment .fqx (up to 16 MiB)</small>
             <input
@@ -244,7 +246,10 @@ export default function App() {
                 }
                 onClick={() => dispatch({ type: "program", id: p.id })}
               >
-                ⌁ {p.name}
+                <span className="fq-library-title">
+                  <UIIcon name="circuit" size={14} />
+                  {p.name}
+                </span>
                 <small>
                   {p.compiled.qubits} qubits · depth {p.compiled.depth}
                   {p.experiment && (
@@ -400,10 +405,12 @@ export default function App() {
           ))}
           <div className="push" />
           <button onClick={() => setGuide(true)}>
-            <span className="fq-nav-symbol">▤</span>LEARN MORE
+            <UIIcon name="book" size={26} />
+            LEARN MORE
           </button>
           <button onClick={() => setGuide(true)}>
-            <span className="fq-nav-symbol">☼</span>WORKSPACE
+            <UIIcon name="workspace" size={26} />
+            WORKSPACE
           </button>
         </nav>
         <aside className="fq-sidebar">{sidebar()}</aside>

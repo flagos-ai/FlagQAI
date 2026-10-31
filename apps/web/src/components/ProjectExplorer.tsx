@@ -1,3 +1,4 @@
+import { UIIcon } from "./UIIcon";
 import { useProjectFolders } from "../hooks/useProjectFolders";
 import { useRef, useState } from "react";
 import type { ProjectWorkspace } from "../hooks/useProjectWorkspace";
@@ -74,7 +75,10 @@ function FileTree({
             onClick={() => onOpen(file.path)}
           >
             <span aria-hidden="true" className="fq-project-file-kind">
-              {file.kind === "artifact" ? "◇" : "‹›"}
+              <UIIcon
+                name={file.kind === "artifact" ? "circuit" : "file"}
+                size={14}
+              />
             </span>
             <span className="fq-project-file-name">
               {file.path.split("/").at(-1)}
@@ -233,7 +237,7 @@ export function ProjectExplorer({
                 setOpening(true);
               }}
             >
-              ···
+              <UIIcon name="more" />
             </button>
           </div>
           <div className="fq-project-file-tools">
@@ -249,7 +253,7 @@ export function ProjectExplorer({
               aria-expanded={creating}
               onClick={() => setCreating(!creating)}
             >
-              ＋
+              <UIIcon name="plus" />
             </button>
           </div>
           {creating && (
@@ -327,7 +331,7 @@ export function ProjectExplorer({
                     dispatch({ type: "navigate", page: "program" });
                   }}
                 >
-                  <span>◇</span>
+                  <UIIcon name="circuit" />
                   <span>
                     {program.experiment?.filename || program.name}
                     <small>

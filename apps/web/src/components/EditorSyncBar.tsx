@@ -1,3 +1,4 @@
+import { UIIcon } from "./UIIcon";
 import { useEffect, useRef, useState } from "react";
 import { Modal } from "./Modal";
 import { CloseButton } from "./CloseButton";
@@ -169,7 +170,7 @@ export function EditorSyncBar({
               )}
             <details className="fq-editor-file-actions" ref={fileActions}>
               <summary aria-label="File actions" title="File actions">
-                ···
+                <UIIcon name="more" />
               </summary>
               <div>
                 <button

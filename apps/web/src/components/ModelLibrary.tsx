@@ -1,3 +1,4 @@
+import { UIIcon } from "./UIIcon";
 import { useEffect, useRef, useState } from "react";
 import type { Model } from "../contracts/quantum-workspace";
 import {
@@ -86,9 +87,8 @@ export function ModelLibrary({
             disabled={busy}
             onClick={() => upload.current?.click()}
           >
-            {importing
-              ? "Importing experiment…"
-              : "↥ Import model or experiment"}
+            <UIIcon name="upload" size={14} />
+            {importing ? "Importing experiment…" : "Import model or experiment"}
           </button>
           <input
             hidden
@@ -117,7 +117,10 @@ export function ModelLibrary({
                 key={m.name}
                 onClick={() => onSelect(m)}
               >
-                ◇ {m.name}
+                <span className="fq-library-title">
+                  <UIIcon name="file" size={14} />
+                  {m.name}
+                </span>
                 <small>
                   {m.name.includes("Arithmetic")
                     ? "Superposition · res = 3x + 2"
@@ -148,7 +151,8 @@ export function ModelLibrary({
               })
             }
           >
-            New Model ＋
+            <UIIcon name="plus" size={14} />
+            New Model
           </button>
         </div>
       ) : (

@@ -1,3 +1,5 @@
+import { UIIcon } from "../components/UIIcon";
+import { CloseButton } from "../components/CloseButton";
 import { useEditorPosition } from "../hooks/useEditorPosition";
 import { workspaceShortcut } from "../state/workspace-continuity";
 import { projectDirty } from "../state/project-workspace";
@@ -195,12 +197,13 @@ export function ModelPage({
             Project{state.project ? " · " + state.project.name : ""}
           </button>
           <button
+            className="fq-control-icon"
             aria-keyshortcuts="Meta+P Control+P"
             aria-label="Find file"
             title="Find file (⌘P / Ctrl+P)"
             onClick={onFindFile}
           >
-            ⌕
+            <UIIcon name="search" />
           </button>
           <div
             className="fq-language-tabs"
@@ -232,10 +235,12 @@ export function ModelPage({
             </button>
           )}
           <button
+            className="fq-control-icon"
+            aria-pressed={focus}
             aria-label="Focus model editor"
             onClick={() => setFocus(!focus)}
           >
-            ⛶
+            <UIIcon name={focus ? "restore" : "expand"} />
           </button>
         </div>
         <ProjectTabs
@@ -251,14 +256,17 @@ export function ModelPage({
         />
         <div className="fq-toolbar">
           <span className="fq-filename">
-            ◇ {state.name}.{isPython ? "py" : "qasm"}
+            <UIIcon name="file" size={14} />
+            <span>
+              {state.name}.{isPython ? "py" : "qasm"}
+            </span>
           </span>
           <div className="push" />
           <button
             onClick={() => dispatch({ type: "undo" })}
             disabled={!state.undo.length}
           >
-            ↶ Undo
+            <UIIcon name="undo" size={14} /> Undo
           </button>
           <button
             disabled={projectWorkspace.busy || python.submitting}
@@ -275,22 +283,32 @@ export function ModelPage({
             </button>
           )}
           <button
+            className="fq-control-icon"
+            title="Download model"
             aria-label="Download model"
             onClick={() =>
               download(state.name + (isPython ? ".py" : ".qasm"), state.source)
             }
           >
-            ↓
+            <UIIcon name="download" />
           </button>
           <button
             aria-label="Configuration"
             aria-expanded={configuration}
             onClick={() => setConfiguration(!configuration)}
           >
+            <UIIcon name="settings" size={14} />
             {isPython ? "Environment" : "Configuration"}
           </button>
           <button
             className="primary"
+            aria-label={
+              isPython
+                ? needsProjectSave
+                  ? "Save & run"
+                  : "Run Python"
+                : "Compile"
+            }
             disabled={!canRun}
             aria-keyshortcuts="Meta+Enter Control+Enter"
             title={
@@ -300,15 +318,38 @@ export function ModelPage({
             }
             onClick={runCurrent}
           >
+            <UIIcon
+              name={
+                !canRun &&
+                (python.submitting ||
+                  ["queued", "running"].includes(python.run?.status || "") ||
+                  state.busy)
+                  ? "refresh"
+                  : isPython
+                    ? "play"
+                    : "circuit"
+              }
+              className={
+                !canRun &&
+                (python.submitting ||
+                  ["queued", "running"].includes(python.run?.status || "") ||
+                  state.busy)
+                  ? "fq-ui-busy"
+                  : ""
+              }
+              size={14}
+            />
             {isPython
               ? python.submitting
                 ? "Starting…"
-                : needsProjectSave
-                  ? "Save & run ▷"
-                  : "Run Python ▷"
+                : ["queued", "running"].includes(python.run?.status || "")
+                  ? "Running…"
+                  : needsProjectSave
+                    ? "Save & run"
+                    : "Run Python"
               : state.busy
                 ? "Compiling…"
-                : "Compile →"}
+                : "Compile"}
           </button>
         </div>
         {contextMenu && (
@@ -613,12 +654,13 @@ export function ModelPage({
           >
             <div className="fq-pane-title">
               {isPython ? "PYTHON ENVIRONMENT" : "SYNTHESIS CONFIGURATION"}
-              <button
-                aria-label="Collapse configuration"
+              <CloseButton
+                label="Collapse configuration"
+                title={
+                  isPython ? "Hide environment panel" : "Hide configuration"
+                }
                 onClick={() => setConfiguration(false)}
-              >
-                ×
-              </button>
+              />
             </div>
             <section style={{ height: constraintsHeight, overflow: "auto" }}>
               <h3>{isPython ? "Execution" : "⌄ Constraints"}</h3>

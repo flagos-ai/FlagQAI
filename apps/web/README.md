@@ -823,3 +823,20 @@ action: Save & run for dirty Python projects, Run Python for saved Python, or
 Compile for valid OpenQASM. Busy/error guards, revision checks and draft protection
 are unchanged. Composition, extra modifiers and repeated keydowns do not submit
 additional work. Chat input and dialogs do not acquire the run shortcut.
+
+
+### Consistent IDE controls
+
+Application chrome uses a shared original SVG stroke-icon set for search, undo,
+file actions, focus, zoom, tree, download, copy and close. Circuit gate symbols
+and family colors remain separate and unchanged. Toolbar utilities are quiet;
+run/execute are the primary accent actions. Pressed controls, keyboard focus,
+disabled controls and native running/submitting feedback share the same visual
+rules. Motion preferences apply to activity icons; no percentage is invented.
+
+Shared surfaces use restrained borders and flat controls. File/program selection,
+dialogs, pane titles and secondary navigation use consistent emphasis without
+changing panel resizing or source, runtime and artifact behavior. Visible action
+labels omit decorative character glyphs; accessible names and keyboard shortcuts
+identify the actual command. Circuit detail presets show selection until the
+hierarchy is manually changed or its mode switches.

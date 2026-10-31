@@ -22,7 +22,7 @@ async function runPython(page, source) {
   );
   if (source !== undefined) await editor(page).fill(source);
   await page
-    .getByRole("button", { name: /^(Run Python|Save & run) ▷$/, exact: true })
+    .getByRole("button", { name: /^(Run Python|Save & run)$/, exact: true })
     .click();
   let run;
   await expect
@@ -93,7 +93,7 @@ for (const [name, states] of [
       await agent.click();
     await page
       .getByRole("button", {
-        name: new RegExp("◇ " + name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
+        name: new RegExp("^" + name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
       })
       .click();
     const run = await runPython(page);
@@ -397,7 +397,7 @@ test("project files, native Agent edits, draft review and multi-file SDK snapsho
     .getByRole("button", { name: "Switch to main.py", exact: true })
     .click();
   await expect(
-    page.getByRole("button", { name: "Save & run ▷", exact: true }),
+    page.getByRole("button", { name: "Save & run", exact: true }),
   ).toBeVisible();
   const savedRun = await runPython(page);
   expect(savedRun.status).toBe("completed");
@@ -630,7 +630,7 @@ test("workspace restores file view and folds; keyboard file search and save-and-
     .getByRole("button", { name: "Switch to src/main.py", exact: true })
     .click();
   await expect(
-    page.getByRole("button", { name: "Save & run ▷", exact: true }),
+    page.getByRole("button", { name: "Save & run", exact: true }),
   ).toBeVisible();
   const before = new Set(
     (await get(page, "/api/python/runs")).map((run) => run.id),
