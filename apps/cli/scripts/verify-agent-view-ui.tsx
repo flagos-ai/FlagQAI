@@ -95,6 +95,9 @@ function check(name: string, ok: boolean, extra = ''): void {
 const COLS = 100
 const ROWS = 30
 const NOW = Date.now()
+// Match the dedicated scene heading, not common prose in parent chat/tips.
+const hasAgentViewHeader = (frame: string): boolean =>
+  frame.split('\n').some(line => /^\s*⤢\s+Subagent:/.test(line))
 
 class FakeStdout extends Writable {
   columns: number
@@ -599,7 +602,7 @@ console.log('--- Chat: source stack + parent state preservation ---')
     rows: [
       { id: 1, kind: 'user', text: 'please delegate' },
       { id: 2, kind: 'subagent', text: '', subagent: { ...subagent, runId: 'r1', outputLines: [] } },
-      { id: 3, kind: 'assistant', text: 'delegated', streaming: false },
+      { id: 3, kind: 'assistant', text: 'delegated; read-only diagnostics are available', streaming: false },
     ],
     status: 'idle',
     sessionTitle: 'probe',
@@ -693,7 +696,7 @@ console.log('--- Chat: source stack + parent state preservation ---')
     const beforeRows = lines().filter(l => l.includes('please delegate') || l.includes('delegated') || l.includes('chat level child'))
     // card ⤢ click → Agent View (source transcript-card)
     check('C1 转录卡主屏查看动作（⤢ 字形）可定位', await click({ screen, lines, rerender: () => {}, stdin, term } as unknown as Frame, '⤢'))
-    check('C1 进入 Agent View（顶栏出现）', await settled(() => screen().includes('read-only') && screen().includes('from transcript card')), lines().slice(0, 3).join('|'))
+    check('C1 进入 Agent View（顶栏出现）', await settled(() => hasAgentViewHeader(screen()) && screen().includes('from transcript card')), lines().slice(0, 3).join('|'))
     check('C1 场景读同一 history（子答案可见）', await settled(() => screen().includes('child answer in history')))
     check('C1 场景内消息流叶子', screen().includes('parent → child'))
     // composer submit through the channel-provided capability
@@ -710,7 +713,7 @@ console.log('--- Chat: source stack + parent state preservation ---')
     // scene footer; extending the timeout cannot repair a cached blank frame.
     const returnedToChat = await settled(() => {
       const frame = screen()
-      return frame.includes('please delegate') && !frame.includes('read-only')
+      return frame.includes('please delegate') && !hasAgentViewHeader(frame) && !frame.includes('Agent transcript · from transcript card')
     })
     check('C1 Esc 退回聊天（父转录仍在）', returnedToChat, returnedToChat ? lines().slice(0, 4).join('|') : screen())
     const afterRows = lines().filter(l => l.includes('please delegate') || l.includes('delegated') || l.includes('chat level child'))
@@ -718,6 +721,7 @@ console.log('--- Chat: source stack + parent state preservation ---')
     const norm = (ls: readonly string[]): string[] => ls.map(l => l.replace(/\s+$/, ''))
     check('C1 父 rows 逐字不变', JSON.stringify(norm(beforeRows)) === JSON.stringify(norm(afterRows)), JSON.stringify({ before: beforeRows, after: afterRows }))
     check('C1 父草稿保留', await settled(() => screen().includes('parent draft stays')))
+    check('C1 parent read-only prose does not identify Agent View', screen().includes('read-only diagnostics') && !hasAgentViewHeader(screen()))
     check('C1 主转录未因消息流多出普通行', !screen().includes('flow message one'))
 
     // C2: dashboard → v → Agent View → Esc → dashboard → Esc → chat
@@ -728,7 +732,7 @@ console.log('--- Chat: source stack + parent state preservation ---')
     stdin.write('\x1b')
     await sleep(80) // 固定窗:pacing Esc 分层步间
     stdin.write('\x1b')
-    check('C2 Esc 回到 Dashboard', await settled(() => screen().includes('Subagent Dashboard') && !screen().includes('read-only')), lines().slice(0, 4).join('|'))
+    check('C2 Esc 回到 Dashboard', await settled(() => screen().includes('Subagent Dashboard') && !hasAgentViewHeader(screen())), lines().slice(0, 4).join('|'))
     stdin.write('\x1b')
     check('C2 Esc 关面板回聊天', await settled(() => screen().includes('please delegate')))
   } finally {
