@@ -4111,3 +4111,20 @@ body,
 .fq-workspace .fq-project-dialog details { margin-top: 10px; }
 .fq-python-console .fq-python-run-details { padding: 0; max-height: none; overflow: visible; }
 .fq-editor-sync { min-height: 34px; padding: 4px 12px; }
+
+/* File notices are distinct from draft state and persist until review. */
+.fq-project-tabs .fq-tab-unsaved { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: #c7cbd1; vertical-align: middle; margin-left: 6px; }
+.fq-project-tabs .fq-tab-review { display: grid; place-items: center; width: 24px; min-width: 24px; height: 28px; padding: 0; border-radius: 4px; }
+.fq-tab-review > span { width: 6px; height: 6px; border-radius: 50%; background: #68beee; box-shadow: 0 0 0 3px #68beee12; }
+.fq-project-tabs .fq-tab-review:hover { background: #68beee1c; }
+.fq-result-freshness { display: flex; align-items: baseline; gap: 7px; padding: 7px 12px; flex-shrink: 0; color: #aeb9c6; background: #303238; font-size: 11px; line-height: 1.5; border-bottom: 1px solid #ffffff08; }
+.fq-result-freshness.changed { color: #ddc39d; background: #35312b; }
+.fq-run-completion { display: flex; align-items: center; gap: 8px; padding-bottom: 8px; }
+.fq-run-completion-mark { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; color: #8dceb7; background: #8dceb713; font-size: 12px; flex-shrink: 0; }
+.fq-run-completion strong { font-weight: 500; font-size: 12px; color: #e0e5eb; }
+.fq-run-completion small { display: block; margin-top: 2px; font-size: 10px; color: #a5adb7; }
+.fq-python-experiment .fq-run-open-circuit { color: #b9ddf6; background: #3b5365; border-color: #68beee30; }
+.fq-run-working { display: inline-flex; align-items: center; gap: 6px; }
+.fq-run-working i { width: 9px; height: 9px; border: 1.5px solid #68beee40; border-top-color: #68beee; border-radius: 50%; animation: fq-run-spin 1s linear infinite; }
+@keyframes fq-run-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .fq-run-working i { animation: none; } }

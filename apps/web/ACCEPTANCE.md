@@ -250,3 +250,15 @@ installation of genuinely required missing dependencies were not evaluated.
   file actions are compact. The existing nine-case Chromium suite now uses the
   project chooser and verifies that Save & run writes the dependency version
   recorded by the subsequent actual SDK snapshot.
+
+
+### Agent notices and result feedback
+
+- Added state coverage for entry/dependency freshness, other-file snapshots,
+  unverified file trees and review notices through persistence and acceptance.
+- Chromium project acceptance now opens inactive helper changes from the blue
+  tab control, accepts them, checks that ordinary tab switching cannot reopen a
+  settled review, keeps the main draft, and verifies its notice clears. It also
+  edits/restores the entry after a real SDK run and checks stale-result feedback.
+- Completion feedback exposes real saved archives and existing circuit/result
+  navigation; partial collection and failed previews retain their own statuses.

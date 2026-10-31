@@ -1,5 +1,5 @@
 import { CloseButton } from "./CloseButton";
-import { projectDirty } from "../state/project-workspace";
+import { projectDirty, projectNeedsReview } from "../state/project-workspace";
 import type {
   WorkspaceAction,
   WorkspaceState,
@@ -7,7 +7,9 @@ import type {
 export function ProjectTabs({
   state,
   dispatch,
+  onReview,
 }: {
+  onReview: (id: string) => void;
   state: WorkspaceState;
   dispatch: React.Dispatch<WorkspaceAction>;
 }) {
@@ -33,9 +35,28 @@ export function ProjectTabs({
               onClick={() => dispatch({ type: "project-tab", id: tab.id })}
             >
               {tab.path.split("/").at(-1)}
-              {projectDirty(tab) ? " ●" : ""}
-              {tab.editorLink.incoming ? " ↺" : ""}
+              {projectDirty(tab) && (
+                <span
+                  className="fq-tab-unsaved"
+                  title="Unsaved changes"
+                  aria-label="Unsaved changes"
+                />
+              )}
             </button>
+            {projectNeedsReview(tab) && (
+              <button
+                className="fq-tab-review"
+                aria-label={`Review changes in ${tab.path}`}
+                title={
+                  tab.editorLink.incoming
+                    ? "Agent changes available · Your draft is protected"
+                    : "Updated by Agent · Review changes"
+                }
+                onClick={() => onReview(tab.id)}
+              >
+                <span aria-hidden="true" />
+              </button>
+            )}
             <CloseButton
               label={`Close ${tab.path} (draft retained)`}
               onClick={() =>

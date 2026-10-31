@@ -439,18 +439,61 @@ test("project files, native Agent edits, draft review and multi-file SDK snapsho
   );
   await expect(editor(page)).toHaveValue(local);
   await page
-    .getByRole("button", { name: "Review changes", exact: true })
+    .getByRole("button", { name: "Review changes in helper.py", exact: true })
+    .click();
+  await expect(
+    page.getByRole("dialog", { name: "Review Agent code changes" }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Accept changes", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", {
+      name: "Review changes in helper.py",
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Switch to main.py", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Switch to helper.py", exact: true })
+    .click();
+  await expect(
+    page.getByRole("dialog", { name: "Review Agent code changes" }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Review changes in main.py", exact: true })
     .click();
   await page
     .getByRole("button", { name: "Keep my draft", exact: true })
     .click();
   await expect(editor(page)).toHaveValue(local);
-  // The entry draft stays local; the Agent's saved helper is included in the next frozen run.
+  await expect(
+    page.getByRole("button", {
+      name: "Review changes in main.py",
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  // Save & run writes the reviewed entry and includes the Agent's saved helper.
   const final = await runPython(page);
   expect(final.status).toBe("completed");
   expect(final.project.snapshot_hash).not.toBe(first.project.snapshot_hash);
   const record = await savedRecord(page, final);
   expect(Object.keys(record.job.result.counts).sort()).toEqual(["01", "10"]);
+  await expect(page.getByText("Run complete", { exact: true })).toBeVisible();
+  await editor(page).fill(local + "# changed after run\n");
+  await expect(
+    page
+      .getByRole("status")
+      .filter({ hasText: "These results are from an earlier snapshot" }),
+  ).toBeVisible();
+  await editor(page).fill(local);
+  await expect(
+    page
+      .getByRole("status")
+      .filter({ hasText: "These results are from an earlier snapshot" }),
+  ).toHaveCount(0);
   await openCircuit(page, final);
   await expect(
     page.getByText("PROJECT SNAPSHOT", { exact: true }),

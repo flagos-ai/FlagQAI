@@ -51,6 +51,8 @@ export type ProjectAction =
   | { type: "project-close-tab"; id: string }
   | { type: "project-file-update"; file: ProjectFile }
   | { type: "project-file-saved"; file: ProjectFile; source: string };
+export const projectNeedsReview = (tab: ProjectTab) =>
+  !!tab.editorLink.incoming || tab.editorLink.change?.outcome === "pending";
 export const projectDirty = (tab: ProjectTab) =>
   tab.source !== tab.editorLink.base;
 export function checkpointProject(state: WorkspaceState): WorkspaceState {

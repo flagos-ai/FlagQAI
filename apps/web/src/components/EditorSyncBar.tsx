@@ -20,10 +20,12 @@ export function EditorSyncBar({
   state,
   dispatch,
   sync,
+  reviewRequest,
 }: {
   state: WorkspaceState;
   dispatch: React.Dispatch<WorkspaceAction>;
   sync: EditorSync;
+  reviewRequest?: { id: string; sequence: number };
 }) {
   const [review, setReview] = useState<Review | null>(null);
   const link = state.editorLink,
@@ -63,6 +65,17 @@ export function EditorSyncBar({
         merged: state.source,
       });
   };
+  const handledReview = useRef(0);
+  useEffect(() => {
+    if (
+      reviewRequest &&
+      reviewRequest.sequence !== handledReview.current &&
+      reviewRequest.id === link?.id
+    ) {
+      handledReview.current = reviewRequest.sequence;
+      open();
+    }
+  }, [reviewRequest?.id, reviewRequest?.sequence, link?.id]);
   const resolve = (source: string) => {
     if (!review || stale) return;
     dispatch({

@@ -52,6 +52,10 @@ export function ModelPage({
   dispatch: React.Dispatch<WorkspaceAction>;
   compile: () => void;
 }) {
+  const [reviewRequest, setReviewRequest] = useState<{
+    id: string;
+    sequence: number;
+  }>();
   const [selection, setSelection] = useState({ start: 0, end: 0 });
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -203,7 +207,17 @@ export function ModelPage({
             ⛶
           </button>
         </div>
-        <ProjectTabs state={state} dispatch={dispatch} />
+        <ProjectTabs
+          state={state}
+          dispatch={dispatch}
+          onReview={(id) => {
+            dispatch({ type: "project-tab", id });
+            setReviewRequest((previous) => ({
+              id,
+              sequence: (previous?.sequence || 0) + 1,
+            }));
+          }}
+        />
         <div className="fq-toolbar">
           <span className="fq-filename">
             ◇ {state.name}.{isPython ? "py" : "qasm"}
@@ -285,7 +299,12 @@ export function ModelPage({
             </button>
           </div>
         )}
-        <EditorSyncBar state={state} dispatch={dispatch} sync={editorSync} />
+        <EditorSyncBar
+          state={state}
+          dispatch={dispatch}
+          sync={editorSync}
+          reviewRequest={reviewRequest}
+        />
         {projectWorkspace.error && (
           <p className="fq-project-error" role="alert">
             {projectWorkspace.error}
@@ -457,6 +476,7 @@ export function ModelPage({
               {isPython ? (
                 <PythonConsole
                   python={python}
+                  state={state}
                   source={state.source}
                   dispatch={dispatch}
                   onLocate={(line) =>

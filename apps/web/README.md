@@ -784,3 +784,18 @@ using its returned disk revision. Conflicts stop the operation and offer review;
 files saved before a later failure remain saved and no execution is submitted.
 New edits made while saving remain separate browser drafts. The lower-level
 project API and native bridge still support explicit unsaved-entry snapshots.
+
+
+Project tabs distinguish unsaved drafts (neutral dot) from unreviewed Agent edits
+(blue review button). The review button activates that file and opens the existing
+comparison; merely visiting a tab does not acknowledge a change. Accept/keep/undo
+clear the notice through existing review decisions. Saved notices persist through
+refresh, and reopening a previously reviewed tab does not reopen its dialog.
+
+Python output presents saved experiments first with direct circuit/result actions
+and explicit completion/partial-output status. Freshness checks include the active
+entry, project dependency revisions, unsaved dependency tabs and added/removed
+source files. A changed dependency marks an older result stale even if entry code
+is identical. Unknown or other-file snapshots are identified separately; historical
+results and editor drafts remain unchanged. Live runs show activity without a
+fabricated percentage and respect reduced-motion preferences.
