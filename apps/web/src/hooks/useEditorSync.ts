@@ -1,3 +1,4 @@
+import { projectsAPI } from "../api/projects";
 import { useEffect, useRef, useState } from "react";
 import { editorFiles } from "../api/editor-files";
 import type {
@@ -21,14 +22,18 @@ export function useEditorSync(
     let timer: ReturnType<typeof setTimeout>;
     const refresh = async () => {
       try {
-        const file = await editorFiles.read(id, controller.signal);
+        const started = Date.now();
+        const project = state.editorLink?.project;
+        const file = project
+          ? await projectsAPI.read(project.id, project.path, controller.signal)
+          : await editorFiles.read(id, controller.signal);
         if (controller.signal.aborted) return;
         dispatch({
           type: "file-changed",
           id,
           source: file.source,
           revision: file.revision,
-          time: Date.now(),
+          time: started,
         });
         setError("");
       } catch (problem) {

@@ -1,3 +1,5 @@
+import { useProjectWorkspace } from "./hooks/useProjectWorkspace";
+import { ProjectExplorer } from "./components/ProjectExplorer";
 import { importExperiment } from "./api/experiments";
 import { usePythonWorkspace } from "./hooks/usePythonWorkspace";
 import { usePlatformBridge } from "./hooks/usePlatformBridge";
@@ -44,6 +46,8 @@ export default function App() {
     );
   }, [bridge.ready, bridge.client, bridge.session]);
   const editorSync = useEditorSync(state, dispatch);
+  const projectWorkspace = useProjectWorkspace(state, dispatch);
+  const [projectRequest, setProjectRequest] = useState(0);
   const python = usePythonWorkspace(state, dispatch, bridge);
   const programUpload = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
@@ -118,6 +122,14 @@ export default function App() {
           onRepairConsumed={() => setPendingRepair(undefined)}
           onAttachmentConsumed={() => setPendingAttachment(undefined)}
           references={[
+            ...(state.projectTabs || []).map((tab) => ({
+              id: tab.id,
+              name: tab.project.name + "/" + tab.path,
+              source: tab.source,
+              language: tab.language,
+              workspaceFile: tab.editorLink.path,
+              kind: "model" as const,
+            })),
             ...state.models.map((model) => ({
               id: "model-" + (model.language || "qasm") + "-" + model.name,
               name:
@@ -164,6 +176,14 @@ export default function App() {
     if (state.page === "model")
       return (
         <ModelLibrary
+          projectRequest={projectRequest}
+          projectPanel={
+            <ProjectExplorer
+              state={state}
+              workspace={projectWorkspace}
+              dispatch={dispatch}
+            />
+          }
           models={state.models}
           onSelect={(model) =>
             dispatch({ type: "model", model, preserveDraft: true })
@@ -376,11 +396,35 @@ export default function App() {
           )}
           {state.page === "model" && (
             <ModelPage
+              projectWorkspace={projectWorkspace}
+              onOpenProject={() => {
+                setProjectRequest((value) => value + 1);
+                dispatch({ type: "agent", open: false });
+              }}
               python={python}
               editorSync={editorSync}
               backendLabel={backendLabel}
               onRepairPython={async (failed) => {
                 const snapshot = state;
+                if (failed.project) {
+                  const project = failed.project;
+                  const path = [
+                    project.path === "." ? "" : project.path,
+                    project.entry,
+                  ]
+                    .filter(Boolean)
+                    .join("/");
+                  setPendingRepair(
+                    pythonRepairRequest(failed, {
+                      id: "project:" + project.id + ":" + project.entry,
+                      path,
+                      source: failed.source,
+                      revision: failed.source_hash || "",
+                    }),
+                  );
+                  dispatch({ type: "agent", open: true });
+                  return;
+                }
                 const file = await editorFiles.create(failed.source, "python");
                 const request = pythonRepairRequest(failed, file);
                 if (

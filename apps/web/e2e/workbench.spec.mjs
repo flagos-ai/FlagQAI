@@ -21,7 +21,9 @@ async function runPython(page, source) {
     (await get(page, "/api/python/runs")).map((run) => run.id),
   );
   if (source !== undefined) await editor(page).fill(source);
-  await page.getByRole("button", { name: "Run Python ▷", exact: true }).click();
+  await page
+    .getByRole("button", { name: /^(Run Python|Save & run) ▷$/, exact: true })
+    .click();
   let run;
   await expect
     .poll(
@@ -334,4 +336,181 @@ test("scripted Agent streams tools, survives lost receipt + refresh, and protect
   const old = await get(page, "/api/python/runs/" + failed.id);
   expect(old.source).toBe(failed.source);
   expect(old.status).toBe("failed");
+});
+
+test("project files, native Agent edits, draft review and multi-file SDK snapshots survive refresh", async ({
+  page,
+}) => {
+  const main =
+    "# project-acceptance\n" +
+    bell.replace(
+      "circuit = fq.Circuit(2).h(0).cx(0, 1)",
+      "from helper import prepare\ncircuit = prepare(fq)",
+    );
+  const helper = "def prepare(fq):\n    return fq.Circuit(2).h(0).cx(0, 1)\n";
+  await page
+    .getByRole("button", { name: "Open project workspace", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Open project", exact: true }).click();
+  await page.getByRole("button", { name: "Create new", exact: true }).click();
+  await page
+    .getByRole("textbox", { name: "Project directory", exact: true })
+    .fill("browser-project");
+  await page
+    .getByRole("button", { name: "Create folder", exact: true })
+    .click();
+  const create = async (path, source) => {
+    await page.getByRole("button", { name: "New file", exact: true }).click();
+    await page
+      .getByRole("textbox", { name: "New project file", exact: true })
+      .fill(path);
+    await page
+      .getByRole("button", { name: "Create project file", exact: true })
+      .click();
+    await expect(
+      page.getByRole("button", { name: "Switch to " + path, exact: true }),
+    ).toBeVisible();
+    await editor(page).fill(source);
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(
+      page.getByRole("status").filter({ hasText: /^Saved$/ }),
+    ).toBeVisible();
+  };
+  await create("helper.py", helper);
+  await create("main.py", main);
+  const first = await runPython(page);
+  expect(first.status).toBe("completed");
+  expect(first.project.files.map((item) => item.path).sort()).toEqual([
+    "helper.py",
+    "main.py",
+  ]);
+  const original = await savedRecord(page, first);
+  expect(original.program.origin.project.snapshot_hash).toBe(
+    first.project.snapshot_hash,
+  );
+  expect(Object.keys(original.job.result.counts).sort()).toEqual(["00", "11"]);
+  await page
+    .getByRole("button", { name: "Switch to helper.py", exact: true })
+    .click();
+  await editor(page).fill(helper + "# unsaved dependency\n");
+  await page
+    .getByRole("button", { name: "Switch to main.py", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Save & run ▷", exact: true }),
+  ).toBeVisible();
+  const savedRun = await runPython(page);
+  expect(savedRun.status).toBe("completed");
+  const project = await get(page, "/api/projects/" + savedRun.project.id);
+  expect(project.files.find((file) => file.path === "helper.py").revision).toBe(
+    savedRun.project.files.find((file) => file.path === "helper.py").sha256,
+  );
+  await page
+    .getByRole("button", { name: "Switch to helper.py", exact: true })
+    .click();
+  await expect(editor(page)).toHaveValue(helper + "# unsaved dependency\n");
+  await page.reload();
+  await expect(editor(page)).toHaveValue(helper + "# unsaved dependency\n");
+  await page
+    .getByRole("button", { name: "Switch to main.py", exact: true })
+    .click();
+  const local = main + "# Newer user draft\n";
+  await editor(page).fill(local);
+  await page
+    .getByRole("button", { name: "FlagQAI Agent", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Connect Agent", exact: true })
+    .click();
+  await expect(
+    page.getByRole("status", { name: "Connected", exact: true }),
+  ).toBeVisible();
+  const input = page.getByRole("textbox", {
+    name: "Message FlagQAI",
+    exact: true,
+  });
+  await input.fill(
+    "Run project acceptance and verify the actual saved project artifact.",
+  );
+  await page.getByRole("button", { name: "Send message", exact: true }).click();
+  await expect(page.locator(".fq-agent-message.assistant")).toContainText(
+    "Scripted project acceptance completed with actual SDK computation.",
+    { timeout: 90000 },
+  );
+  await expect(editor(page)).toHaveValue(local);
+  await page
+    .getByRole("button", { name: "Review changes in helper.py", exact: true })
+    .click();
+  await expect(
+    page.getByRole("dialog", { name: "Review Agent code changes" }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Accept changes", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", {
+      name: "Review changes in helper.py",
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Switch to main.py", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Switch to helper.py", exact: true })
+    .click();
+  await expect(
+    page.getByRole("dialog", { name: "Review Agent code changes" }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Review changes in main.py", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Keep my draft", exact: true })
+    .click();
+  await expect(editor(page)).toHaveValue(local);
+  await expect(
+    page.getByRole("button", {
+      name: "Review changes in main.py",
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  // Save & run writes the reviewed entry and includes the Agent's saved helper.
+  const final = await runPython(page);
+  expect(final.status).toBe("completed");
+  expect(final.project.snapshot_hash).not.toBe(first.project.snapshot_hash);
+  const record = await savedRecord(page, final);
+  expect(Object.keys(record.job.result.counts).sort()).toEqual(["01", "10"]);
+  await expect(page.getByText("Run complete", { exact: true })).toBeVisible();
+  await editor(page).fill(local + "# changed after run\n");
+  await expect(
+    page
+      .getByRole("status")
+      .filter({ hasText: "These results are from an earlier snapshot" }),
+  ).toBeVisible();
+  await editor(page).fill(local);
+  await expect(
+    page
+      .getByRole("status")
+      .filter({ hasText: "These results are from an earlier snapshot" }),
+  ).toHaveCount(0);
+  await openCircuit(page, final);
+  await expect(
+    page.getByText("PROJECT SNAPSHOT", { exact: true }),
+  ).toBeVisible();
+  await page.reload();
+  await expect(page).toHaveURL(/#program$/);
+  await page.getByRole("button", { name: "MODEL", exact: true }).click();
+  await expect(editor(page)).toHaveValue(local);
+  await page
+    .getByRole("button", {
+      name: "Close main.py (draft retained)",
+      exact: true,
+    })
+    .click();
+  await page
+    .getByRole("button", { name: "Open project workspace", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Open main.py", exact: true }).click();
+  await expect(editor(page)).toHaveValue(local);
 });

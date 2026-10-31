@@ -1,3 +1,6 @@
+import { saveProjectTab } from "./useProjectWorkspace";
+import { projectsAPI } from "../api/projects";
+import { checkpointProject, projectDirty } from "../state/project-workspace";
 import { matchesPythonExperiment } from "../state/python-workspace";
 import { importExperiment, readExperiment } from "../api/experiments";
 import { loadPythonExperiments } from "../api/python-experiments";
@@ -171,14 +174,57 @@ export function usePythonWorkspace(
       setImporting(false);
     }
   };
-  const start = async () => {
+  const start = async (saveProject = false) => {
     if (lock.current) return;
     lock.current = true;
     setSubmitting(true);
     setError("");
     try {
-      const result =
-        bridge.ready && bridge.session
+      const project = state.editorLink?.project;
+      const dirtyDependencies =
+        project &&
+        state.projectTabs?.filter(
+          (tab) =>
+            tab.project.id === project.id &&
+            tab.id !== state.activeProjectTab &&
+            projectDirty(tab),
+        );
+      let entryRevision = state.editorLink?.revision;
+      if (project && saveProject) {
+        for (const tab of checkpointProject(state).projectTabs || []) {
+          if (tab.project.id !== project.id || !projectDirty(tab)) continue;
+          const saved = await saveProjectTab(tab, dispatch);
+          if (tab.id === state.activeProjectTab) entryRevision = saved.revision;
+        }
+      }
+      if (!saveProject && dirtyDependencies && dirtyDependencies.length)
+        throw Error(
+          "Save project dependencies before running: " +
+            dirtyDependencies.map((tab) => tab.path).join(", ") +
+            ". The entry draft can run without saving.",
+        );
+      const result = project
+        ? bridge.ready && bridge.session
+          ? (
+              await platformAPI.action<{ python_run: PythonRun }>({
+                client: bridge.client,
+                session: bridge.session,
+                request_id: crypto.randomUUID(),
+                origin: "ui",
+                operation: "project.run",
+                project_id: project.id,
+                entry: project.path,
+                source: state.source,
+                expected_revision: entryRevision,
+              })
+            ).python_run
+          : await projectsAPI.run(
+              project.id,
+              project.path,
+              state.source,
+              entryRevision!,
+            )
+        : bridge.ready && bridge.session
           ? (
               await platformAPI.action<{ python_run: PythonRun }>({
                 client: bridge.client,

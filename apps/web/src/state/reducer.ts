@@ -1,3 +1,4 @@
+import { checkpointProject, projectTransition } from "./project-workspace.ts";
 import { examples } from "./templates.ts";
 import { pythonExample } from "./python-workspace.ts";
 import type {
@@ -9,7 +10,30 @@ export function workspaceReducer(
   state: WorkspaceState,
   action: WorkspaceAction,
 ): WorkspaceState {
+  let prepared = checkpointProject(state);
+  const project = projectTransition(prepared, action);
+  if (project) return checkpointProject(project);
+  if (
+    prepared.activeProjectTab &&
+    (["model", "open-agent-model"].includes(action.type) ||
+      (action.type === "language" && action.language !== prepared.language))
+  )
+    prepared = { ...prepared, activeProjectTab: undefined };
+  return checkpointProject(reduceWorkspace(prepared, action));
+}
+
+function reduceWorkspace(
+  state: WorkspaceState,
+  action: WorkspaceAction,
+): WorkspaceState {
   switch (action.type) {
+    case "project-select":
+    case "project-open-file":
+    case "project-tab":
+    case "project-close-tab":
+    case "project-file-update":
+    case "project-file-saved":
+      return state;
     case "restore-experiments": {
       // Restore the archive list as one transaction: intermediate records must
       // not replace a saved selection that has not loaded into memory yet.
@@ -204,6 +228,7 @@ export function workspaceReducer(
       const link = state.editorLink;
       if (
         !link ||
+        (link.savedAt !== undefined && action.time < link.savedAt) ||
         link.id !== action.id ||
         link.incoming?.revision === action.revision
       )

@@ -19,6 +19,7 @@ import uuid
 from .job_store import SQLiteJobStore
 from .experiments import ExperimentImports
 from .python_artifacts import ExperimentTransfer
+from .projects import Projects, manifest_hash
 from quantum_workspace_protocol import source_hash
 
 
@@ -41,6 +42,7 @@ class PythonRuns:
         self.lock = threading.RLock()
         self.active = {}
         self.recollecting = set()
+        self.projects = Projects(settings)
 
     @staticmethod
     def validate(source):
@@ -56,7 +58,13 @@ class PythonRuns:
             'python':self.settings.local_python or sys.executable if self.settings.compute_transport == 'local' else self.settings.remote_python or 'Remote python3',
             'scope':'Single-file task in a temporary working directory'}
 
-    def submit(self, data):
+    def submit_project(self, data):
+        bundle = self.projects.snapshot(data.get('project_id'), data.get('entry'),
+            source=data.get('source'), expected_revision=data.get('expected_revision'), expected_hash=data.get('expected_hash'))
+        return self.submit({'source': bundle['files'][bundle['entry']],
+                            'name': data.get('name') or bundle['entry']}, bundle=bundle)
+
+    def submit(self, data, bundle=None):
         diagnostic = self.validate(data.get('source'))
         # The selected runtime is authoritative for syntax (it may be newer than the host).
         with self.lock:
@@ -65,6 +73,11 @@ class PythonRuns:
                 'source':data['source'], 'source_hash':source_hash(data['source']), 'status':'queued', 'created_at':time.time(), 'logs':[],
                 'experiments':[], 'collection_errors':[], 'collection_status':'pending',
                 'environment':self.environment()}
+            if bundle is not None:
+                run['project'] = bundle['project']
+                inputs = self.settings.database_path.parent / 'python-inputs'
+                inputs.mkdir(parents=True, exist_ok=True)
+                (inputs / (run['id'] + '.json')).write_text(json.dumps({'entry': bundle['entry'], 'files': bundle['files']}))
             cancel = threading.Event()
             self.active[run['id']] = cancel
             self.store.put(run)
@@ -154,6 +167,13 @@ class PythonRuns:
             process = subprocess.Popen(self.command(), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE, text=True, start_new_session=True)
             request = {'source':run['source'], 'helper':(Path(__file__).parent/'python_publish.py').read_text()}
+            if run.get('project'):
+                saved = self.settings.database_path.parent / 'python-inputs' / (run['id'] + '.json')
+                bundle = json.loads(saved.read_text())
+                if (bundle['entry'] != run['project']['entry'] or bundle['files'].get(bundle['entry']) != run['source']
+                        or manifest_hash(bundle['files']) != run['project']['snapshot_hash']):
+                    raise ValueError('Recorded project input snapshot checksum changed.')
+                request.update(bundle)
             process.stdin.write(json.dumps(request)+'\n'); process.stdin.flush()
             def watch():
                 started = time.monotonic()

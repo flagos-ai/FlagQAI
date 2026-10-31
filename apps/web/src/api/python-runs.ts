@@ -1,5 +1,7 @@
+import type { ProjectRun } from "../contracts/quantum-workspace";
 import type { ProgramSnapshot } from "../contracts/quantum-workspace";
 export type PythonRun = {
+  project?: ProjectRun;
   id: string;
   name: string;
   source: string;

@@ -94,6 +94,9 @@ class WorkspaceBridge:
             return {key: value for key, value in context.items() if key != 'source'} | {'backend': self.service.health()}
         if operation == 'draft.read':
             return {'name': context['name'], 'source': context['source'], 'source_hash': context['source_hash']}
+        if operation == 'project.inspect':
+            if not self.python_runs: raise ValueError('Python runtime unavailable.')
+            return self.python_runs.projects.tree(data.get('project_id'))
         if operation == 'model.read': return read_model(self.root, data.get('model_id'))
         if operation == 'python.read':
             if not self.python_runs: raise ValueError('Python runtime unavailable.')
@@ -110,7 +113,7 @@ class WorkspaceBridge:
                 result = (self.python_runs.experiments.get(data.get('job_id')) or {}).get('job')
             if not result: raise ValueError('Job not found.')
             return result
-        if operation not in ('model.create', 'model.share', 'compile', 'run', 'focus', 'python.run', 'python.cancel'):
+        if operation not in ('model.create', 'model.share', 'compile', 'run', 'focus', 'python.run', 'python.cancel', 'project.run'):
             raise ValueError('Unsupported workbench action.')
         key = data.get('request_id')
         if not isinstance(key, str) or not re.fullmatch(r'[a-zA-Z0-9-]{1,128}', key):
@@ -147,6 +150,11 @@ class WorkspaceBridge:
             db.execute('UPDATE deliveries SET outcome=? WHERE id=?', (json.dumps(result), key))
 
     def execute(self, operation, data, context):
+        if operation == 'project.run':
+            if not self.python_runs: raise ValueError('Python runtime unavailable.')
+            if data.get('origin') != 'ui' and not data.get('expected_hash'):
+                raise BridgeConflict('Inspect the project snapshot hash before running it.')
+            return {'python_run': self.python_runs.submit_project(data)}
         if operation in ('model.create', 'model.share'):
             source = context['source'] if operation == 'model.share' else data.get('source')
             if operation == 'model.share' and data.get('expected_hash') != context['source_hash']:

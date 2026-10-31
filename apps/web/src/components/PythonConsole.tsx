@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { PythonWorkspace } from "../hooks/usePythonWorkspace";
+import { pythonResultFreshness } from "../state/python-feedback";
+import type { WorkspaceState } from "../contracts/quantum-workspace";
 import type { WorkspaceAction } from "../contracts/quantum-workspace";
 import type { PythonRun } from "../api/python-runs";
 import { pythonFailure } from "../state/python-failure";
@@ -9,12 +11,14 @@ import { CodeExample } from "./CodeExample";
 export function PythonConsole({
   python,
   source,
+  state,
   dispatch,
   onLocate,
   onRepair,
 }: {
   python: PythonWorkspace;
   source: string;
+  state: WorkspaceState;
   dispatch: React.Dispatch<WorkspaceAction>;
   onLocate: (line: number) => void;
   onRepair: (run: PythonRun) => Promise<void>;
@@ -32,6 +36,8 @@ export function PythonConsole({
   }, [run?.logs, follow]);
   const failure = run ? pythonFailure(run) : null;
   const line = failure?.line;
+  const freshness = run ? pythonResultFreshness(run, state) : undefined;
+  const working = ["queued", "running"].includes(run?.status || "");
   return (
     <section className="fq-python-console" aria-label="Python output">
       {failedSource && (
@@ -59,7 +65,17 @@ export function PythonConsole({
         </Modal>
       )}
       <div className="fq-pane-title">
-        PYTHON OUTPUT <span>{run?.status || "Ready"}</span>
+        PYTHON OUTPUT{" "}
+        <span className={working ? "fq-run-working" : ""}>
+          {working && <i aria-hidden="true" />}
+          {run
+            ? run.status === "running"
+              ? "Running…"
+              : run.status === "queued"
+                ? "Queued"
+                : run.status.replaceAll("_", " ")
+            : "Ready"}
+        </span>
         <select
           aria-label="Python run history"
           value={run?.id || ""}
@@ -116,14 +132,99 @@ export function PythonConsole({
           {repairError && <p role="alert">{repairError}</p>}
         </section>
       )}
+      {run && freshness && freshness !== "current" && (
+        <div className={"fq-result-freshness " + freshness} role="status">
+          <span aria-hidden="true">{freshness === "changed" ? "◷" : "◇"}</span>
+          {freshness === "changed"
+            ? working
+              ? "Code changed · This run uses its submitted snapshot."
+              : "Code changed · These results are from an earlier snapshot. Run again to update."
+            : freshness === "other-file"
+              ? `Saved run · ${run.project?.entry}. Your current file is unchanged.`
+              : "Saved project snapshot · Current dependencies have not been verified."}
+        </div>
+      )}
+      {!!run?.experiments?.length && (
+        <section
+          className="fq-python-experiments"
+          aria-label="Saved Python experiments"
+          title="Linked to this run's source snapshot. Opening an experiment preserves your editor draft."
+        >
+          <div className="fq-run-completion">
+            <span className="fq-run-completion-mark" aria-hidden="true">
+              {run.collection_status === "completed" ? "✓" : "◇"}
+            </span>
+            <span>
+              <strong>
+                {run.collection_status === "completed" &&
+                run.status === "completed"
+                  ? "Run complete"
+                  : "Saved outputs"}
+              </strong>
+              <small>
+                {run.experiments.length}{" "}
+                {run.experiments.length === 1 ? "experiment" : "experiments"} ·{" "}
+                {run.collection_status === "partial"
+                  ? "Some files need attention"
+                  : "Recorded from this run"}
+              </small>
+            </span>
+          </div>
+          {run.experiments.map((reference) => (
+            <div
+              className="fq-python-experiment"
+              role="group"
+              aria-label={reference.filename}
+              key={reference.id}
+            >
+              <span
+                title={`${reference.filename} · SHA-256 ${reference.sha256} · run ${run.id}`}
+              >
+                {reference.filename}
+                <small>
+                  {" "}
+                  ·{" "}
+                  {python.previews[reference.id]?.status === "loading"
+                    ? "Loading preview…"
+                    : python.previews[reference.id]?.status === "failed"
+                      ? "Preview failed"
+                      : python.previews[reference.id]?.status === "loaded"
+                        ? "Loaded in Quantum"
+                        : "Saved · preview pending"}
+                </small>
+              </span>
+              <button
+                className="fq-run-open-circuit"
+                disabled={python.previews[reference.id]?.status !== "loaded"}
+                onClick={() =>
+                  void python.openExperiment(reference.id, "program")
+                }
+              >
+                View circuit ↗
+              </button>
+              {reference.has_result ? (
+                <button
+                  disabled={python.previews[reference.id]?.status !== "loaded"}
+                  onClick={() =>
+                    void python.openExperiment(reference.id, "jobs")
+                  }
+                >
+                  View result ↗
+                </button>
+              ) : (
+                <small>Circuit only · no saved result</small>
+              )}
+              {python.previews[reference.id]?.status === "failed" && (
+                <span role="alert">
+                  {python.previews[reference.id].error}{" "}
+                  <button onClick={python.retryLoading}>Retry loading</button>
+                </span>
+              )}
+            </div>
+          ))}
+        </section>
+      )}
       <div className="fq-python-result-toolbar">
-        {run && (
-          <small>
-            Run {run.id.slice(0, 8)} · execution{" "}
-            {run.execution_status || run.status} · collection{" "}
-            {run.collection_status || "pending"}
-          </small>
-        )}
         <button
           disabled={python.importing || python.recovering}
           onClick={() => upload.current?.click()}
@@ -155,29 +256,46 @@ export function PythonConsole({
             event.target.value = "";
           }}
         />
-        <small>
-          {run?.runtime
-            ? `Python ${run.runtime.python} · ${run.environment.transport}`
-            : `${python.environment?.transport || "Configured environment"} · Single-file task`}
-          {run?.elapsed_seconds !== undefined
-            ? ` · ${run.elapsed_seconds}s · exit ${run.exit_code ?? "—"}`
-            : ""}
-        </small>
-        {run?.runtime?.sdk_version && (
-          <small>
-            FlagQuantum {run.runtime.sdk_version} ·{" "}
-            {run.runtime.save_load_supported
-              ? "save/load ready"
-              : "SDK upgrade needed for .fqx"}
-          </small>
+        {run && (
+          <details className="fq-python-run-details">
+            <summary>Run details</summary>
+            <div>
+              {" "}
+              {run?.project && (
+                <small>
+                  {run.project.name} / {run.project.entry} ·{" "}
+                  {run.project.files.length} frozen input files ·{" "}
+                  {run.project.snapshot_hash.slice(0, 8)}
+                </small>
+              )}
+              {run && (
+                <small>
+                  Run {run.id.slice(0, 8)} · execution{" "}
+                  {run.execution_status || run.status} · collection{" "}
+                  {run.collection_status || "pending"}
+                </small>
+              )}
+              <small>
+                {run?.runtime
+                  ? `Python ${run.runtime.python} · ${run.environment.transport}`
+                  : `${python.environment?.transport || "Configured environment"} · Python task`}
+                {run?.elapsed_seconds !== undefined
+                  ? ` · ${run.elapsed_seconds}s · exit ${run.exit_code ?? "—"}`
+                  : ""}
+              </small>
+              {run?.runtime?.sdk_version && (
+                <small>
+                  FlagQuantum {run.runtime.sdk_version} ·{" "}
+                  {run.runtime.save_load_supported
+                    ? "save/load ready"
+                    : "SDK upgrade needed for .fqx"}
+                </small>
+              )}
+            </div>
+          </details>
         )}
         {run?.collection_status === "collecting" && (
           <small role="status">Collecting saved experiments…</small>
-        )}
-        {run && run.source !== source && (
-          <small>
-            Results are from an earlier code snapshot. Run Python to update.
-          </small>
         )}
         {["running", "queued"].includes(run?.status || "") && (
           <button onClick={() => void python.cancel()}>Stop</button>
@@ -192,68 +310,6 @@ export function PythonConsole({
           <button onClick={() => onLocate(line)}>Go to line {line} ↗</button>
         )}
       </div>
-      {!!run?.experiments?.length && (
-        <section
-          className="fq-python-experiments"
-          aria-label="Saved Python experiments"
-          title="Linked to this run's source snapshot. Opening an experiment preserves your editor draft."
-        >
-          <small className="eyebrow">
-            SAVED EXPERIMENTS · {run.experiments.length}
-          </small>
-          {run.experiments.map((reference) => (
-            <div
-              className="fq-python-experiment"
-              role="group"
-              aria-label={reference.filename}
-              key={reference.id}
-            >
-              <span
-                title={`${reference.filename} · SHA-256 ${reference.sha256} · run ${run.id}`}
-              >
-                {reference.filename}
-                <small>
-                  {" "}
-                  ·{" "}
-                  {python.previews[reference.id]?.status === "loading"
-                    ? "Loading preview…"
-                    : python.previews[reference.id]?.status === "failed"
-                      ? "Preview failed"
-                      : python.previews[reference.id]?.status === "loaded"
-                        ? "Loaded in Quantum"
-                        : "Saved · preview pending"}
-                </small>
-              </span>
-              <button
-                disabled={python.previews[reference.id]?.status !== "loaded"}
-                onClick={() =>
-                  void python.openExperiment(reference.id, "program")
-                }
-              >
-                View circuit ↗
-              </button>
-              {reference.has_result ? (
-                <button
-                  disabled={python.previews[reference.id]?.status !== "loaded"}
-                  onClick={() =>
-                    void python.openExperiment(reference.id, "jobs")
-                  }
-                >
-                  View result ↗
-                </button>
-              ) : (
-                <small>Circuit only · no saved result</small>
-              )}
-              {python.previews[reference.id]?.status === "failed" && (
-                <span role="alert">
-                  {python.previews[reference.id].error}{" "}
-                  <button onClick={python.retryLoading}>Retry loading</button>
-                </span>
-              )}
-            </div>
-          ))}
-        </section>
-      )}
       {!!run?.collection_errors?.length && (
         <section className="fq-python-collection-errors" role="alert">
           <b>

@@ -88,6 +88,19 @@ export function restoreWorkspace(
     ? hash
     : "model";
   return {
+    project: saved.project,
+    projectTabs: Array.isArray(saved.projectTabs)
+      ? saved.projectTabs
+          .filter(
+            (tab) =>
+              typeof tab.path === "string" &&
+              typeof tab.source === "string" &&
+              tab.editorLink?.project,
+          )
+          .slice(0, 32)
+      : [],
+    activeProjectTab: saved.activeProjectTab,
+    projectScratch: saved.projectScratch,
     schema: "flagqai.quantum-workspace.v1",
     language: fresh || saved.language === "python" ? "python" : "qasm",
     languageDrafts: saved.languageDrafts,
@@ -98,7 +111,8 @@ export function restoreWorkspace(
     editorLink:
       saved.editorLink &&
       saved.editorLink.modelName === name &&
-      /^[a-f0-9]{32}\.(?:qasm|py)$/.test(saved.editorLink.id) &&
+      (/^[a-f0-9]{32}\.(?:qasm|py)$/.test(saved.editorLink.id) ||
+        !!saved.editorLink.project) &&
       typeof saved.editorLink.base === "string" &&
       typeof saved.editorLink.revision === "string"
         ? saved.editorLink
@@ -143,12 +157,22 @@ export function persistWorkspace(storage: Storage, state: WorkspaceState) {
       shots,
       seed,
       schema,
+      project,
+      projectTabs,
+      activeProjectTab,
+      projectScratch,
       editorLink,
     } = state;
     storage.setItem(
       "fq-react-workspace-v1",
       JSON.stringify({
         schema,
+        project,
+        projectTabs: projectTabs?.map((tab) => ({ ...tab, undo: [] })),
+        activeProjectTab,
+        projectScratch: projectScratch
+          ? { ...projectScratch, undo: [] }
+          : undefined,
         language,
         languageDrafts,
         pythonRunId,

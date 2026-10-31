@@ -81,15 +81,31 @@ def supervise():
     threading.Thread(target=listen, daemon=True).start()
     with tempfile.TemporaryDirectory(prefix='flagqai-python-') as folder:
         root = Path(folder)
-        (root/'main.py').write_text(request['source'], encoding='utf-8')
-        (root/'flagquantum_web.py').write_text(request['helper'], encoding='utf-8')
+        entry = request.get('entry', 'main.py')
+        files = request.get('files', {entry: request['source']})
+        if not isinstance(files, dict) or not 1 <= len(files) <= 64 or entry not in files:
+            raise ValueError('Invalid project input snapshot.')
+        total = 0
+        for name, source in files.items():
+            if (not isinstance(name, str) or not isinstance(source, str) or '\\' in name or ':' in name
+                    or any(not part or part.startswith('.') for part in name.split('/'))
+                    or Path(name).suffix.lower() not in ('.py', '.qasm') or len(source.encode()) > 32768):
+                raise ValueError('Invalid project source file.')
+            total += len(source.encode())
+            if total > 512 * 1024: raise ValueError('Project input snapshot exceeds 512 KiB.')
+            path = root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(source, encoding='utf-8')
+        if 'files' not in request:
+            (root/'flagquantum_web.py').write_text(request['helper'], encoding='utf-8')
         emit({'type':'runtime', 'python':sys.version.split()[0], 'cwd':str(root)})
         # Observe the actual SDK imported by the script without requiring it for
         # ordinary Python tasks or changing the user's source file.
         driver = """import runpy,sys,json
 from pathlib import Path
 try:
-    runpy.run_path('main.py', run_name='__main__')
+    sys.path.insert(0, str(Path(sys.argv[1]).resolve().parent))
+    runpy.run_path(sys.argv[1], run_name='__main__')
 finally:
     fq = sys.modules.get('flagquantum')
     try:
@@ -99,7 +115,7 @@ finally:
             json.dump({'sdk_version': getattr(fq, '__version__', None), 'save_load_supported': bool(fq and 'save' in getattr(fq, '__all__', ()) and 'load' in getattr(fq, '__all__', ()))}, stream)
     except OSError: pass
 """
-        process = subprocess.Popen([sys.executable, '-u', '-c', driver], cwd=root,
+        process = subprocess.Popen([sys.executable, '-u', '-c', driver, entry], cwd=root,
             stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             start_new_session=True, env={**os.environ, 'FQ_WEB_ARTIFACT':str(root/'artifact.json'),
                 'OMP_NUM_THREADS':'2', 'MKL_NUM_THREADS':'2', 'OPENBLAS_NUM_THREADS':'2'})

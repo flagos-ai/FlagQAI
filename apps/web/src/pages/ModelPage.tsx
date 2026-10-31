@@ -1,10 +1,12 @@
+import { projectDirty } from "../state/project-workspace";
+import { ProjectTabs } from "../components/ProjectTabs";
+import type { ProjectWorkspace } from "../hooks/useProjectWorkspace";
 import { pythonExample } from "../state/python-workspace";
 import {
   toggleLineComments,
   isCommentShortcut,
 } from "../state/editor-comments";
 import { changedLines } from "../state/code-diff";
-import { SourceVersion } from "../components/SourceVersion";
 import { PythonConsole } from "../components/PythonConsole";
 import type { PythonWorkspace } from "../hooks/usePythonWorkspace";
 import { codeTokens } from "../state/code-tokens";
@@ -29,10 +31,14 @@ export function ModelPage({
   compile,
   editorSync,
   python,
+  projectWorkspace,
+  onOpenProject,
   onAttachSelection,
   onRepairPython,
   backendLabel = "Configured CPU backend",
 }: {
+  projectWorkspace: ProjectWorkspace;
+  onOpenProject: () => void;
   editorSync: EditorSync;
   python: PythonWorkspace;
   backendLabel?: string;
@@ -46,6 +52,10 @@ export function ModelPage({
   dispatch: React.Dispatch<WorkspaceAction>;
   compile: () => void;
 }) {
+  const [reviewRequest, setReviewRequest] = useState<{
+    id: string;
+    sequence: number;
+  }>();
   const [selection, setSelection] = useState({ start: 0, end: 0 });
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -75,7 +85,23 @@ export function ModelPage({
   const editor = useRef<HTMLTextAreaElement>(null),
     [scroll, setScroll] = useState({ top: 0, left: 0 }),
     [focus, setFocus] = useState(false),
-    [configuration, setConfiguration] = useState(true);
+    [configuration, setConfiguration] = useState(() => {
+      try {
+        return localStorage.getItem("fq-editor-configuration") === "open";
+      } catch {
+        return false;
+      }
+    });
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "fq-editor-configuration",
+        configuration ? "open" : "closed",
+      );
+    } catch {
+      /* The panel remains usable without storage. */
+    }
+  }, [configuration]);
   const [errorsHeight, setErrorsHeight] = usePanelSize("errors", 180, 80, 500),
     [settingsWidth, setSettingsWidth] = usePanelSize("settings", 300, 230, 500),
     [constraintsHeight, setConstraintsHeight] = usePanelSize(
@@ -85,6 +111,12 @@ export function ModelPage({
       500,
     );
   const isPython = state.language === "python";
+  const needsProjectSave =
+    !!state.editorLink?.project &&
+    state.projectTabs?.some(
+      (tab) =>
+        tab.project.id === state.editorLink?.project?.id && projectDirty(tab),
+    );
   const diagnostics = useMemo(
     () => (isPython ? [] : (lintOpenQASM(state.source) as Diagnostic[])),
     [state.source, isPython],
@@ -132,18 +164,27 @@ export function ModelPage({
       <section className="fq-model-center">
         <div className="fq-pane-title">
           MODEL EDITOR
+          <button
+            className="fq-project-open"
+            aria-label="Open project workspace"
+            onClick={onOpenProject}
+          >
+            Project{state.project ? " · " + state.project.name : ""}
+          </button>
           <div
             className="fq-language-tabs"
             role="group"
             aria-label="Source language"
           >
             <button
+              disabled={!!state.activeProjectTab && !isPython}
               aria-pressed={isPython}
               onClick={() => dispatch({ type: "language", language: "python" })}
             >
               Python
             </button>{" "}
             <button
+              disabled={!!state.activeProjectTab && isPython}
               aria-pressed={!isPython}
               onClick={() => dispatch({ type: "language", language: "qasm" })}
             >
@@ -166,6 +207,17 @@ export function ModelPage({
             ⛶
           </button>
         </div>
+        <ProjectTabs
+          state={state}
+          dispatch={dispatch}
+          onReview={(id) => {
+            dispatch({ type: "project-tab", id });
+            setReviewRequest((previous) => ({
+              id,
+              sequence: (previous?.sequence || 0) + 1,
+            }));
+          }}
+        />
         <div className="fq-toolbar">
           <span className="fq-filename">
             ◇ {state.name}.{isPython ? "py" : "qasm"}
@@ -177,7 +229,20 @@ export function ModelPage({
           >
             ↶ Undo
           </button>
-          <button onClick={() => dispatch({ type: "save" })}>Save</button>
+          <button
+            disabled={projectWorkspace.busy || python.submitting}
+            onClick={() => void projectWorkspace.save()}
+          >
+            Save
+          </button>
+          {state.project && needsProjectSave && (
+            <button
+              disabled={projectWorkspace.busy || python.submitting}
+              onClick={() => void projectWorkspace.saveAll()}
+            >
+              Save all
+            </button>
+          )}
           <button
             aria-label="Download model"
             onClick={() =>
@@ -186,23 +251,37 @@ export function ModelPage({
           >
             ↓
           </button>
-          <button onClick={() => setConfiguration(!configuration)}>
-            Configuration
+          <button
+            aria-label="Configuration"
+            aria-expanded={configuration}
+            onClick={() => setConfiguration(!configuration)}
+          >
+            {isPython ? "Environment" : "Configuration"}
           </button>
           <button
             className="primary"
             disabled={
               isPython
-                ? python.submitting ||
+                ? projectWorkspace.busy ||
+                  python.submitting ||
                   ["queued", "running"].includes(python.run?.status || "")
                 : errors.length > 0 || state.busy
             }
-            onClick={isPython ? () => void python.start() : compile}
+            title={
+              needsProjectSave
+                ? "Save changed project files, then run this Python entry"
+                : "Run the current code"
+            }
+            onClick={
+              isPython ? () => void python.start(!!needsProjectSave) : compile
+            }
           >
             {isPython
               ? python.submitting
                 ? "Starting…"
-                : "Run Python ▷"
+                : needsProjectSave
+                  ? "Save & run ▷"
+                  : "Run Python ▷"
               : state.busy
                 ? "Compiling…"
                 : "Compile →"}
@@ -220,7 +299,17 @@ export function ModelPage({
             </button>
           </div>
         )}
-        <EditorSyncBar state={state} dispatch={dispatch} sync={editorSync} />
+        <EditorSyncBar
+          state={state}
+          dispatch={dispatch}
+          sync={editorSync}
+          reviewRequest={reviewRequest}
+        />
+        {projectWorkspace.error && (
+          <p className="fq-project-error" role="alert">
+            {projectWorkspace.error}
+          </p>
+        )}
         <div className="fq-editor">
           <div
             className="fq-line-numbers"
@@ -302,6 +391,11 @@ export function ModelPage({
               })
             }
             onKeyDown={(e) => {
+              if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+                e.preventDefault();
+                void projectWorkspace.save();
+                return;
+              }
               if (
                 isCommentShortcut({
                   ...e,
@@ -364,10 +458,7 @@ export function ModelPage({
                 : compiled
                   ? "Compiled"
                   : "Local checks passed · Not compiled"}
-          <span>
-            {isPython ? "Python · UTF-8" : "OpenQASM 2/3 · UTF-8"}{" "}
-            <SourceVersion source={state.source} compact />
-          </span>
+          <span>{isPython ? "Python · UTF-8" : "OpenQASM 2/3 · UTF-8"}</span>
         </div>
         {!focus && (
           <>
@@ -385,6 +476,7 @@ export function ModelPage({
               {isPython ? (
                 <PythonConsole
                   python={python}
+                  state={state}
                   source={state.source}
                   dispatch={dispatch}
                   onLocate={(line) =>
@@ -491,7 +583,11 @@ export function ModelPage({
               <h3>{isPython ? "Execution" : "⌄ Constraints"}</h3>
               {isPython ? (
                 <>
-                  <p>{python.environment?.scope || "Single-file task"}</p>
+                  <p>
+                    {state.editorLink?.project
+                      ? "Frozen project snapshot in a temporary working directory"
+                      : python.environment?.scope || "Single-file task"}
+                  </p>
                   <p>
                     Backend:{" "}
                     {python.environment?.transport || "Configured environment"}
@@ -563,8 +659,10 @@ export function ModelPage({
                   shots, seed and device in your Python code.
                 </p>
                 <p>
-                  Saved .fqx experiments are retained. Other working files are
-                  temporary and removed after each run.
+                  Saved .fqx experiments are retained.{" "}
+                  {state.editorLink?.project
+                    ? "Project sources stay on disk; runs use an isolated frozen copy."
+                    : "Other working files are temporary and removed after each run."}
                 </p>
               </section>
             ) : (

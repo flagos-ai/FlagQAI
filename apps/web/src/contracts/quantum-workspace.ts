@@ -1,3 +1,18 @@
+export type ProjectRun = {
+  id: string;
+  name: string;
+  path: string;
+  entry: string;
+  snapshot_hash: string;
+  disk_hash: string;
+  files: { path: string; sha256: string }[];
+};
+import type {
+  ProjectInfo,
+  ProjectTab,
+  ProjectDraft,
+  ProjectAction,
+} from "../state/project-workspace";
 export type Page = "model" | "synthesis" | "program" | "execution" | "jobs";
 export type Instruction = {
   name: string;
@@ -35,6 +50,7 @@ export type CompiledProgram = {
   protocol_version?: string;
 };
 export type SourceOrigin = {
+  project?: ProjectRun;
   language: SourceLanguage;
   source: string;
   run_id?: string;
@@ -56,6 +72,7 @@ export type SavedMeasurement = {
 };
 export type ExperimentInfo = {
   python_run?: {
+    project?: ProjectRun;
     id: string;
     source_hash: string;
     execution_status: string;
@@ -128,6 +145,8 @@ export type Model = {
   language?: SourceLanguage;
 };
 export type EditorLink = {
+  savedAt?: number;
+  project?: { id: string; path: string };
   id: string;
   path: string;
   modelName: string;
@@ -145,6 +164,10 @@ export type EditorLink = {
   };
 };
 export type WorkspaceState = {
+  project?: ProjectInfo;
+  projectTabs?: ProjectTab[];
+  activeProjectTab?: string;
+  projectScratch?: ProjectDraft;
   language?: SourceLanguage;
   languageDrafts?: Partial<
     Record<
@@ -174,6 +197,7 @@ export type WorkspaceState = {
   undo: string[];
 };
 export type WorkspaceAction =
+  | ProjectAction
   | { type: "import-experiment"; record: ExperimentImport; open?: boolean }
   | { type: "restore-experiments"; records: ExperimentImport[] }
   | {
