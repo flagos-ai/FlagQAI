@@ -1,3 +1,4 @@
+import { ProjectProvenance } from "../components/ProjectProvenance";
 import {
   ExperimentDetails,
   RecordedValues,
@@ -76,6 +77,7 @@ export function JobsPage({
           </small>
           <h2>{job.name}</h2>
           {job.experiment && <ExperimentDetails info={job.experiment} />}
+          <ProjectProvenance project={job.origin?.project} state={state} />
           <SourceVersion
             label={
               job.origin?.language === "python"

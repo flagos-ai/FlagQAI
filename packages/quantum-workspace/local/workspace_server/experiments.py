@@ -77,12 +77,14 @@ class ExperimentImports:
                 origin = {'language': 'python', 'source': python_run['source'],
                           'run_id': python_run['id'], 'source_hash': source_hash(python_run['source']),
                           'execution_status': python_run['execution_status']}
+                if python_run.get('project'): origin['project'] = python_run['project']
                 program['origin'] = origin
                 info['python_run'] = {'id': python_run['id'], 'source_hash': origin['source_hash'],
                                       'execution_status': origin['execution_status'],
                                       'transport': python_run['environment']['transport'], 'task_path': task_path,
                                       'elapsed_seconds': python_run.get('elapsed_seconds'),
                                       'sdk_version': python_run.get('runtime', {}).get('sdk_version')}
+            if python_run is not None and python_run.get('project'): info['python_run']['project'] = python_run['project']
             record = {'id': identity, 'status': 'imported', 'program': program}
             if info['has_result']:
                 counts = next((m['batches'][0] for m in info['measurements'] if m.get('batches')), [])

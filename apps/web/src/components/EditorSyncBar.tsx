@@ -140,11 +140,15 @@ export function EditorSyncBar({
             </button>
             <button
               onClick={() => {
-                dispatch({ type: "unlink-editor" });
+                dispatch(
+                  link.project
+                    ? { type: "project-close-tab", id: link.id }
+                    : { type: "unlink-editor" },
+                );
                 setReview(null);
               }}
             >
-              Disconnect file
+              {link.project ? "Close tab" : "Disconnect file"}
             </button>
           </>
         ) : (

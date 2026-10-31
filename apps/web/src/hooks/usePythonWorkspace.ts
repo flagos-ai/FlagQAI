@@ -1,3 +1,5 @@
+import { projectsAPI } from "../api/projects";
+import { projectDirty } from "../state/project-workspace";
 import { matchesPythonExperiment } from "../state/python-workspace";
 import { importExperiment, readExperiment } from "../api/experiments";
 import { loadPythonExperiments } from "../api/python-experiments";
@@ -177,8 +179,43 @@ export function usePythonWorkspace(
     setSubmitting(true);
     setError("");
     try {
-      const result =
-        bridge.ready && bridge.session
+      const project = state.editorLink?.project;
+      const dirtyDependencies =
+        project &&
+        state.projectTabs?.filter(
+          (tab) =>
+            tab.project.id === project.id &&
+            tab.id !== state.activeProjectTab &&
+            projectDirty(tab),
+        );
+      if (dirtyDependencies && dirtyDependencies.length)
+        throw Error(
+          "Save project dependencies before running: " +
+            dirtyDependencies.map((tab) => tab.path).join(", ") +
+            ". The entry draft can run without saving.",
+        );
+      const result = project
+        ? bridge.ready && bridge.session
+          ? (
+              await platformAPI.action<{ python_run: PythonRun }>({
+                client: bridge.client,
+                session: bridge.session,
+                request_id: crypto.randomUUID(),
+                origin: "ui",
+                operation: "project.run",
+                project_id: project.id,
+                entry: project.path,
+                source: state.source,
+                expected_revision: state.editorLink!.revision,
+              })
+            ).python_run
+          : await projectsAPI.run(
+              project.id,
+              project.path,
+              state.source,
+              state.editorLink!.revision,
+            )
+        : bridge.ready && bridge.session
           ? (
               await platformAPI.action<{ python_run: PythonRun }>({
                 client: bridge.client,

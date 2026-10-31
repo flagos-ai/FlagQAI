@@ -1,6 +1,6 @@
 // Explicit local UI integration fixture, not an Agent backend shipped to users.
 // Exercises the real protocol server and CLI-owned shared projector; no LLM call.
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, writeFile, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -262,6 +262,90 @@ const backend = {
               });
               return JSON.parse(output).result;
             };
+            if (
+              process.env.FQ_E2E_CONTROL_DIR &&
+              controls.project &&
+              /project acceptance/i.test(input.text)
+            ) {
+              const project = await command("project.inspect", [
+                "--project-id",
+                controls.project.id,
+              ]);
+              const entry = join(project.root, "main.py");
+              if (
+                !project.root.startsWith(testWorkspace + "/") ||
+                !(await readFile(entry, "utf8")).startsWith(
+                  "# project-acceptance",
+                )
+              )
+                throw Error(
+                  "Use the isolated marked project acceptance fixture.",
+                );
+              await writeFile(
+                join(project.root, "helper.py"),
+                "def prepare(fq):\n    return fq.Circuit(2).h(0).cx(0, 1).x(1)\n",
+              );
+              await writeFile(
+                entry,
+                (await readFile(entry, "utf8")) +
+                  "\n# Scripted Agent project edit\n",
+              );
+              const inspected = await command("project.inspect", [
+                "--project-id",
+                project.id,
+              ]);
+              const started = await command("project.run", [
+                "--project-id",
+                project.id,
+                "--entry",
+                "main.py",
+                "--expected-hash",
+                inspected.snapshot_hash,
+              ]);
+              let run;
+              const deadline = Date.now() + 120000;
+              do {
+                if (Date.now() > deadline)
+                  throw Error("Project acceptance exceeded 120 seconds.");
+                await delay(400);
+                run = await command("python.read", [
+                  "--run-id",
+                  started.python_run.id,
+                ]);
+              } while (["queued", "running"].includes(run.status));
+              if (run.status !== "completed" || run.experiments?.length !== 1)
+                throw Error(JSON.stringify(run));
+              const artifact = await command("experiment.read", [
+                "--experiment-id",
+                run.experiments[0].id,
+              ]);
+              if (
+                artifact.program.origin.project.snapshot_hash !==
+                run.project.snapshot_hash
+              )
+                throw Error("Project provenance mismatch.");
+              await command("focus", [
+                "--page",
+                "program",
+                "--program-id",
+                artifact.program.id,
+              ]);
+              await streamText(
+                "Scripted project acceptance completed with actual SDK computation. No model was called.",
+                2,
+              );
+              status = "idle";
+              emit(
+                {
+                  type: "turn.end",
+                  turn,
+                  reason: { kind: "completed" },
+                  time: Date.now(),
+                },
+                { type: "session.status", status },
+              );
+              return;
+            }
             const current = await command("status");
             const repairing = process.env.FQ_TEST_REPAIR === "1";
             const pythonWorkflow =

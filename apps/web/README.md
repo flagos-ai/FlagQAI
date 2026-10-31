@@ -450,7 +450,7 @@ directory and separate process group are not a security sandbox. Keep this host
 bound to loopback for this personal, local deployment. The fixed supervisor stops
 the child process group on cancellation, channel closure, timeout or normal exit.
 Service shutdown cancels queued/active Python work. Notebook kernels, persistent
-variables, multi-file projects and package installation are not introduced here.
+variables and package installation are not introduced here. Multi-file projects use the explicit Project workspace described below.
 
 Python examples use the SDK's official save interface:
 
@@ -737,3 +737,35 @@ launcher do not import it. Temporary control flags are removed after tests.
 CI uploads the SDK report plus Playwright HTML, screenshots and traces on failure
 under the `web-sdk-acceptance` artifact. Browser tests have no automatic retries;
 a failure must be investigated instead of being hidden by a second attempt.
+
+
+### Local project workspace
+
+Open **Project** in the Model editor header, then open or create a folder beneath
+`FQ_AGENT_CWD`. Absolute paths inside that root and root-relative paths are
+supported. The native Agent keeps its existing workspace and permission system.
+The explorer opens `.py` and `.qasm` files in separate tabs; `.fqx` files are
+imported read-only into Quantum. Recent outputs link to their recorded circuit.
+
+Each tab retains its draft and selected Python run. Closing a tab retains its
+cached draft; reopening and refreshing restore it. **Save** and **Save all** write
+with a disk revision check. Agent edits update clean tabs; dirty tabs retain their
+local source and offer code review. Conflicting saves retain the browser draft.
+Replaced disk versions are retained beside the database in `project-file-versions`.
+
+Run Python freezes the active entry and saved Python/OpenQASM dependencies in a
+fresh temporary directory. An unsaved entry is included; unsaved dependency tabs
+must be saved first. Archives are collected only from this new run directory.
+Quantum and Jobs show project, entry, snapshot hash and per-file hashes; later
+edits do not rewrite historical results.
+
+The Agent uses `project.inspect --project-id ID` and
+`project.run --project-id ID --entry main.py --expected-hash HASH` through the
+existing workbench bridge and idempotent request ledger. File edits use native
+file tools, not a second Web Agent loop.
+
+This version supports bounded text projects: 32 KiB per text file, 64 source files
+and 512 KiB per run. Hidden files, symlinks and dependency/build directories are
+excluded; paths outside the configured root are rejected. It does not introduce
+package installation or a persistent notebook kernel. Python retains the existing
+execution permissions and limits; the frozen directory is not an OS sandbox.

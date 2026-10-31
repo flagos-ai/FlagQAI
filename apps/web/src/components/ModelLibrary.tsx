@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Model } from "../contracts/quantum-workspace";
 import {
   pythonExamples as examples,
@@ -12,7 +12,11 @@ export function ModelLibrary({
   uploadError,
   busy,
   importing,
+  projectPanel,
+  projectRequest = 0,
 }: {
+  projectPanel?: React.ReactNode;
+  projectRequest?: number;
   uploadError?: string;
   busy?: boolean;
   importing?: boolean;
@@ -20,14 +24,27 @@ export function ModelLibrary({
   onSelect: (model: Model) => void;
   onUpload: (file: File) => void;
 }) {
-  const [tab, setTab] = useState<"models" | "templates">("models"),
+  const [tab, setTab] = useState<"models" | "templates" | "project">(
+      projectRequest ? "project" : "models",
+    ),
     [query, setQuery] = useState(""),
     [prompt, setPrompt] = useState(""),
     [candidate, setCandidate] = useState<Model | null>(null);
   const upload = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (projectRequest) setTab("project");
+  }, [projectRequest]);
   return (
     <>
       <div className="fq-tabs">
+        {projectPanel && (
+          <button
+            className={tab === "project" ? "active" : ""}
+            onClick={() => setTab("project")}
+          >
+            PROJECT
+          </button>
+        )}
         <button
           className={tab === "models" ? "active" : ""}
           onClick={() => setTab("models")}
@@ -41,7 +58,9 @@ export function ModelLibrary({
           TEMPLATES
         </button>
       </div>
-      {tab === "models" ? (
+      {tab === "project" ? (
+        projectPanel
+      ) : tab === "models" ? (
         <div className="fq-library-body">
           <button
             className="outline"
@@ -162,7 +181,11 @@ export function ModelLibrary({
           )}
         </div>
       )}
-      <footer>Models stored locally</footer>
+      <footer>
+        {tab === "project"
+          ? "Local project files · browser drafts retained"
+          : "Models stored locally"}
+      </footer>
     </>
   );
 }

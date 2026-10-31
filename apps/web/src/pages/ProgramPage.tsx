@@ -1,3 +1,4 @@
+import { ProjectProvenance } from "../components/ProjectProvenance";
 import { ExperimentDetails } from "../components/ExperimentDetails";
 import { SourceVersion } from "../components/SourceVersion";
 import { useEffect, useRef, useState } from "react";
@@ -183,6 +184,10 @@ export function ProgramPage({
                       )}
                     </>
                   )}
+                  <ProjectProvenance
+                    project={program.origin?.project}
+                    state={state}
+                  />
                   <SourceVersion
                     label={
                       program.origin?.language === "python"

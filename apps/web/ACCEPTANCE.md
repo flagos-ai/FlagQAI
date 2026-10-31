@@ -216,3 +216,23 @@ installation of genuinely required missing dependencies were not evaluated.
   Playwright and Chromium are paired by a pinned test dependency and lockfile.
 - Browser evidence and the SDK report are retained as CI artifacts. No model
   calls, provider access, npm publishing or production fault endpoints are used.
+
+
+### 2026-10-31: project files and frozen multi-file runs
+
+- 92 real-SDK backend tests passed with zero skips. New coverage exercises bounded
+  paths, symlink rejection, CAS saves, retained previous bytes, registry recovery,
+  queued snapshot immutability after dependency edits, bridge idempotency,
+  same-origin HTTP handling and actual SDK artifacts from helper modules.
+- 121 Web tests passed, including per-file drafts, undo and run selection,
+  refresh, dirty inactive Agent edits, stale polling, tab recovery and late saves.
+  Typecheck and production build passed.
+- Manual browser acceptance on isolated port 4262 created helper.py and main.py,
+  saved both and executed a genuine CPU SDK Bell circuit. The snapshot contained
+  both input hashes and its .fqx opened in Quantum. Native disk edits during an
+  unsaved main.py draft offered review; Keep my draft and refresh retained it.
+- A ninth Chromium case covers project creation, unsaved-dependency gating,
+  scripted native Agent edits, changed actual SDK results and tab/refresh recovery.
+  CI runs the browser; the fixture makes no model calls.
+- Staged package surface (2646 files / 32 entry targets) and clean installed-runtime
+  acceptance passed. Optional Web remains outside the CLI package.

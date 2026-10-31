@@ -3,6 +3,7 @@ export type FileSnapshot = {
   path: string;
   source: string;
   revision: string;
+  project?: { id: string; path: string };
 };
 async function request(
   url: string,

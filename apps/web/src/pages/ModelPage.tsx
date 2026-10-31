@@ -1,3 +1,5 @@
+import { ProjectTabs } from "../components/ProjectTabs";
+import type { ProjectWorkspace } from "../hooks/useProjectWorkspace";
 import { pythonExample } from "../state/python-workspace";
 import {
   toggleLineComments,
@@ -29,10 +31,14 @@ export function ModelPage({
   compile,
   editorSync,
   python,
+  projectWorkspace,
+  onOpenProject,
   onAttachSelection,
   onRepairPython,
   backendLabel = "Configured CPU backend",
 }: {
+  projectWorkspace: ProjectWorkspace;
+  onOpenProject: () => void;
   editorSync: EditorSync;
   python: PythonWorkspace;
   backendLabel?: string;
@@ -132,18 +138,27 @@ export function ModelPage({
       <section className="fq-model-center">
         <div className="fq-pane-title">
           MODEL EDITOR
+          <button
+            className="fq-project-open"
+            aria-label="Open project workspace"
+            onClick={onOpenProject}
+          >
+            Project{state.project ? " · " + state.project.name : ""}
+          </button>
           <div
             className="fq-language-tabs"
             role="group"
             aria-label="Source language"
           >
             <button
+              disabled={!!state.activeProjectTab && !isPython}
               aria-pressed={isPython}
               onClick={() => dispatch({ type: "language", language: "python" })}
             >
               Python
             </button>{" "}
             <button
+              disabled={!!state.activeProjectTab && isPython}
               aria-pressed={!isPython}
               onClick={() => dispatch({ type: "language", language: "qasm" })}
             >
@@ -166,6 +181,7 @@ export function ModelPage({
             ⛶
           </button>
         </div>
+        <ProjectTabs state={state} dispatch={dispatch} />
         <div className="fq-toolbar">
           <span className="fq-filename">
             ◇ {state.name}.{isPython ? "py" : "qasm"}
@@ -177,7 +193,20 @@ export function ModelPage({
           >
             ↶ Undo
           </button>
-          <button onClick={() => dispatch({ type: "save" })}>Save</button>
+          <button
+            disabled={projectWorkspace.busy}
+            onClick={() => void projectWorkspace.save()}
+          >
+            Save
+          </button>
+          {state.project && (
+            <button
+              disabled={projectWorkspace.busy}
+              onClick={() => void projectWorkspace.saveAll()}
+            >
+              Save all
+            </button>
+          )}
           <button
             aria-label="Download model"
             onClick={() =>
@@ -221,6 +250,11 @@ export function ModelPage({
           </div>
         )}
         <EditorSyncBar state={state} dispatch={dispatch} sync={editorSync} />
+        {projectWorkspace.error && (
+          <p className="fq-project-error" role="alert">
+            {projectWorkspace.error}
+          </p>
+        )}
         <div className="fq-editor">
           <div
             className="fq-line-numbers"
@@ -302,6 +336,11 @@ export function ModelPage({
               })
             }
             onKeyDown={(e) => {
+              if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+                e.preventDefault();
+                void projectWorkspace.save();
+                return;
+              }
               if (
                 isCommentShortcut({
                   ...e,
@@ -491,7 +530,11 @@ export function ModelPage({
               <h3>{isPython ? "Execution" : "⌄ Constraints"}</h3>
               {isPython ? (
                 <>
-                  <p>{python.environment?.scope || "Single-file task"}</p>
+                  <p>
+                    {state.editorLink?.project
+                      ? "Frozen project snapshot in a temporary working directory"
+                      : python.environment?.scope || "Single-file task"}
+                  </p>
                   <p>
                     Backend:{" "}
                     {python.environment?.transport || "Configured environment"}
@@ -563,8 +606,10 @@ export function ModelPage({
                   shots, seed and device in your Python code.
                 </p>
                 <p>
-                  Saved .fqx experiments are retained. Other working files are
-                  temporary and removed after each run.
+                  Saved .fqx experiments are retained.{" "}
+                  {state.editorLink?.project
+                    ? "Project sources stay on disk; runs use an isolated frozen copy."
+                    : "Other working files are temporary and removed after each run."}
                 </p>
               </section>
             ) : (

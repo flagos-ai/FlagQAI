@@ -117,6 +117,13 @@ export function PythonConsole({
         </section>
       )}
       <div className="fq-python-result-toolbar">
+        {run?.project && (
+          <small>
+            {run.project.name} / {run.project.entry} ·{" "}
+            {run.project.files.length} frozen input files ·{" "}
+            {run.project.snapshot_hash.slice(0, 8)}
+          </small>
+        )}
         {run && (
           <small>
             Run {run.id.slice(0, 8)} · execution{" "}

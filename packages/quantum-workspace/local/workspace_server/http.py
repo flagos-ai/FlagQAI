@@ -14,6 +14,7 @@ from .history_preferences import history_trash
 from .bridge import WorkspaceBridge, BridgeConflict
 from .python_runs import PythonRuns
 from .experiments import ExperimentImports, MAX_UPLOAD_BYTES
+from .projects import ProjectConflict
 
 
 def create_server(settings, service):
@@ -161,6 +162,18 @@ def create_server(settings, service):
                     if after < 0: raise ValueError('Invalid cursor.')
                     return self.reply(bridge.events(query.get('client', [''])[0], query.get('session', [''])[0], after))
                 except (ValueError, TypeError) as error: return self.reply({'error': str(error)}, 400)
+            if urlsplit(self.path).path.startswith('/api/projects'):
+                try:
+                    path = urlsplit(self.path).path
+                    if path == '/api/projects': return self.reply(python_runs.projects.list())
+                    match = re.fullmatch(r'/api/projects/([a-f0-9]{32})(/file)?', path)
+                    if not match: return self.reply({'error': 'Project route not found.'}, 404)
+                    if match.group(2):
+                        name = parse_qs(urlsplit(self.path).query).get('path', [''])[0]
+                        return self.reply(python_runs.projects.read(match.group(1), name))
+                    return self.reply(python_runs.projects.tree(match.group(1)))
+                except ProjectConflict as error: return self.reply({'error': str(error)}, 409)
+                except (ValueError, OSError) as error: return self.reply({'error': str(error)}, 400)
             if self.path == '/api/experiments':
                 return self.reply(experiments.records())
             record_match = re.fullmatch(r'/api/experiments/(fqx-[a-f0-9]{32})', self.path)
@@ -226,6 +239,22 @@ def create_server(settings, service):
         def do_POST(self):
             if not self.allowed():
                 return self.reply({'error': 'Only local same-origin access is allowed.'}, 403)
+            if self.path.startswith('/api/projects'):
+                try:
+                    length = int(self.headers.get('Content-Length', '0'))
+                    if self.headers.get('Content-Type', '').split(';')[0] != 'application/json' or not 0 < length <= 128 * 1024:
+                        raise ValueError('Use a bounded JSON project request.')
+                    data = json.loads(self.rfile.read(length))
+                    if self.path == '/api/projects': return self.reply(python_runs.projects.open(data.get('path'), data.get('create') is True))
+                    match = re.fullmatch(r'/api/projects/([a-f0-9]{32})/(file|run|artifact)', self.path)
+                    if not match: return self.reply({'error': 'Project route not found.'}, 404)
+                    identity, operation = match.groups()
+                    if operation == 'file':
+                        return self.reply(python_runs.projects.write(identity, data.get('path'), data.get('source'), data.get('expected_revision')))
+                    if operation == 'run': return self.reply(python_runs.submit_project({**data, 'project_id': identity}), 202)
+                    return self.reply(python_runs.projects.artifact(identity, data.get('path'), experiments))
+                except ProjectConflict as error: return self.reply({'error': str(error)}, 409)
+                except (ValueError, OSError, TypeError, AttributeError) as error: return self.reply({'error': str(error)}, 400)
             if urlsplit(self.path).path == '/api/experiments':
                 if self.headers.get('Content-Type', '').split(';')[0] != 'application/octet-stream':
                     return self.reply({'error': 'Use application/octet-stream for .fqx files.'}, 415)
