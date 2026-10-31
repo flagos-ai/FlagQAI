@@ -312,8 +312,10 @@ test("scripted Agent streams tools, survives lost receipt + refresh, and protect
     "Scripted Agent acceptance; actual FlagQuantum computation.",
     { timeout: 90000 },
   );
-  await expect(page.getByRole("button", { name: /Worked for/ })).toBeVisible();
-  await page.getByRole("button", { name: /Worked for/ }).click();
+  const workSummary = page.locator(".fq-agent-work > summary");
+  await expect(workSummary).toBeVisible();
+  await expect(workSummary).toContainText("Worked");
+  await workSummary.click();
   await expect(page.locator(".fq-cli-tool").first()).toBeVisible();
   expect((await get(page, controlURL)).submissionCount).toBe(before + 1);
   await page.getByRole("button", { name: "MODEL", exact: true }).click();
