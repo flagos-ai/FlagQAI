@@ -693,3 +693,47 @@ an environment repair; retry does not install packages or change runtimes.
 Quantum and saved Results show the file hash, run ID and task-relative path.
 Different files with the same basename remain separate artifacts. Source version
 labels indicate when the current editor has changed since that execution.
+
+### Required real-SDK and browser acceptance
+
+The Web CI job checks out FlagQuantum revision
+`4ed3b8252200900d25350aaac6ddc9abbf8bc1e6` (the merged save/load SDK), runs Python
+3.11 with CPU PyTorch 2.13.0, and installs Playwright 1.64.1 with its matching
+Chromium. The SDK is imported from that source checkout; this lane does not
+install the similarly named PyPI 0.1.1 package or build/test the native extension.
+It exercises actual SDK execution and archive save/load on CPU.
+
+`packages/quantum-workspace/tests/sdk_acceptance.py` checks the required SDK APIs
+and runtime versions, runs the backend suite, writes a JSON runtime/results
+report, and fails on any skipped test or an empty suite. The ordinary lightweight
+`web:test:backend` command remains available without an SDK; CI uses the strict
+runner so SDK coverage cannot silently disappear. Update the source revision,
+version checks and CPU runtime pin together when upgrading the acceptance SDK.
+
+After installing Web dependencies and building Web and the native CLI fixture,
+run the browser suite with a configured supported Python interpreter:
+
+```sh
+PYTHONPATH=/path/to/pinned/FlagQuantum \
+  /path/to/python packages/quantum-workspace/tests/sdk_acceptance.py \
+  --report apps/web/sdk-results/acceptance.json
+pnpm --dir apps/web exec playwright install chromium
+PYTHONPATH=/path/to/pinned/FlagQuantum FQ_LOCAL_PYTHON=/path/to/python \
+  pnpm --dir apps/web test:e2e
+```
+
+The eight browser cases cover all four built-in Python examples, actual circuit
+and measurement display, selected historical results after refresh, dirty drafts,
+missing archives, real syntax/dependency/SDK errors, partial multi-file recovery,
+and a scripted Agent repair with a lost receipt, refresh, tool history and draft
+review. The Agent uses the actual protocol server and command adapter; generation
+is scripted and no provider credentials or model calls are needed. Browser tests
+run serially in independent browser contexts against random loopback ports and a
+temporary database; they never reuse the user's 4188 or native Agent service.
+
+Preview outages are injected only by `scripts/sdk-acceptance-host.py`, selected by
+the development fixture's explicit `FQ_E2E_CONTROL_DIR`. The production host and
+launcher do not import it. Temporary control flags are removed after tests.
+CI uploads the SDK report plus Playwright HTML, screenshots and traces on failure
+under the `web-sdk-acceptance` artifact. Browser tests have no automatic retries;
+a failure must be investigated instead of being hidden by a second attempt.

@@ -201,3 +201,18 @@ installation of genuinely required missing dependencies were not evaluated.
   preview does not hide a healthy sibling and a retry only reads saved archives.
   Browser file-import acceptance used a genuine `.fqx`; it did not simulate a
   successful parser or compute result.
+
+### 2026-10-31: automated real-SDK CI gate
+
+- Added strict SDK acceptance: 82 backend tests passed locally with zero skips
+  using pinned SDK source `4ed3b8252200900d25350aaac6ddc9abbf8bc1e6`, SDK 0.4.0,
+  PyTorch 2.13.0 and Python 3.12.14. CI deliberately uses Python 3.11. The runner
+  records its actual interpreter, imported SDK path/version and results as JSON.
+- Existing 118 Web tests, typecheck and production build passed locally. Eight
+  Playwright cases are discoverable without launching a browser; the actual
+  Chromium run is performed by CI against the isolated scripted Agent host.
+- The SDK source and CPU runtime are required in the Web job; missing SDK APIs,
+  wrong runtime versions, skipped backend tests or an empty suite fail the job.
+  Playwright and Chromium are paired by a pinned test dependency and lockfile.
+- Browser evidence and the SDK report are retained as CI artifacts. No model
+  calls, provider access, npm publishing or production fault endpoints are used.

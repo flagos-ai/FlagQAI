@@ -28,11 +28,14 @@ class PythonRunCase(unittest.TestCase):
     def tearDown(self):
         self.runs.close();self.quantum.close();self.temp.cleanup()
     def wait(self, run_id):
-        for _ in range(200):
+        # A cold PyTorch import on shared CI can exceed the former six-second
+        # bound. Wait for the actual terminal state, with a bounded deadline.
+        deadline = time.monotonic() + 45
+        while time.monotonic() < deadline:
             result=self.runs.get(run_id)
             if result['status'] not in ('queued','running'):return result
-            time.sleep(.03)
-        self.fail('Python task did not settle')
+            time.sleep(.05)
+        self.fail('Python task did not settle: ' + run_id)
 
 
 class PythonTests(PythonRunCase):

@@ -208,6 +208,10 @@ jobs:
   web:
     name: Optional Web source and local workspace
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PYTHONPATH: ${{ github.workspace }}/.ci-flagquantum-sdk
+      FQ_LOCAL_PYTHON: python3
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -221,10 +225,36 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      # save/load is not available in the unrelated PyPI 0.1.1 distribution.
+      # Test the immutable merged SDK source; CPU PyTorch executes the circuits.
+      - uses: actions/checkout@v4
+        with:
+          repository: flagos-ai/FlagQuantum
+          ref: 4ed3b8252200900d25350aaac6ddc9abbf8bc1e6
+          path: .ci-flagquantum-sdk
+          persist-credentials: false
+      - name: Install pinned SDK CPU runtime
+        run: python -m pip install --index-url https://download.pytorch.org/whl/cpu -r packages/quantum-workspace/tests/sdk-runtime.txt
       # Web protocol tests exercise the pinned native compaction implementation.
       - run: pnpm cli:install
       - run: pnpm web:install
       - run: pnpm web:check
       - run: pnpm web:build
-      - name: Workspace tests (SDK-dependent cases require a configured SDK)
-        run: pnpm web:test:backend
+      - name: Required real SDK workspace acceptance (zero skipped tests)
+        run: python packages/quantum-workspace/tests/sdk_acceptance.py --report apps/web/sdk-results/acceptance.json
+      - name: Compile scripted native Agent fixture
+        run: pnpm --dir apps/cli run compile
+      - name: Install pinned Chromium test browser
+        run: pnpm --dir apps/web exec playwright install --with-deps chromium
+      - name: Browser workbench acceptance (real SDK, scripted Agent, no model calls)
+        run: pnpm --dir apps/web test:e2e
+      - name: Upload SDK report and browser failure evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-sdk-acceptance
+          path: |
+            apps/web/sdk-results/
+            apps/web/test-results/
+            apps/web/playwright-report/
+          if-no-files-found: warn

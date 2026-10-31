@@ -855,13 +855,15 @@ const proxy =
       )
     : null;
 const python = spawn(
-  "python3",
+  process.env.FQ_LOCAL_PYTHON || "python3",
   [
-    process.env.FQ_TEST_BRIDGE === "1" &&
-    process.env.FQ_TEST_PYTHON !== "1" &&
-    process.env.FQ_TEST_REPAIR !== "1"
-      ? "packages/quantum-workspace/tests/bridge_host.py"
-      : "packages/quantum-workspace/serve.py",
+    process.env.FQ_E2E_CONTROL_DIR
+      ? "apps/web/scripts/sdk-acceptance-host.py"
+      : process.env.FQ_TEST_BRIDGE === "1" &&
+          process.env.FQ_TEST_PYTHON !== "1" &&
+          process.env.FQ_TEST_REPAIR !== "1"
+        ? "packages/quantum-workspace/tests/bridge_host.py"
+        : "packages/quantum-workspace/serve.py",
   ],
   {
     cwd: root,
@@ -886,6 +888,12 @@ console.log(
 );
 const stop = async () => {
   python.kill("SIGINT");
+  await Promise.race([
+    new Promise((resolve) => python.once("exit", resolve)),
+    delay(5000).then(() => {
+      if (python.exitCode === null) python.kill("SIGKILL");
+    }),
+  ]);
   await proxy?.close();
   await server.close();
   await rm(testWorkspace, { recursive: true, force: true });
