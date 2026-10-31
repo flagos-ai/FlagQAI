@@ -1069,3 +1069,105 @@ test("Follow Agent from Execution handles the first action batch, cold archive f
     await rm(resultBarrier, { force: true });
   }
 });
+
+test("comparison task opens a durable side-by-side experiment with real gate and distribution changes", async ({
+  page,
+}, testInfo) => {
+  await editor(page).fill(draft);
+  const agent = page.getByRole("button", {
+    name: "FlagQAI Agent",
+    exact: true,
+  });
+  if ((await agent.getAttribute("aria-expanded")) !== "true")
+    await agent.click();
+  await page
+    .getByRole("button", { name: "Connect Agent", exact: true })
+    .click();
+  await expect(
+    page.getByRole("status", { name: "Connected", exact: true }),
+  ).toBeVisible();
+  const follow = page.getByRole("switch", { name: /Follow Agent/ });
+  if ((await follow.getAttribute("aria-checked")) !== "true")
+    await follow.click();
+  await page.getByRole("button", { name: "EXECUTION", exact: true }).click();
+  await page
+    .getByRole("textbox", { name: "Message FlagQAI", exact: true })
+    .fill("comparison acceptance");
+  await page.getByRole("button", { name: "Send message", exact: true }).click();
+  await expect(
+    page.getByRole("region", { name: "Experiment progress" }),
+  ).toBeVisible();
+  const comparison = page.getByRole("region", {
+    name: "Experiment comparison",
+    exact: true,
+  });
+  await expect(comparison).toBeVisible({ timeout: 90000 });
+  await expect(
+    comparison.getByRole("heading", {
+      name: "1 added · 0 removed operations",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(comparison).toContainText("+ X on q1");
+  await expect(comparison).toContainText("100.0%");
+  await expect(
+    page.getByRole("region", { name: "Experiment progress" }),
+  ).toContainText("1 run · 2 saved results");
+  await expect(
+    comparison.getByRole("combobox", {
+      name: "Baseline experiment",
+      exact: true,
+    }),
+  ).toHaveValue(/fqx-/);
+  const left = await comparison
+    .getByRole("combobox", { name: "Baseline experiment", exact: true })
+    .inputValue();
+  const right = await comparison
+    .getByRole("combobox", { name: "Variant experiment", exact: true })
+    .inputValue();
+  const a = await get(page, "/api/experiments/" + left),
+    b = await get(page, "/api/experiments/" + right);
+  expect(a.job.result.shots).not.toBe(b.job.result.shots);
+  expect(Object.keys(a.job.result.counts).sort()).toEqual(["00", "11"]);
+  expect(Object.keys(b.job.result.counts).sort()).toEqual(["01", "10"]);
+  await page.screenshot({
+    path: testInfo.outputPath("experiment-comparison.png"),
+    fullPage: true,
+  });
+  await page.reload();
+  await expect(comparison).toBeVisible();
+  await expect(
+    comparison.getByRole("combobox", {
+      name: "Baseline experiment",
+      exact: true,
+    }),
+  ).toHaveValue(left);
+  await expect(
+    comparison.getByRole("combobox", {
+      name: "Variant experiment",
+      exact: true,
+    }),
+  ).toHaveValue(right);
+  await expect(
+    page.getByRole("region", { name: "Experiment progress" }),
+  ).toContainText("2 saved results");
+  await comparison
+    .getByRole("button", { name: "Swap comparison sides", exact: true })
+    .click();
+  await expect(
+    comparison.getByRole("heading", {
+      name: "0 added · 1 removed operations",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await comparison
+    .getByRole("button", { name: "Single result", exact: true })
+    .click();
+  await expect(comparison).toHaveCount(0);
+  await page.getByRole("button", { name: "MODEL", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Show model library", exact: true })
+    .click();
+  await page.getByRole("button", { name: /Draft · Python Bell pair/ }).click();
+  await expect(editor(page)).toHaveValue(draft);
+});

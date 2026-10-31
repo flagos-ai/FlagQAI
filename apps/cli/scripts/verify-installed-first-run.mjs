@@ -8,6 +8,7 @@ import { delimiter, join } from 'node:path'
 import { INSTALLED_RUNTIME, installedPaths } from '../bin/installed-runtime.js'
 import { FLAGQUANTUM_MCP_PACKAGE } from '../bin/quantum-mcp-profile.js'
 import { acceptanceRegistryEnvironment } from './acceptance-install-env.mjs'
+import { removeAcceptanceSandbox } from './acceptance-cleanup.mjs'
 import { packFlagqai } from './pack-flagqai.mjs'
 import { resolveNpmCli } from './npm-cli.mjs'
 
@@ -408,18 +409,7 @@ console.log('PASS installed quantum directory write-and-sync probes')
   passed = true
 } finally {
   if (passed || process.env.FLAGQAI_ACCEPTANCE_KEEP_SANDBOX !== '1') {
-    try {
-      await rm(sandbox, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 })
-      console.log('First-run sandbox cleanup complete')
-    } catch (cleanupError) {
-      // A throw here replaces whatever was already propagating, so a locked
-      // directory would report itself instead of the test result. Windows run
-      // 40648607421 lost a 25-minute run that way: the only error in the log
-      // was `EBUSY rmdir ...runtime`, with no trace of what actually failed.
-      // Cleanup is best-effort; the runner discards the sandbox anyway.
-      console.error(`could not remove the probe sandbox (${sandbox}): `
-        + `${cleanupError instanceof Error ? cleanupError.message : String(cleanupError)}`)
-    }
+    removeAcceptanceSandbox(sandbox)
   } else {
     console.error(`First-run probe retained its isolated files at ${sandbox}`)
   }

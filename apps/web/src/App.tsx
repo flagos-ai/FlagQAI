@@ -285,7 +285,11 @@ export default function App() {
                   "fq-library-card " +
                   (state.selectedJobId === j.id ? "selected" : "")
                 }
-                onClick={() => dispatch({ type: "job", id: j.id })}
+                onClick={() => {
+                  if (state.comparison)
+                    dispatch({ type: "compare-experiments" });
+                  dispatch({ type: "job", id: j.id });
+                }}
               >
                 {j.status === "completed"
                   ? "✓"

@@ -1,3 +1,4 @@
+import { ExperimentComparison } from "../components/ExperimentComparison";
 import { ProjectProvenance } from "../components/ProjectProvenance";
 import {
   ExperimentDetails,
@@ -44,6 +45,8 @@ export function JobsPage({
           ),
         }
       : job?.result;
+  if (state.comparison)
+    return <ExperimentComparison state={state} dispatch={dispatch} />;
   if (!job)
     return (
       <div className="fq-empty">
@@ -62,7 +65,31 @@ export function JobsPage({
     .slice(0, 32);
   return (
     <section className="fq-jobs">
-      <div className="fq-pane-title">RESULTS</div>
+      <div className="fq-pane-title">
+        RESULTS{" "}
+        <button
+          disabled={
+            state.jobs.filter((item) => item.experiment?.has_result).length < 2
+          }
+          title="Compare two saved experiments"
+          onClick={() => {
+            const selected = job.experiment?.has_result
+              ? job
+              : state.jobs.find((item) => item.experiment?.has_result);
+            const other = state.jobs.find(
+              (item) => item.experiment?.has_result && item.id !== selected?.id,
+            );
+            if (other && selected)
+              dispatch({
+                type: "compare-experiments",
+                left: other.id,
+                right: selected.id,
+              });
+          }}
+        >
+          Compare experiments
+        </button>
+      </div>
       <div className="fq-content-pad">
         <section className="fq-panel">
           <small className="eyebrow">

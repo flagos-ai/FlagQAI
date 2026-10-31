@@ -175,6 +175,7 @@ export type WorkspaceState = {
       { name: string; source: string; editorLink?: EditorLink; undo: string[] }
     >
   >;
+  comparison?: { left: string; right: string };
   pythonRunId?: string;
   editorLink?: EditorLink;
   schema: "flagqai.quantum-workspace.v1";
@@ -198,6 +199,7 @@ export type WorkspaceState = {
 };
 export type WorkspaceAction =
   | ProjectAction
+  | { type: "compare-experiments"; left?: string; right?: string }
   | { type: "import-experiment"; record: ExperimentImport; open?: boolean }
   | { type: "restore-experiments"; records: ExperimentImport[] }
   | {

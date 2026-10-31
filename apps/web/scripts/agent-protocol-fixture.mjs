@@ -366,7 +366,9 @@ const backend = {
             };
             if (
               process.env.FQ_E2E_CONTROL_DIR &&
-              requestText.trim() === "follow acceptance"
+              ["follow acceptance", "comparison acceptance"].includes(
+                requestText.trim(),
+              )
             ) {
               const barrier = async (name) => {
                 const deadline = Date.now() + 60000;
@@ -376,6 +378,7 @@ const backend = {
                   await delay(100);
                 }
               };
+              const comparing = requestText.trim() === "comparison acceptance";
               const sourceFolder = await mkdtemp(
                 join(root, ".flagqai-follow-test-"),
               );
@@ -386,6 +389,11 @@ const backend = {
                   path,
                   'import flagquantum as fq\ncircuit = fq.Circuit(2).h(0).cx(0, 1).x(1)\nresult = fq.run(circuit, outputs=fq.counts(), options=fq.ExecutionOptions(shots=128, seed=42))\nfq.save("follow.fqx", result.plan, result=result)\n',
                 );
+                if (comparing)
+                  await writeFile(
+                    path,
+                    'import flagquantum as fq\ncircuit = fq.Circuit(2).h(0).cx(0, 1)\nresult = fq.run(circuit, outputs=fq.counts(), options=fq.ExecutionOptions(shots=128, seed=42))\nfq.save("01-bell.fqx", result.plan, result=result)\ncircuit.x(1)\nvariant = fq.run(circuit, outputs=fq.counts(), options=fq.ExecutionOptions(shots=256, seed=42))\nfq.save("02-bell-x.fqx", variant.plan, result=variant)\n',
+                  );
                 created = await command("model.create", [
                   "--language",
                   "python",
@@ -415,11 +423,14 @@ const backend = {
                   started.python_run.id,
                 ]);
               } while (["queued", "running"].includes(run.status));
-              if (run.status !== "completed" || run.experiments?.length !== 1)
+              if (
+                run.status !== "completed" ||
+                run.experiments?.length !== (comparing ? 2 : 1)
+              )
                 throw Error(JSON.stringify(run));
               const artifact = await command("experiment.read", [
                 "--experiment-id",
-                run.experiments[0].id,
+                run.experiments.at(-1).id,
               ]);
               await command("focus", [
                 "--page",
@@ -435,7 +446,9 @@ const backend = {
                 artifact.job.id,
               ]);
               await streamText(
-                "Follow acceptance completed using the actual SDK. No model was called.",
+                comparing
+                  ? "Comparison acceptance completed using two actual SDK results. No model was called."
+                  : "Follow acceptance completed using the actual SDK. No model was called.",
                 2,
               );
               status = "idle";

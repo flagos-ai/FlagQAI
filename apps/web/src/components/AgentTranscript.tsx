@@ -1,3 +1,4 @@
+import { AgentExperimentTask } from "./AgentExperimentTask";
 import { agentRunStatus, stopFeedback } from "../state/agent-run-status";
 import { AgentWorkspaceActions } from "./AgentWorkspaceActions";
 import type { PlatformBridge } from "../hooks/usePlatformBridge";
@@ -321,6 +322,23 @@ export function AgentTranscript({
             return (
               <div key={turn.id} className="fq-agent-turn">
                 {question.map(renderRow)}
+                <AgentExperimentTask
+                  actions={bridge.actions.filter(
+                    (action) =>
+                      action.origin !== "ui" &&
+                      action.turn_seq ===
+                        turn.rows.find((row) => row.kind === "user")?.seq,
+                  )}
+                  active={turn.active}
+                  outcome={turn.outcome}
+                  follow={bridge.follow}
+                  requested={/比较|对比|对照|\bcompar(?:e|ison)\b/i.test(
+                    splitWorkspaceContext(
+                      turn.rows.find((row) => row.kind === "user")?.text || "",
+                    ).text,
+                  )}
+                  onCompare={bridge.compare}
+                />
                 {(turn.work.length > 0 || hasProgress) &&
                   (live ? (
                     <div className="fq-agent-work-live">
