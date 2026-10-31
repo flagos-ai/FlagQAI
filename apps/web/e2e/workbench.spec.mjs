@@ -667,3 +667,128 @@ test("workspace restores file view and folds; keyboard file search and save-and-
     page.getByRole("dialog", { name: "Find project file" }),
   ).toHaveCount(0);
 });
+
+test("failed run → Agent repair → review and undo → changed SDK result remains traceable after refresh", async ({
+  page,
+}) => {
+  const agent = page.getByRole("button", {
+    name: "FlagQAI Agent",
+    exact: true,
+  });
+  if ((await agent.getAttribute("aria-expanded")) !== "true")
+    await agent.click();
+  await page
+    .getByRole("button", { name: "Connect Agent", exact: true })
+    .click();
+  await expect(
+    page.getByRole("status", { name: "Connected", exact: true }),
+  ).toBeVisible();
+  const follow = page.getByRole("switch", { name: /Follow Agent/ });
+  if ((await follow.getAttribute("aria-checked")) !== "true")
+    await follow.click();
+  const failed = await runPython(
+    page,
+    "# repair-case: syntax\nimport flagquantum as fq\nfq.Circuit(",
+  );
+  expect(failed.status).toBe("failed");
+  await page
+    .getByRole("button", { name: "Ask Agent to fix", exact: true })
+    .click();
+  await expect(
+    page.getByRole("textbox", { name: "Message FlagQAI", exact: true }),
+  ).toHaveValue(new RegExp(failed.id.slice(0, 8)));
+  await editor(page).fill(draft);
+  await page.getByRole("button", { name: "Send message", exact: true }).click();
+  await expect(page.locator(".fq-agent-message.assistant")).toContainText(
+    "Repaired failed run " + failed.id,
+    { timeout: 90000 },
+  );
+  await expect(page).toHaveURL(/#program$/);
+  await expect(
+    page.getByText("Differs from editor", { exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".fq-agent-work > summary")).toContainText(
+    "Worked",
+  );
+  const completed = (await get(page, "/api/python/runs")).find(
+    (item) => item.id !== failed.id && item.status === "completed",
+  );
+  expect(completed).toBeTruthy();
+  const repaired = await get(page, "/api/python/runs/" + completed.id);
+  const original = await savedRecord(page, repaired, "repaired.fqx");
+  expect(Object.keys(original.job.result.counts).sort()).toEqual(["00", "11"]);
+  await page.reload();
+  await expect(page).toHaveURL(/#program$/);
+  await expect(agent).toHaveAttribute("aria-expanded", "true");
+  await expect(page.locator(".fq-agent-message.assistant")).toContainText(
+    "Repaired failed run " + failed.id,
+  );
+  await expect(
+    page.getByRole("link", { name: "Download original .fqx ↓" }),
+  ).toHaveAttribute("href", `/api/experiments/${original.id}/file`);
+  await page.getByRole("button", { name: "MODEL", exact: true }).click();
+  await expect(editor(page)).toHaveValue(draft);
+  await page
+    .getByRole("button", { name: "Review changes", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Accept Agent changes", exact: true })
+    .click();
+  await expect(editor(page)).toHaveValue(repaired.source);
+  const staleResult = page
+    .getByRole("status")
+    .filter({ hasText: "These results are from an earlier snapshot" });
+  await expect(staleResult).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Undo Agent change", exact: true })
+    .click();
+  await expect(editor(page)).toHaveValue(draft);
+  await expect(staleResult).toBeVisible();
+  await page.getByRole("button", { name: "View changes", exact: true }).click();
+  const review = page.getByRole("dialog", {
+    name: "Review Agent code changes",
+  });
+  await expect(review).toContainText("You undid this Agent change");
+  await expect(review).not.toContainText("These changes have synced");
+  await expect(review).not.toContainText(
+    "You edited the code after synchronization",
+  );
+  await page.getByRole("button", { name: "Done", exact: true }).click();
+  // Make an observable change and execute the actual edited source, rather than
+  // reusing the Agent's saved Bell result or comparing only a success label.
+  const changed = repaired.source.replace(
+    "result = fq.run",
+    "circuit.x(1)\nresult = fq.run",
+  );
+  const rerun = await runPython(page, changed);
+  expect(rerun.status).toBe("completed");
+  expect(rerun.source).toBe(changed);
+  expect(rerun.source_hash).not.toBe(repaired.source_hash);
+  const latest = await savedRecord(page, rerun, "repaired.fqx");
+  expect(latest.id).not.toBe(original.id);
+  expect(Object.keys(latest.job.result.counts).sort()).toEqual(["01", "10"]);
+  await openCircuit(page, rerun, "repaired.fqx");
+  await expect(page.getByText("Matches editor", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "View saved result →" }).click();
+  await expect(page).toHaveURL(/#jobs$/);
+  await page.reload();
+  await expect(page).toHaveURL(/#jobs$/);
+  await expect(
+    page.getByRole("link", { name: "Download original .fqx ↓" }),
+  ).toHaveAttribute("href", `/api/experiments/${latest.id}/file`);
+  for (const count of Object.values(latest.job.result.counts))
+    await expect(page.getByRole("table")).toContainText(String(count));
+  await page.getByRole("button", { name: "MODEL", exact: true }).click();
+  await expect(editor(page)).toHaveValue(changed);
+  await page.getByLabel("Python run history").selectOption(failed.id);
+  await expect(
+    page.getByRole("region", { name: "Python failure", exact: true }),
+  ).toBeVisible();
+  await expect(editor(page)).toHaveValue(changed);
+  expect((await get(page, "/api/python/runs/" + failed.id)).source).toBe(
+    failed.source,
+  );
+  expect(
+    (await savedRecord(page, repaired, "repaired.fqx")).job.result.counts,
+  ).toEqual(original.job.result.counts);
+});
