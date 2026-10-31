@@ -1,0 +1,3 @@
+# CPU wheel index is set explicitly by CI. The SDK source revision is pinned
+# in .github/workflows/ci.yml; no separate PyPI SDK is installed.
+torch==2.13.0

@@ -1,6 +1,7 @@
 // Explicit local UI integration fixture, not an Agent backend shipped to users.
 // Exercises the real protocol server and CLI-owned shared projector; no LLM call.
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
@@ -324,7 +325,18 @@ const backend = {
                 "--expected-hash",
                 current.source_hash,
               ]);
-            await delay(5000);
+            // CI holds the scripted turn until the browser has observed live
+            // tool activity after reconnecting. Normal development keeps its
+            // existing pacing; this barrier never enters a production host.
+            if (process.env.FQ_E2E_CONTROL_DIR) {
+              const deadline = Date.now() + 60000;
+              const hold = join(process.env.FQ_E2E_CONTROL_DIR, "hold-repair");
+              while (existsSync(hold)) {
+                if (Date.now() > deadline)
+                  throw Error("Acceptance repair barrier timed out.");
+                await delay(100);
+              }
+            } else await delay(5000);
             const source = repairing
               ? [
                   "import flagquantum as fq",
@@ -855,13 +867,15 @@ const proxy =
       )
     : null;
 const python = spawn(
-  "python3",
+  process.env.FQ_LOCAL_PYTHON || "python3",
   [
-    process.env.FQ_TEST_BRIDGE === "1" &&
-    process.env.FQ_TEST_PYTHON !== "1" &&
-    process.env.FQ_TEST_REPAIR !== "1"
-      ? "packages/quantum-workspace/tests/bridge_host.py"
-      : "packages/quantum-workspace/serve.py",
+    process.env.FQ_E2E_CONTROL_DIR
+      ? "apps/web/scripts/sdk-acceptance-host.py"
+      : process.env.FQ_TEST_BRIDGE === "1" &&
+          process.env.FQ_TEST_PYTHON !== "1" &&
+          process.env.FQ_TEST_REPAIR !== "1"
+        ? "packages/quantum-workspace/tests/bridge_host.py"
+        : "packages/quantum-workspace/serve.py",
   ],
   {
     cwd: root,
@@ -886,6 +900,12 @@ console.log(
 );
 const stop = async () => {
   python.kill("SIGINT");
+  await Promise.race([
+    new Promise((resolve) => python.once("exit", resolve)),
+    delay(5000).then(() => {
+      if (python.exitCode === null) python.kill("SIGKILL");
+    }),
+  ]);
   await proxy?.close();
   await server.close();
   await rm(testWorkspace, { recursive: true, force: true });
