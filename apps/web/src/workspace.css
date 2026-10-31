@@ -4056,3 +4056,58 @@ body,
 .fq-project-explorer select { width: 100%; font: inherit; font-size: 12px; min-height: 32px; padding: 6px 8px; color: #d8dde4; background: #242529; border: 1px solid #494d53; border-radius: 6px; }
 .fq-project-explorer > button { text-align: left; }
 .fq-project-explorer > button small { display: block; color: #9aa4b0; font-size: 10px; margin-top: 4px; }
+
+/* Progressive project controls keep files and code in the foreground. */
+.fq-project-explorer { gap: 12px; }
+.fq-project-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.fq-project-heading > span { min-width: 0; }
+.fq-project-heading b { display: block; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fq-project-heading small { display: block; color: var(--muted); font-size: 11px; margin-top: 3px; }
+.fq-project-heading button, .fq-project-file-tools button { padding: 3px 8px; min-width: 28px; height: 28px; background: transparent; box-shadow: none; border-color: transparent; }
+.fq-project-file-tools { display: flex; align-items: center; gap: 6px; }
+.fq-project-file-tools input { min-width: 0; width: 100%; padding: 7px 9px; font-size: 12px; }
+.fq-project-tree button { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 30px; }
+.fq-project-file-kind { color: #a2afbf; flex-shrink: 0; font-family: monospace; }
+.fq-project-file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fq-project-tree button small { margin-left: auto; padding: 0; display: inline; flex-shrink: 0; }
+.fq-project-folder { min-width: 0; }
+.fq-project-folder summary { cursor: pointer; color: #bdc4cc; padding: 7px 8px; font-size: 12px; }
+.fq-project-folder > button, .fq-project-folder > details { margin-left: 12px; width: calc(100% - 12px); }
+.fq-project-empty { padding: 24px 0; color: var(--muted); line-height: 1.6; }
+.fq-project-empty h3 { color: var(--text); font-size: 17px; font-weight: 500; margin: 12px 0 8px; }
+.fq-project-empty p { margin: 0 0 16px; }
+.fq-project-empty-symbol { color: #a0bed4; font-size: 28px; letter-spacing: 2px; }
+.fq-project-empty small { display: block; margin-bottom: 12px; }
+.fq-project-location { margin-top: auto; font-size: 11px; color: var(--muted); }
+.fq-project-location summary, .fq-python-run-details summary { cursor: pointer; padding: 5px 0; }
+.fq-project-location code, .fq-project-dialog code { display: block; overflow-wrap: anywhere; font-size: 11px; margin-top: 8px; }
+.fq-project-outputs { margin-top: 12px; border-top: 1px solid #ffffff0c; padding-top: 16px; }
+.fq-project-outputs > button { display: flex; align-items: center; gap: 9px; width: 100%; margin-top: 6px; text-align: left; padding: 7px; border-color: transparent; box-shadow: none; background: transparent; font-size: 12px; }
+.fq-project-outputs small { display: block; color: var(--muted); font-size: 10px; margin-top: 3px; }
+.fq-project-dialog { width: min(480px, calc(100vw - 32px)); max-height: min(640px, calc(100dvh - 48px)); overflow: auto; padding: 24px; color: var(--text); background: #2b2c2f; border: 1px solid #ffffff20; border-radius: 14px; box-shadow: 0 24px 80px #0008; }
+.fq-project-dialog::backdrop { background: #0006; }
+.fq-project-dialog header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.fq-project-dialog h2 { font-size: 19px; font-weight: 500; margin: 0; }
+.fq-project-mode { display: flex; gap: 4px; padding: 3px; border-radius: 7px; background: #202124; margin-bottom: 20px; }
+.fq-project-mode button { flex: 1; border: 0; background: transparent; box-shadow: none; color: var(--muted); font-size: 12px; padding: 7px; }
+.fq-project-mode button[aria-pressed="true"] { background: #414449; color: var(--text); }
+.fq-project-dialog label { display: block; font-size: 12px; }
+.fq-project-dialog input { width: 100%; display: block; margin-top: 7px; background: #202124; color: var(--text); border: 1px solid #55585f; border-radius: 7px; padding: 10px; }
+.fq-project-hint { color: var(--muted); font-size: 12px; line-height: 1.6; }
+.fq-project-dialog details { font-size: 11px; color: var(--muted); }
+.fq-project-dialog footer { display: flex; justify-content: flex-end; gap: 8px; margin: 24px 0 0; }
+.fq-project-recents { margin-top: 20px; border-top: 1px solid #ffffff10; padding-top: 16px; }
+.fq-project-recents button { display: block; width: 100%; text-align: left; background: transparent; box-shadow: none; border: 0; padding: 9px 4px; font-size: 12px; }
+.fq-project-recents small { display: block; font-size: 11px; color: var(--muted); margin-top: 4px; }
+.fq-editor-file-actions { position: relative; }
+.fq-editor-file-actions > summary { cursor: pointer; list-style: none; padding: 2px 8px; font-size: 16px; color: #b2bac4; border-radius: 4px; }
+.fq-editor-file-actions summary::-webkit-details-marker { display: none; }
+.fq-editor-file-actions[open] > div { position: absolute; right: 0; top: 28px; z-index: 15; background: #34363a; border: 1px solid #55585f; border-radius: 8px; padding: 4px; box-shadow: 0 10px 28px #0005; min-width: 130px; }
+.fq-editor-file-actions button { width: 100%; text-align: left; background: transparent; border-color: transparent; box-shadow: none; }
+.fq-python-run-details { font-size: 11px; color: var(--muted); }
+.fq-python-run-details[open] { flex-basis: 100%; }
+.fq-python-run-details > div { display: flex; flex-direction: column; gap: 5px; padding: 6px 0; }
+.fq-workspace .fq-editor-file-actions, .fq-workspace .fq-project-folder, .fq-workspace .fq-python-run-details { margin-top: 0; }
+.fq-workspace .fq-project-dialog details { margin-top: 10px; }
+.fq-python-console .fq-python-run-details { padding: 0; max-height: none; overflow: visible; }
+.fq-editor-sync { min-height: 34px; padding: 4px 12px; }

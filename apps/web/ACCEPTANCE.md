@@ -236,3 +236,17 @@ installation of genuinely required missing dependencies were not evaluated.
   CI runs the browser; the fixture makes no model calls.
 - Staged package surface (2646 files / 32 entry targets) and clean installed-runtime
   acceptance passed. Optional Web remains outside the CLI package.
+
+
+### Project UX refinement
+
+- Project opening/creation moved to an accessible modal with recent projects and
+  workspace-location disclosure. File search, collapsible folder groups, inline
+  file creation and three recent outputs keep the sidebar focused on code.
+- Real local browser acceptance saved dirty main.py and helper.py together via
+  Save & run and produced a fresh SDK archive with the new dependency behavior.
+  Existing draft review and revision checks remain in the save path.
+- Environment and run metadata are progressively disclosed; file states and
+  file actions are compact. The existing nine-case Chromium suite now uses the
+  project chooser and verifies that Save & run writes the dependency version
+  recorded by the subsequent actual SDK snapshot.

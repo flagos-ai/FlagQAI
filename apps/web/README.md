@@ -769,3 +769,18 @@ and 512 KiB per run. Hidden files, symlinks and dependency/build directories are
 excluded; paths outside the configured root are rejected. It does not introduce
 package installation or a persistent notebook kernel. Python retains the existing
 execution permissions and limits; the frozen directory is not an OS sandbox.
+
+
+Project UX keeps the file tree visible after opening: folder entry, recent projects
+and workspace paths live in a focused chooser; file search and New file remain
+beside the tree. The environment panel starts collapsed and remembers the user's
+choice. File status distinguishes Saved, Unsaved changes and incoming Agent edits.
+Path and disconnect actions live in the file-actions menu, and execution metadata
+remains available under Run details.
+
+When project files have unsaved edits, the primary action becomes **Save & run**.
+It saves those exact captured drafts with revision checks, then runs the entry
+using its returned disk revision. Conflicts stop the operation and offer review;
+files saved before a later failure remain saved and no execution is submitted.
+New edits made while saving remain separate browser drafts. The lower-level
+project API and native bridge still support explicit unsaved-entry snapshots.

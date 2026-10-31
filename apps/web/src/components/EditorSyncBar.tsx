@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Modal } from "./Modal";
 import { CloseButton } from "./CloseButton";
 import { CodeDiff } from "./CodeDiff";
@@ -85,26 +85,50 @@ export function EditorSyncBar({
     });
     setReview(null);
   };
+  const fileActions = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const close = (event: PointerEvent) => {
+      if (!fileActions.current?.contains(event.target as Node))
+        fileActions.current?.removeAttribute("open");
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") fileActions.current?.removeAttribute("open");
+    };
+    window.addEventListener("pointerdown", close);
+    window.addEventListener("keydown", escape);
+    return () => {
+      window.removeEventListener("pointerdown", close);
+      window.removeEventListener("keydown", escape);
+    };
+  }, []);
   return (
     <>
       <div className={"fq-editor-sync " + (link?.incoming ? "conflict" : "")}>
         <span role="status">
           {sync.error ||
-            (link
+            (link?.project
               ? link.incoming
-                ? "Agent file changed · Your draft is protected"
-                : change?.outcome === "pending"
-                  ? "Agent code synced · Review changes"
-                  : change?.outcome === "undone"
-                    ? "Agent change undone · Your version retained"
-                    : change?.outcome === "kept"
-                      ? "Your draft retained"
-                      : state.source !== link.base
-                        ? "Local draft · Incoming changes need review"
-                        : change?.outcome === "accepted"
-                          ? "Agent changes accepted"
-                          : "Watching Agent file · Live sync"
-              : "Share a model file to see Agent edits here")}
+                ? "Agent changes available · Draft protected"
+                : state.source !== link.base
+                  ? "Unsaved changes"
+                  : change?.outcome === "pending"
+                    ? "Updated by Agent"
+                    : "Saved"
+              : link
+                ? link.incoming
+                  ? "Agent file changed · Your draft is protected"
+                  : change?.outcome === "pending"
+                    ? "Agent code synced · Review changes"
+                    : change?.outcome === "undone"
+                      ? "Agent change undone · Your version retained"
+                      : change?.outcome === "kept"
+                        ? "Your draft retained"
+                        : state.source !== link.base
+                          ? "Local draft · Incoming changes need review"
+                          : change?.outcome === "accepted"
+                            ? "Agent changes accepted"
+                            : "Watching Agent file · Live sync"
+                : "Share a model file to see Agent edits here")}
         </span>
         {link ? (
           <>
@@ -130,26 +154,35 @@ export function EditorSyncBar({
                   Undo Agent change
                 </button>
               )}
-            <button
-              title={link.path}
-              onClick={() =>
-                void navigator.clipboard.writeText(link.path).catch(() => {})
-              }
-            >
-              Copy path
-            </button>
-            <button
-              onClick={() => {
-                dispatch(
-                  link.project
-                    ? { type: "project-close-tab", id: link.id }
-                    : { type: "unlink-editor" },
-                );
-                setReview(null);
-              }}
-            >
-              {link.project ? "Close tab" : "Disconnect file"}
-            </button>
+            <details className="fq-editor-file-actions" ref={fileActions}>
+              <summary aria-label="File actions" title="File actions">
+                ···
+              </summary>
+              <div>
+                <button
+                  title={link.path}
+                  onClick={() =>
+                    void navigator.clipboard
+                      .writeText(link.path)
+                      .catch(() => {})
+                  }
+                >
+                  Copy path
+                </button>
+                <button
+                  onClick={() => {
+                    dispatch(
+                      link.project
+                        ? { type: "project-close-tab", id: link.id }
+                        : { type: "unlink-editor" },
+                    );
+                    setReview(null);
+                  }}
+                >
+                  {link.project ? "Close tab" : "Disconnect file"}
+                </button>
+              </div>
+            </details>
           </>
         ) : (
           <button disabled={sync.sharing} onClick={() => void sync.share()}>

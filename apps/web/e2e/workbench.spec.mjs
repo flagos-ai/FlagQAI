@@ -21,7 +21,9 @@ async function runPython(page, source) {
     (await get(page, "/api/python/runs")).map((run) => run.id),
   );
   if (source !== undefined) await editor(page).fill(source);
-  await page.getByRole("button", { name: "Run Python ▷", exact: true }).click();
+  await page
+    .getByRole("button", { name: /^(Run Python|Save & run) ▷$/, exact: true })
+    .click();
   let run;
   await expect
     .poll(
@@ -349,6 +351,8 @@ test("project files, native Agent edits, draft review and multi-file SDK snapsho
   await page
     .getByRole("button", { name: "Open project workspace", exact: true })
     .click();
+  await page.getByRole("button", { name: "Open project", exact: true }).click();
+  await page.getByRole("button", { name: "Create new", exact: true }).click();
   await page
     .getByRole("textbox", { name: "Project directory", exact: true })
     .fill("browser-project");
@@ -356,6 +360,7 @@ test("project files, native Agent edits, draft review and multi-file SDK snapsho
     .getByRole("button", { name: "Create folder", exact: true })
     .click();
   const create = async (path, source) => {
+    await page.getByRole("button", { name: "New file", exact: true }).click();
     await page
       .getByRole("textbox", { name: "New project file", exact: true })
       .fill(path);
@@ -368,7 +373,7 @@ test("project files, native Agent edits, draft review and multi-file SDK snapsho
     await editor(page).fill(source);
     await page.getByRole("button", { name: "Save", exact: true }).click();
     await expect(
-      page.getByRole("status").filter({ hasText: "Watching Agent file" }),
+      page.getByRole("status").filter({ hasText: /^Saved$/ }),
     ).toBeVisible();
   };
   await create("helper.py", helper);
@@ -391,13 +396,15 @@ test("project files, native Agent edits, draft review and multi-file SDK snapsho
   await page
     .getByRole("button", { name: "Switch to main.py", exact: true })
     .click();
-  const before = (await get(page, "/api/python/runs")).length;
-  await page.getByRole("button", { name: "Run Python ▷", exact: true }).click();
   await expect(
-    page.getByRole("alert").filter({ hasText: "Save project dependencies" }),
+    page.getByRole("button", { name: "Save & run ▷", exact: true }),
   ).toBeVisible();
-  expect((await get(page, "/api/python/runs")).length).toBe(before);
-  await page.getByRole("button", { name: "Save all", exact: true }).click();
+  const savedRun = await runPython(page);
+  expect(savedRun.status).toBe("completed");
+  const project = await get(page, "/api/projects/" + savedRun.project.id);
+  expect(project.files.find((file) => file.path === "helper.py").revision).toBe(
+    savedRun.project.files.find((file) => file.path === "helper.py").sha256,
+  );
   await page
     .getByRole("button", { name: "Switch to helper.py", exact: true })
     .click();

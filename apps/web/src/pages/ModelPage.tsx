@@ -1,3 +1,4 @@
+import { projectDirty } from "../state/project-workspace";
 import { ProjectTabs } from "../components/ProjectTabs";
 import type { ProjectWorkspace } from "../hooks/useProjectWorkspace";
 import { pythonExample } from "../state/python-workspace";
@@ -6,7 +7,6 @@ import {
   isCommentShortcut,
 } from "../state/editor-comments";
 import { changedLines } from "../state/code-diff";
-import { SourceVersion } from "../components/SourceVersion";
 import { PythonConsole } from "../components/PythonConsole";
 import type { PythonWorkspace } from "../hooks/usePythonWorkspace";
 import { codeTokens } from "../state/code-tokens";
@@ -81,7 +81,23 @@ export function ModelPage({
   const editor = useRef<HTMLTextAreaElement>(null),
     [scroll, setScroll] = useState({ top: 0, left: 0 }),
     [focus, setFocus] = useState(false),
-    [configuration, setConfiguration] = useState(true);
+    [configuration, setConfiguration] = useState(() => {
+      try {
+        return localStorage.getItem("fq-editor-configuration") === "open";
+      } catch {
+        return false;
+      }
+    });
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "fq-editor-configuration",
+        configuration ? "open" : "closed",
+      );
+    } catch {
+      /* The panel remains usable without storage. */
+    }
+  }, [configuration]);
   const [errorsHeight, setErrorsHeight] = usePanelSize("errors", 180, 80, 500),
     [settingsWidth, setSettingsWidth] = usePanelSize("settings", 300, 230, 500),
     [constraintsHeight, setConstraintsHeight] = usePanelSize(
@@ -91,6 +107,12 @@ export function ModelPage({
       500,
     );
   const isPython = state.language === "python";
+  const needsProjectSave =
+    !!state.editorLink?.project &&
+    state.projectTabs?.some(
+      (tab) =>
+        tab.project.id === state.editorLink?.project?.id && projectDirty(tab),
+    );
   const diagnostics = useMemo(
     () => (isPython ? [] : (lintOpenQASM(state.source) as Diagnostic[])),
     [state.source, isPython],
@@ -194,14 +216,14 @@ export function ModelPage({
             ↶ Undo
           </button>
           <button
-            disabled={projectWorkspace.busy}
+            disabled={projectWorkspace.busy || python.submitting}
             onClick={() => void projectWorkspace.save()}
           >
             Save
           </button>
-          {state.project && (
+          {state.project && needsProjectSave && (
             <button
-              disabled={projectWorkspace.busy}
+              disabled={projectWorkspace.busy || python.submitting}
               onClick={() => void projectWorkspace.saveAll()}
             >
               Save all
@@ -215,23 +237,37 @@ export function ModelPage({
           >
             ↓
           </button>
-          <button onClick={() => setConfiguration(!configuration)}>
-            Configuration
+          <button
+            aria-label="Configuration"
+            aria-expanded={configuration}
+            onClick={() => setConfiguration(!configuration)}
+          >
+            {isPython ? "Environment" : "Configuration"}
           </button>
           <button
             className="primary"
             disabled={
               isPython
-                ? python.submitting ||
+                ? projectWorkspace.busy ||
+                  python.submitting ||
                   ["queued", "running"].includes(python.run?.status || "")
                 : errors.length > 0 || state.busy
             }
-            onClick={isPython ? () => void python.start() : compile}
+            title={
+              needsProjectSave
+                ? "Save changed project files, then run this Python entry"
+                : "Run the current code"
+            }
+            onClick={
+              isPython ? () => void python.start(!!needsProjectSave) : compile
+            }
           >
             {isPython
               ? python.submitting
                 ? "Starting…"
-                : "Run Python ▷"
+                : needsProjectSave
+                  ? "Save & run ▷"
+                  : "Run Python ▷"
               : state.busy
                 ? "Compiling…"
                 : "Compile →"}
@@ -403,10 +439,7 @@ export function ModelPage({
                 : compiled
                   ? "Compiled"
                   : "Local checks passed · Not compiled"}
-          <span>
-            {isPython ? "Python · UTF-8" : "OpenQASM 2/3 · UTF-8"}{" "}
-            <SourceVersion source={state.source} compact />
-          </span>
+          <span>{isPython ? "Python · UTF-8" : "OpenQASM 2/3 · UTF-8"}</span>
         </div>
         {!focus && (
           <>

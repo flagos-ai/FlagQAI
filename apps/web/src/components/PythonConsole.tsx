@@ -117,20 +117,6 @@ export function PythonConsole({
         </section>
       )}
       <div className="fq-python-result-toolbar">
-        {run?.project && (
-          <small>
-            {run.project.name} / {run.project.entry} ·{" "}
-            {run.project.files.length} frozen input files ·{" "}
-            {run.project.snapshot_hash.slice(0, 8)}
-          </small>
-        )}
-        {run && (
-          <small>
-            Run {run.id.slice(0, 8)} · execution{" "}
-            {run.execution_status || run.status} · collection{" "}
-            {run.collection_status || "pending"}
-          </small>
-        )}
         <button
           disabled={python.importing || python.recovering}
           onClick={() => upload.current?.click()}
@@ -162,21 +148,43 @@ export function PythonConsole({
             event.target.value = "";
           }}
         />
-        <small>
-          {run?.runtime
-            ? `Python ${run.runtime.python} · ${run.environment.transport}`
-            : `${python.environment?.transport || "Configured environment"} · Single-file task`}
-          {run?.elapsed_seconds !== undefined
-            ? ` · ${run.elapsed_seconds}s · exit ${run.exit_code ?? "—"}`
-            : ""}
-        </small>
-        {run?.runtime?.sdk_version && (
-          <small>
-            FlagQuantum {run.runtime.sdk_version} ·{" "}
-            {run.runtime.save_load_supported
-              ? "save/load ready"
-              : "SDK upgrade needed for .fqx"}
-          </small>
+        {run && (
+          <details className="fq-python-run-details">
+            <summary>Run details</summary>
+            <div>
+              {" "}
+              {run?.project && (
+                <small>
+                  {run.project.name} / {run.project.entry} ·{" "}
+                  {run.project.files.length} frozen input files ·{" "}
+                  {run.project.snapshot_hash.slice(0, 8)}
+                </small>
+              )}
+              {run && (
+                <small>
+                  Run {run.id.slice(0, 8)} · execution{" "}
+                  {run.execution_status || run.status} · collection{" "}
+                  {run.collection_status || "pending"}
+                </small>
+              )}
+              <small>
+                {run?.runtime
+                  ? `Python ${run.runtime.python} · ${run.environment.transport}`
+                  : `${python.environment?.transport || "Configured environment"} · Python task`}
+                {run?.elapsed_seconds !== undefined
+                  ? ` · ${run.elapsed_seconds}s · exit ${run.exit_code ?? "—"}`
+                  : ""}
+              </small>
+              {run?.runtime?.sdk_version && (
+                <small>
+                  FlagQuantum {run.runtime.sdk_version} ·{" "}
+                  {run.runtime.save_load_supported
+                    ? "save/load ready"
+                    : "SDK upgrade needed for .fqx"}
+                </small>
+              )}
+            </div>
+          </details>
         )}
         {run?.collection_status === "collecting" && (
           <small role="status">Collecting saved experiments…</small>

@@ -115,39 +115,6 @@ export function useProjectWorkspace(
         throw problem;
       }
     });
-  const saveTab = async (tab: ProjectTab) => {
-    if (tab.editorLink.incoming)
-      throw Error(`Review incoming changes in ${tab.path} before saving.`);
-    try {
-      const file = await projectsAPI.save(
-        tab.project.id,
-        tab.path,
-        tab.source,
-        tab.editorLink.revision,
-      );
-      dispatch({ type: "project-file-saved", file, source: tab.source });
-    } catch (problem) {
-      try {
-        const file = await projectsAPI.read(tab.project.id, tab.path);
-        if (latest.current.activeProjectTab === tab.id)
-          dispatch({
-            type: "file-changed",
-            id: file.id,
-            source: file.source,
-            revision: file.revision,
-            time: Date.now(),
-          });
-        else dispatch({ type: "project-file-update", file });
-      } catch {
-        /* Retain the browser draft if the disk file is unavailable. */
-      }
-      throw Error(
-        tab.path +
-          ": " +
-          (problem instanceof Error ? problem.message : "Cannot save file."),
-      );
-    }
-  };
   const save = () =>
     perform(async () => {
       const current = latest.current;
@@ -155,17 +122,20 @@ export function useProjectWorkspace(
         (item) => item.id === current.activeProjectTab,
       );
       if (tab)
-        await saveTab({
-          ...tab,
-          source: current.source,
-          editorLink: current.editorLink || tab.editorLink,
-        });
+        await saveProjectTab(
+          {
+            ...tab,
+            source: current.source,
+            editorLink: current.editorLink || tab.editorLink,
+          },
+          dispatch,
+        );
       else dispatch({ type: "save" });
     });
   const saveAll = () =>
     perform(async () => {
       for (const tab of latest.current.projectTabs || [])
-        if (projectDirty(tab)) await saveTab(tab);
+        if (projectDirty(tab)) await saveProjectTab(tab, dispatch);
     });
   const createFile = (path: string) =>
     perform(async () => {
@@ -186,3 +156,40 @@ export function useProjectWorkspace(
   };
 }
 export type ProjectWorkspace = ReturnType<typeof useProjectWorkspace>;
+
+export async function saveProjectTab(
+  tab: ProjectTab,
+  dispatch: React.Dispatch<WorkspaceAction>,
+) {
+  if (tab.editorLink.incoming)
+    throw Error(`Review incoming changes in ${tab.path} before saving.`);
+  try {
+    const file = await projectsAPI.save(
+      tab.project.id,
+      tab.path,
+      tab.source,
+      tab.editorLink.revision,
+    );
+    dispatch({ type: "project-file-saved", file, source: tab.source });
+    return file;
+  } catch (problem) {
+    try {
+      const file = await projectsAPI.read(tab.project.id, tab.path);
+      dispatch({
+        type: "file-changed",
+        id: file.id,
+        source: file.source,
+        revision: file.revision,
+        time: Date.now(),
+      });
+      dispatch({ type: "project-file-update", file });
+    } catch {
+      /* Retain the browser draft if the disk file is unavailable. */
+    }
+    throw Error(
+      tab.path +
+        ": " +
+        (problem instanceof Error ? problem.message : "Cannot save file."),
+    );
+  }
+}

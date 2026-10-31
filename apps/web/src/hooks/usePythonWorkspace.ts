@@ -1,5 +1,6 @@
+import { saveProjectTab } from "./useProjectWorkspace";
 import { projectsAPI } from "../api/projects";
-import { projectDirty } from "../state/project-workspace";
+import { checkpointProject, projectDirty } from "../state/project-workspace";
 import { matchesPythonExperiment } from "../state/python-workspace";
 import { importExperiment, readExperiment } from "../api/experiments";
 import { loadPythonExperiments } from "../api/python-experiments";
@@ -173,7 +174,7 @@ export function usePythonWorkspace(
       setImporting(false);
     }
   };
-  const start = async () => {
+  const start = async (saveProject = false) => {
     if (lock.current) return;
     lock.current = true;
     setSubmitting(true);
@@ -188,7 +189,15 @@ export function usePythonWorkspace(
             tab.id !== state.activeProjectTab &&
             projectDirty(tab),
         );
-      if (dirtyDependencies && dirtyDependencies.length)
+      let entryRevision = state.editorLink?.revision;
+      if (project && saveProject) {
+        for (const tab of checkpointProject(state).projectTabs || []) {
+          if (tab.project.id !== project.id || !projectDirty(tab)) continue;
+          const saved = await saveProjectTab(tab, dispatch);
+          if (tab.id === state.activeProjectTab) entryRevision = saved.revision;
+        }
+      }
+      if (!saveProject && dirtyDependencies && dirtyDependencies.length)
         throw Error(
           "Save project dependencies before running: " +
             dirtyDependencies.map((tab) => tab.path).join(", ") +
@@ -206,14 +215,14 @@ export function usePythonWorkspace(
                 project_id: project.id,
                 entry: project.path,
                 source: state.source,
-                expected_revision: state.editorLink!.revision,
+                expected_revision: entryRevision,
               })
             ).python_run
           : await projectsAPI.run(
               project.id,
               project.path,
               state.source,
-              state.editorLink!.revision,
+              entryRevision!,
             )
         : bridge.ready && bridge.session
           ? (
