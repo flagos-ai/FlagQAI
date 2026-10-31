@@ -338,3 +338,18 @@ installation of genuinely required missing dependencies were not evaluated.
   Pure state tests verify cold circuit/result focus preserves an unsaved draft.
 - User experiments and browser drafts are not replaced or committed. Browser
   automation was unavailable locally during this diagnosis; CI runs Chromium.
+
+### Comparison experiment product flow
+
+- Four new unit cases cover normalized unequal-shot distributions, missing/typed
+  states, incompatible qubit order, batches, sequence/parameter changes, bounded
+  diff work and persisted comparison identity without draft/undo mutation.
+- The fourteenth Chromium case begins on Execution, sends a scripted comparison
+  task, executes genuine SDK Bell/Bell+X with unequal shots, observes task progress
+  and automatic comparison, verifies X and 00/11 → 01/10, refreshes, swaps sides
+  and recovers the original draft. The scripted task makes no model calls.
+- Manual Chrome inspection on isolated port 4262 used real CPU SDK results (128
+  and 256 shots). Both circuits, unchanged family colors, the highlighted X gate,
+  normalized distributions, provenance, refresh and swap were verified visually.
+- Original user experiments remain outside the change. Package/installed-runtime
+  acceptance and existing Web/SDK/browser regression gates remain required.

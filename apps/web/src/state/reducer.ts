@@ -27,6 +27,15 @@ function reduceWorkspace(
   action: WorkspaceAction,
 ): WorkspaceState {
   switch (action.type) {
+    case "compare-experiments":
+      return {
+        ...state,
+        comparison:
+          action.left && action.right && action.left !== action.right
+            ? { left: action.left, right: action.right }
+            : undefined,
+        page: "jobs",
+      };
     case "project-select":
     case "project-open-file":
     case "project-tab":

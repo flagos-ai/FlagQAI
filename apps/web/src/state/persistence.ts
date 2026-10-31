@@ -104,6 +104,14 @@ export function restoreWorkspace(
     schema: "flagqai.quantum-workspace.v1",
     language: fresh || saved.language === "python" ? "python" : "qasm",
     languageDrafts: saved.languageDrafts,
+    comparison:
+      saved.comparison &&
+      [saved.comparison.left, saved.comparison.right].every(
+        (id) => typeof id === "string" && /^fqx-[a-f0-9]{32}$/.test(id),
+      ) &&
+      saved.comparison.left !== saved.comparison.right
+        ? saved.comparison
+        : undefined,
     pythonRunId: saved.pythonRunId,
     page: page as WorkspaceState["page"],
     name,
@@ -148,6 +156,7 @@ export function persistWorkspace(storage: Storage, state: WorkspaceState) {
       name,
       language,
       languageDrafts,
+      comparison,
       pythonRunId,
       agentOpen,
       programs,
@@ -175,6 +184,7 @@ export function persistWorkspace(storage: Storage, state: WorkspaceState) {
           : undefined,
         language,
         languageDrafts,
+        comparison,
         pythonRunId,
         agentOpen,
         editorLink,

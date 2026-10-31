@@ -66,6 +66,22 @@ export function usePlatformBridge(
       );
     }
   };
+  const compare = async (left: string, right: string) => {
+    const records = await Promise.all([
+      readExperiment(left),
+      readExperiment(right),
+    ]);
+    if (
+      !records.every(
+        (record) => record.job && record.program.experiment?.has_result,
+      )
+    )
+      throw Error("Both experiments need saved measurement results.");
+    for (const record of records)
+      dispatch({ type: "import-experiment", record });
+    dispatch({ type: "compare-experiments", left, right });
+    dispatch({ type: "agent", open: true });
+  };
   const openRef = useRef(open);
   openRef.current = open;
   useEffect(() => {
@@ -172,6 +188,7 @@ export function usePlatformBridge(
           controller.signal,
         );
         if (controller.signal.aborted) return;
+        let target: PlatformAction | undefined;
         for (const record of records) {
           cursor = Math.max(cursor, record.seq);
           if (seen.current.has(record.seq)) continue;
@@ -229,12 +246,32 @@ export function usePlatformBridge(
               result?.job ||
               result?.page ||
               record.operation === "model.create")
-          )
-            await openRef.current(
-              record,
-              () => !controller.signal.aborted && followRef.current,
-            );
+          ) {
+            const priority = (action: PlatformAction) =>
+              action.result?.page
+                ? 100
+                : action.result?.job
+                  ? 60
+                  : action.result?.program
+                    ? 50
+                    : action.operation === "model.create"
+                      ? 30
+                      : 20;
+            if (!target || priority(record) >= priority(target))
+              target = record;
+          }
         }
+        if (
+          target &&
+          !(
+            current.current.comparison &&
+            (target.result?.python_run || target.operation === "model.create")
+          )
+        )
+          await openRef.current(
+            target,
+            () => !controller.signal.aborted && followRef.current,
+          );
         if (records.length)
           setActions((previous) => {
             const map = new Map(previous.map((item) => [item.id, item]));
@@ -266,6 +303,7 @@ export function usePlatformBridge(
     follow,
     setFollow,
     open,
+    compare,
     controls:
       ready && session
         ? {

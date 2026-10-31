@@ -840,3 +840,27 @@ changing panel resizing or source, runtime and artifact behavior. Visible action
 labels omit decorative character glyphs; accessible names and keyboard shortcuts
 identify the actual command. Circuit detail presets show selection until the
 hierarchy is manually changed or its mode switches.
+
+### Experiment comparison
+
+Jobs offers **Compare experiments** for two saved `.fqx` results. The comparison
+keeps both circuits, recorded counts, measurement/batch selection and provenance
+in one view. Gate sequence differences include operands and parameters (bounded
+to 200 operations); previews show up to 16 operations and six qubits. Counts use
+a shared 0–100% scale, independent shot normalization and explicit key types.
+Incompatible measurement layouts are displayed separately. Distribution distance
+summarizes saved samples; it does not certify quantum-state fidelity or phase.
+
+The selected pair survives refresh; swapping sides, opening the full circuit and
+returning to a single result preserve editor drafts. Source/run/archive identity
+is available within each side. Existing sidebar result selections leave compare
+mode explicitly.
+
+Agent experiment milestones use native workbench actions and actual Python run
+status. Raw workbench actions remain available in a folded activity section.
+For a live request that explicitly asks to compare and produces exactly two
+saved results in that turn, Follow Agent opens comparison after the turn settles.
+Historical replay, Follow Off, failed runs and incomplete collection never trigger
+that automatic transition. Other cases offer **Compare results** for explicit
+selection. Coalesced follow navigation avoids intermediate page flashes, and a
+comparison stays open when later code/run notices arrive.
