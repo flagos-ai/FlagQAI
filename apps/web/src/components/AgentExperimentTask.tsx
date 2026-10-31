@@ -8,12 +8,14 @@ export function AgentExperimentTask({
   active,
   follow,
   requested,
+  outcome,
   onCompare,
 }: {
   actions: PlatformAction[];
   active: boolean;
   follow: boolean;
   requested: boolean;
+  outcome?: string;
   onCompare: (left: string, right: string) => Promise<void>;
 }) {
   const ids = [
@@ -113,13 +115,14 @@ export function AgentExperimentTask({
       !follow ||
       !requested ||
       !settled ||
+      outcome !== "completed" ||
       outputs.length !== 2 ||
       failures.length
     )
       return;
     autoOpened.current = true;
     void compare();
-  }, [settled, follow, requested, outputs.join(","), failures.length]);
+  }, [settled, follow, requested, outcome, outputs.join(","), failures.length]);
   if (
     !actions.some(
       (action) =>
@@ -139,7 +142,9 @@ export function AgentExperimentTask({
             : active
               ? "Agent working"
               : outputs.length
-                ? "Experiment ready"
+                ? outcome === "completed"
+                  ? "Experiment ready"
+                  : "Results saved"
                 : "No saved result yet";
   return (
     <section className="fq-experiment-task" aria-label="Experiment progress">

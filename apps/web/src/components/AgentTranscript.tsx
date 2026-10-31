@@ -330,6 +330,7 @@ export function AgentTranscript({
                         turn.rows.find((row) => row.kind === "user")?.seq,
                   )}
                   active={turn.active}
+                  outcome={turn.outcome}
                   follow={bridge.follow}
                   requested={/比较|对比|对照|\bcompar(?:e|ison)\b/i.test(
                     splitWorkspaceContext(
