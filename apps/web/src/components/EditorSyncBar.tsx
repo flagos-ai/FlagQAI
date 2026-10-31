@@ -38,6 +38,9 @@ export function EditorSyncBar({
       (review.mode === "incoming"
         ? link.incoming?.revision !== review.revision
         : !!link.incoming || change?.revision !== review.revision));
+  const settledReview =
+    review?.mode === "synced" &&
+    (change?.outcome === "undone" || change?.outcome === "kept");
   const canUndo =
     !!change &&
     !link?.incoming &&
@@ -226,7 +229,11 @@ export function EditorSyncBar({
           <p>
             {review.mode === "incoming"
               ? "Your draft is protected. Compare your current code with the Agent file before accepting or merging."
-              : "These changes have synced to the editor. Accept records your review; keeping your version restores the previous code when the editor has no newer edits."}{" "}
+              : change?.outcome === "undone"
+                ? "You undid this Agent change. Your previous code was restored; this comparison shows the saved proposal."
+                : change?.outcome === "kept"
+                  ? "You kept your version. This comparison shows the saved Agent proposal; your current draft is preserved."
+                  : "These changes have synced to the editor. Accept records your review; keeping your version restores the previous code when the editor has no newer edits."}{" "}
             Decisions update the browser draft only.
           </p>
           <CodeDiff
@@ -234,12 +241,14 @@ export function EditorSyncBar({
             after={review.incoming}
             language={state.language || "qasm"}
           />
-          {review.mode === "synced" && review.draft !== change?.after && (
-            <p className="fq-review-notice">
-              You edited the code after synchronization. Your current draft will
-              be preserved. Direct undo is disabled.
-            </p>
-          )}
+          {review.mode === "synced" &&
+            !settledReview &&
+            review.draft !== change?.after && (
+              <p className="fq-review-notice">
+                You edited the code after synchronization. Your current draft
+                will be preserved. Direct undo is disabled.
+              </p>
+            )}
           {review.mode === "incoming" && (
             <details className="fq-review-merge">
               <summary>Edit a merged version</summary>

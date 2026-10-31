@@ -289,3 +289,19 @@ installation of genuinely required missing dependencies were not evaluated.
   artifact navigation retain their existing meaning and behavior.
 - Existing ten-case Chromium acceptance uses semantic command names after removal
   of decorative glyphs; state/protocol checks and packaging acceptance are retained.
+
+
+### Repair workflow acceptance
+
+- Manual isolated browser acceptance exercised real SyntaxError reporting, failed
+  source/log attachment, scripted Agent tool streaming, protected unsaved source,
+  Follow Agent navigation, session and circuit recovery after refresh, accepting
+  reviewed code and one-step undo. No model was called.
+- Found and fixed misleading review text after undo/keep: archived proposals no
+  longer claim to be synced or attribute a restored draft to subsequent typing.
+- A real SDK rerun with an added X gate changed Bell counts from 00/11 to 01/10.
+  Quantum showed the extra gate and matching source hash; Jobs retained the new
+  archive and counts after refresh. Old results and the failed run remained.
+- The eleventh Chromium case asserts this entire repair/review/undo/rerun flow,
+  immutable prior artifacts, provenance and restored session/editor/result state.
+  This verifies protocol wiring and computation, not model reasoning quality.
