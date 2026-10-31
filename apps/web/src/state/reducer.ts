@@ -15,7 +15,8 @@ export function workspaceReducer(
   if (project) return checkpointProject(project);
   if (
     prepared.activeProjectTab &&
-    ["model", "language", "open-agent-model"].includes(action.type)
+    (["model", "open-agent-model"].includes(action.type) ||
+      (action.type === "language" && action.language !== prepared.language))
   )
     prepared = { ...prepared, activeProjectTab: undefined };
   return checkpointProject(reduceWorkspace(prepared, action));

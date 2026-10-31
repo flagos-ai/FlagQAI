@@ -30,6 +30,8 @@ const initial = () => restoreWorkspace({ getItem: () => null }, "model");
 test("project tabs preserve independent drafts, undo, selected run and scratch across refresh", () => {
   const scratch = initial();
   let state = open(scratch, "main.py", "main");
+  state = reduce(state, { type: "language", language: "python" });
+  assert.equal(state.activeProjectTab, file("main.py").id);
   state = reduce(state, { type: "edit", source: "unsaved main" });
   state = reduce(state, { type: "python-run", id: "main-run" });
   state = open(state, "helper.py", "helper");
