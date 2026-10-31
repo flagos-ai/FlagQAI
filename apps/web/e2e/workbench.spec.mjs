@@ -640,6 +640,7 @@ test("workspace restores file view and folds; keyboard file search and save-and-
       { timeout: 90000 },
     )
     .not.toMatch(/^(not submitted|queued|running)$/);
+  run = await get(page, "/api/python/runs/" + run.id);
   expect(run.status, JSON.stringify(run)).toBe("completed");
   expect(run.source).toBe(main);
   await expect(editor(page)).toHaveValue(main);
