@@ -1,3 +1,5 @@
+import { UIIcon } from "./UIIcon";
+import { useProjectFolders } from "../hooks/useProjectFolders";
 import { useRef, useState } from "react";
 import type { ProjectWorkspace } from "../hooks/useProjectWorkspace";
 import type {
@@ -15,14 +17,18 @@ function FileTree({
   selected,
   busy,
   onOpen,
+  folders,
+  searching,
 }: {
   files: File[];
   prefix?: string;
   selected?: string;
   busy: boolean;
   onOpen: (path: string) => void;
+  folders: ReturnType<typeof useProjectFolders>;
+  searching: boolean;
 }) {
-  const folders = [
+  const directories = [
     ...new Set(
       files
         .map((file) => file.path.slice(prefix.length))
@@ -32,8 +38,16 @@ function FileTree({
   ];
   return (
     <>
-      {folders.map((folder) => (
-        <details className="fq-project-folder" key={folder} open>
+      {directories.map((folder) => (
+        <details
+          className="fq-project-folder"
+          key={`${folder}:${searching ? "search" : "tree"}`}
+          open={searching || !folders.closed.includes(prefix + folder)}
+          onToggle={(event) => {
+            if (!searching)
+              folders.toggle(prefix + folder, !event.currentTarget.open);
+          }}
+        >
           <summary>{folder}</summary>
           <FileTree
             files={files.filter((file) =>
@@ -43,6 +57,8 @@ function FileTree({
             selected={selected}
             busy={busy}
             onOpen={onOpen}
+            folders={folders}
+            searching={searching}
           />
         </details>
       ))}
@@ -59,7 +75,10 @@ function FileTree({
             onClick={() => onOpen(file.path)}
           >
             <span aria-hidden="true" className="fq-project-file-kind">
-              {file.kind === "artifact" ? "◇" : "‹›"}
+              <UIIcon
+                name={file.kind === "artifact" ? "circuit" : "file"}
+                size={14}
+              />
             </span>
             <span className="fq-project-file-name">
               {file.path.split("/").at(-1)}
@@ -89,6 +108,7 @@ export function ProjectExplorer({
     [query, setQuery] = useState("");
   const pathInput = useRef<HTMLInputElement>(null);
   const project = state.project;
+  const folders = useProjectFolders(project?.id);
   const openProject = async (value: string, create = false) => {
     if (await workspace.openProject(value, create)) {
       setOpening(false);
@@ -217,7 +237,7 @@ export function ProjectExplorer({
                 setOpening(true);
               }}
             >
-              ···
+              <UIIcon name="more" />
             </button>
           </div>
           <div className="fq-project-file-tools">
@@ -233,7 +253,7 @@ export function ProjectExplorer({
               aria-expanded={creating}
               onClick={() => setCreating(!creating)}
             >
-              ＋
+              <UIIcon name="plus" />
             </button>
           </div>
           {creating && (
@@ -274,6 +294,8 @@ export function ProjectExplorer({
                 item.path.toLowerCase().includes(query.toLowerCase()),
               )}
               busy={workspace.busy}
+              folders={folders}
+              searching={!!query}
               selected={
                 state.editorLink?.project?.id === project.id
                   ? state.editorLink.project.path
@@ -309,7 +331,7 @@ export function ProjectExplorer({
                     dispatch({ type: "navigate", page: "program" });
                   }}
                 >
-                  <span>◇</span>
+                  <UIIcon name="circuit" />
                   <span>
                     {program.experiment?.filename || program.name}
                     <small>

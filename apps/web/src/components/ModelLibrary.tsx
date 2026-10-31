@@ -1,3 +1,4 @@
+import { UIIcon } from "./UIIcon";
 import { useEffect, useRef, useState } from "react";
 import type { Model } from "../contracts/quantum-workspace";
 import {
@@ -24,13 +25,32 @@ export function ModelLibrary({
   onSelect: (model: Model) => void;
   onUpload: (file: File) => void;
 }) {
-  const [tab, setTab] = useState<"models" | "templates" | "project">(
-      projectRequest ? "project" : "models",
-    ),
+  const [tab, setTab] = useState<"models" | "templates" | "project">(() => {
+      if (projectRequest) return "project";
+      try {
+        const saved = localStorage.getItem("fq-model-library-tab-v1");
+        if (
+          saved === "models" ||
+          saved === "templates" ||
+          (saved === "project" && projectPanel)
+        )
+          return saved;
+      } catch {
+        /* Use the default library. */
+      }
+      return "models";
+    }),
     [query, setQuery] = useState(""),
     [prompt, setPrompt] = useState(""),
     [candidate, setCandidate] = useState<Model | null>(null);
   const upload = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    try {
+      localStorage.setItem("fq-model-library-tab-v1", tab);
+    } catch {
+      /* Tab switching still works without storage. */
+    }
+  }, [tab]);
   useEffect(() => {
     if (projectRequest) setTab("project");
   }, [projectRequest]);
@@ -67,9 +87,8 @@ export function ModelLibrary({
             disabled={busy}
             onClick={() => upload.current?.click()}
           >
-            {importing
-              ? "Importing experiment…"
-              : "↥ Import model or experiment"}
+            <UIIcon name="upload" size={14} />
+            {importing ? "Importing experiment…" : "Import model or experiment"}
           </button>
           <input
             hidden
@@ -98,7 +117,10 @@ export function ModelLibrary({
                 key={m.name}
                 onClick={() => onSelect(m)}
               >
-                ◇ {m.name}
+                <span className="fq-library-title">
+                  <UIIcon name="file" size={14} />
+                  {m.name}
+                </span>
                 <small>
                   {m.name.includes("Arithmetic")
                     ? "Superposition · res = 3x + 2"
@@ -129,7 +151,8 @@ export function ModelLibrary({
               })
             }
           >
-            New Model ＋
+            <UIIcon name="plus" size={14} />
+            New Model
           </button>
         </div>
       ) : (

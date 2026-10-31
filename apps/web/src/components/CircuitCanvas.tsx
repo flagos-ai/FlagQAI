@@ -1,3 +1,4 @@
+import { UIIcon } from "./UIIcon";
 import { useMemo, useRef, useState } from "react";
 import { circuitHierarchy } from "../../../../packages/quantum-workspace/domain/circuit-tree.mjs";
 import type {
@@ -40,6 +41,7 @@ export function CircuitCanvas({
           "ungrouped_0",
         ]),
     );
+  const [detailLevel, setDetailLevel] = useState<number | null>(null);
   const canvas = useRef<HTMLDivElement>(null);
   const c =
     mode === "logical"
@@ -70,14 +72,17 @@ export function CircuitCanvas({
     registers,
   );
   const { layout, wireY: y, baseY, rowGap, height, width } = scene;
-  const toggle = (id: string) =>
+  const toggle = (id: string) => {
+    setDetailLevel(null);
     setOpen((previous) => {
       const next = new Set(previous);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
+  };
   const setLevel = (limit: number) => {
+    setDetailLevel(limit);
     const next = new Set(["__root__"]);
     const visit = (n: CircuitNode, level: number) => {
       if (level < limit) next.add(n.id);
@@ -94,7 +99,7 @@ export function CircuitCanvas({
           aria-label={(open.has(n.id) ? "Collapse " : "Expand ") + n.label}
           onClick={() => toggle(n.id)}
         >
-          {open.has(n.id) ? "−" : "+"}
+          <UIIcon name={open.has(n.id) ? "minus" : "plus"} size={12} />
         </button>
         <button onClick={() => onSelect({ module: n })}>
           {n.label}
@@ -108,37 +113,48 @@ export function CircuitCanvas({
     <>
       <div className="fq-toolbar">
         <button
+          aria-pressed={mode === "logical"}
           className={mode === "logical" ? "selected" : ""}
           onClick={() => {
             setMode("logical");
+            setDetailLevel(null);
             onSelect(null);
           }}
         >
           Logical
         </button>
         <button
+          aria-pressed={mode === "compiled"}
           className={mode === "compiled" ? "selected" : ""}
           onClick={() => {
             setMode("compiled");
+            setDetailLevel(null);
             onSelect(null);
           }}
         >
           Compiled
         </button>
-        <button onClick={() => setTree(!tree)}>☷ Tree</button>
+        <button aria-pressed={tree} onClick={() => setTree(!tree)}>
+          <UIIcon name="tree" size={14} />
+          Tree
+        </button>
         <div className="push" />
         <button
+          className="fq-control-icon"
+          title="Zoom out"
           aria-label="Zoom out"
           onClick={() => onZoom(Math.max(10, zoom - 10))}
         >
-          −
+          <UIIcon name="minus" />
         </button>
         <span>{zoom}%</span>
         <button
+          className="fq-control-icon"
+          title="Zoom in"
           aria-label="Zoom in"
           onClick={() => onZoom(Math.min(180, zoom + 10))}
         >
-          ＋
+          <UIIcon name="plus" />
         </button>
         <button
           onClick={() =>
@@ -160,18 +176,31 @@ export function CircuitCanvas({
       </div>
       <div className="fq-toolbar detail">
         <small>DETAIL</small>
-        <button onClick={() => setLevel(1)}>Overview</button>
-        <button onClick={() => setLevel(3)}>Modules</button>
-        <button onClick={() => setLevel(100)}>All gates</button>
-        <button onClick={() => setLevel(0)}>Collapse all</button>
+        <button aria-pressed={detailLevel === 1} onClick={() => setLevel(1)}>
+          Overview
+        </button>
+        <button aria-pressed={detailLevel === 3} onClick={() => setLevel(3)}>
+          Modules
+        </button>
+        <button
+          aria-pressed={detailLevel === 100}
+          onClick={() => setLevel(100)}
+        >
+          All gates
+        </button>
+        <button aria-pressed={detailLevel === 0} onClick={() => setLevel(0)}>
+          Collapse all
+        </button>
         <div className="push" />
         <button
+          aria-pressed={!registers}
           className={!registers ? "selected" : ""}
           onClick={() => setRegisters(false)}
         >
           Qubits
         </button>
         <button
+          aria-pressed={registers}
           className={registers ? "selected" : ""}
           onClick={() => setRegisters(true)}
         >

@@ -1,3 +1,4 @@
+import { UIIcon } from "./UIIcon";
 import { useEffect, useId, useRef, useState } from "react";
 import { codeTokens } from "../state/code-tokens";
 export function CodeExample({
@@ -40,24 +41,7 @@ export function CodeExample({
               status === "copied" ? "Copied to clipboard" : "Copy " + title
             }
           >
-            <svg
-              viewBox="0 0 16 16"
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.4"
-              aria-hidden="true"
-            >
-              {status === "copied" ? (
-                <path d="m3 8 3 3 7-8" />
-              ) : (
-                <>
-                  <rect x="5" y="5" width="8" height="9" rx="1.5" />
-                  <path d="M10 3V2H2v9h1" />
-                </>
-              )}
-            </svg>
+            <UIIcon name={status === "copied" ? "check" : "copy"} size={14} />
           </button>
         </div>
       </div>

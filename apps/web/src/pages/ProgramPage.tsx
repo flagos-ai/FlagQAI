@@ -1,3 +1,5 @@
+import { UIIcon } from "../components/UIIcon";
+import { CloseButton } from "../components/CloseButton";
 import { ProjectProvenance } from "../components/ProjectProvenance";
 import { ExperimentDetails } from "../components/ExperimentDetails";
 import { SourceVersion } from "../components/SourceVersion";
@@ -64,10 +66,12 @@ export function ProgramPage({
         <div className="fq-pane-title">
           VISUALIZATION
           <button
+            className="fq-control-icon"
+            aria-pressed={focus}
             aria-label="Focus quantum circuit"
             onClick={() => setFocus(!focus)}
           >
-            ⛶
+            <UIIcon name={focus ? "restore" : "expand"} />
           </button>
         </div>
         <div className="fq-toolbar">
@@ -87,10 +91,18 @@ export function ProgramPage({
             </small>
           )}
           <div className="push" />
-          <button onClick={() => setInfo(!info)}>Info</button>
-          <button onClick={() => setReference("")}>Gate reference</button>
+          <button aria-pressed={info} onClick={() => setInfo(!info)}>
+            <UIIcon name="info" size={14} />
+            Info
+          </button>
+          <button onClick={() => setReference("")}>
+            <UIIcon name="book" size={14} />
+            Gate reference
+          </button>
           <button
             disabled={!program}
+            className="fq-control-icon"
+            title="Download circuit"
             aria-label="Download circuit"
             onClick={() =>
               svg.current &&
@@ -101,14 +113,15 @@ export function ProgramPage({
               )
             }
           >
-            ↓
+            <UIIcon name="download" />
           </button>
           <button
             className="primary"
             disabled={!program}
             onClick={() => dispatch({ type: "navigate", page: "execution" })}
           >
-            {program?.experiment ? "Run again →" : "Execute →"}
+            <UIIcon name="play" size={14} />
+            {program?.experiment ? "Run again" : "Execute"}
           </button>
         </div>
         {c ? (
@@ -154,12 +167,11 @@ export function ProgramPage({
           >
             <div className="fq-pane-title">
               PROGRAM INFO
-              <button
-                aria-label="Collapse program information"
+              <CloseButton
+                label="Collapse program information"
+                title="Hide program information"
                 onClick={() => setInfo(false)}
-              >
-                ×
-              </button>
+              />
             </div>
             <section
               className="fq-program-summary"
@@ -173,7 +185,7 @@ export function ProgramPage({
                       <ExperimentDetails info={program.experiment} />
                       {program.experiment.has_result && (
                         <button
-                          className="primary"
+                          className="secondary"
                           onClick={() => {
                             dispatch({ type: "job", id: program.id });
                             dispatch({ type: "navigate", page: "jobs" });

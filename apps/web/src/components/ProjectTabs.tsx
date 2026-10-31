@@ -58,6 +58,7 @@ export function ProjectTabs({
               </button>
             )}
             <CloseButton
+              title="Close tab · Draft retained"
               label={`Close ${tab.path} (draft retained)`}
               onClick={() =>
                 dispatch({ type: "project-close-tab", id: tab.id })

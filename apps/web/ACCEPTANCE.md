@@ -262,3 +262,30 @@ installation of genuinely required missing dependencies were not evaluated.
   edits/restores the entry after a real SDK run and checks stale-result feedback.
 - Completion feedback exposes real saved archives and existing circuit/result
   navigation; partial collection and failed previews retain their own statuses.
+
+
+### Workspace continuity
+
+- Unit coverage validates independent per-file selection/scroll recovery,
+  fractional scroll coordinates, source-shortening clamps, malformed/denied
+  storage, bounded caches, project-scoped folds, search ordering, modifier/IME
+  shortcut guards and stable tab/draft ordering after refresh.
+- Manual isolated browser acceptance recovered a backward selection and both
+  scroll offsets in a 145-line file after switching tabs and reloading. Folded
+  folders remained folded; Ctrl+P selected another file and Ctrl+Enter submitted
+  the exact Python source to the real SDK runtime.
+- Added a tenth Chromium case covering the long-file viewport, directory folds,
+  library-tab recovery, quick-open keyboard selection, page navigation, stable
+  tab ordering and save-and-run via Ctrl+Enter with actual SDK output.
+
+
+### IDE visual consistency
+
+- Shared SVG control icons, quieter toolbar utilities, one primary toolbar action,
+  pressed-state feedback, running-state icons, shared dialog/close styling and
+  reduced border/shadow emphasis preserve the existing resizable layout.
+- Manual isolated browser inspection covers Model, Quantum and Gate reference.
+  Gate family colors, measurement symbols, code highlighting, copy actions and
+  artifact navigation retain their existing meaning and behavior.
+- Existing ten-case Chromium acceptance uses semantic command names after removal
+  of decorative glyphs; state/protocol checks and packaging acceptance are retained.
