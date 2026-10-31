@@ -65,6 +65,7 @@ export function useAgentConversation() {
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [sending, setSending] = useState(false),
+    [stopping, setStopping] = useState(false),
     [answering, setAnswering] = useState<string | null>(null),
     [compacting, setCompacting] = useState(false),
     [compactionNotice, setCompactionNotice] = useState("");
@@ -73,7 +74,9 @@ export function useAgentConversation() {
     cursor = useRef(0),
     generation = useRef(0),
     mounted = useRef(true),
-    operation = useRef(false);
+    operation = useRef(false),
+    stopRequest = useRef(false),
+    submitRequest = useRef(false);
   const [pendingDelivery, setPendingDelivery] = useState(() => {
     try {
       return readPendingDelivery(sessionStorage);
@@ -268,6 +271,8 @@ export function useAgentConversation() {
       operation.current ||
       view.working ||
       sending ||
+      stopRequest.current ||
+      view.stop === "stopping" ||
       Object.keys(view.permissions).length ||
       Object.keys(view.questions).length
     )
@@ -320,10 +325,13 @@ export function useAgentConversation() {
     const current = active.current;
     if (
       !current ||
+      submitRequest.current ||
       phase !== "connected" ||
       !view.projected ||
       view.working ||
       sending ||
+      stopRequest.current ||
+      view.stop === "stopping" ||
       Object.keys(view.permissions).length ||
       Object.keys(view.questions).length
     )
@@ -344,6 +352,7 @@ export function useAgentConversation() {
       text,
       draft,
     };
+    submitRequest.current = true;
     delivery(input);
     setConfirmedDraft(null);
     setSending(true);
@@ -377,6 +386,7 @@ export function useAgentConversation() {
       );
       return false;
     } finally {
+      submitRequest.current = false;
       if (mounted.current) setSending(false);
     }
   };
@@ -389,6 +399,8 @@ export function useAgentConversation() {
       operation.current ||
       busy ||
       sending ||
+      stopRequest.current ||
+      view.stop === "stopping" ||
       phase !== "connected" ||
       view.working ||
       view.context?.compaction ||
@@ -420,6 +432,8 @@ export function useAgentConversation() {
       operation.current ||
       busy ||
       sending ||
+      stopRequest.current ||
+      view.stop === "stopping" ||
       phase !== "connected" ||
       !view.context?.compactSupported ||
       view.context.compaction ||
@@ -457,22 +471,48 @@ export function useAgentConversation() {
     }
   };
   const stop = async () => {
-    if (!active.current) return;
-    setBusy(true);
+    const current = active.current;
+    if (
+      !current ||
+      stopRequest.current ||
+      phase !== "connected" ||
+      !view.projected ||
+      view.stop === "stopping" ||
+      (!view.working &&
+        !Object.keys(view.permissions).length &&
+        !Object.keys(view.questions).length)
+    )
+      return;
+    stopRequest.current = true;
+    setStopping(true);
     setError("");
     try {
-      await harnessClient.cancelSession(active.current.id, { cause: "user" });
+      // Native session.control events, not this HTTP receipt, confirm termination.
+      await harnessClient.cancelSession(current.id, { cause: "user" });
     } catch (problem) {
-      setError(message(problem));
+      if (mounted.current && active.current?.id === current.id)
+        setError(
+          "Stop request could not be confirmed. The Agent may still be running. Reconnect to check before retrying. " +
+            message(problem),
+        );
     } finally {
-      setBusy(false);
+      stopRequest.current = false;
+      if (mounted.current) setStopping(false);
     }
   };
   const answer = async (
     id: string,
     decision: PermissionDecision | QuestionAnswers | "cancel-question",
   ) => {
-    if (!active.current || answering) return;
+    if (
+      !active.current ||
+      answering ||
+      stopRequest.current ||
+      view.stop === "stopping" ||
+      phase !== "connected" ||
+      !view.projected
+    )
+      return;
     setAnswering(id);
     setError("");
     try {
@@ -497,6 +537,8 @@ export function useAgentConversation() {
       !current ||
       operation.current ||
       sending ||
+      stopRequest.current ||
+      view.stop === "stopping" ||
       view.working ||
       Object.keys(view.permissions).length ||
       Object.keys(view.questions).length
@@ -540,6 +582,7 @@ export function useAgentConversation() {
     clearError: () => setError(""),
     busy,
     sending,
+    stopping,
     pendingDelivery,
     confirmedDraft,
     retryDelivery: () =>

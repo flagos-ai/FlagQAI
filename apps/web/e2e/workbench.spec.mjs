@@ -792,3 +792,280 @@ test("failed run → Agent repair → review and undo → changed SDK result rem
     (await savedRecord(page, repaired, "repaired.fqx")).job.result.counts,
   ).toEqual(original.job.result.counts);
 });
+
+test("native decisions, uncertain stops and reconnect preserve one task without resubmission", async ({
+  page,
+}) => {
+  const agent = page.getByRole("button", {
+    name: "FlagQAI Agent",
+    exact: true,
+  });
+  if ((await agent.getAttribute("aria-expanded")) !== "true")
+    await agent.click();
+  await page
+    .getByRole("button", { name: "Connect Agent", exact: true })
+    .click();
+  await expect(
+    page.getByRole("status", { name: "Connected", exact: true }),
+  ).toBeVisible();
+  const input = page.getByRole("textbox", {
+    name: "Message FlagQAI",
+    exact: true,
+  });
+  const network = `http://127.0.0.1:${process.env.FQ_TEST_PROXY_PORT}/__fixture/network`;
+  const start = await get(page, network);
+  const send = async (kind) => {
+    await input.fill("control acceptance: " + kind);
+    await page
+      .getByRole("button", { name: "Send message", exact: true })
+      .click();
+  };
+  await send("permission");
+  await expect(
+    page.getByRole("status", { name: "Waiting for permission", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Reject", exact: true }).click();
+  await expect(
+    page.getByRole("status", { name: "Connected", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".fq-agent-message.assistant")).toContainText(
+    "The read was rejected",
+  );
+  await send("question");
+  await expect(
+    page.getByRole("status", { name: "Waiting for your answer", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Stop Agent", exact: true }).click();
+  await expect(
+    page.getByText("Agent stopped. Existing code and results are retained.", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Submit answers", exact: true }),
+  ).toHaveCount(0);
+  for (const kind of ["unknown", "failed"]) {
+    await send("stop-" + kind);
+    await expect(
+      page.getByRole("button", { name: "Stop Agent", exact: true }),
+    ).toBeEnabled();
+    await page.getByRole("button", { name: "Stop Agent", exact: true }).click();
+    await expect(page.locator(".fq-agent-stop-state")).toContainText(
+      kind === "unknown" ? "Stop is unconfirmed" : "Stop failed",
+    );
+    await expect(page.locator(".fq-agent-stop-state")).not.toContainText(
+      "Agent stopped",
+    );
+    if (kind === "unknown")
+      await expect(page.locator(".fq-agent-stop-state")).toContainText(
+        "1 message remains queued",
+      );
+    const native = (await get(page, network)).sessions.find(
+      (session) => session.status === "running",
+    );
+    expect(native).toBeTruthy();
+    await input.fill("Keep this unsent draft while stopping.");
+    await editor(page).fill(draft);
+    // Drop the live stream, then restore it. Neither reconnect nor refresh may
+    // create another native submission or silently retry the stop request.
+    const beforeReconnect = await get(page, network);
+    try {
+      await page.request.post(network, { data: { offline: true } });
+      await expect(
+        page.getByRole("status", { name: "Reconnecting…", exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Stop Agent", exact: true }),
+      ).toBeDisabled();
+    } finally {
+      await fetch(network, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ offline: false }),
+        signal: AbortSignal.timeout(5000),
+      });
+    }
+    await page.reload();
+    await expect(
+      page.getByRole("status", { name: "Working", exact: true }),
+    ).toBeVisible();
+    await expect(input).toHaveValue("Keep this unsent draft while stopping.");
+    await expect(editor(page)).toHaveValue(draft);
+    const restored = await get(page, network);
+    expect(restored.submissionCount).toBe(beforeReconnect.submissionCount);
+    expect(restored.cancellationCount).toBe(beforeReconnect.cancellationCount);
+    expect(
+      restored.sessions.find((session) => session.id === native.id)?.status,
+    ).toBe("running");
+    await page.getByRole("button", { name: "Stop Agent", exact: true }).click();
+    await expect(
+      page.getByText("Agent stopped. Existing code and results are retained.", {
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("status", { name: "Connected", exact: true }),
+    ).toBeVisible();
+  }
+  const hold = join(process.env.FQ_E2E_CONTROL_DIR, "hold-stop");
+  await writeFile(
+    hold,
+    "Keep native turn running after the confirmed cancellation receipt",
+  );
+  try {
+    await send("stop-delayed");
+    const beforeStop = await get(page, network);
+    await page.getByRole("button", { name: "Stop Agent", exact: true }).click();
+    await expect(
+      page.getByRole("status", { name: "Stopping…", exact: true }),
+    ).toBeVisible();
+    await expect(page.locator(".fq-agent-stop-state")).toContainText(
+      "Waiting for the native Agent to finish",
+    );
+    await expect(
+      page.getByRole("button", { name: "Stop Agent", exact: true }),
+    ).toBeDisabled();
+    expect((await get(page, network)).cancellationCount).toBe(
+      beforeStop.cancellationCount + 1,
+    );
+    await expect(page.locator(".fq-agent-stop-state")).not.toContainText(
+      "Agent stopped",
+    );
+  } finally {
+    await rm(hold, { force: true });
+  }
+  await expect(
+    page.getByText("Agent stopped. Existing code and results are retained.", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(editor(page)).toHaveValue(draft);
+  expect((await get(page, network)).submissionCount).toBe(
+    start.submissionCount + 5,
+  );
+});
+
+test("Follow Agent from Execution handles the first action batch, cold archive focus and Follow Off", async ({
+  page,
+}) => {
+  await editor(page).fill(draft);
+  const agent = page.getByRole("button", {
+    name: "FlagQAI Agent",
+    exact: true,
+  });
+  if ((await agent.getAttribute("aria-expanded")) !== "true")
+    await agent.click();
+  // Delay the first live poll so it contains newly created actions, not just
+  // history. Real protocol/SDK traffic is delayed, never replaced by fixtures.
+  let identity;
+  await page.route("**/api/workspace/context", async (route) => {
+    identity = route.request().postDataJSON();
+    await route.continue();
+  });
+  let polls = 0,
+    releasePoll;
+  const pollGate = new Promise((resolve) => {
+    releasePoll = resolve;
+  });
+  await page.route("**/api/workspace/events?*", async (route) => {
+    if (++polls === 2) await pollGate;
+    await route.continue();
+  });
+  const modelBarrier = join(
+    process.env.FQ_E2E_CONTROL_DIR,
+    "hold-follow-model",
+  );
+  const resultBarrier = join(
+    process.env.FQ_E2E_CONTROL_DIR,
+    "hold-follow-result",
+  );
+  await writeFile(modelBarrier, "Observe model navigation");
+  await writeFile(resultBarrier, "Observe circuit navigation");
+  try {
+    await page
+      .getByRole("button", { name: "Connect Agent", exact: true })
+      .click();
+    await expect(
+      page.getByRole("status", { name: "Connected", exact: true }),
+    ).toBeVisible();
+    const follow = page.getByRole("switch", { name: /Follow Agent/ });
+    if ((await follow.getAttribute("aria-checked")) !== "true")
+      await follow.click();
+    await page.getByRole("button", { name: "EXECUTION", exact: true }).click();
+    const input = page.getByRole("textbox", {
+      name: "Message FlagQAI",
+      exact: true,
+    });
+    await input.fill("follow acceptance");
+    await page
+      .getByRole("button", { name: "Send message", exact: true })
+      .click();
+    await expect
+      .poll(async () => {
+        if (!identity) return false;
+        const actions = await get(
+          page,
+          `/api/workspace/events?client=${identity.client}&session=${identity.session}&after=0`,
+        );
+        return actions.some(
+          (action) =>
+            action.operation === "model.create" &&
+            action.status === "completed",
+        );
+      })
+      .toBe(true);
+    releasePoll();
+    await expect(page).toHaveURL(/#model$/);
+    await expect(editor(page)).toHaveValue(
+      /circuit = fq.Circuit\(2\).h\(0\).cx\(0, 1\).x\(1\)/,
+    );
+    await rm(modelBarrier, { force: true });
+    await expect(page).toHaveURL(/#program$/, { timeout: 90000 });
+    await expect(
+      page.getByRole("button", { name: "Inspect X gate 3", exact: true }),
+    ).toBeVisible();
+    const archive = await page
+      .getByRole("link", { name: "Download original .fqx ↓" })
+      .getAttribute("href");
+    await rm(resultBarrier, { force: true });
+    await expect(page).toHaveURL(/#jobs$/);
+    await expect(
+      page.getByRole("link", { name: "Download original .fqx ↓" }),
+    ).toHaveAttribute("href", archive);
+    await expect(page.getByRole("table")).toContainText("01");
+    await expect(page.getByRole("table")).toContainText("10");
+    await expect(
+      page.getByRole("status", { name: "Connected", exact: true }),
+    ).toBeVisible();
+    await follow.click();
+    await page.getByRole("button", { name: "EXECUTION", exact: true }).click();
+    await input.fill("follow acceptance");
+    await page
+      .getByRole("button", { name: "Send message", exact: true })
+      .click();
+    await expect(page.locator(".fq-agent-message.assistant")).toHaveCount(2, {
+      timeout: 90000,
+    });
+    await expect(
+      page.getByRole("status", { name: "Connected", exact: true }),
+    ).toBeVisible();
+    await expect(page).toHaveURL(/#execution$/);
+    await page.reload();
+    await expect(page).toHaveURL(/#execution$/);
+    await expect(agent).toHaveAttribute("aria-expanded", "true");
+    await page
+      .getByRole("button", { name: "Show model library", exact: true })
+      .click();
+    await page.getByRole("button", { name: "MODEL", exact: true }).click();
+    await expect(
+      page.getByRole("button", {
+        name: /Draft · Python Bell pair/,
+        exact: false,
+      }),
+    ).toBeVisible();
+  } finally {
+    releasePoll();
+    await rm(modelBarrier, { force: true });
+    await rm(resultBarrier, { force: true });
+  }
+});

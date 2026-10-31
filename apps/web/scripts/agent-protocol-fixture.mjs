@@ -16,7 +16,8 @@ let testModel = "scripted-test (no LLM)";
 const testProviders = new Map();
 const testPort = Number(process.env.FQ_TEST_PORT || 4190);
 const testAgentPort = Number(process.env.FQ_TEST_AGENT_PORT || 4097);
-let submissionCount = 0;
+let submissionCount = 0,
+  cancellationCount = 0;
 const backend = {
   descriptor: { id: "ui-fixture", label: "Scripted protocol test" },
   detect: async () => ({ installed: true, auth: "ok" }),
@@ -49,7 +50,9 @@ const backend = {
       status = "idle",
       cancelled = false,
       permission,
-      question;
+      question,
+      controlCase = "",
+      controlCancelCount = 0;
     const children = new Map();
     let autoPolicy = { enabled: true, thresholdRatio: 0.8, scope: "session" };
     const session = {
@@ -134,17 +137,50 @@ const backend = {
       },
       dispose: async () => {},
       cancel: async () => {
+        cancellationCount++;
+        if (controlCase) {
+          controlCancelCount++;
+          if (controlCancelCount === 1 && controlCase === "stop-unknown")
+            return { outcome: "unknown", stillQueued: ["fixture-queued"] };
+          if (controlCancelCount === 1 && controlCase === "stop-failed")
+            return { outcome: "failed", stillQueued: [] };
+        }
         cancelled = true;
-        status = "idle";
-        emit(
-          {
-            type: "turn.end",
-            turn,
-            reason: { kind: "aborted" },
-            time: Date.now(),
-          },
-          { type: "session.status", status },
-        );
+        const settle = () => {
+          if (permission)
+            emit({
+              type: "permission.settled",
+              requestId: permission.requestId,
+              outcome: "rejected",
+            });
+          if (question)
+            emit({
+              type: "question.settled",
+              requestId: question,
+              outcome: "cancelled",
+            });
+          permission = null;
+          question = null;
+          status = "idle";
+          emit(
+            {
+              type: "turn.end",
+              turn,
+              reason: { kind: "aborted" },
+              time: Date.now(),
+            },
+            { type: "session.status", status },
+          );
+        };
+        if (controlCase === "stop-delayed" && process.env.FQ_E2E_CONTROL_DIR) {
+          void (async () => {
+            const barrier = join(process.env.FQ_E2E_CONTROL_DIR, "hold-stop");
+            const deadline = Date.now() + 60000;
+            while (existsSync(barrier) && Date.now() < deadline)
+              await delay(100);
+            settle();
+          })();
+        } else settle();
         return { outcome: "confirmed", stillQueued: [] };
       },
       submit: async (input) => {
@@ -161,6 +197,15 @@ const backend = {
             reason: "Scripted rejection for receipt recovery",
           };
         cancelled = false;
+        controlCancelCount = 0;
+        controlCase =
+          process.env.FQ_E2E_CONTROL_DIR &&
+          process.env.FQ_TEST_CONTROL === "1" &&
+          /^control acceptance: (permission|question|stop-delayed|stop-unknown|stop-failed)$/.test(
+            requestText.trim(),
+          )
+            ? requestText.trim().split(": ")[1]
+            : "";
         if (process.env.FQ_TEST_CONTEXT === "1")
           emit(
             { type: "context.capacity", contextWindow: 128000 },
@@ -181,6 +226,63 @@ const backend = {
           { type: "session.status", status },
         );
         void (async () => {
+          if (controlCase) {
+            const callId = "read-" + turn;
+            emit({
+              type: "tool.call",
+              seq: ++seq,
+              callId,
+              name: "Read",
+              turn,
+              step: 1,
+              time: Date.now(),
+              argsJson: '{"file":"README.md"}',
+            });
+            if (controlCase === "permission") {
+              const requestId = "permission-" + turn;
+              permission = { callId, requestId };
+              status = "requires-action";
+              emit(
+                {
+                  type: "permission.request",
+                  request: {
+                    requestId,
+                    callId,
+                    toolName: "Read",
+                    title: "Read fixture context?",
+                    description: "Scripted read-only acceptance request.",
+                    options: [
+                      { id: "no", kind: "reject", label: "Reject" },
+                      { id: "once", kind: "allow-once", label: "Allow once" },
+                    ],
+                  },
+                },
+                { type: "session.status", status },
+              );
+            } else if (controlCase === "question") {
+              question = "question-" + turn;
+              status = "requires-action";
+              emit(
+                {
+                  type: "question.request",
+                  request: {
+                    requestId: question,
+                    questions: [
+                      {
+                        question: "Which circuit should we inspect?",
+                        options: [
+                          { label: "Bell", description: "Two qubits" },
+                          { label: "GHZ", description: "Three qubits" },
+                        ],
+                      },
+                    ],
+                  },
+                },
+                { type: "session.status", status },
+              );
+            }
+            return;
+          }
           if (
             process.env.FQ_TEST_BRIDGE === "1" ||
             process.env.FQ_TEST_PYTHON === "1" ||
@@ -262,6 +364,92 @@ const backend = {
               });
               return JSON.parse(output).result;
             };
+            if (
+              process.env.FQ_E2E_CONTROL_DIR &&
+              requestText.trim() === "follow acceptance"
+            ) {
+              const barrier = async (name) => {
+                const deadline = Date.now() + 60000;
+                while (existsSync(join(process.env.FQ_E2E_CONTROL_DIR, name))) {
+                  if (Date.now() > deadline)
+                    throw Error("Follow acceptance barrier timed out.");
+                  await delay(100);
+                }
+              };
+              const sourceFolder = await mkdtemp(
+                join(root, ".flagqai-follow-test-"),
+              );
+              const path = join(sourceFolder, "follow-example.py");
+              let created;
+              try {
+                await writeFile(
+                  path,
+                  'import flagquantum as fq\ncircuit = fq.Circuit(2).h(0).cx(0, 1).x(1)\nresult = fq.run(circuit, outputs=fq.counts(), options=fq.ExecutionOptions(shots=128, seed=42))\nfq.save("follow.fqx", result.plan, result=result)\n',
+                );
+                created = await command("model.create", [
+                  "--language",
+                  "python",
+                  "--source-file",
+                  path,
+                  "--name",
+                  "Follow Bell",
+                ]);
+              } finally {
+                await rm(sourceFolder, { recursive: true, force: true });
+              }
+              await barrier("hold-follow-model");
+              const started = await command("python.run", [
+                "--model-id",
+                created.file.id,
+                "--revision",
+                created.file.revision,
+              ]);
+              let run;
+              const deadline = Date.now() + 90000;
+              do {
+                if (Date.now() > deadline)
+                  throw Error("Follow SDK run timed out.");
+                await delay(400);
+                run = await command("python.read", [
+                  "--run-id",
+                  started.python_run.id,
+                ]);
+              } while (["queued", "running"].includes(run.status));
+              if (run.status !== "completed" || run.experiments?.length !== 1)
+                throw Error(JSON.stringify(run));
+              const artifact = await command("experiment.read", [
+                "--experiment-id",
+                run.experiments[0].id,
+              ]);
+              await command("focus", [
+                "--page",
+                "program",
+                "--program-id",
+                artifact.program.id,
+              ]);
+              await barrier("hold-follow-result");
+              await command("focus", [
+                "--page",
+                "jobs",
+                "--job-id",
+                artifact.job.id,
+              ]);
+              await streamText(
+                "Follow acceptance completed using the actual SDK. No model was called.",
+                2,
+              );
+              status = "idle";
+              emit(
+                {
+                  type: "turn.end",
+                  turn,
+                  reason: { kind: "completed" },
+                  time: Date.now(),
+                },
+                { type: "session.status", status },
+              );
+              return;
+            }
             if (
               process.env.FQ_E2E_CONTROL_DIR &&
               controls.project &&
@@ -943,6 +1131,7 @@ const proxy =
         testAgentPort,
         () => ({
           submissionCount,
+          cancellationCount,
           sessions: [...records.values()].map((session) => ({
             id: session.ref.sessionId,
             status: session.status,

@@ -305,3 +305,36 @@ installation of genuinely required missing dependencies were not evaluated.
 - The eleventh Chromium case asserts this entire repair/review/undo/rerun flow,
   immutable prior artifacts, provenance and restored session/editor/result state.
   This verifies protocol wiring and computation, not model reasoning quality.
+
+### Native run controls and recovery
+
+- Status uses native projection and pending requests: Working, waiting for
+  permission, waiting for an answer, synchronization and reconnection remain
+  distinct. Pending decisions are disabled until the stream is synchronized.
+- Stop has an immediate in-flight guard and does not share connection busy state.
+  A successful HTTP cancellation receipt is never treated as proof of termination;
+  native control/end events confirm stopped. Unknown/failed outcomes retain retry
+  and disclose any native queued messages. No automatic stop retry is introduced.
+- The twelfth Chromium case rejects a permission, stops a pending question,
+  exercises unknown/failed cancellation, drops/reconnects the live stream, and
+  checks that neither messages nor stop calls duplicate. Editor and unsent chat
+  drafts survive. A test barrier holds a turn alive after its confirmed receipt
+  to verify Stopping persists until native termination.
+- Manual isolated browser acceptance verified the same waiting, retry and delayed
+  stop behavior. Fixtures are explicitly gated, scripted and make no model calls.
+
+### Follow Agent from Execution
+
+- Fixed the first-poll race: establish a historical action watermark before
+  enabling Send, then follow newer actions even in the first live batch. Reload
+  restores old cards/resources without replaying their navigation.
+- Resolve a saved archive's program/result before selecting a focus target and
+  process automatic navigation in event order. A missing/invalid target reports
+  a bridge error instead of selecting an unloaded ID. Async follow results are
+  discarded when the user disables Follow or the subscription is replaced.
+- The thirteenth Chromium case starts on Execution, delays the first live poll
+  until a model creation has completed, verifies Model → Quantum → Jobs with a
+  real SDK Bell + X artifact, then checks Follow Off and refresh do not navigate.
+  Pure state tests verify cold circuit/result focus preserves an unsaved draft.
+- User experiments and browser drafts are not replaced or committed. Browser
+  automation was unavailable locally during this diagnosis; CI runs Chromium.

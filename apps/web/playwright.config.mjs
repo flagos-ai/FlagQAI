@@ -29,6 +29,7 @@ export default defineConfig({
     reuseExistingServer: false,
     env: {
       FQ_TEST_REPAIR: "1",
+      FQ_TEST_CONTROL: "1",
       FQ_TEST_RECOVERY: "1",
       FQ_COMPUTE_TRANSPORT: "local",
       FQ_LOCAL_PYTHON: process.env.FQ_LOCAL_PYTHON || "python3",
