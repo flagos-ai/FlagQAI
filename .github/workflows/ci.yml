@@ -70,6 +70,7 @@ jobs:
       - run: node --test apps/cli/scripts/bundled-notices.test.mjs
       - run: node --test apps/cli/scripts/pack-flagqai.test.mjs
       - run: node --test apps/cli/scripts/npm-cli.test.mjs
+      - run: node --test apps/cli/scripts/acceptance-cleanup.test.mjs
       - run: node --test apps/cli/scripts/quantum-preflight.test.mjs apps/cli/scripts/quantum-preflight-fixture.test.mjs
       - run: node --test apps/cli/scripts/quantum-route.test.mjs
       - run: node --test apps/cli/scripts/guide-sources.test.mjs
