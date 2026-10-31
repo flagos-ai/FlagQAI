@@ -6,6 +6,11 @@ import sys
 import unittest
 
 
+def require_complete(result):
+    if not result.wasSuccessful() or result.skipped or result.testsRun == 0:
+        raise RuntimeError('Required SDK acceptance failed, skipped tests, or collected no tests.')
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--report', required=True)
@@ -26,8 +31,7 @@ def main():
     path = Path(args.report)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(report, indent=2))
-    if not result.wasSuccessful() or result.skipped or result.testsRun == 0:
-        raise SystemExit('Required SDK acceptance failed, skipped tests, or collected no tests.')
+    require_complete(result)
 
 
 if __name__ == '__main__':

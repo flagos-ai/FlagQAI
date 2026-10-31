@@ -236,6 +236,18 @@ Path("invalid.fqx").write_bytes(b"invalid archive")
 test("scripted Agent streams tools, survives lost receipt + refresh, and protects code and chat drafts", async ({
   page,
 }) => {
+  const agent = page.getByRole("button", {
+    name: "FlagQAI Agent",
+    exact: true,
+  });
+  if ((await agent.getAttribute("aria-expanded")) !== "true")
+    await agent.click();
+  await page
+    .getByRole("button", { name: "Connect Agent", exact: true })
+    .click();
+  await expect(
+    page.getByRole("status", { name: "Connected", exact: true }),
+  ).toBeVisible();
   const failed = await runPython(
     page,
     "# repair-case: syntax\nimport flagquantum as fq\nfq.Circuit(",
@@ -250,7 +262,12 @@ test("scripted Agent streams tools, survives lost receipt + refresh, and protect
   });
   await expect(input).toHaveValue(new RegExp(failed.id.slice(0, 8)));
   await editor(page).fill(draft);
+  await expect(
+    page.getByRole("button", { name: "Send message", exact: true }),
+  ).toBeEnabled();
   const controlURL = `http://127.0.0.1:${process.env.FQ_TEST_PROXY_PORT}/__fixture/network`;
+  const hold = join(process.env.FQ_E2E_CONTROL_DIR, "hold-repair");
+  await writeFile(hold, "Wait for live tool observation after reconnect");
   const before = (await get(page, controlURL)).submissionCount;
   expect(
     (
@@ -267,10 +284,29 @@ test("scripted Agent streams tools, survives lost receipt + refresh, and protect
     await input.fill("Keep this newer unsent chat draft.");
     await page.reload();
     await expect(input).toHaveValue("Keep this newer unsent chat draft.");
+  } catch (problem) {
+    await rm(hold, { force: true });
+    throw problem;
   } finally {
-    expect(
-      (await page.request.post(controlURL, { data: { offline: false } })).ok(),
-    ).toBeTruthy();
+    // Cleanup is independent of Playwright's test deadline so it cannot mask
+    // the original UI error or leave later tests behind an offline proxy.
+    const restored = await fetch(controlURL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ offline: false }),
+      signal: AbortSignal.timeout(5000),
+    });
+    expect(restored.ok).toBeTruthy();
+  }
+  try {
+    await expect(
+      page.locator(".fq-agent-work-live .fq-cli-tool").first(),
+    ).toBeVisible();
+    await expect(page.locator(".fq-agent-work-live")).toContainText(
+      "python.read",
+    );
+  } finally {
+    await rm(hold, { force: true });
   }
   await expect(page.locator(".fq-agent-message.assistant")).toContainText(
     "Scripted Agent acceptance; actual FlagQuantum computation.",

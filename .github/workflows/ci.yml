@@ -225,7 +225,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      # save/load is not available in the unrelated PyPI 0.1.1 distribution.
+      # Import save/load from a verified source checkout instead of resolving a PyPI SDK.
       # Test the immutable merged SDK source; CPU PyTorch executes the circuits.
       - uses: actions/checkout@v4
         with:

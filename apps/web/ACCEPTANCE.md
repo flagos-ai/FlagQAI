@@ -204,7 +204,7 @@ installation of genuinely required missing dependencies were not evaluated.
 
 ### 2026-10-31: automated real-SDK CI gate
 
-- Added strict SDK acceptance: 82 backend tests passed locally with zero skips
+- Added strict SDK acceptance: 85 backend tests passed locally with zero skips
   using pinned SDK source `4ed3b8252200900d25350aaac6ddc9abbf8bc1e6`, SDK 0.4.0,
   PyTorch 2.13.0 and Python 3.12.14. CI deliberately uses Python 3.11. The runner
   records its actual interpreter, imported SDK path/version and results as JSON.

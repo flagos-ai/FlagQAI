@@ -700,7 +700,7 @@ The Web CI job checks out FlagQuantum revision
 `4ed3b8252200900d25350aaac6ddc9abbf8bc1e6` (the merged save/load SDK), runs Python
 3.11 with CPU PyTorch 2.13.0, and installs Playwright 1.64.1 with its matching
 Chromium. The SDK is imported from that source checkout; this lane does not
-install the similarly named PyPI 0.1.1 package or build/test the native extension.
+install a separately resolved PyPI SDK package or build/test the native extension.
 It exercises actual SDK execution and archive save/load on CPU.
 
 `packages/quantum-workspace/tests/sdk_acceptance.py` checks the required SDK APIs
