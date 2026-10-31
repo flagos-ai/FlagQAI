@@ -799,3 +799,27 @@ source files. A changed dependency marks an older result stale even if entry cod
 is identical. Unknown or other-file snapshots are identified separately; historical
 results and editor drafts remain unchanged. Live runs show activity without a
 fabricated percentage and respect reduced-motion preferences.
+
+
+### Workspace continuity and keyboard navigation
+
+Each file remembers its caret/selection (including direction) and vertical and
+horizontal scroll position. Tab switches, page navigation and reload restore
+those views without focusing the editor over Agent chat. Offsets are clamped to
+the current text; line numbers and highlighting follow the restored viewport.
+Only bounded UI metadata is stored in `fq-editor-positions-v1` (96 recent files),
+not another source snapshot. Storage denial falls back to in-memory recovery.
+Folder folds are scoped to the project and bounded to 32 projects/128 folders;
+search reveals matching paths without changing the saved folds. Library tab,
+active file and open-file order are retained. Reopening an existing file does not
+move its tab or replace an unsaved draft.
+
+Use **Cmd/Ctrl+P** or the editor's Find file control for current-project filename
+and path search. Arrow keys select and Enter opens Python, OpenQASM or read-only
+experiment files through the same existing file API. Escape/outside click closes
+the finder; other open dialogs retain their own keyboard interaction.
+**Cmd/Ctrl+Enter**, while the code editor is focused, invokes its existing primary
+action: Save & run for dirty Python projects, Run Python for saved Python, or
+Compile for valid OpenQASM. Busy/error guards, revision checks and draft protection
+are unchanged. Composition, extra modifiers and repeated keydowns do not submit
+additional work. Chat input and dialogs do not acquire the run shortcut.

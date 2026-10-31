@@ -514,3 +514,142 @@ test("project files, native Agent edits, draft review and multi-file SDK snapsho
   await page.getByRole("button", { name: "Open main.py", exact: true }).click();
   await expect(editor(page)).toHaveValue(local);
 });
+
+test("workspace restores file view and folds; keyboard file search and save-and-run preserve source", async ({
+  page,
+}) => {
+  const main =
+    Array.from({ length: 140 }, (_, index) => `# Context line ${index}`).join(
+      "\n",
+    ) +
+    "\n" +
+    bell +
+    "# " +
+    "long comment ".repeat(100);
+  const helper = "# Project helper\nVALUE = 1\n";
+  await page
+    .getByRole("button", { name: "Open project workspace", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Open project", exact: true }).click();
+  await page.getByRole("button", { name: "Create new", exact: true }).click();
+  await page
+    .getByRole("textbox", { name: "Project directory", exact: true })
+    .fill("continuity-project");
+  await page
+    .getByRole("button", { name: "Create folder", exact: true })
+    .click();
+  const create = async (path, source) => {
+    await page.getByRole("button", { name: "New file", exact: true }).click();
+    await page
+      .getByRole("textbox", { name: "New project file", exact: true })
+      .fill(path);
+    await page
+      .getByRole("button", { name: "Create project file", exact: true })
+      .click();
+    await expect(
+      page.getByRole("button", { name: "Switch to " + path, exact: true }),
+    ).toBeVisible();
+    await editor(page).fill(source);
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(
+      page.getByRole("status").filter({ hasText: /^Saved$/ }),
+    ).toBeVisible();
+  };
+  await create("src/main.py", main);
+  await create("helper.py", helper);
+  const tabs = page.locator(".fq-project-tabs > div > button:first-child");
+  const order = await tabs.allTextContents();
+  await page
+    .getByRole("button", { name: "Switch to src/main.py", exact: true })
+    .click();
+  await editor(page).press("Control+End");
+  await editor(page).press("Shift+ArrowLeft");
+  const view = () =>
+    editor(page).evaluate((element) => ({
+      start: element.selectionStart,
+      end: element.selectionEnd,
+      direction: element.selectionDirection,
+      top: Math.round(element.scrollTop),
+      left: Math.round(element.scrollLeft),
+    }));
+  const position = await view();
+  expect(position.top).toBeGreaterThan(500);
+  expect(position.left).toBeGreaterThan(100);
+  expect(position.direction).toBe("backward");
+  await page
+    .getByRole("button", { name: "Switch to helper.py", exact: true })
+    .click();
+  await editor(page).press("Control+Home");
+  await page
+    .getByRole("button", { name: "Switch to src/main.py", exact: true })
+    .click();
+  await expect.poll(view).toEqual(position);
+  const folder = page
+    .locator("details.fq-project-folder")
+    .filter({ has: page.locator("summary").filter({ hasText: /^src$/ }) });
+  await folder.locator("summary").click();
+  await expect(folder).not.toHaveAttribute("open");
+  await editor(page).press("Control+p");
+  const search = page.getByRole("combobox", { name: "Find file", exact: true });
+  await search.fill("helper");
+  await search.press("ArrowDown");
+  await search.press("Enter");
+  await expect(editor(page)).toHaveValue(helper);
+  await expect(tabs).toHaveText(order);
+  await editor(page).press("Control+p");
+  await search.fill("src main");
+  await search.press("Enter");
+  await expect(editor(page)).toHaveValue(main);
+  await expect.poll(view).toEqual(position);
+  await page.reload();
+  await expect(editor(page)).toHaveValue(main);
+  await expect.poll(view).toEqual(position);
+  await expect(tabs).toHaveText(order);
+  await expect(folder).not.toHaveAttribute("open");
+  await page.getByRole("button", { name: "QUANTUM", exact: true }).click();
+  await page.getByRole("button", { name: "MODEL", exact: true }).click();
+  await expect.poll(view).toEqual(position);
+  await page
+    .getByRole("button", { name: "Switch to helper.py", exact: true })
+    .click();
+  await editor(page).fill(helper + "# unsaved dependency\n");
+  await page
+    .getByRole("button", { name: "Switch to src/main.py", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Save & run ▷", exact: true }),
+  ).toBeVisible();
+  const before = new Set(
+    (await get(page, "/api/python/runs")).map((run) => run.id),
+  );
+  await editor(page).press("Control+Enter");
+  let run;
+  await expect
+    .poll(
+      async () => {
+        run = (await get(page, "/api/python/runs")).find(
+          (item) => !before.has(item.id),
+        );
+        return run?.status || "not submitted";
+      },
+      { timeout: 90000 },
+    )
+    .not.toMatch(/^(not submitted|queued|running)$/);
+  expect(run.status, JSON.stringify(run)).toBe("completed");
+  expect(run.source).toBe(main);
+  await expect(editor(page)).toHaveValue(main);
+  const tree = await get(page, "/api/projects/" + run.project.id);
+  expect(tree.files.find((file) => file.path === "helper.py").revision).toBe(
+    run.project.files.find((file) => file.path === "helper.py").sha256,
+  );
+  await expect(page.getByText("Run complete", { exact: true })).toBeVisible();
+  await editor(page).press("Control+p");
+  await search.fill("does-not-exist");
+  await expect(
+    page.getByText("No matching files.", { exact: true }),
+  ).toBeVisible();
+  await search.press("Escape");
+  await expect(
+    page.getByRole("dialog", { name: "Find project file" }),
+  ).toHaveCount(0);
+});

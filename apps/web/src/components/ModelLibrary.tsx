@@ -24,13 +24,32 @@ export function ModelLibrary({
   onSelect: (model: Model) => void;
   onUpload: (file: File) => void;
 }) {
-  const [tab, setTab] = useState<"models" | "templates" | "project">(
-      projectRequest ? "project" : "models",
-    ),
+  const [tab, setTab] = useState<"models" | "templates" | "project">(() => {
+      if (projectRequest) return "project";
+      try {
+        const saved = localStorage.getItem("fq-model-library-tab-v1");
+        if (
+          saved === "models" ||
+          saved === "templates" ||
+          (saved === "project" && projectPanel)
+        )
+          return saved;
+      } catch {
+        /* Use the default library. */
+      }
+      return "models";
+    }),
     [query, setQuery] = useState(""),
     [prompt, setPrompt] = useState(""),
     [candidate, setCandidate] = useState<Model | null>(null);
   const upload = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    try {
+      localStorage.setItem("fq-model-library-tab-v1", tab);
+    } catch {
+      /* Tab switching still works without storage. */
+    }
+  }, [tab]);
   useEffect(() => {
     if (projectRequest) setTab("project");
   }, [projectRequest]);

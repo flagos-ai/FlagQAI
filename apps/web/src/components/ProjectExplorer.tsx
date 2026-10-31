@@ -1,3 +1,4 @@
+import { useProjectFolders } from "../hooks/useProjectFolders";
 import { useRef, useState } from "react";
 import type { ProjectWorkspace } from "../hooks/useProjectWorkspace";
 import type {
@@ -15,14 +16,18 @@ function FileTree({
   selected,
   busy,
   onOpen,
+  folders,
+  searching,
 }: {
   files: File[];
   prefix?: string;
   selected?: string;
   busy: boolean;
   onOpen: (path: string) => void;
+  folders: ReturnType<typeof useProjectFolders>;
+  searching: boolean;
 }) {
-  const folders = [
+  const directories = [
     ...new Set(
       files
         .map((file) => file.path.slice(prefix.length))
@@ -32,8 +37,16 @@ function FileTree({
   ];
   return (
     <>
-      {folders.map((folder) => (
-        <details className="fq-project-folder" key={folder} open>
+      {directories.map((folder) => (
+        <details
+          className="fq-project-folder"
+          key={folder}
+          open={searching || !folders.closed.includes(prefix + folder)}
+          onToggle={(event) => {
+            if (!searching)
+              folders.toggle(prefix + folder, !event.currentTarget.open);
+          }}
+        >
           <summary>{folder}</summary>
           <FileTree
             files={files.filter((file) =>
@@ -43,6 +56,8 @@ function FileTree({
             selected={selected}
             busy={busy}
             onOpen={onOpen}
+            folders={folders}
+            searching={searching}
           />
         </details>
       ))}
@@ -89,6 +104,7 @@ export function ProjectExplorer({
     [query, setQuery] = useState("");
   const pathInput = useRef<HTMLInputElement>(null);
   const project = state.project;
+  const folders = useProjectFolders(project?.id);
   const openProject = async (value: string, create = false) => {
     if (await workspace.openProject(value, create)) {
       setOpening(false);
@@ -274,6 +290,8 @@ export function ProjectExplorer({
                 item.path.toLowerCase().includes(query.toLowerCase()),
               )}
               busy={workspace.busy}
+              folders={folders}
+              searching={!!query}
               selected={
                 state.editorLink?.project?.id === project.id
                   ? state.editorLink.project.path

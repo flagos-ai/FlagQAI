@@ -1,3 +1,5 @@
+import { useEditorPosition } from "../hooks/useEditorPosition";
+import { workspaceShortcut } from "../state/workspace-continuity";
 import { projectDirty } from "../state/project-workspace";
 import { ProjectTabs } from "../components/ProjectTabs";
 import type { ProjectWorkspace } from "../hooks/useProjectWorkspace";
@@ -33,12 +35,14 @@ export function ModelPage({
   python,
   projectWorkspace,
   onOpenProject,
+  onFindFile,
   onAttachSelection,
   onRepairPython,
   backendLabel = "Configured CPU backend",
 }: {
   projectWorkspace: ProjectWorkspace;
   onOpenProject: () => void;
+  onFindFile: () => void;
   editorSync: EditorSync;
   python: PythonWorkspace;
   backendLabel?: string;
@@ -110,6 +114,15 @@ export function ModelPage({
       110,
       500,
     );
+  const capturePosition = useEditorPosition(
+    state.editorLink?.id ||
+      `${state.project?.id || "models"}:${state.language}:${state.name}`,
+    editor,
+    (view) => {
+      setScroll({ top: view.top, left: view.left });
+      setSelection({ start: view.start, end: view.end });
+    },
+  );
   const isPython = state.language === "python";
   const needsProjectSave =
     !!state.editorLink?.project &&
@@ -123,6 +136,16 @@ export function ModelPage({
   );
   const errors = diagnostics.filter((d) => d.severity === "error"),
     lines = state.source.split("\n");
+  const canRun = isPython
+    ? !projectWorkspace.busy &&
+      !python.submitting &&
+      !["queued", "running"].includes(python.run?.status || "")
+    : errors.length === 0 && !state.busy;
+  const runCurrent = () => {
+    if (!canRun) return;
+    if (isPython) void python.start(!!needsProjectSave);
+    else compile();
+  };
   const remoteError =
     state.error?.source === state.source ? state.error.message : null;
   const compiled = state.programs.find((p) => p.source === state.source);
@@ -170,6 +193,14 @@ export function ModelPage({
             onClick={onOpenProject}
           >
             Project{state.project ? " · " + state.project.name : ""}
+          </button>
+          <button
+            aria-keyshortcuts="Meta+P Control+P"
+            aria-label="Find file"
+            title="Find file (⌘P / Ctrl+P)"
+            onClick={onFindFile}
+          >
+            ⌕
           </button>
           <div
             className="fq-language-tabs"
@@ -260,21 +291,14 @@ export function ModelPage({
           </button>
           <button
             className="primary"
-            disabled={
-              isPython
-                ? projectWorkspace.busy ||
-                  python.submitting ||
-                  ["queued", "running"].includes(python.run?.status || "")
-                : errors.length > 0 || state.busy
-            }
+            disabled={!canRun}
+            aria-keyshortcuts="Meta+Enter Control+Enter"
             title={
               needsProjectSave
                 ? "Save changed project files, then run this Python entry"
                 : "Run the current code"
             }
-            onClick={
-              isPython ? () => void python.start(!!needsProjectSave) : compile
-            }
+            onClick={runCurrent}
           >
             {isPython
               ? python.submitting
@@ -356,12 +380,13 @@ export function ModelPage({
           </pre>
           <textarea
             ref={editor}
-            onSelect={(event) =>
+            onSelect={(event) => {
+              capturePosition(event.currentTarget);
               setSelection({
                 start: event.currentTarget.selectionStart,
                 end: event.currentTarget.selectionEnd,
-              })
-            }
+              });
+            }}
             onContextMenu={(event) => {
               if (
                 event.currentTarget.selectionEnd <=
@@ -380,17 +405,33 @@ export function ModelPage({
             }}
             value={state.source}
             aria-label="Quantum model code editor"
-            aria-keyshortcuts="Meta+/ Control+/"
+            aria-keyshortcuts="Meta+/ Control+/ Meta+Enter Control+Enter Meta+p Control+p"
             title="Toggle line comment: ⌘/ or Ctrl+/"
             spellCheck={false}
-            onChange={(e) => dispatch({ type: "edit", source: e.target.value })}
-            onScroll={(e) =>
+            onChange={(e) => {
+              capturePosition(e.currentTarget);
+              dispatch({ type: "edit", source: e.target.value });
+            }}
+            onBlur={(e) => capturePosition(e.currentTarget)}
+            onKeyUp={(e) => capturePosition(e.currentTarget)}
+            onScroll={(e) => {
+              capturePosition(e.currentTarget);
               setScroll({
                 top: e.currentTarget.scrollTop,
                 left: e.currentTarget.scrollLeft,
-              })
-            }
+              });
+            }}
             onKeyDown={(e) => {
+              if (
+                workspaceShortcut({
+                  ...e,
+                  isComposing: e.nativeEvent.isComposing,
+                }) === "run"
+              ) {
+                e.preventDefault();
+                if (!e.repeat) runCurrent();
+                return;
+              }
               if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
                 e.preventDefault();
                 void projectWorkspace.save();

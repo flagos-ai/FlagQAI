@@ -211,10 +211,11 @@ export function projectTransition(
         {
           ...state,
           project: action.project,
-          projectTabs: [
-            ...(state.projectTabs || []).filter((item) => item.id !== tab.id),
-            tab,
-          ],
+          projectTabs: existing
+            ? state.projectTabs?.map((item) =>
+                item.id === tab.id ? tab : item,
+              )
+            : [...(state.projectTabs || []), tab],
           projectScratch: state.projectScratch || {
             name: state.name,
             source: state.source,
