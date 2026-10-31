@@ -111,3 +111,24 @@ export function circuitDifference(a: Instruction[], b: Instruction[]) {
   }
   return { added, removed, limited: false };
 }
+
+// Collection responses can arrive in filesystem/worker order. Keep run order,
+// then use natural filename order within each run so named A/B pairs are stable.
+export function comparisonCandidates(
+  runs: {
+    experiments?: { id: string; filename: string; has_result: boolean }[];
+  }[],
+) {
+  return [
+    ...new Set(
+      runs.flatMap((run) =>
+        [...(run.experiments || [])]
+          .filter((item) => item.has_result)
+          .sort((a, b) =>
+            a.filename.localeCompare(b.filename, "en", { numeric: true }),
+          )
+          .map((item) => item.id),
+      ),
+    ),
+  ];
+}

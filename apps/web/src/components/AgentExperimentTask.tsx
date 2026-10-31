@@ -1,3 +1,4 @@
+import { comparisonCandidates } from "../state/experiment-comparison";
 import { useEffect, useRef, useState } from "react";
 import { pythonAPI, type PythonRun } from "../api/python-runs";
 import type { PlatformAction } from "../api/platform";
@@ -69,15 +70,7 @@ export function AgentExperimentTask({
     };
   }, [signature, active]);
   const list = ids.flatMap((id) => (runs[id] ? [runs[id]] : []));
-  const outputs = [
-    ...new Set(
-      list.flatMap((run) =>
-        (run.experiments || [])
-          .filter((item) => item.has_result)
-          .map((item) => item.id),
-      ),
-    ),
-  ];
+  const outputs = comparisonCandidates(list);
   const failures = list.filter((run) =>
     ["failed", "cancelled", "timed_out"].includes(run.status),
   );

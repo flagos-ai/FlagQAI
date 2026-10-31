@@ -341,7 +341,7 @@ installation of genuinely required missing dependencies were not evaluated.
 
 ### Comparison experiment product flow
 
-- Four new unit cases cover normalized unequal-shot distributions, missing/typed
+- Five new unit cases cover stable collection ordering, normalized unequal-shot distributions, missing/typed
   states, incompatible qubit order, batches, sequence/parameter changes, bounded
   diff work and persisted comparison identity without draft/undo mutation.
 - The fourteenth Chromium case begins on Execution, sends a scripted comparison

@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  comparisonCandidates,
   compareDistributions,
   measurementCompatibility,
   circuitDifference,
@@ -98,4 +99,31 @@ test("comparison is durable and never changes source, undo, Agent visibility or 
     JSON.stringify({ ...after, comparison: { left: "invalid", right } }),
   );
   assert.equal(restoreWorkspace(store, "jobs").comparison, undefined);
+});
+
+test("task comparison order survives reversed collection responses and retains run order", () => {
+  const result = (id, filename, has_result = true) => ({
+    id,
+    filename,
+    has_result,
+  });
+  assert.deepEqual(
+    comparisonCandidates([
+      {
+        experiments: [
+          result("b", "02-variant.fqx"),
+          result("a", "01-baseline.fqx"),
+          result("bad", "00-no-result.fqx", false),
+        ],
+      },
+      {
+        experiments: [
+          result("d", "10.fqx"),
+          result("c", "2.fqx"),
+          result("a", "duplicate.fqx"),
+        ],
+      },
+    ]),
+    ["a", "b", "c", "d"],
+  );
 });
