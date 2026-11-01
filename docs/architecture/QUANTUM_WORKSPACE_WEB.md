@@ -34,3 +34,6 @@ adapters. Rejected: legacy global render wrappers and a second Agent/session run
 
 No credentials, local databases, generated bundles or provider identities are committed.
 Migration does not run a paid model call, publish a package or deploy the application.
+
+Product acceptance: see [WEB_PRODUCT_ACCEPTANCE.md](WEB_PRODUCT_ACCEPTANCE.md) for
+required user journeys, automated evidence and remaining product-readiness gates.

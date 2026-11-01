@@ -13,6 +13,7 @@
     "web:check": "pnpm --dir apps/web typecheck && pnpm --dir apps/web test",
     "web": "python3 packages/quantum-workspace/dev.py",
     "web:doctor": "python3 packages/quantum-workspace/dev.py --check",
-    "web:test:backend": "python3 -m unittest discover -s packages/quantum-workspace/tests -v"
+    "web:test:backend": "python3 -m unittest discover -s packages/quantum-workspace/tests -v",
+    "web:verify:journeys": "node apps/web/scripts/product-acceptance.mjs"
   }
 }

@@ -1,6 +1,7 @@
 """Required real-SDK lane: missing SDKs or skipped tests are failures."""
 import argparse
 import json
+import os
 from pathlib import Path
 import sys
 import unittest
@@ -24,7 +25,7 @@ def main():
     print('Required SDK: %s; PyTorch %s; Python %s' % (fq.__file__, torch.__version__, sys.version), flush=True)
     suite = unittest.defaultTestLoader.discover(str(Path(__file__).parent))
     result = unittest.TextTestRunner(verbosity=2).run(suite)
-    report = {'python': sys.version, 'sdk_version': fq.__version__, 'sdk_path': fq.__file__,
+    report = {'revision': os.environ.get('GITHUB_SHA', 'local-working-tree'), 'python': sys.version, 'sdk_version': fq.__version__, 'sdk_path': fq.__file__,
               'torch_version': torch.__version__, 'tests': result.testsRun,
               'skipped': [{'test': str(test), 'reason': reason} for test, reason in result.skipped],
               'failures': len(result.failures), 'errors': len(result.errors)}

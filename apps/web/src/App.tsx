@@ -1,3 +1,5 @@
+import { WorkspaceBackupNotice } from "./components/WorkspaceBackupNotice";
+import { JobsLibrary } from "./components/JobsLibrary";
 import { UIIcon } from "./components/UIIcon";
 import { QuickOpen } from "./components/QuickOpen";
 import { workspaceShortcut } from "./state/workspace-continuity";
@@ -33,8 +35,16 @@ export default function App() {
   const agent = useAgentConversation();
   const [pendingAttachment, setPendingAttachment] = useState<AgentAttachment>();
   const [pendingRepair, setPendingRepair] = useState<PythonRepairRequest>();
-  const { state, dispatch, compile, run, setActionContext, backendLabel } =
-      useQuantumWorkspace(),
+  const {
+      state,
+      dispatch,
+      compile,
+      run,
+      setActionContext,
+      backendLabel,
+      backupStatus,
+      retryBackup,
+    } = useQuantumWorkspace(),
     [sidebarWidth, setSidebarWidth] = usePanelSize("sidebar", 280, 170, 480),
     [guide, setGuide] = useState(false),
     [uploadError, setUploadError] = useState("");
@@ -274,38 +284,7 @@ export default function App() {
         </>
       );
     if (state.page === "jobs")
-      return (
-        <>
-          <div className="fq-pane-title">JOBS & SAVED RESULTS</div>
-          <div className="fq-library-body">
-            {state.jobs.map((j) => (
-              <button
-                key={j.id}
-                className={
-                  "fq-library-card " +
-                  (state.selectedJobId === j.id ? "selected" : "")
-                }
-                onClick={() => {
-                  if (state.comparison)
-                    dispatch({ type: "compare-experiments" });
-                  dispatch({ type: "job", id: j.id });
-                }}
-              >
-                {j.status === "completed"
-                  ? "✓"
-                  : j.status === "failed"
-                    ? "!"
-                    : "◷"}{" "}
-                {j.name}
-                <small>{j.experiment ? "Saved .fqx result" : j.status}</small>
-              </button>
-            ))}
-          </div>
-          <footer>
-            Local history · Executed jobs and imported experiments
-          </footer>
-        </>
-      );
+      return <JobsLibrary state={state} dispatch={dispatch} />;
     return (
       <>
         <div className="fq-pane-title">
@@ -427,6 +406,11 @@ export default function App() {
           initial={280}
         />
         <main className="fq-main">
+          <WorkspaceBackupNotice
+            status={backupStatus}
+            state={state}
+            onRetry={retryBackup}
+          />
           {uploadError && (
             <div className="fq-diagnostic error" role="alert">
               {uploadError}

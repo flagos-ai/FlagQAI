@@ -3,12 +3,23 @@ import { platformAPI } from "../api/platform";
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { quantumAPI } from "../api/quantum-workspace";
 import { workspaceReducer } from "../state/reducer";
-import { persistWorkspace, restoreWorkspace } from "../state/persistence";
+import {
+  persistWorkspace,
+  restoreWorkspace,
+  type BackupStatus,
+} from "../state/persistence";
 import type {
   CompiledProgram,
   ProgramSnapshot,
   QuantumJob,
 } from "../contracts/quantum-workspace";
+
+// Defer the browser storage getter until the persistence boundary can catch it.
+const workspaceStorage = {
+  getItem: (key: string) => window.localStorage.getItem(key),
+  setItem: (key: string, value: string) =>
+    window.localStorage.setItem(key, value),
+};
 
 export function useQuantumWorkspace() {
   const [backendLabel, setBackendLabel] = useState("Configured CPU backend");
@@ -39,7 +50,7 @@ export function useQuantumWorkspace() {
     actionContext.current = value;
   };
   const [state, dispatch] = useReducer(workspaceReducer, undefined, () =>
-    restoreWorkspace(localStorage, location.hash.slice(1)),
+    restoreWorkspace(workspaceStorage, location.hash.slice(1)),
   );
   useEffect(() => {
     let live = true;
@@ -52,7 +63,25 @@ export function useQuantumWorkspace() {
       live = false;
     };
   }, []);
-  useEffect(() => persistWorkspace(localStorage, state), [state]);
+  const [backupStatus, setBackupStatus] = useState<BackupStatus>({
+    saved: true,
+  });
+  const retryBackup = () => {
+    const next = persistWorkspace(workspaceStorage, state);
+    setBackupStatus(next);
+  };
+  useEffect(() => {
+    setBackupStatus(persistWorkspace(workspaceStorage, state));
+  }, [state]);
+  useEffect(() => {
+    if (backupStatus.saved) return;
+    const protectDraft = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", protectDraft);
+    return () => window.removeEventListener("beforeunload", protectDraft);
+  }, [backupStatus.saved]);
   useEffect(() => {
     history.replaceState(null, "", "#" + state.page);
   }, [state.page]);
@@ -60,7 +89,7 @@ export function useQuantumWorkspace() {
     const change = () =>
       dispatch({
         type: "navigate",
-        page: restoreWorkspace(localStorage, location.hash.slice(1)).page,
+        page: restoreWorkspace(workspaceStorage, location.hash.slice(1)).page,
       });
     window.addEventListener("hashchange", change);
     return () => window.removeEventListener("hashchange", change);
@@ -194,5 +223,14 @@ export function useQuantumWorkspace() {
       clearTimeout(timer);
     };
   }, [state.page]);
-  return { state, dispatch, compile, run, setActionContext, backendLabel };
+  return {
+    state,
+    dispatch,
+    compile,
+    run,
+    setActionContext,
+    backendLabel,
+    backupStatus,
+    retryBackup,
+  };
 }

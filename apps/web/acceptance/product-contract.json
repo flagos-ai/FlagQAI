@@ -1,0 +1,72 @@
+{
+  "schema": "flagqai.web-product-contract.v1",
+  "sdk": {
+    "version": "0.4.0",
+    "torch_version": "2.13.0",
+    "minimum_tests": 92
+  },
+  "journeys": [
+    {
+      "id": "first-use",
+      "name": "First successful experiment",
+      "required_tests": [
+        "real SDK example: Bell State → .fqx → circuit → results",
+        "real SDK example: GHZ State → .fqx → circuit → results",
+        "real SDK example: X State → .fqx → circuit → results",
+        "real SDK example: Quantum Arithmetic · 3x + 2 → .fqx → circuit → results",
+        "missing output and real Python errors are distinct and preserve run history",
+        "Jobs prioritizes results, filters history and compares only explicitly selected experiments",
+        "Jobs pages all observed states without renormalizing a truncated chart"
+      ]
+    },
+    {
+      "id": "agent-collaboration",
+      "name": "Agent collaboration with reviewable changes",
+      "required_tests": [
+        "scripted Agent streams tools, survives lost receipt + refresh, and protects code and chat drafts",
+        "project files, native Agent edits, draft review and multi-file SDK snapshots survive refresh",
+        "failed run → Agent repair → review and undo → changed SDK result remains traceable after refresh",
+        "Follow Agent from Execution handles the first action batch, cold archive focus and Follow Off",
+        "comparison task opens a durable side-by-side experiment with real gate and distribution changes"
+      ]
+    },
+    {
+      "id": "research-continuity",
+      "name": "Recover and continue research",
+      "required_tests": [
+        "refresh and navigation retain a selected historical result and newer draft",
+        "preview outage recovers same-name files without rerun; corrupt file stays separate",
+        "workspace restores file view and folds; keyboard file search and save-and-run preserve source",
+        "native decisions, uncertain stops and reconnect preserve one task without resubmission",
+        "browser backup failure preserves the last snapshot and exposes recovery without losing the live draft"
+      ]
+    }
+  ],
+  "pending_product_gates": [
+    {
+      "id": "independent-trials",
+      "requirement": "Two independent users complete all three journeys without developer intervention; record completion, errors and time.",
+      "status": "not_verified"
+    },
+    {
+      "id": "interaction-performance",
+      "requirement": "Establish and approve p50/p95 baselines for editor input, Jobs switching, circuit inspection and reconnect on a recorded reference machine. No response-time claim without measurements.",
+      "status": "not_verified"
+    },
+    {
+      "id": "scale-and-accessibility",
+      "requirement": "Verify long sessions, large circuits, large result histories, keyboard navigation and a narrow viewport with recorded fixtures and limits.",
+      "status": "not_verified"
+    },
+    {
+      "id": "live-model-evaluation",
+      "requirement": "Separately authorize and evaluate real model task quality and cost; scripted protocol acceptance does not establish model intelligence.",
+      "status": "not_verified"
+    },
+    {
+      "id": "backup-import",
+      "requirement": "Provide and verify a draft-safe workspace JSON backup import before claiming complete workspace backup round trips. Download currently supports manual recovery.",
+      "status": "not_verified"
+    }
+  ]
+}
