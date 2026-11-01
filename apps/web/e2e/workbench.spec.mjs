@@ -125,7 +125,7 @@ for (const [name, states] of [
         count.toLocaleString("en-US"),
       );
     await results
-      .getByText("Run details & provenance", { exact: true })
+      .getByLabel("Run details and provenance", { exact: true })
       .click();
     await expect(
       results.getByRole("link", { name: "Download original .fqx ↓" }),

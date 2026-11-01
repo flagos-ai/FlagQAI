@@ -545,7 +545,7 @@ function JobResults({ job, state, dispatch }: Props & { job: QuantumJob }) {
           )}
         </div>
         <details className="fq-job-details fq-job-provenance">
-          <summary>
+          <summary aria-label="Run details and provenance">
             Run details & provenance{" "}
             <span>Configuration, source version and original file</span>
           </summary>
