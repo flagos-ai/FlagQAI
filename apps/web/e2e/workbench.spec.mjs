@@ -11,6 +11,16 @@ result = fq.run(circuit, outputs=fq.counts(), options=fq.ExecutionOptions(shots=
 fq.save("bell.fqx", result.plan, result=result)
 print(result.counts)
 `;
+async function showJobEvidence(page) {
+  const result = page.getByRole("region", { name: "Job results", exact: true });
+  await result.getByRole("button", { name: "Table", exact: true }).click();
+  const disclosure = result.locator("details.fq-job-provenance");
+  if ((await disclosure.getAttribute("open")) === null)
+    await result
+      .getByLabel("Run details and provenance", { exact: true })
+      .click();
+  return result;
+}
 async function get(page, path) {
   const response = await page.request.get(path);
   expect(response.ok()).toBeTruthy();
@@ -786,11 +796,14 @@ test("failed run → Agent repair → review and undo → changed SDK result rem
   await expect(page).toHaveURL(/#jobs$/);
   await page.reload();
   await expect(page).toHaveURL(/#jobs$/);
+  const recoveredResult = await showJobEvidence(page);
   await expect(
-    page.getByRole("link", { name: "Download original .fqx ↓" }),
+    recoveredResult.getByRole("link", { name: "Download original .fqx ↓" }),
   ).toHaveAttribute("href", `/api/experiments/${latest.id}/file`);
   for (const count of Object.values(latest.job.result.counts))
-    await expect(page.getByRole("table")).toContainText(String(count));
+    await expect(recoveredResult.getByRole("table")).toContainText(
+      count.toLocaleString("en-US"),
+    );
   await page.getByRole("button", { name: "MODEL", exact: true }).click();
   await expect(editor(page)).toHaveValue(changed);
   await page.getByLabel("Python run history").selectOption(failed.id);
@@ -1042,11 +1055,12 @@ test("Follow Agent from Execution handles the first action batch, cold archive f
       .getAttribute("href");
     await rm(resultBarrier, { force: true });
     await expect(page).toHaveURL(/#jobs$/);
+    const followedResult = await showJobEvidence(page);
     await expect(
-      page.getByRole("link", { name: "Download original .fqx ↓" }),
+      followedResult.getByRole("link", { name: "Download original .fqx ↓" }),
     ).toHaveAttribute("href", archive);
-    await expect(page.getByRole("table")).toContainText("01");
-    await expect(page.getByRole("table")).toContainText("10");
+    await expect(followedResult.getByRole("table")).toContainText("01");
+    await expect(followedResult.getByRole("table")).toContainText("10");
     await expect(
       page.getByRole("status", { name: "Connected", exact: true }),
     ).toBeVisible();
