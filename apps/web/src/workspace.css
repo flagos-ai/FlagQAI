@@ -4391,3 +4391,149 @@ body,
 .fq-workspace .fq-job-export > button { display: inline-flex; align-items: center; gap: 6px; color: #afb9c5; font-size: 11px; border: 1px solid #ffffff16; border-radius: 6px; padding: 6px 9px; background: transparent; box-shadow: none; }
 .fq-workspace .fq-job-export > button:hover { background: #ffffff07; }
 .fq-workspace .fq-job-export > div button:hover:not(:disabled) { background: #ffffff0a; }
+
+/* Editor and project workflow refinements. */
+.fq-library-search {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.fq-library-body .fq-code-example pre {
+  max-height: 320px;
+  overflow: auto;
+}
+.fq-template-library {
+  gap: 12px;
+}
+.fq-template-library > :is(h2, p) {
+  margin: 0;
+}
+.fq-template-library > h2 {
+  font-size: 18px;
+  line-height: 1.4;
+}
+.fq-template-library > textarea {
+  min-height: 80px;
+  height: 80px;
+}
+.fq-template-library .fq-code-example pre {
+  max-height: 220px;
+}
+.fq-library-search input {
+  flex: 1;
+  min-width: 0;
+}
+.fq-library-search .fq-control-icon {
+  flex-shrink: 0;
+}
+.fq-editor-find {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  flex-shrink: 0;
+  border-bottom: 1px solid #ffffff10;
+  background: #2b2c30;
+}
+.fq-editor-find input {
+  min-width: 60px;
+  max-width: 320px;
+  flex: 1;
+  padding: 5px 8px;
+}
+.fq-editor-find > span {
+  min-width: 65px;
+  font-size: 11px;
+  color: #aab8c7;
+}
+.fq-editor-find button {
+  min-height: 26px;
+  padding: 3px 7px;
+  font-size: 11px;
+}
+.fq-code-search-match {
+  color: inherit;
+  background: #55b8ff40;
+  outline: 1px solid #8dceff80;
+  border-radius: 2px;
+}
+.fq-highlight {
+  tab-size: 4;
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0 !important;
+  padding: 22px 20px 40px 62px !important;
+  pointer-events: none;
+  color: #c6cfdd;
+  white-space: pre !important;
+  font: inherit !important;
+  overflow-wrap: normal !important;
+}
+.fq-project-tabs .fq-retained-drafts {
+  color: #a4d6f7;
+  flex-shrink: 0;
+}
+.fq-retained-draft-dialog {
+  width: min(520px, calc(100vw - 40px));
+}
+.fq-retained-draft-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 14px;
+}
+.fq-retained-draft-list button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  padding: 12px;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.fq-retained-draft-list strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.fq-retained-draft-list small {
+  color: #9eabb9;
+  font-size: 11px;
+}
+.fq-project-file-search {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.fq-project-file-search input {
+  padding-right: 34px;
+}
+.fq-project-file-search button {
+  position: absolute;
+  right: 3px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.fq-quick-count {
+  display: block;
+  margin: 0 16px 10px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.fq-quick-error {
+  margin: 12px 16px;
+  padding: 10px;
+  border: 1px solid #edaaa52a;
+  border-radius: 6px;
+  background: #edaaa507;
+  overflow-wrap: anywhere;
+}
+.fq-quick-error strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.fq-quick-error p {
+  margin: 6px 0;
+  font-size: 11px;
+}

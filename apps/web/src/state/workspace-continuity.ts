@@ -98,7 +98,7 @@ export function workspaceShortcut(event: {
   altKey?: boolean;
   shiftKey?: boolean;
   isComposing?: boolean;
-}): "find" | "run" | undefined {
+}): "find" | "run" | "save" | undefined {
   if (
     !(event.metaKey || event.ctrlKey) ||
     event.altKey ||
@@ -108,6 +108,7 @@ export function workspaceShortcut(event: {
     return;
   if (event.key.toLowerCase() === "p") return "find";
   if (event.key === "Enter") return "run";
+  if (event.key.toLowerCase() === "s") return "save";
 }
 
 export function findProjectFiles<T extends { path: string }>(

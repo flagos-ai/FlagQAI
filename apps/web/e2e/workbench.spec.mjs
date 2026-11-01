@@ -540,7 +540,7 @@ test("project files, native Agent edits, draft review and multi-file SDK snapsho
 
 test("workspace restores file view and folds; keyboard file search and save-and-run preserve source", async ({
   page,
-}) => {
+}, testInfo) => {
   const main =
     Array.from({ length: 140 }, (_, index) => `# Context line ${index}`).join(
       "\n",
@@ -580,6 +580,172 @@ test("workspace restores file view and folds; keyboard file search and save-and-
   };
   await create("src/main.py", main);
   await create("helper.py", helper);
+  const newFileButton = page.getByRole("button", {
+    name: "New file",
+    exact: true,
+  });
+  await newFileButton.click();
+  const pendingFile = page.getByRole("textbox", {
+    name: "New project file",
+    exact: true,
+  });
+  await pendingFile.fill("pending.py");
+  await pendingFile.evaluate((element) =>
+    element.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Escape",
+        isComposing: true,
+        bubbles: true,
+        cancelable: true,
+      }),
+    ),
+  );
+  await expect(pendingFile).toHaveValue("pending.py");
+  await expect(pendingFile).toBeFocused();
+  await pendingFile.press("Escape");
+  await expect(pendingFile).toHaveCount(0);
+  await expect(newFileButton).toBeFocused();
+  await expect(editor(page)).toHaveValue(helper);
+  await newFileButton.click();
+  await pendingFile.fill("helper.py");
+  let createRequests = 0;
+  let releaseCreate;
+  const createGate = new Promise((resolve) => {
+    releaseCreate = resolve;
+  });
+  const createRoute = "**/api/projects/*/file";
+  await page.route(createRoute, async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    createRequests++;
+    await createGate;
+    await route.fulfill({
+      status: 503,
+      json: { error: "File creation temporarily unavailable" },
+    });
+  });
+  try {
+    const compositionContinues = await pendingFile.evaluate((element) =>
+      element.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "Enter",
+          isComposing: true,
+          bubbles: true,
+          cancelable: true,
+        }),
+      ),
+    );
+    expect(compositionContinues).toBe(false);
+    expect(createRequests).toBe(0);
+    await pendingFile.press("Enter");
+    await expect(
+      page.getByRole("button", { name: "Create project file", exact: true }),
+    ).toHaveText("Creating…");
+    await expect(pendingFile).toHaveAttribute("readonly", "");
+    await pendingFile.press("Enter");
+    expect(createRequests).toBe(1);
+    releaseCreate();
+    await expect(
+      page.locator(".fq-project-explorer").getByRole("alert"),
+    ).toHaveText("File creation temporarily unavailable");
+    await expect(pendingFile).toHaveValue("helper.py");
+    await expect(pendingFile).not.toHaveAttribute("readonly");
+    await expect(editor(page)).toHaveValue(helper);
+  } finally {
+    releaseCreate();
+    await page.unroute(createRoute);
+  }
+  await pendingFile.press("Enter");
+  await expect(
+    page.locator(".fq-project-explorer").getByRole("alert"),
+  ).toContainText("already exists");
+  await expect(pendingFile).toHaveValue("helper.py");
+  await expect(editor(page)).toHaveValue(helper);
+  await pendingFile.press("Escape");
+  // Tab must indent selected code, never replace it with whitespace.
+  await editor(page).focus();
+  await editor(page).evaluate((element) => {
+    element.setSelectionRange(0, element.value.length, "backward");
+  });
+  await editor(page).press("Tab");
+  await expect(editor(page)).toHaveValue(
+    "    # Project helper\n    VALUE = 1\n",
+  );
+  await expect
+    .poll(() =>
+      editor(page).evaluate((element) => ({
+        start: element.selectionStart,
+        end: element.selectionEnd,
+        direction: element.selectionDirection,
+      })),
+    )
+    .toEqual({ start: 4, end: helper.length + 8, direction: "backward" });
+  await editor(page).press("Shift+Tab");
+  await expect(editor(page)).toHaveValue(helper);
+  await expect
+    .poll(() => editor(page).evaluate((element) => element.selectionStart))
+    .toBe(0);
+  await editor(page).evaluate((element) => element.setSelectionRange(0, 0));
+  await editor(page).press("Tab");
+  await expect(editor(page)).toHaveValue("    " + helper);
+  await editor(page).press("Shift+Tab");
+  await expect(editor(page)).toHaveValue(helper);
+  for (let repeat = 0; repeat < 5; repeat++) {
+    await editor(page).press("Tab");
+    await editor(page).press("Shift+Tab");
+  }
+  await expect(editor(page)).toHaveValue(helper);
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  const retainedHelper = helper + "# retained after closing\n";
+  await editor(page).fill(retainedHelper);
+  await page
+    .getByRole("button", {
+      name: "Close helper.py (draft retained)",
+      exact: true,
+    })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Switch to helper.py", exact: true }),
+  ).toHaveCount(0);
+  await page.reload();
+  await expect(editor(page)).toHaveValue(main);
+  const retainedDrafts = page.getByRole("button", {
+    name: "Retained drafts (1)",
+    exact: true,
+  });
+  await retainedDrafts.click();
+  const draftDialog = page.getByRole("dialog", {
+    name: "Retained project drafts",
+    exact: true,
+  });
+  await expect(draftDialog).toContainText("Unsaved changes");
+  await page.screenshot({
+    path: testInfo.outputPath("retained-drafts.png"),
+    fullPage: true,
+  });
+  await page.keyboard.press("Escape");
+  await expect(draftDialog).toHaveCount(0);
+  await expect(retainedDrafts).toBeFocused();
+  await expect(editor(page)).toHaveValue(main);
+  await retainedDrafts.click();
+  await page.route("**/api/projects/*/file?*", (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ error: "Acceptance file read unavailable" }),
+    }),
+  );
+  await draftDialog
+    .getByRole("button", {
+      name: "Reopen continuity-project / helper.py",
+      exact: true,
+    })
+    .click();
+  await expect(draftDialog).toHaveCount(0);
+  await expect(editor(page)).toHaveValue(retainedHelper);
+  await expect(retainedDrafts).toHaveCount(0);
+  await page.unroute("**/api/projects/*/file?*");
+  await editor(page).fill(helper);
+  await page.getByRole("button", { name: "Save", exact: true }).click();
   const tabs = page.locator(".fq-project-tabs > div > button:first-child");
   const order = await tabs.allTextContents();
   await page
@@ -599,6 +765,15 @@ test("workspace restores file view and folds; keyboard file search and save-and-
   expect(position.top).toBeGreaterThan(500);
   expect(position.left).toBeGreaterThan(100);
   expect(position.direction).toBe("backward");
+  await editor(page).press("Tab");
+  await expect.poll(view).toEqual({
+    ...position,
+    start: position.start + 4,
+    end: position.end + 4,
+  });
+  await editor(page).press("Shift+Tab");
+  await expect(editor(page)).toHaveValue(main);
+  await expect.poll(view).toEqual(position);
   await page
     .getByRole("button", { name: "Switch to helper.py", exact: true })
     .click();
@@ -612,14 +787,41 @@ test("workspace restores file view and folds; keyboard file search and save-and-
     .filter({ has: page.locator("summary").filter({ hasText: /^src$/ }) });
   await folder.locator("summary").click();
   await expect(folder).not.toHaveAttribute("open");
-  await page
-    .getByRole("textbox", { name: "Find project file", exact: true })
-    .fill("src");
+  const treeSearch = page.getByRole("textbox", {
+    name: "Find project file",
+    exact: true,
+  });
+  await treeSearch.fill("  SRC  ");
   await expect(folder).toHaveAttribute("open");
-  await page
-    .getByRole("textbox", { name: "Find project file", exact: true })
-    .fill("");
+  await expect(
+    page.getByRole("button", { name: "Open src/main.py", exact: true }),
+  ).toBeVisible();
+  await treeSearch.evaluate((element) =>
+    element.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Escape",
+        isComposing: true,
+        bubbles: true,
+        cancelable: true,
+      }),
+    ),
+  );
+  await expect(treeSearch).toHaveValue("  SRC  ");
+  await treeSearch.press("Escape");
+  await expect(treeSearch).toHaveValue("");
+  await expect(treeSearch).toBeFocused();
   await expect(folder).not.toHaveAttribute("open");
+  await treeSearch.fill("no-such-project-file");
+  await expect(
+    page.getByRole("status").filter({ hasText: /^No matching files\./ }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Clear project file search", exact: true })
+    .click();
+  await expect(treeSearch).toHaveValue("");
+  await expect(treeSearch).toBeFocused();
+  await expect(folder).not.toHaveAttribute("open");
+  await expect.poll(view).toEqual(position);
   await editor(page).press("Control+p");
   const search = page.getByRole("combobox", { name: "Find file", exact: true });
   await search.fill("helper");
@@ -629,12 +831,101 @@ test("workspace restores file view and folds; keyboard file search and save-and-
       .evaluate((element) => element.scrollWidth <= element.clientWidth + 1),
   ).toBe(true);
   await search.press("ArrowDown");
-  await search.press("Enter");
+  let releaseFileRead;
+  const fileReadGate = new Promise((resolve) => {
+    releaseFileRead = resolve;
+  });
+  const helperReads = "**/api/projects/*/file?path=helper.py";
+  await page.route(helperReads, async (route) => {
+    const response = await route.fetch();
+    await fileReadGate;
+    await route.fulfill({ response });
+  });
+  try {
+    await search.press("Enter");
+    await expect(
+      page.getByRole("dialog", { name: "Find project file", exact: true }),
+    ).toContainText("Opening…");
+    await search.press("Escape");
+    await editor(page).press("Control+p");
+    await search.fill("src main");
+    const pendingSearch = page.getByRole("dialog", {
+      name: "Find project file",
+      exact: true,
+    });
+    await expect(pendingSearch).toContainText(
+      "Waiting for current project operation…",
+    );
+    await expect(pendingSearch.getByRole("option").first()).toBeDisabled();
+    await search.press("Enter");
+    await expect(search).toHaveValue("src main");
+    await expect(pendingSearch).toBeVisible();
+    releaseFileRead();
+    await expect(editor(page)).toHaveValue(helper);
+    await expect(search).toBeVisible();
+    await expect(search).toHaveValue("src main");
+    await expect(search).toBeFocused();
+    await expect(pendingSearch.getByRole("option").first()).toBeEnabled();
+    await search.press("Escape");
+  } finally {
+    releaseFileRead();
+    await page.unroute(helperReads);
+  }
   await expect(editor(page)).toHaveValue(helper);
   await expect(tabs).toHaveText(order);
   await editor(page).press("Control+p");
   await search.fill("src main");
-  await search.press("Enter");
+  const mainReads = "**/api/projects/*/file?*";
+  let mainOffline = true;
+  await page.route(mainReads, (route) => {
+    if (
+      mainOffline &&
+      new URL(route.request().url()).searchParams.get("path") === "src/main.py"
+    )
+      return route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Acceptance main read failed" }),
+      });
+    return route.continue();
+  });
+  try {
+    await search.press("Enter");
+    const openError = page.locator(".fq-quick-error");
+    await expect(openError).toContainText("Could not refresh src/main.py");
+    await expect(openError).toContainText("Acceptance main read failed");
+    await expect(
+      page
+        .locator(".fq-project-explorer")
+        .getByRole("alert")
+        .filter({ hasText: "Acceptance main read failed" }),
+    ).toHaveCount(1);
+    // The editor keeps its sync warning, rather than repeating it as an alert.
+    await expect(
+      page.locator(".fq-editor-sync").getByRole("status"),
+    ).toContainText("Acceptance main read failed");
+    await expect(page.locator(".fq-project-error")).toHaveCount(0);
+    await expect(editor(page)).toHaveValue(main);
+    await search.fill("helper");
+    await expect(openError).toHaveCount(0);
+    await search.fill("src main");
+    await search.press("Enter");
+    await expect(openError).toBeVisible();
+    await page.screenshot({
+      path: testInfo.outputPath("file-read-retry.png"),
+      fullPage: true,
+    });
+    mainOffline = false;
+    await page
+      .getByRole("button", { name: "Retry opening src/main.py", exact: true })
+      .click();
+    await expect(
+      page.getByRole("dialog", { name: "Find project file", exact: true }),
+    ).toHaveCount(0);
+  } finally {
+    mainOffline = false;
+    await page.unroute(mainReads);
+  }
   await expect(editor(page)).toHaveValue(main);
   await expect.poll(view).toEqual(position);
   await page.reload();
@@ -685,10 +976,367 @@ test("workspace restores file view and folds; keyboard file search and save-and-
   await expect(
     page.getByText("No matching files.", { exact: true }),
   ).toBeVisible();
+  const imeEscapePrevented = await search.evaluate((element) => {
+    const event = new KeyboardEvent("keydown", {
+      key: "Escape",
+      isComposing: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    element.dispatchEvent(event);
+    return event.defaultPrevented;
+  });
+  expect(imeEscapePrevented).toBe(true);
+  await expect(
+    page.getByRole("dialog", { name: "Find project file" }),
+  ).toBeVisible();
+  await expect(search).toHaveValue("does-not-exist");
+  await expect(search).toBeFocused();
   await search.press("Escape");
   await expect(
     page.getByRole("dialog", { name: "Find project file" }),
   ).toHaveCount(0);
+  const runsBeforeFind = (await get(page, "/api/python/runs")).map(
+    (item) => item.id,
+  );
+  await editor(page).press("Control+f");
+  const codeSearch = page.getByRole("textbox", {
+    name: "Find in current code",
+    exact: true,
+  });
+  const codeMatches = page.getByRole("status", {
+    name: "Code search matches",
+    exact: true,
+  });
+  await codeSearch.fill("Context line");
+  await expect(codeMatches).toHaveText("1 of 140");
+  await codeSearch.press("Enter");
+  await expect(codeMatches).toHaveText("2 of 140");
+  await codeSearch.press("Shift+Enter");
+  await expect(codeMatches).toHaveText("1 of 140");
+  await codeSearch.press("Shift+Enter");
+  await expect(codeMatches).toHaveText("140 of 140");
+  await expect(codeSearch).toBeFocused();
+  await expect
+    .poll(() =>
+      page
+        .locator(".fq-code-search-match")
+        .first()
+        .evaluate((element) => {
+          const match = element.getBoundingClientRect();
+          const editor = document
+            .querySelector('textarea[aria-label="Quantum model code editor"]')
+            .getBoundingClientRect();
+          return match.top >= editor.top && match.bottom <= editor.bottom;
+        }),
+    )
+    .toBe(true);
+  await page.screenshot({
+    path: testInfo.outputPath("code-search.png"),
+    fullPage: true,
+  });
+  await codeSearch.fill("does-not-exist");
+  await expect(codeMatches).toHaveText("No matches");
+  await expect(
+    page.getByRole("button", { name: "Next code match", exact: true }),
+  ).toBeDisabled();
+  await codeSearch.fill("IMPORT");
+  await expect(codeMatches).toHaveText("1 of 1");
+  await page.getByRole("button", { name: "Match case", exact: true }).click();
+  await expect(codeMatches).toHaveText("No matches");
+  await page.getByRole("button", { name: "Match case", exact: true }).click();
+  await codeSearch.fill("as fq");
+  await expect
+    .poll(async () =>
+      (await page.locator(".fq-code-search-match").allTextContents()).join(""),
+    )
+    .toBe("as fq");
+  await codeSearch.press("Escape");
+  await expect(codeSearch).toHaveCount(0);
+  await expect(editor(page)).toBeFocused();
+  await expect(editor(page)).toHaveValue(main);
+  await editor(page).press("Control+f");
+  await expect(codeSearch).toHaveValue("as fq");
+  // Searching must not take the caret back when editing, or exit focused mode.
+  const focusEditor = page.getByRole("button", {
+    name: "Focus model editor",
+    exact: true,
+  });
+  await focusEditor.click();
+  await expect(focusEditor).toHaveAttribute("aria-pressed", "true");
+  await editor(page).focus();
+  await editor(page).evaluate((element) =>
+    element.setSelectionRange(element.value.length, element.value.length),
+  );
+  await editor(page).pressSequentially("# search stays passive");
+  await expect(editor(page)).toHaveValue(main + "# search stays passive");
+  expect(await editor(page).evaluate((element) => element.selectionStart)).toBe(
+    (main + "# search stays passive").length,
+  );
+  await editor(page).evaluate((element) =>
+    element.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Escape",
+        isComposing: true,
+        bubbles: true,
+      }),
+    ),
+  );
+  await expect(codeSearch).toBeVisible();
+  await expect(focusEditor).toHaveAttribute("aria-pressed", "true");
+  await editor(page).press("Escape");
+  await expect(codeSearch).toHaveCount(0);
+  await expect(focusEditor).toHaveAttribute("aria-pressed", "true");
+  await expect(editor(page)).toBeFocused();
+  await editor(page).fill(main);
+  await focusEditor.click();
+  await editor(page).press("Control+f");
+  await page
+    .getByRole("button", { name: "Close code search", exact: true })
+    .click();
+  await expect(editor(page)).toHaveValue(main);
+  expect((await get(page, "/api/python/runs")).map((item) => item.id)).toEqual(
+    runsBeforeFind,
+  );
+  let saves = 0,
+    releaseSave;
+  const saveGate = new Promise((resolve) => {
+    releaseSave = resolve;
+  });
+  await page.route("**/api/projects/*/file", async (route) => {
+    if (route.request().method() === "POST") {
+      saves++;
+      await saveGate;
+    }
+    await route.continue();
+  });
+  const saveKey = (extra = {}) =>
+    editor(page).evaluate((element, extra) => {
+      const event = new KeyboardEvent("keydown", {
+        key: "s",
+        ctrlKey: true,
+        bubbles: true,
+        cancelable: true,
+        ...extra,
+      });
+      element.dispatchEvent(event);
+      return event.defaultPrevented;
+    }, extra);
+  try {
+    const source = main + "\n# keyboard save acceptance\n";
+    await editor(page).fill(source);
+    for (const extra of [
+      { isComposing: true },
+      { altKey: true },
+      { shiftKey: true },
+    ])
+      expect(await saveKey(extra)).toBe(false);
+    expect(await saveKey({ repeat: true })).toBe(true);
+    await page.waitForTimeout(150);
+    expect(saves).toBe(0);
+    await editor(page).press("Control+s");
+    await expect.poll(() => saves).toBe(1);
+    await expect(
+      page.getByRole("button", { name: "Save", exact: true }),
+    ).toBeDisabled();
+    expect(await saveKey()).toBe(true);
+    expect(await saveKey({ repeat: true })).toBe(true);
+    await page.waitForTimeout(150);
+    expect(saves).toBe(1);
+    releaseSave();
+    await expect(
+      page.getByRole("button", { name: "Save", exact: true }),
+    ).toBeEnabled();
+    await expect(
+      page.getByRole("status").filter({ hasText: /^Saved$/ }),
+    ).toBeVisible();
+    expect(await saveKey({ repeat: true })).toBe(true);
+    await page.waitForTimeout(150);
+    expect(saves).toBe(1);
+    await expect(editor(page)).toHaveValue(source);
+  } finally {
+    releaseSave();
+    await page.unroute("**/api/projects/*/file");
+  }
+  // A large read-only tree fixture checks the visible limit without creating files.
+  const treePath = "/api/projects/" + run.project.id;
+  const savedTree = await get(page, treePath);
+  await page.route("**" + treePath, (route) =>
+    route.fulfill({
+      json: {
+        ...savedTree,
+        files: [
+          ...savedTree.files,
+          ...Array.from({ length: 45 }, (_, index) => ({
+            path: `large-list-${String(index).padStart(2, "0")}.py`,
+            kind: "source",
+            size: 0,
+          })),
+        ],
+      },
+    }),
+  );
+  try {
+    await editor(page).press("Control+p");
+    const fileDialog = page.getByRole("dialog", {
+      name: "Find project file",
+      exact: true,
+    });
+    await expect(fileDialog.getByRole("status")).toContainText(
+      "Showing 40 of 47 matching files",
+    );
+    await expect(fileDialog.getByRole("option")).toHaveCount(40);
+    await search.press("End");
+    await expect(fileDialog.getByRole("option").last()).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await search.press("Home");
+    await expect(fileDialog.getByRole("option").first()).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await search.fill("large-list-44.py");
+    await expect(fileDialog.getByRole("status")).toHaveText("1 matching file");
+    await expect(fileDialog.getByRole("option")).toHaveCount(1);
+    await page.screenshot({
+      path: testInfo.outputPath("file-match-count.png"),
+      fullPage: true,
+    });
+    await search.press("Escape");
+  } finally {
+    await page.unroute("**" + treePath);
+  }
+  await newFileButton.click();
+  await pendingFile.fill("old-project-only.py");
+  const projectSearch = page.getByRole("textbox", {
+    name: "Find project file",
+    exact: true,
+  });
+  await projectSearch.fill("helper");
+  await page
+    .getByRole("button", { name: "Change project", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Create new", exact: true }).click();
+  await page
+    .getByRole("textbox", { name: "Project directory", exact: true })
+    .fill("new-file-scope-project");
+  await page
+    .getByRole("button", { name: "Create folder", exact: true })
+    .click();
+  await expect(pendingFile).toHaveCount(0);
+  await expect(projectSearch).toHaveValue("");
+  await newFileButton.click();
+  await expect(pendingFile).toHaveValue("");
+  await pendingFile.press("Escape");
+  await expect(newFileButton).toBeFocused();
+  const changeProject = page.getByRole("button", {
+    name: "Change project",
+    exact: true,
+  });
+  await changeProject.click();
+  const chooser = page.getByRole("dialog", {
+    name: "Open local project",
+    exact: true,
+  });
+  const directory = chooser.getByRole("textbox", {
+    name: "Project directory",
+    exact: true,
+  });
+  let releaseProject;
+  let projectRequests = 0;
+  const projectGate = new Promise((resolve) => {
+    releaseProject = resolve;
+  });
+  await page.route("**/api/projects", async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    projectRequests++;
+    const response = await route.fetch();
+    await projectGate;
+    await route.fulfill({ response });
+  });
+  try {
+    await chooser
+      .getByRole("button", { name: "Open folder", exact: true })
+      .click();
+    await expect(
+      chooser.getByRole("button", { name: "Opening…", exact: true }),
+    ).toBeDisabled();
+    await directory.press("Escape");
+    await expect(chooser).toHaveCount(0);
+    await changeProject.click();
+    await directory.fill("keep-this-folder");
+    await expect(
+      chooser.getByRole("button", { name: "Waiting…", exact: true }),
+    ).toBeDisabled();
+    await directory.press("Enter");
+    expect(projectRequests).toBe(1);
+    releaseProject();
+    await expect(
+      chooser.getByRole("button", { name: "Open folder", exact: true }),
+    ).toBeEnabled();
+    await expect(directory).toHaveValue("keep-this-folder");
+    await expect(directory).toBeFocused();
+    const defaultAllowed = await directory.evaluate((element) =>
+      element.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "Enter",
+          isComposing: true,
+          bubbles: true,
+          cancelable: true,
+        }),
+      ),
+    );
+    expect(defaultAllowed).toBe(false);
+    expect(projectRequests).toBe(1);
+    await directory.press("Escape");
+    await expect(changeProject).toBeFocused();
+  } finally {
+    releaseProject();
+    await page.unroute("**/api/projects");
+  }
+  await changeProject.click();
+  let releaseOldFailure;
+  const oldFailureGate = new Promise((resolve) => {
+    releaseOldFailure = resolve;
+  });
+  await page.route("**/api/projects", async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    await oldFailureGate;
+    await route.fulfill({
+      status: 503,
+      json: { error: "Previous folder could not be opened" },
+    });
+  });
+  try {
+    await chooser
+      .getByRole("button", { name: "Open folder", exact: true })
+      .click();
+    await expect(
+      chooser.getByRole("button", { name: "Opening…", exact: true }),
+    ).toBeDisabled();
+    await directory.fill("newer-folder-choice");
+    releaseOldFailure();
+    await expect(
+      chooser.getByRole("button", { name: "Open folder", exact: true }),
+    ).toBeEnabled();
+    await expect(directory).toHaveValue("newer-folder-choice");
+    await expect(directory).toHaveAttribute("aria-invalid", "false");
+    await expect(chooser.getByRole("alert")).toHaveCount(0);
+  } finally {
+    releaseOldFailure();
+    await page.unroute("**/api/projects");
+  }
+  await directory.fill("missing-folder-for-chooser-recovery");
+  await directory.press("Enter");
+  await expect(chooser.getByRole("alert")).toBeVisible();
+  await expect(directory).toHaveAttribute("aria-invalid", "true");
+  await directory.fill("new-file-scope-project");
+  await expect(chooser.getByRole("alert")).toHaveCount(0);
+  await expect(directory).toHaveAttribute("aria-invalid", "false");
+  await directory.press("Enter");
+  await expect(chooser).toHaveCount(0);
+  await expect(changeProject).toBeFocused();
 });
 
 test("failed run → Agent repair → review and undo → changed SDK result remains traceable after refresh", async ({
@@ -1534,4 +2182,181 @@ for i in range(600):
     stop.release();
     history.release();
   }
+});
+
+test("model import explains invalid files and preserves the newest draft during file reads", async ({
+  page,
+}, testInfo) => {
+  const agent = page.getByRole("button", {
+    name: "FlagQAI Agent",
+    exact: true,
+  });
+  if ((await agent.getAttribute("aria-expanded")) === "true")
+    await agent.click();
+  await editor(page).fill(draft);
+  const upload = page.locator('.fq-library-body input[type="file"]').first();
+  const modelSearch = page.getByRole("textbox", {
+    name: "Search models",
+    exact: true,
+  });
+  await modelSearch.fill("   ghz   ");
+  await expect(
+    page.locator(".fq-library-card").filter({ hasText: "GHZ State" }).first(),
+  ).toBeVisible();
+  await expect(
+    page.locator(".fq-library-card").filter({ hasText: "Bell State" }),
+  ).toHaveCount(0);
+  await modelSearch.fill("no-model-with-this-name");
+  await expect(
+    page.getByRole("status").filter({ hasText: "No models match your search" }),
+  ).toBeVisible();
+  await modelSearch.evaluate((element) =>
+    element.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Escape",
+        isComposing: true,
+        bubbles: true,
+        cancelable: true,
+      }),
+    ),
+  );
+  await expect(modelSearch).toHaveValue("no-model-with-this-name");
+  await page.screenshot({
+    path: testInfo.outputPath("model-search-empty.png"),
+    fullPage: true,
+  });
+  await page
+    .getByRole("button", { name: "Clear model search", exact: true })
+    .click();
+  await expect(modelSearch).toHaveValue("");
+  await expect(modelSearch).toBeFocused();
+  await modelSearch.fill("ghz");
+  await modelSearch.press("Escape");
+  await expect(modelSearch).toHaveValue("");
+  await expect(editor(page)).toHaveValue(draft);
+  await page.getByRole("button", { name: "TEMPLATES", exact: true }).click();
+  const description = page.getByRole("textbox", {
+    name: "Template description",
+    exact: true,
+  });
+  const generate = page.getByRole("button", {
+    name: "Generate model →",
+    exact: true,
+  });
+  await expect(generate).toBeDisabled();
+  await description.fill("Bell pair");
+  await generate.click();
+  const applyTemplate = page.getByRole("button", {
+    name: "Apply model →",
+    exact: true,
+  });
+  await expect(applyTemplate).toBeVisible();
+  await expect(
+    page
+      .locator(".fq-library-body .fq-code-example .fq-syntax-keyword")
+      .first(),
+  ).toHaveText("import");
+  await description.fill("unsupported quantum task");
+  await expect(applyTemplate).toHaveCount(0);
+  await expect(page.locator(".fq-library-body .fq-code-example")).toHaveCount(
+    0,
+  );
+  await generate.click();
+  await expect(
+    page.getByRole("alert").filter({ hasText: "No matching local template" }),
+  ).toBeVisible();
+  await description.fill("GHZ state");
+  await expect(
+    page.getByRole("alert").filter({ hasText: "No matching local template" }),
+  ).toHaveCount(0);
+  await generate.click();
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  const templateCode = await page
+    .locator(".fq-library-body .fq-code-example pre")
+    .textContent();
+  await page
+    .getByRole("button", { name: "Copy GHZ State", exact: true })
+    .click();
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe(templateCode);
+  await page.screenshot({
+    path: testInfo.outputPath("template-preview.png"),
+    fullPage: true,
+  });
+  await expect(editor(page)).toHaveValue(draft);
+  await page.getByRole("button", { name: "MODELS", exact: true }).click();
+  for (const [name, buffer, message] of [
+    ["empty.py", Buffer.alloc(0), "This file is empty"],
+    [
+      "large.py",
+      Buffer.alloc(32769, 32),
+      "Source files must be no larger than 32 KiB",
+    ],
+    ["unsupported.bin", Buffer.from("data"), "Choose a Python"],
+    ["encoding.py", Buffer.from([255, 254]), "not valid UTF-8"],
+  ]) {
+    await upload.setInputFiles({
+      name,
+      mimeType: "application/octet-stream",
+      buffer,
+    });
+    const error = page.getByRole("alert").filter({ hasText: message });
+    await expect(error).toHaveCount(1);
+    await expect(error).toBeVisible();
+    await expect(editor(page)).toHaveValue(draft);
+  }
+  await page.evaluate(() => {
+    const read = File.prototype.arrayBuffer;
+    File.prototype.arrayBuffer = function () {
+      if (this.name === "unreadable.py")
+        return Promise.reject(Error("Acceptance read error"));
+      if (this.name === "upload.PY")
+        return new Promise((resolve, reject) => {
+          globalThis.__releaseSourceImport = () =>
+            read.call(this).then(resolve, reject);
+        });
+      return read.call(this);
+    };
+  });
+  await upload.setInputFiles({
+    name: "unreadable.py",
+    mimeType: "text/plain",
+    buffer: Buffer.from("print(1)"),
+  });
+  await expect(page.getByRole("alert")).toContainText(
+    "Could not read this file",
+  );
+  await page
+    .getByRole("button", { name: "Dismiss import error", exact: true })
+    .click();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  const imported = "import flagquantum as fq\n\nprint('imported')\n";
+  await upload.setInputFiles({
+    name: "upload.PY",
+    mimeType: "text/plain",
+    buffer: Buffer.from(imported),
+  });
+  await expect(
+    page.getByRole("button", { name: "Importing file…", exact: true }),
+  ).toBeDisabled();
+  const newerDraft = draft + "# edited while the file was being read\n";
+  await editor(page).fill(newerDraft);
+  await page.evaluate(() => globalThis.__releaseSourceImport());
+  await expect(editor(page)).toHaveValue(imported);
+  await expect(
+    page.getByRole("button", { name: "Python", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await page
+    .getByRole("button", { name: /Draft · / })
+    .first()
+    .click();
+  await expect(editor(page)).toHaveValue(newerDraft);
+  await page.reload();
+  await expect(editor(page)).toHaveValue(newerDraft);
+  await page.screenshot({
+    path: testInfo.outputPath("import-draft-retained.png"),
+    fullPage: true,
+  });
 });

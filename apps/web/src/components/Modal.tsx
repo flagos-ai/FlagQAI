@@ -23,7 +23,7 @@ export function Modal({
     initialFocus?.current?.focus();
     return () => {
       element.close();
-      if (previous?.isConnected) previous.focus();
+      if (previous?.isConnected) previous.focus({ preventScroll: true });
     };
   }, []);
   const outside = (element: HTMLDialogElement, x: number, y: number) => {
@@ -58,7 +58,11 @@ export function Modal({
         onClose();
       }}
       onKeyDown={(event) => {
-        if (event.key === "Escape") event.stopPropagation();
+        if (event.key === "Escape") {
+          event.stopPropagation();
+          // Leave IME cancellation to the input without dismissing its dialog.
+          if (event.nativeEvent.isComposing) event.preventDefault();
+        }
       }}
     >
       {children}

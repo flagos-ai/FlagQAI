@@ -97,3 +97,30 @@ test("closing a dirty tab retains the draft and saving it late does not replace 
   state = open(state, "main.py", "old", "r2");
   assert.equal(state.source, "new draft");
 });
+test("closed drafts restore from browser state with incoming changes and other drafts intact", () => {
+  let state = open(initial(), "main.py", "old");
+  state = reduce(state, { type: "edit", source: "my main draft" });
+  state = open(state, "helper.py", "helper");
+  state = reduce(state, { type: "edit", source: "my helper draft" });
+  state = reduce(state, { type: "project-close-tab", id: file("main.py").id });
+  state = reduce(state, {
+    type: "project-file-update",
+    file: file("main.py", "Agent update", "r2"),
+  });
+  const storage = new Map();
+  persistWorkspace({ setItem: (key, value) => storage.set(key, value) }, state);
+  state = restoreWorkspace({ getItem: (key) => storage.get(key) }, "model");
+  assert.equal(
+    state.projectTabs.find((tab) => tab.path === "main.py").closed,
+    true,
+  );
+  state = reduce(state, { type: "project-tab", id: file("main.py").id });
+  assert.equal(state.source, "my main draft");
+  assert.equal(state.editorLink.incoming.source, "Agent update");
+  assert.equal(
+    state.projectTabs.find((tab) => tab.path === "main.py").closed,
+    false,
+  );
+  state = reduce(state, { type: "project-tab", id: file("helper.py").id });
+  assert.equal(state.source, "my helper draft");
+});

@@ -1,4 +1,6 @@
 import { UIIcon } from "../components/UIIcon";
+import { EditorFind } from "../components/EditorFind";
+import { markCodeMatch, type CodeMatch } from "../state/editor-find";
 import { CloseButton } from "../components/CloseButton";
 import { useEditorPosition } from "../hooks/useEditorPosition";
 import { workspaceShortcut } from "../state/workspace-continuity";
@@ -6,6 +8,7 @@ import { projectDirty } from "../state/project-workspace";
 import { ProjectTabs } from "../components/ProjectTabs";
 import type { ProjectWorkspace } from "../hooks/useProjectWorkspace";
 import { pythonExample } from "../state/python-workspace";
+import { indentSelection, isIndentShortcut } from "../state/editor-indent";
 import {
   toggleLineComments,
   isCommentShortcut,
@@ -14,7 +17,7 @@ import { changedLines } from "../state/code-diff";
 import { PythonConsole } from "../components/PythonConsole";
 import type { PythonWorkspace } from "../hooks/usePythonWorkspace";
 import { codeTokens } from "../state/code-tokens";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { lintOpenQASM } from "../../../../packages/quantum-workspace/domain/model-lint.mjs";
 import { EditorSyncBar } from "../components/EditorSyncBar";
 import type { EditorSync } from "../hooks/useEditorSync";
@@ -63,6 +66,14 @@ export function ModelPage({
     sequence: number;
   }>();
   const [selection, setSelection] = useState({ start: 0, end: 0 });
+  const [findRequest, setFindRequest] = useState<{
+    sequence: number;
+    seed: string;
+    anchor: number;
+  } | null>(null);
+  const [findMatch, setFindMatch] = useState<
+    (CodeMatch & { source: string }) | null
+  >(null);
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -89,6 +100,7 @@ export function ModelPage({
   }, [contextMenu]);
   const stacked = useStackedPanels();
   const editor = useRef<HTMLTextAreaElement>(null),
+    highlight = useRef<HTMLPreElement>(null),
     [scroll, setScroll] = useState({ top: 0, left: 0 }),
     [focus, setFocus] = useState(false),
     [configuration, setConfiguration] = useState(() => {
@@ -125,6 +137,33 @@ export function ModelPage({
       setSelection({ start: view.start, end: view.end });
     },
   );
+  const pendingEditView = useRef<{
+    source: string;
+    start: number;
+    end: number;
+    direction: "forward" | "backward" | "none";
+    top: number;
+    left: number;
+  } | null>(null);
+  useLayoutEffect(() => {
+    const view = pendingEditView.current;
+    pendingEditView.current = null;
+    const textarea = editor.current;
+    if (
+      !view ||
+      !textarea ||
+      document.activeElement !== textarea ||
+      textarea.value !== view.source
+    )
+      return;
+    // Restore before another key event can observe React's end-of-value caret.
+    textarea.setSelectionRange(view.start, view.end, view.direction);
+    textarea.scrollTop = view.top;
+    textarea.scrollLeft = view.left;
+    capturePosition(textarea);
+    setSelection({ start: view.start, end: view.end });
+    setScroll({ top: textarea.scrollTop, left: textarea.scrollLeft });
+  }, [state.source]);
   const isPython = state.language === "python";
   const needsProjectSave =
     !!state.editorLink?.project &&
@@ -138,6 +177,14 @@ export function ModelPage({
   );
   const errors = diagnostics.filter((d) => d.severity === "error"),
     lines = state.source.split("\n");
+  const lineStarts = useMemo(() => {
+    let offset = 0;
+    return state.source.split("\n").map((line) => {
+      const start = offset;
+      offset += line.length + 1;
+      return start;
+    });
+  }, [state.source]);
   const loadingRun =
     !!python.selectedRunId &&
     python.run?.id !== python.selectedRunId &&
@@ -164,18 +211,68 @@ export function ModelPage({
       ? changedLines(change.before, change.after)
       : { added: new Set<number>(), removedAt: new Set<number>() };
   }, [state.source, state.editorLink?.change]);
-  const locate = (start: number, length: number) => {
+  const openFind = () => {
+    const e = editor.current;
+    const selected = e
+      ? state.source.slice(e.selectionStart, e.selectionEnd)
+      : "";
+    setFindRequest((previous) => ({
+      sequence: (previous?.sequence || 0) + 1,
+      seed: selected.length <= 256 && !selected.includes("\n") ? selected : "",
+      anchor: e?.selectionStart || 0,
+    }));
+  };
+  const locate = (start: number, length: number, focusEditor = true) => {
     const e = editor.current;
     if (!e) return;
-    e.focus();
-    e.setSelectionRange(start, start + length);
-    e.scrollTop = Math.max(
-      0,
-      (state.source.slice(0, start).split("\n").length - 4) * 22,
+    start = Math.max(0, Math.min(state.source.length, start));
+    const end = Math.min(state.source.length, start + Math.max(0, length));
+    const before = state.source.slice(0, start);
+    const line = before.split("\n").length;
+    const column = start - (before.lastIndexOf("\n") + 1);
+    const target = highlight.current?.querySelector<HTMLElement>(
+      `[data-editor-line="${line}"]`,
     );
+    const style = getComputedStyle(e);
+    const lineHeight = parseFloat(style.lineHeight) || 22;
+    const paddingTop = parseFloat(style.paddingTop) || 0;
+    const paddingLeft = parseFloat(style.paddingLeft) || 0;
+    let top = paddingTop + (line - 1) * lineHeight;
+    let left = paddingLeft;
+    if (target) {
+      // Measure the rendered glyph at the source column, including tabs and Unicode.
+      const walker = document.createTreeWalker(target, NodeFilter.SHOW_TEXT);
+      let offset = column;
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        if (offset <= (node.textContent?.length || 0)) {
+          const range = document.createRange();
+          range.setStart(node, offset);
+          range.setEnd(
+            node,
+            Math.min(offset + 1, node.textContent?.length || 0),
+          );
+          const bounds = range.getBoundingClientRect();
+          const viewport = e.getBoundingClientRect();
+          if (bounds.height) {
+            top = bounds.top - viewport.top + e.scrollTop;
+            left = bounds.left - viewport.left + e.scrollLeft;
+          }
+          break;
+        }
+        offset -= node.textContent?.length || 0;
+      }
+    }
+    if (focusEditor) e.focus({ preventScroll: true });
+    e.setSelectionRange(start, end);
+    e.scrollTop = Math.max(0, top - e.clientHeight / 2 + lineHeight / 2);
+    e.scrollLeft = Math.max(0, left - paddingLeft - 32);
+    capturePosition(e);
+    setSelection({ start, end });
+    setScroll({ top: e.scrollTop, left: e.scrollLeft });
   };
   useEffect(() => {
     const escape = (event: KeyboardEvent) => {
+      if (event.isComposing) return;
       if (event.key === "Escape") setFocus(false);
     };
     window.addEventListener("keydown", escape);
@@ -194,6 +291,14 @@ export function ModelPage({
       <section className="fq-model-center">
         <div className="fq-pane-title">
           MODEL EDITOR
+          <button
+            className="fq-control-icon"
+            aria-label="Find in code"
+            title="Find in code (⌘F / Ctrl+F)"
+            onClick={openFind}
+          >
+            <UIIcon name="search" size={14} />
+          </button>
           <button
             className="fq-project-open"
             aria-label="Open project workspace"
@@ -275,6 +380,7 @@ export function ModelPage({
           </button>
           <button
             disabled={projectWorkspace.busy || python.submitting}
+            title="Save current file (⌘S / Ctrl+S)"
             onClick={() => void projectWorkspace.save()}
           >
             Save
@@ -381,10 +487,26 @@ export function ModelPage({
           sync={editorSync}
           reviewRequest={reviewRequest}
         />
-        {projectWorkspace.error && (
-          <p className="fq-project-error" role="alert">
-            {projectWorkspace.error}
-          </p>
+        {projectWorkspace.error &&
+          projectWorkspace.error !== editorSync.error && (
+            <p className="fq-project-error" role="alert">
+              {projectWorkspace.error}
+            </p>
+          )}
+        {findRequest && (
+          <EditorFind
+            source={state.source}
+            {...findRequest}
+            onMatch={(source, match) =>
+              setFindMatch(match ? { ...match, source } : null)
+            }
+            onReveal={(start, length) => locate(start, length, false)}
+            onClose={() => {
+              setFindRequest(null);
+              setFindMatch(null);
+              editor.current?.focus({ preventScroll: true });
+            }}
+          />
         )}
         <div className="fq-editor">
           <div
@@ -405,6 +527,7 @@ export function ModelPage({
             ))}
           </div>
           <pre
+            ref={highlight}
             aria-hidden="true"
             className="fq-highlight"
             style={{
@@ -413,19 +536,30 @@ export function ModelPage({
           >
             {lines.map((text, i) => (
               <span
+                data-editor-line={i + 1}
                 key={(state.editorLink?.updated || 0) + ":" + i}
                 className={[
                   errors.some((d) => d.line === i + 1) ? "code-error" : "",
                   agentLines.added.has(i + 1) ? "fq-agent-changed-line" : "",
                 ].join(" ")}
               >
-                {codeTokens(text || " ", isPython ? "python" : "qasm").map(
-                  (token, j) => (
-                    <span key={j} className={"fq-token-" + token.kind}>
-                      {token.text}
-                    </span>
-                  ),
-                )}
+                {markCodeMatch(
+                  codeTokens(text || " ", isPython ? "python" : "qasm"),
+                  findMatch?.source === state.source
+                    ? findMatch.start - lineStarts[i]
+                    : -1,
+                  findMatch?.source === state.source
+                    ? findMatch.end - lineStarts[i]
+                    : -1,
+                ).map((token, j) => (
+                  <span key={j} className={"fq-token-" + token.kind}>
+                    {token.matched ? (
+                      <mark className="fq-code-search-match">{token.text}</mark>
+                    ) : (
+                      token.text
+                    )}
+                  </span>
+                ))}
                 <br />
               </span>
             ))}
@@ -457,7 +591,7 @@ export function ModelPage({
             }}
             value={state.source}
             aria-label="Quantum model code editor"
-            aria-keyshortcuts="Meta+/ Control+/ Meta+Enter Control+Enter Meta+p Control+p"
+            aria-keyshortcuts="Meta+/ Control+/ Meta+Enter Control+Enter Meta+p Control+p Meta+f Control+f Meta+s Control+s"
             title="Toggle line comment: ⌘/ or Ctrl+/"
             spellCheck={false}
             onChange={(e) => {
@@ -475,66 +609,74 @@ export function ModelPage({
             }}
             onKeyDown={(e) => {
               if (
-                workspaceShortcut({
-                  ...e,
-                  isComposing: e.nativeEvent.isComposing,
-                }) === "run"
+                e.key === "Escape" &&
+                findRequest &&
+                !e.nativeEvent.isComposing
               ) {
+                e.preventDefault();
+                e.stopPropagation();
+                setFindRequest(null);
+                setFindMatch(null);
+                return;
+              }
+              if (
+                (e.metaKey || e.ctrlKey) &&
+                !e.altKey &&
+                !e.shiftKey &&
+                !e.nativeEvent.isComposing &&
+                e.key.toLowerCase() === "f"
+              ) {
+                e.preventDefault();
+                openFind();
+                return;
+              }
+              const shortcut = workspaceShortcut({
+                ...e,
+                isComposing: e.nativeEvent.isComposing,
+              });
+              if (shortcut === "run") {
                 e.preventDefault();
                 if (!e.repeat) runCurrent();
                 return;
               }
-              if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+              if (shortcut === "save") {
                 e.preventDefault();
-                void projectWorkspace.save();
+                if (!e.repeat && !projectWorkspace.busy && !python.submitting)
+                  void projectWorkspace.save();
                 return;
               }
-              if (
-                isCommentShortcut({
-                  ...e,
-                  isComposing: e.nativeEvent.isComposing,
-                })
-              ) {
+              const shortcutEvent = {
+                ...e,
+                isComposing: e.nativeEvent.isComposing,
+              };
+              const comment = isCommentShortcut(shortcutEvent);
+              if (comment || isIndentShortcut(shortcutEvent)) {
                 e.preventDefault();
                 const textarea = e.currentTarget,
                   direction = textarea.selectionDirection,
                   top = textarea.scrollTop,
                   left = textarea.scrollLeft;
-                const edit = toggleLineComments(
-                  state.source,
-                  textarea.selectionStart,
-                  textarea.selectionEnd,
-                  isPython ? "python" : "qasm",
-                );
-                dispatch({ type: "edit", source: edit.source });
-                requestAnimationFrame(() => {
-                  if (
-                    document.activeElement !== textarea ||
-                    textarea.value !== edit.source
-                  )
-                    return;
-                  textarea.setSelectionRange(edit.start, edit.end, direction);
-                  textarea.scrollTop = top;
-                  textarea.scrollLeft = left;
-                });
+                const edit = comment
+                  ? toggleLineComments(
+                      state.source,
+                      textarea.selectionStart,
+                      textarea.selectionEnd,
+                      isPython ? "python" : "qasm",
+                    )
+                  : indentSelection(
+                      state.source,
+                      textarea.selectionStart,
+                      textarea.selectionEnd,
+                      e.shiftKey,
+                    );
+                if (edit.source !== state.source) {
+                  pendingEditView.current = { ...edit, direction, top, left };
+                  dispatch({ type: "edit", source: edit.source });
+                }
                 return;
               }
-              if (e.key === "Escape") setFocus(false);
-              if (e.key === "Tab") {
-                e.preventDefault();
-                const t = e.currentTarget,
-                  start = t.selectionStart;
-                dispatch({
-                  type: "edit",
-                  source:
-                    state.source.slice(0, start) +
-                    "    " +
-                    state.source.slice(t.selectionEnd),
-                });
-                requestAnimationFrame(() =>
-                  t.setSelectionRange(start + 4, start + 4),
-                );
-              }
+              if (e.key === "Escape" && !e.nativeEvent.isComposing)
+                setFocus(false);
             }}
           />
         </div>
