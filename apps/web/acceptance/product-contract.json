@@ -38,7 +38,8 @@
         "preview outage recovers same-name files without rerun; corrupt file stays separate",
         "workspace restores file view and folds; keyboard file search and save-and-run preserve source",
         "native decisions, uncertain stops and reconnect preserve one task without resubmission",
-        "browser backup failure preserves the last snapshot and exposes recovery without losing the live draft"
+        "browser backup failure preserves the last snapshot and exposes recovery without losing the live draft",
+        "interaction craft keeps run feedback honest and preserves the result reading position"
       ]
     }
   ],

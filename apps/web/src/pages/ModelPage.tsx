@@ -138,9 +138,14 @@ export function ModelPage({
   );
   const errors = diagnostics.filter((d) => d.severity === "error"),
     lines = state.source.split("\n");
+  const loadingRun =
+    !!python.selectedRunId &&
+    python.run?.id !== python.selectedRunId &&
+    !python.error;
   const canRun = isPython
     ? !projectWorkspace.busy &&
       !python.submitting &&
+      !loadingRun &&
       !["queued", "running"].includes(python.run?.status || "")
     : errors.length === 0 && !state.busy;
   const runCurrent = () => {
@@ -301,7 +306,7 @@ export function ModelPage({
             {isPython ? "Environment" : "Configuration"}
           </button>
           <button
-            className="primary"
+            className="primary fq-run-primary"
             aria-label={
               isPython
                 ? needsProjectSave
@@ -322,6 +327,7 @@ export function ModelPage({
               name={
                 !canRun &&
                 (python.submitting ||
+                  loadingRun ||
                   ["queued", "running"].includes(python.run?.status || "") ||
                   state.busy)
                   ? "refresh"
@@ -332,6 +338,7 @@ export function ModelPage({
               className={
                 !canRun &&
                 (python.submitting ||
+                  loadingRun ||
                   ["queued", "running"].includes(python.run?.status || "") ||
                   state.busy)
                   ? "fq-ui-busy"
@@ -342,11 +349,15 @@ export function ModelPage({
             {isPython
               ? python.submitting
                 ? "Starting…"
-                : ["queued", "running"].includes(python.run?.status || "")
-                  ? "Running…"
-                  : needsProjectSave
-                    ? "Save & run"
-                    : "Run Python"
+                : loadingRun
+                  ? "Loading run…"
+                  : python.run?.status === "queued"
+                    ? "Queued…"
+                    : python.run?.status === "running"
+                      ? "Running…"
+                      : needsProjectSave
+                        ? "Save & run"
+                        : "Run Python"
               : state.busy
                 ? "Compiling…"
                 : "Compile"}

@@ -23,6 +23,17 @@ export function usePythonWorkspace(
   const [environment, setEnvironment] = useState<PythonRun["environment"]>();
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [stopRequests, setStopRequests] = useState<Set<string>>(new Set());
+  const cancelLocks = useRef(new Set<string>());
+  useEffect(() => {
+    if (run && !["running", "queued"].includes(run.status))
+      setStopRequests((previous) => {
+        if (!previous.has(run.id)) return previous;
+        const next = new Set(previous);
+        next.delete(run.id);
+        return next;
+      });
+  }, [run?.id, run?.status]);
   const [recovering, setRecovering] = useState(false);
   const [importing, setImporting] = useState(false);
   const [refreshVersion, setRefreshVersion] = useState(0);
@@ -237,6 +248,11 @@ export function usePythonWorkspace(
               })
             ).python_run
           : await pythonAPI.run(state.source, state.name);
+      setRun(result);
+      setRuns((previous) => [
+        result,
+        ...previous.filter((item) => item.id !== result.id),
+      ]);
       dispatch({ type: "python-run", id: result.id });
     } catch (problem) {
       setError(
@@ -250,11 +266,33 @@ export function usePythonWorkspace(
     }
   };
   const cancel = async () => {
-    if (!run) return;
+    if (
+      !run ||
+      currentRunId.current !== run.id ||
+      cancelLocks.current.has(run.id) ||
+      stopRequests.has(run.id)
+    )
+      return;
+    const id = run.id;
+    cancelLocks.current.add(id);
+    setStopRequests((previous) => new Set(previous).add(id));
     try {
-      await pythonAPI.cancel(run.id);
+      await pythonAPI.cancel(id);
+      // Keep "Stopping" until polling confirms a terminal state.
     } catch (problem) {
-      setError(String(problem));
+      setStopRequests((previous) => {
+        const next = new Set(previous);
+        next.delete(id);
+        return next;
+      });
+      if (currentRunId.current === id)
+        setError(
+          problem instanceof Error
+            ? problem.message
+            : "Could not request a stop. Try again.",
+        );
+    } finally {
+      cancelLocks.current.delete(id);
     }
   };
   const openCircuit = () => {
@@ -304,6 +342,8 @@ export function usePythonWorkspace(
     environment,
     error,
     submitting,
+    selectedRunId: state.pythonRunId,
+    stopping: stopRequests.has(state.pythonRunId || ""),
     recovering,
     importing,
     previews: previews.runId === state.pythonRunId ? previews.files : {},

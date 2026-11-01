@@ -1,3 +1,6 @@
+import { UIIcon } from "../components/UIIcon";
+import { useJobView } from "../hooks/useJobView";
+import { ExportMenu } from "../components/ExportMenu";
 import { useId, useState } from "react";
 import {
   CircuitPreview,
@@ -10,7 +13,6 @@ import {
 } from "../components/ExperimentDetails";
 import { SourceVersion } from "../components/SourceVersion";
 import { CodeExample } from "../components/CodeExample";
-import { UIIcon } from "../components/UIIcon";
 import type {
   QuantumJob,
   WorkspaceAction,
@@ -53,12 +55,21 @@ export function JobsPage({ state, dispatch }: Props) {
 function JobResults({ job, state, dispatch }: Props & { job: QuantumJob }) {
   const id = useId();
   const [tab, setTab] = useState("results");
-  const [counts, setCounts] = useState(false);
-  const [view, setView] = useState("chart");
-  const [sort, setSort] = useState<"probability" | "state">("probability");
-  const [page, setPage] = useState(0);
-  const [measurementIndex, setMeasurementIndex] = useState(0);
-  const [batchIndex, setBatchIndex] = useState(0);
+  const { view: preferences, update } = useJobView(job);
+  const {
+    counts,
+    view,
+    sort,
+    page,
+    measurement: measurementIndex,
+    batch: batchIndex,
+  } = preferences;
+  const setCounts = (value: boolean) => update("counts", value);
+  const setView = (value: "chart" | "table") => update("view", value);
+  const setSort = (value: "probability" | "state") => update("sort", value);
+  const setPage = (value: number) => update("page", value);
+  const setMeasurementIndex = (value: number) => update("measurement", value);
+  const setBatchIndex = (value: number) => update("batch", value);
   const measurement = job.experiment?.measurements[measurementIndex];
   const recorded = jobCounts(job, measurementIndex, batchIndex);
   const total = Object.values(recorded).reduce((sum, count) => sum + count, 0);
@@ -120,38 +131,24 @@ function JobResults({ job, state, dispatch }: Props & { job: QuantumJob }) {
               </p>
             )}
           </div>
-          <details className="fq-job-export">
-            <summary>
-              <UIIcon name="download" size={14} />
-              Export
-            </summary>
-            <div>
-              <button
-                onClick={() =>
-                  download(
-                    job.name + ".json",
-                    JSON.stringify(job, null, 2),
-                    "application/json",
-                  )
-                }
-              >
-                JSON
-              </button>
-              <button
-                disabled={!result}
-                onClick={() =>
-                  result &&
-                  download(
-                    job.name + ".csv",
-                    jobCSV({ ...job, result }),
-                    "text/csv",
-                  )
-                }
-              >
-                CSV · selected measurement
-              </button>
-            </div>
-          </details>
+          <ExportMenu
+            hasResult={!!result}
+            onJSON={() =>
+              download(
+                job.name + ".json",
+                JSON.stringify(job, null, 2),
+                "application/json",
+              )
+            }
+            onCSV={() => {
+              if (result)
+                download(
+                  job.name + ".csv",
+                  jobCSV({ ...job, result }),
+                  "text/csv",
+                );
+            }}
+          />
         </header>
         {result && (
           <dl className="fq-job-metrics">
@@ -280,7 +277,7 @@ function JobResults({ job, state, dispatch }: Props & { job: QuantumJob }) {
                           className="fq-job-segment"
                           aria-label="Distribution view"
                         >
-                          {["chart", "table"].map((item) => (
+                          {(["chart", "table"] as const).map((item) => (
                             <button
                               key={item}
                               aria-pressed={view === item}

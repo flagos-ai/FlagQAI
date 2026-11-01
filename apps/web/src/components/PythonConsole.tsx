@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import type { PythonWorkspace } from "../hooks/usePythonWorkspace";
-import { pythonResultFreshness } from "../state/python-feedback";
+import { UIIcon } from "./UIIcon";
+import {
+  pythonRunFeedback,
+  pythonResultFreshness,
+} from "../state/python-feedback";
 import type { WorkspaceState } from "../contracts/quantum-workspace";
 import type { WorkspaceAction } from "../contracts/quantum-workspace";
 import type { PythonRun } from "../api/python-runs";
@@ -23,13 +27,27 @@ export function PythonConsole({
   onLocate: (line: number) => void;
   onRepair: (run: PythonRun) => Promise<void>;
 }) {
-  const { run, error } = python;
+  const { error } = python;
+  const run =
+    !python.submitting && python.run?.id === python.selectedRunId
+      ? python.run
+      : undefined;
+  const feedback = pythonRunFeedback({
+    selectedId: python.selectedRunId,
+    run: python.run,
+    submitting: python.submitting,
+    stopping: python.stopping,
+    error,
+  });
   const logs = useRef<HTMLPreElement>(null);
   const upload = useRef<HTMLInputElement>(null);
   const [follow, setFollow] = useState(true);
   const [repairing, setRepairing] = useState(false),
     [repairError, setRepairError] = useState("");
   const [failedSource, setFailedSource] = useState<PythonRun | null>(null);
+  useEffect(() => {
+    setFollow(true);
+  }, [python.selectedRunId]);
   useEffect(() => {
     if (follow && logs.current)
       logs.current.scrollTop = logs.current.scrollHeight;
@@ -65,20 +83,33 @@ export function PythonConsole({
         </Modal>
       )}
       <div className="fq-pane-title">
-        PYTHON OUTPUT{" "}
-        <span className={working ? "fq-run-working" : ""}>
-          {working && <i aria-hidden="true" />}
-          {run
-            ? run.status === "running"
-              ? "Running…"
-              : run.status === "queued"
-                ? "Queued"
-                : run.status.replaceAll("_", " ")
-            : "Ready"}
+        <span className="fq-console-title">PYTHON OUTPUT</span>
+        <span
+          className={
+            feedback.busy
+              ? "fq-run-working fq-console-run-state"
+              : "fq-console-run-state"
+          }
+          role="status"
+          aria-label="Python run status"
+          title={feedback.label}
+        >
+          {feedback.busy && <i aria-hidden="true" />}
+          <span>{feedback.label}</span>
         </span>
+        <button
+          className="fq-console-latest"
+          aria-label="Jump to latest Python output"
+          title={follow ? "Latest output is visible" : "Jump to latest output"}
+          disabled={follow || !run?.logs.length}
+          onClick={() => setFollow(true)}
+        >
+          <UIIcon name="arrow" size={14} />
+        </button>
         <select
           aria-label="Python run history"
-          value={run?.id || ""}
+          value={python.selectedRunId || ""}
+          disabled={python.submitting}
           onChange={(event) =>
             dispatch({ type: "python-run", id: event.target.value })
           }
@@ -86,6 +117,12 @@ export function PythonConsole({
           <option value="" disabled>
             Recent runs
           </option>
+          {python.selectedRunId &&
+            !python.runs.some((item) => item.id === python.selectedRunId) && (
+              <option value={python.selectedRunId}>
+                Selected run · {python.selectedRunId.slice(0, 8)}
+              </option>
+            )}
           {python.runs.map((item) => (
             <option key={item.id} value={item.id}>
               {item.name} · {item.status}
@@ -298,7 +335,13 @@ export function PythonConsole({
           <small role="status">Collecting saved experiments…</small>
         )}
         {["running", "queued"].includes(run?.status || "") && (
-          <button onClick={() => void python.cancel()}>Stop</button>
+          <button
+            className="fq-python-stop"
+            disabled={python.stopping}
+            onClick={() => void python.cancel()}
+          >
+            {python.stopping ? "Stopping…" : "Stop"}
+          </button>
         )}
         {run?.artifact && (
           <button onClick={python.openCircuit}>Open circuit ↗</button>
@@ -347,14 +390,19 @@ export function PythonConsole({
         </section>
       )}
       {error && (
-        <p className="fq-python-request-error" role="alert">
+        <div className="fq-python-request-error" role="alert">
           {error}
-        </p>
+          {!run && python.selectedRunId && (
+            <button onClick={python.retryLoading}>Retry loading</button>
+          )}
+        </div>
       )}
       <pre
         ref={logs}
         className="fq-python-logs"
-        aria-live="polite"
+        aria-label="Python console output"
+        aria-live="off"
+        tabIndex={0}
         onScroll={() => {
           const element = logs.current;
           if (element)
@@ -374,11 +422,7 @@ export function PythonConsole({
             </span>
           ))
         ) : (
-          <span className="muted">
-            {run?.status === "running"
-              ? "Waiting for output…"
-              : "Run Python to see stdout, errors and saved experiments here."}
-          </span>
+          <span className="muted">{feedback.message}</span>
         )}
         {run?.truncated && <span>\nOutput truncated at 64 KiB.</span>}
         {run?.error && <span className="stderr">{"\n" + run.error}</span>}

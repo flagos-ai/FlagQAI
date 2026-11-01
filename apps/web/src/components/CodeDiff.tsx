@@ -6,10 +6,14 @@ export function CodeDiff({
   before,
   after,
   language,
+  beforeLabel = "Before",
+  afterLabel = "Incoming",
 }: {
   before: string;
   after: string;
   language: SourceLanguage;
+  beforeLabel?: string;
+  afterLabel?: string;
 }) {
   const [all, setAll] = useState(false);
   const [limit, setLimit] = useState(1000);
@@ -32,7 +36,9 @@ export function CodeDiff({
   return (
     <section className="fq-code-diff" aria-label="Agent code diff">
       <div className="fq-diff-heading">
-        <span>Before → Agent</span>
+        <span>
+          {beforeLabel} → {afterLabel}
+        </span>
         <span className="added">+{added}</span>
         <span className="removed">−{removed}</span>
         <button onClick={() => setAll(!all)}>

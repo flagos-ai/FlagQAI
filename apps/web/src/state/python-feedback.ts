@@ -37,3 +37,98 @@ export function pythonResultFreshness(
   }
   return "current";
 }
+
+/** Present only the selected, confirmed run; never flash a prior run as Ready. */
+export function pythonRunFeedback({
+  selectedId,
+  run,
+  submitting = false,
+  stopping = false,
+  error = "",
+}: {
+  selectedId?: string | null;
+  run?: PythonRun;
+  submitting?: boolean;
+  stopping?: boolean;
+  error?: string;
+}) {
+  if (submitting)
+    return {
+      label: "Starting…",
+      busy: true,
+      message: "Submitting this code. You can keep editing.",
+    };
+  if (selectedId && run?.id !== selectedId)
+    return error
+      ? {
+          label: "Output unavailable",
+          busy: false,
+          message:
+            "Cannot load this run yet. Choose another from history or retry loading; your code is unchanged.",
+        }
+      : {
+          label: "Loading run…",
+          busy: true,
+          message: "Loading the selected run. Your current code is unchanged.",
+        };
+  if (!run)
+    return {
+      label: "Ready",
+      busy: false,
+      message: "Run Python to see output and saved results here.",
+    };
+  if (stopping && ["running", "queued"].includes(run.status))
+    return {
+      label: "Stopping…",
+      busy: true,
+      message: "Stop requested. Waiting for the Python service to confirm.",
+    };
+  if (run.status === "queued")
+    return {
+      label: "Queued",
+      busy: true,
+      message: "Waiting for the Python runner. You can keep editing.",
+    };
+  if (run.status === "running")
+    return {
+      label: "Running…",
+      busy: true,
+      message: "Running the submitted code. You can keep editing.",
+    };
+  if (run.status === "cancelled")
+    return {
+      label: "Stopped",
+      busy: false,
+      message: "Run stopped. Your code is unchanged.",
+    };
+  if (run.status === "timed_out")
+    return {
+      label: "Timed out",
+      busy: false,
+      message: "This run reached its time limit. Your code is unchanged.",
+    };
+  if (run.status === "failed")
+    return {
+      label: "Failed",
+      busy: false,
+      message:
+        "This run failed. Review the error details or ask Agent for help.",
+    };
+  if (["pending", "collecting"].includes(run.collection_status || ""))
+    return {
+      label: "Collecting results…",
+      busy: true,
+      message: "Python finished. Opening the saved experiments…",
+    };
+  if (["partial", "failed"].includes(run.collection_status || ""))
+    return {
+      label: "Results need attention",
+      busy: false,
+      message: "Python finished, but some saved results could not be opened.",
+    };
+  return {
+    label: "Completed",
+    busy: false,
+    message: "Finished without console output.",
+  };
+}
