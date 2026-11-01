@@ -1382,3 +1382,156 @@ test("browser backup failure preserves the last snapshot and exposes recovery wi
   await page.reload();
   await expect(editor(page)).toHaveValue(liveDraft);
 });
+
+test("interaction craft keeps run feedback honest and preserves the result reading position", async ({
+  page,
+}, testInfo) => {
+  const baseline = await runPython(
+    page,
+    bell.replace("bell.fqx", "craft_baseline.fqx"),
+  );
+  const record = await savedRecord(page, baseline);
+  const gate = () => {
+    let release;
+    const promise = new Promise((resolve) => {
+      release = resolve;
+    });
+    return { promise, release };
+  };
+  const submit = gate(),
+    stop = gate(),
+    history = gate();
+  let cancellations = 0;
+  const slow = `import time
+for i in range(500):
+    print(f"line {i}", flush=True)
+for i in range(600):
+    print(f"tick {i}", flush=True)
+    time.sleep(0.1)
+`;
+  const output = page.getByRole("region", {
+    name: "Python output",
+    exact: true,
+  });
+  const status = output.getByRole("status", {
+    name: "Python run status",
+    exact: true,
+  });
+  try {
+    await page.route("**/api/python/runs", async (route) => {
+      if (route.request().method() === "POST") await submit.promise;
+      await route.continue();
+    });
+    await editor(page).fill(slow);
+    await page.getByRole("button", { name: "Run Python", exact: true }).click();
+    await expect(status).toHaveText("Starting…");
+    submit.release();
+    await expect(status).toHaveText("Running…");
+    const logs = output.getByLabel("Python console output", { exact: true });
+    await expect(logs).toContainText("line 499");
+    await logs.evaluate((element) => {
+      element.scrollTop = 0;
+      element.dispatchEvent(new Event("scroll"));
+    });
+    const latest = output.getByRole("button", {
+      name: "Jump to latest Python output",
+      exact: true,
+    });
+    await expect(latest).toBeEnabled();
+    await latest.click();
+    await expect(latest).toBeDisabled();
+    await expect(logs).toBeFocused();
+    await page.route("**/api/python/runs/*/cancel", async (route) => {
+      cancellations++;
+      await stop.promise;
+      await route.continue();
+    });
+    await output.getByRole("button", { name: "Stop", exact: true }).click();
+    await expect(
+      output.getByRole("button", { name: "Stopping…", exact: true }),
+    ).toBeDisabled();
+    await expect(status).toHaveText("Stopping…");
+    await output.screenshot({
+      path: testInfo.outputPath("python-stopping.png"),
+    });
+    await expect.poll(() => cancellations).toBe(1);
+    stop.release();
+    await expect(status).toHaveText("Stopped");
+    await expect(editor(page)).toHaveValue(slow);
+    await page.route("**/api/python/runs/" + baseline.id, async (route) => {
+      await history.promise;
+      await route.continue();
+    });
+    await page.getByLabel("Python run history").selectOption(baseline.id);
+    await expect(status).toHaveText("Loading run…");
+    await expect(
+      page.getByRole("button", { name: "Run Python", exact: true }),
+    ).toBeDisabled();
+    await expect(page.getByLabel("Python run history")).toHaveValue(
+      baseline.id,
+    );
+    await expect(logs).toContainText("Loading the selected run");
+    history.release();
+    await expect(status).toHaveText("Completed");
+    await page.getByRole("button", { name: "JOBS", exact: true }).click();
+    await page
+      .getByRole("button", { name: `Open job ${record.job.name}`, exact: true })
+      .click();
+    const results = page.getByRole("region", {
+      name: "Job results",
+      exact: true,
+    });
+    await results.getByRole("button", { name: "Table", exact: true }).click();
+    await results.getByRole("button", { name: "Counts", exact: true }).click();
+    await results.getByLabel("Sort measurement states").selectOption("state");
+    await page.getByRole("button", { name: "MODEL", exact: true }).click();
+    await expect(editor(page)).toHaveValue(slow);
+    await page.getByRole("button", { name: "JOBS", exact: true }).click();
+    await expect(
+      results.getByRole("button", { name: "Table", exact: true }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await expect(
+      results.getByRole("button", { name: "Counts", exact: true }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await page.reload();
+    await expect(
+      results.getByRole("button", { name: "Table", exact: true }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await expect(results.getByLabel("Sort measurement states")).toHaveValue(
+      "state",
+    );
+    await page.screenshot({
+      path: testInfo.outputPath("interaction-craft.png"),
+      fullPage: true,
+    });
+    const exports = results.getByRole("button", {
+      name: "Export results",
+      exact: true,
+    });
+    await exports.click();
+    await expect(
+      results.getByRole("button", { name: "JSON", exact: true }),
+    ).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(exports).toHaveAttribute("aria-expanded", "false");
+    await expect(exports).toBeFocused();
+    await exports.click();
+    await results
+      .getByRole("heading", { name: record.job.name, exact: true })
+      .click();
+    await expect(exports).toHaveAttribute("aria-expanded", "false");
+    const download = page.waitForEvent("download");
+    await exports.click();
+    await results.getByRole("button", { name: "JSON", exact: true }).click();
+    const file = await download;
+    const { readFile } = await import("node:fs/promises");
+    expect(JSON.parse(await readFile(await file.path(), "utf8")).id).toBe(
+      record.job.id,
+    );
+    await expect(exports).toHaveAttribute("aria-expanded", "false");
+  } finally {
+    submit.release();
+    stop.release();
+    history.release();
+  }
+});

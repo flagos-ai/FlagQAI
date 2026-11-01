@@ -233,10 +233,14 @@ export function EditorSyncBar({
                 ? "You undid this Agent change. Your previous code was restored; this comparison shows the saved proposal."
                 : change?.outcome === "kept"
                   ? "You kept your version. This comparison shows the saved Agent proposal; your current draft is preserved."
-                  : "These changes have synced to the editor. Accept records your review; keeping your version restores the previous code when the editor has no newer edits."}{" "}
+                  : "These changes are already in the editor. Accept to keep them, or restore your previous code. Newer edits are protected."}{" "}
             Decisions update the browser draft only.
           </p>
           <CodeDiff
+            beforeLabel={
+              review.mode === "incoming" ? "Your draft" : "Before change"
+            }
+            afterLabel="Agent proposal"
             before={review.before}
             after={review.incoming}
             language={state.language || "qasm"}

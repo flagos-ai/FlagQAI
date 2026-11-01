@@ -98,3 +98,28 @@ failure-injection acceptance before stronger recovery claims are made.
 
 These are the next acceptance work items. They are deliberately visible in the
 report so that feature growth cannot quietly redefine what “finished” means.
+
+## Interaction craft acceptance
+
+The interaction-craft browser case introduces real network delays around submit,
+stop and history loading, with a bounded Python process and no model request.
+It verifies that pending actions get immediate feedback and that a stop request is
+not described as stopped before a terminal run is observed. Selecting history
+keeps the requested selection and shows explicit loading rather than flashing
+Ready or attributing the previous run's output to the new selection.
+
+Console output is keyboard-focusable, has an explicit latest-output control and
+does not announce the entire log repeatedly to screen readers. Only the compact
+run status is live. Run controls and console header columns reserve stable space.
+The existing reduced-motion preference continues to disable decorative motion.
+
+Jobs preserves chart/table, units, ordering, page and measurement selection within
+the browser tab, including reload and returning from another page. Preferences
+are scoped by result, bounded to 64 results and clamped to the actual data. They
+are optional session preferences, separate from durable drafts and SDK artifacts.
+The Export control closes on outside press, focus leaving or Escape; Escape and
+completed export restore trigger focus. Code review names the user's draft versus
+the Agent proposal, and distinguishes pending proposals from already-synced edits.
+
+This is targeted interaction acceptance, not a claim that full accessibility or
+large-scale performance has been established. Those gates remain pending above.
