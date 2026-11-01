@@ -9,7 +9,24 @@ import type {
 } from "../contracts/quantum-workspace";
 import { examples } from "./templates.ts";
 
-export function readJSON<T>(storage: Storage, key: string, fallback: T): T {
+type WorkspaceStorage = Pick<Storage, "getItem" | "setItem">;
+export type BackupStatus =
+  | { saved: true }
+  | { saved: false; reason: "quota" | "unavailable" };
+
+function readText(storage: Pick<Storage, "getItem">, key: string) {
+  try {
+    return storage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+export function readJSON<T>(
+  storage: Pick<Storage, "getItem">,
+  key: string,
+  fallback: T,
+): T {
   try {
     return JSON.parse(storage.getItem(key) || "null") ?? fallback;
   } catch {
@@ -17,7 +34,7 @@ export function readJSON<T>(storage: Storage, key: string, fallback: T): T {
   }
 }
 export function restoreWorkspace(
-  storage: Storage,
+  storage: WorkspaceStorage,
   hash: string,
 ): WorkspaceState {
   const saved = readJSON<Partial<WorkspaceState>>(
@@ -62,12 +79,12 @@ export function restoreWorkspace(
       // Keep the original draft if a recovery copy cannot be saved.
     }
   }
-  const legacySource = storage.getItem("fq-code");
+  const legacySource = readText(storage, "fq-code");
   const fresh = saved.source == null && legacySource == null;
   const source = saved.source ?? legacySource ?? pythonExample;
   const name =
     saved.name ||
-    storage.getItem("fq-name") ||
+    readText(storage, "fq-name") ||
     (fresh ? "Python Bell pair" : examples[0].name);
   const validPrograms = (value: unknown): value is ProgramSnapshot[] =>
     Array.isArray(value);
@@ -149,55 +166,76 @@ export function restoreWorkspace(
     undo: [],
   };
 }
-export function persistWorkspace(storage: Storage, state: WorkspaceState) {
+export function workspaceBackup(state: WorkspaceState) {
+  const {
+    source,
+    name,
+    language,
+    languageDrafts,
+    comparison,
+    pythonRunId,
+    agentOpen,
+    programs,
+    models,
+    selectedProgramId,
+    selectedJobId,
+    shots,
+    seed,
+    schema,
+    project,
+    projectTabs,
+    activeProjectTab,
+    projectScratch,
+    editorLink,
+  } = state;
+  return JSON.stringify({
+    schema,
+    project,
+    projectTabs: projectTabs?.map((tab) => ({ ...tab, undo: [] })),
+    activeProjectTab,
+    projectScratch: projectScratch
+      ? { ...projectScratch, undo: [] }
+      : undefined,
+    language,
+    languageDrafts,
+    comparison,
+    pythonRunId,
+    agentOpen,
+    editorLink,
+    source,
+    name,
+    programs: programs.filter((program) => !program.experiment),
+    models,
+    selectedProgramId,
+    selectedJobId,
+    shots,
+    seed,
+  });
+}
+
+export function persistWorkspace(
+  storage: WorkspaceStorage,
+  state: WorkspaceState,
+): BackupStatus {
   try {
-    const {
-      source,
-      name,
-      language,
-      languageDrafts,
-      comparison,
-      pythonRunId,
-      agentOpen,
-      programs,
-      models,
-      selectedProgramId,
-      selectedJobId,
-      shots,
-      seed,
-      schema,
-      project,
-      projectTabs,
-      activeProjectTab,
-      projectScratch,
-      editorLink,
-    } = state;
-    storage.setItem(
-      "fq-react-workspace-v1",
-      JSON.stringify({
-        schema,
-        project,
-        projectTabs: projectTabs?.map((tab) => ({ ...tab, undo: [] })),
-        activeProjectTab,
-        projectScratch: projectScratch
-          ? { ...projectScratch, undo: [] }
-          : undefined,
-        language,
-        languageDrafts,
-        comparison,
-        pythonRunId,
-        agentOpen,
-        editorLink,
-        source,
-        name,
-        programs: programs.filter((program) => !program.experiment),
-        models,
-        selectedProgramId,
-        selectedJobId,
-        shots,
-        seed,
-      }),
-    );
+    // This single write is authoritative. A failure must keep the previous
+    // snapshot intact; never clear storage to make room for a new draft.
+    const snapshot = workspaceBackup(state);
+    if (readText(storage, "fq-react-workspace-v1") === snapshot)
+      return { saved: true };
+    storage.setItem("fq-react-workspace-v1", snapshot);
+  } catch (error) {
+    return {
+      saved: false,
+      reason:
+        error instanceof Error && /Quota/i.test(error.name)
+          ? "quota"
+          : "unavailable",
+    };
+  }
+  try {
+    // Legacy mirrors are optional once the complete snapshot is durable.
+    const { source, name, programs } = state;
     storage.setItem("fq-code", source);
     storage.setItem("fq-name", name);
     storage.setItem(
@@ -205,6 +243,7 @@ export function persistWorkspace(storage: Storage, state: WorkspaceState) {
       JSON.stringify(programs.filter((program) => !program.experiment)),
     );
   } catch {
-    /* In-memory editing remains available when storage quota is exhausted. */
+    /* The authoritative workspace snapshot was already saved. */
   }
+  return { saved: true };
 }

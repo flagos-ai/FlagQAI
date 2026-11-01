@@ -19,7 +19,7 @@ import {
 import { GateSymbol, MeasurementSymbol } from "./CircuitSymbols";
 import { UIIcon } from "./UIIcon";
 
-function CircuitPreview({
+export function CircuitPreview({
   program,
   changed,
   onOpen,

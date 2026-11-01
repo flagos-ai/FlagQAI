@@ -11,6 +11,16 @@ result = fq.run(circuit, outputs=fq.counts(), options=fq.ExecutionOptions(shots=
 fq.save("bell.fqx", result.plan, result=result)
 print(result.counts)
 `;
+async function showJobEvidence(page) {
+  const result = page.getByRole("region", { name: "Job results", exact: true });
+  await result.getByRole("button", { name: "Table", exact: true }).click();
+  const disclosure = result.locator("details.fq-job-provenance");
+  if ((await disclosure.getAttribute("open")) === null)
+    await result
+      .getByLabel("Run details and provenance", { exact: true })
+      .click();
+  return result;
+}
 async function get(page, path) {
   const response = await page.request.get(path);
   expect(response.ok()).toBeTruthy();
@@ -112,11 +122,24 @@ for (const [name, states] of [
     ).toBeVisible();
     await page.getByRole("button", { name: "View saved result →" }).click();
     await expect(page).toHaveURL(/#jobs$/);
+    const results = page.getByRole("region", {
+      name: "Job results",
+      exact: true,
+    });
     await expect(
-      page.getByRole("link", { name: "Download original .fqx ↓" }),
-    ).toHaveAttribute("href", `/api/experiments/${record.id}/file`);
+      results.getByRole("region", { name: "Measurement distribution" }),
+    ).toBeVisible();
+    await results.getByRole("button", { name: "Table", exact: true }).click();
     for (const count of Object.values(counts))
-      await expect(page.getByRole("table")).toContainText(String(count));
+      await expect(results.getByRole("table")).toContainText(
+        count.toLocaleString("en-US"),
+      );
+    await results
+      .getByLabel("Run details and provenance", { exact: true })
+      .click();
+    await expect(
+      results.getByRole("link", { name: "Download original .fqx ↓" }),
+    ).toHaveAttribute("href", `/api/experiments/${record.id}/file`);
   });
 }
 
@@ -773,11 +796,14 @@ test("failed run → Agent repair → review and undo → changed SDK result rem
   await expect(page).toHaveURL(/#jobs$/);
   await page.reload();
   await expect(page).toHaveURL(/#jobs$/);
+  const recoveredResult = await showJobEvidence(page);
   await expect(
-    page.getByRole("link", { name: "Download original .fqx ↓" }),
+    recoveredResult.getByRole("link", { name: "Download original .fqx ↓" }),
   ).toHaveAttribute("href", `/api/experiments/${latest.id}/file`);
   for (const count of Object.values(latest.job.result.counts))
-    await expect(page.getByRole("table")).toContainText(String(count));
+    await expect(recoveredResult.getByRole("table")).toContainText(
+      count.toLocaleString("en-US"),
+    );
   await page.getByRole("button", { name: "MODEL", exact: true }).click();
   await expect(editor(page)).toHaveValue(changed);
   await page.getByLabel("Python run history").selectOption(failed.id);
@@ -1029,11 +1055,12 @@ test("Follow Agent from Execution handles the first action batch, cold archive f
       .getAttribute("href");
     await rm(resultBarrier, { force: true });
     await expect(page).toHaveURL(/#jobs$/);
+    const followedResult = await showJobEvidence(page);
     await expect(
-      page.getByRole("link", { name: "Download original .fqx ↓" }),
+      followedResult.getByRole("link", { name: "Download original .fqx ↓" }),
     ).toHaveAttribute("href", archive);
-    await expect(page.getByRole("table")).toContainText("01");
-    await expect(page.getByRole("table")).toContainText("10");
+    await expect(followedResult.getByRole("table")).toContainText("01");
+    await expect(followedResult.getByRole("table")).toContainText("10");
     await expect(
       page.getByRole("status", { name: "Connected", exact: true }),
     ).toBeVisible();
@@ -1170,4 +1197,188 @@ test("comparison task opens a durable side-by-side experiment with real gate and
     .click();
   await page.getByRole("button", { name: /Draft · Python Bell pair/ }).click();
   await expect(editor(page)).toHaveValue(draft);
+});
+
+test("Jobs prioritizes results, filters history and compares only explicitly selected experiments", async ({
+  page,
+}, testInfo) => {
+  const first = await runPython(
+    page,
+    bell.replace("bell.fqx", "jobs_reference.fqx"),
+  );
+  const second = await runPython(
+    page,
+    bell
+      .replace("bell.fqx", "jobs_variant.fqx")
+      .replace("result = fq.run", "circuit.x(1)\nresult = fq.run"),
+  );
+  const a = await savedRecord(page, first),
+    b = await savedRecord(page, second);
+  await editor(page).fill(draft);
+  await page.getByRole("button", { name: "JOBS", exact: true }).click();
+  await page
+    .getByRole("button", { name: `Open job ${b.job.name}`, exact: true })
+    .click();
+  const results = page.getByRole("region", {
+    name: "Job results",
+    exact: true,
+  });
+  await expect(
+    results.getByRole("region", { name: "Measurement distribution" }),
+  ).toBeVisible();
+  await expect(
+    results.getByRole("link", { name: "Download original .fqx ↓" }),
+  ).not.toBeVisible();
+  await results.getByRole("button", { name: "Counts", exact: true }).click();
+  await results.getByRole("button", { name: "Table", exact: true }).click();
+  await expect(results.getByRole("table")).toContainText("Probability");
+  await results.getByRole("button", { name: "Circuit", exact: true }).click();
+  await expect(
+    results.getByRole("group", { name: b.program.name + " circuit preview" }),
+  ).toBeVisible();
+  await results.getByRole("button", { name: "Code", exact: true }).click();
+  await expect(
+    results.getByLabel("Model used for this result code"),
+  ).toContainText("circuit.x(1)");
+  await results.getByRole("button", { name: "Results", exact: true }).click();
+  await page.getByLabel("Filter jobs by status").selectOption("failed");
+  await expect(
+    page.getByText("No matching jobs. Try another search or status."),
+  ).toBeVisible();
+  await page.getByLabel("Filter jobs by status").selectOption("all");
+  const compare = page.getByRole("button", {
+    name: "Compare two experiments",
+    exact: true,
+  });
+  await expect(compare).toBeDisabled();
+  await page
+    .getByRole("checkbox", { name: `Compare ${a.job.name}`, exact: true })
+    .check();
+  await page.getByLabel("Search jobs").fill("jobs_variant");
+  await expect(
+    page.getByRole("checkbox", { name: `Compare ${a.job.name}`, exact: true }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("checkbox", { name: `Compare ${b.job.name}`, exact: true })
+    .check();
+  await page.getByLabel("Search jobs").fill("");
+  await page
+    .getByRole("button", { name: "Compare 2 / 2", exact: true })
+    .click();
+  await expect(
+    page.getByRole("region", { name: "Experiment comparison" }),
+  ).toContainText("+ X on q1");
+  await page
+    .getByRole("button", { name: "Single result", exact: true })
+    .click();
+  await results.getByRole("button", { name: "Results", exact: true }).click();
+  await page.screenshot({
+    path: testInfo.outputPath("jobs-results.png"),
+    fullPage: true,
+  });
+  await page.getByRole("button", { name: "MODEL", exact: true }).click();
+  await expect(editor(page)).toHaveValue(draft);
+});
+
+test("Jobs pages all observed states without renormalizing a truncated chart", async ({
+  page,
+}) => {
+  const run = await runPython(
+    page,
+    `import flagquantum as fq
+circuit = fq.Circuit(6)
+for q in range(6):
+    circuit.h(q)
+result = fq.run(circuit, outputs=fq.counts(), options=fq.ExecutionOptions(shots=4096, seed=42))
+fq.save("jobs_many_states.fqx", result.plan, result=result)
+`,
+  );
+  const record = await savedRecord(page, run);
+  expect(Object.keys(record.job.result.counts)).toHaveLength(64);
+  await page.getByRole("button", { name: "JOBS", exact: true }).click();
+  await page
+    .getByRole("button", { name: `Open job ${record.job.name}`, exact: true })
+    .click();
+  const results = page.getByRole("region", {
+    name: "Job results",
+    exact: true,
+  });
+  await results.getByLabel("Sort measurement states").selectOption("state");
+  await expect(results).toContainText("Showing 1–32 of 64 observed states");
+  await expect(
+    results.getByRole("button", { name: "Previous", exact: true }),
+  ).toBeDisabled();
+  const count = record.job.result.counts["000000"];
+  await expect(
+    results.getByRole("button", {
+      name: `000000: ${count} shots, ${((count / 4096) * 100).toFixed(2)}%`,
+      exact: true,
+    }),
+  ).toBeVisible();
+  await results.getByRole("button", { name: "Next", exact: true }).click();
+  await expect(results).toContainText("Showing 33–64 of 64 observed states");
+  await expect(
+    results.getByRole("button", { name: "Next", exact: true }),
+  ).toBeDisabled();
+  await results.getByRole("button", { name: "Table", exact: true }).click();
+  await expect(results.getByRole("table")).toContainText("111111");
+  await page.getByLabel("Search jobs").fill("no-such-job");
+  await expect(
+    page.getByText("No matching jobs. Try another search or status."),
+  ).toBeVisible();
+  await expect(results.getByRole("table")).toContainText("111111");
+});
+
+test("browser backup failure preserves the last snapshot and exposes recovery without losing the live draft", async ({
+  page,
+}) => {
+  await editor(page).fill("# durable backup\nprint('saved')\n");
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => JSON.parse(localStorage.getItem("fq-react-workspace-v1")).source,
+      ),
+    )
+    .toBe("# durable backup\nprint('saved')\n");
+  await page.evaluate(() => {
+    const original = Storage.prototype.setItem;
+    window.__restoreWorkspaceStorage = () => {
+      Storage.prototype.setItem = original;
+    };
+    Storage.prototype.setItem = function (key, value) {
+      if (key === "fq-react-workspace-v1")
+        throw new DOMException("Test quota exhausted", "QuotaExceededError");
+      return original.call(this, key, value);
+    };
+  });
+  const liveDraft =
+    "# newer draft must stay in memory\nprint('not backed up yet')\n";
+  await editor(page).fill(liveDraft);
+  const notice = page.getByRole("alert", {
+    name: "Workspace backup unavailable",
+  });
+  await expect(notice).toContainText("Browser storage is full");
+  expect(
+    await page.evaluate(
+      () => JSON.parse(localStorage.getItem("fq-react-workspace-v1")).source,
+    ),
+  ).toBe("# durable backup\nprint('saved')\n");
+  const downloadPromise = page.waitForEvent("download");
+  await notice
+    .getByRole("button", { name: "Download workspace backup" })
+    .click();
+  const downloaded = await downloadPromise;
+  expect(downloaded.suggestedFilename()).toBe(
+    "flagquantum-workspace-backup.json",
+  );
+  const { readFile } = await import("node:fs/promises");
+  const backup = JSON.parse(await readFile(await downloaded.path(), "utf8"));
+  expect(backup.source).toBe(liveDraft);
+  expect(backup.schema).toBe("flagqai.quantum-workspace.v1");
+  await expect(editor(page)).toHaveValue(liveDraft);
+  await page.evaluate(() => window.__restoreWorkspaceStorage());
+  await notice.getByRole("button", { name: "Retry backup" }).click();
+  await expect(notice).toHaveCount(0);
+  await page.reload();
+  await expect(editor(page)).toHaveValue(liveDraft);
 });

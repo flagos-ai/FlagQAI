@@ -4,6 +4,7 @@ if (!process.env.FQ_E2E_CONTROL_DIR)
 const port = Number(process.env.FQ_TEST_PORT);
 export default defineConfig({
   testDir: "./e2e",
+  metadata: { revision: process.env.GITHUB_SHA || "local-working-tree" },
   fullyParallel: false,
   workers: 1,
   retries: 0,
@@ -12,6 +13,7 @@ export default defineConfig({
   expect: { timeout: 30000 },
   reporter: [
     ["list"],
+    ["json", { outputFile: "sdk-results/browser.json" }],
     ["html", { outputFolder: "playwright-report", open: "never" }],
   ],
   outputDir: "test-results",
