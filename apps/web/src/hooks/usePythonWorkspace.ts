@@ -347,7 +347,10 @@ export function usePythonWorkspace(
     recovering,
     importing,
     previews: previews.runId === state.pythonRunId ? previews.files : {},
-    retryLoading: () => setRefreshVersion((value) => value + 1),
+    retryLoading: () => {
+      setError("");
+      setRefreshVersion((value) => value + 1);
+    },
     recollect,
     importFile,
     start,

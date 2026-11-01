@@ -1440,6 +1440,7 @@ for i in range(600):
     await expect(latest).toBeEnabled();
     await latest.click();
     await expect(latest).toBeDisabled();
+    await expect(logs).toBeFocused();
     await page.route("**/api/python/runs/*/cancel", async (route) => {
       cancellations++;
       await stop.promise;

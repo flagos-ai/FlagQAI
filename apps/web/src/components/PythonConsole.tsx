@@ -102,7 +102,10 @@ export function PythonConsole({
           aria-label="Jump to latest Python output"
           title={follow ? "Latest output is visible" : "Jump to latest output"}
           disabled={follow || !run?.logs.length}
-          onClick={() => setFollow(true)}
+          onClick={() => {
+            setFollow(true);
+            logs.current?.focus({ preventScroll: true });
+          }}
         >
           <UIIcon name="arrow" size={14} />
         </button>
