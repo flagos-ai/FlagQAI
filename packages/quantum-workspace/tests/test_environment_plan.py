@@ -1,5 +1,6 @@
 """No invented historical pins or executable package-provided installation commands."""
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -58,7 +59,9 @@ class EnvironmentPlanTest(unittest.TestCase):
         self.assertEqual(facts['schema'], 'flagqai.runtime-environment.v1')
         self.assertIn('system', facts); self.assertIn('machine', facts)
         self.assertIn('packages', facts); self.assertIn('sdk_distribution_version', facts)
-        self.assertFalse(facts['pythonpath_present'])
+        # -I ignores PYTHONPATH for imports, but does not erase the variable.
+        # CI deliberately supplies PYTHONPATH for the installed SDK suite.
+        self.assertEqual(facts['pythonpath_present'], bool(os.environ.get('PYTHONPATH')))
         self.assertFalse(facts['user_site_enabled'])
 
 if __name__ == '__main__': unittest.main()
