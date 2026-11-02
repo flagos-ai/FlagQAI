@@ -39,12 +39,21 @@ function useElapsed(start: number | undefined, active: boolean) {
   }, [start, active]);
   return start === undefined ? undefined : Math.max(0, now - start);
 }
-export function AgentTool({ tool }: { tool: Tool }) {
+export function AgentTool({
+  tool,
+  onOpenRun,
+}: {
+  tool: Tool;
+  onOpenRun?: (id: string) => Promise<void>;
+}) {
+  const [opening, setOpening] = useState(false);
+  const [openError, setOpenError] = useState("");
   const [expanded, setExpanded] = useState(false),
     running = tool.status === "running" || tool.status === "pending",
     failed = tool.status === "error";
   const elapsed = useElapsed(tool.startedAt, running),
     presentation = toolPresentation(tool);
+  const outcomeFailed = !running && presentation.tone === "error";
   const live = running && !!tool.liveOutput;
   const output = live
     ? cleanToolOutput(tool.liveOutput || "")
@@ -52,10 +61,23 @@ export function AgentTool({ tool }: { tool: Tool }) {
   const preview = previewOutput(output, live),
     duration = activityDuration(running ? elapsed : tool.durationMs);
   const id = "fq-tool-" + encodeURIComponent(tool.callId);
+  const status = running
+    ? presentation.runningLabel || "Running"
+    : failed
+      ? "Failed"
+      : presentation.status || "Done";
+  const statusText = status + (duration ? " · " + duration : "");
   return (
     <section
       className={
-        "fq-cli-tool " + presentation.category + (failed ? " failed" : "")
+        "fq-cli-tool " +
+        presentation.category +
+        (presentation.workbench ? " workbench" : "") +
+        (failed || outcomeFailed
+          ? " failed"
+          : !running && presentation.tone === "attention"
+            ? " attention"
+            : "")
       }
       aria-label={tool.name + " tool call"}
     >
@@ -65,14 +87,13 @@ export function AgentTool({ tool }: { tool: Tool }) {
         aria-controls={expanded ? id : undefined}
         onClick={() => setExpanded(!expanded)}
       >
-        <ActivityMarker active={running} error={failed} />
-        <strong>{tool.name}</strong>
+        <ActivityMarker active={running} error={failed || outcomeFailed} />
+        <strong title={tool.name}>{presentation.label}</strong>
         <span className="fq-activity-title" title={presentation.detail}>
           {presentation.detail}
         </span>
-        <span className="fq-activity-meta">
-          {running ? "Running" : failed ? "Failed" : "Done"}
-          {duration ? " · " + duration : ""}
+        <span className="fq-activity-meta" title={statusText}>
+          {statusText}
         </span>
         <span
           className={"fq-activity-chevron " + (expanded ? "expanded" : "")}
@@ -130,6 +151,34 @@ export function AgentTool({ tool }: { tool: Tool }) {
           {tool.liveOutputDropped} earlier live lines omitted by runtime
         </small>
       ) : null}
+      {presentation.runId && onOpenRun && (
+        <div className="fq-activity-run-link">
+          <button
+            className="fq-activity-more"
+            disabled={opening}
+            onClick={async () => {
+              setOpening(true);
+              setOpenError("");
+              try {
+                await onOpenRun(presentation.runId!);
+              } catch {
+                setOpenError(
+                  "Could not open this run. Check the connection and try again.",
+                );
+              } finally {
+                setOpening(false);
+              }
+            }}
+          >
+            {opening ? "Opening output…" : "View Python output ↗"}
+          </button>
+          {openError && (
+            <small role="alert" className="fq-activity-footnote error">
+              {openError}
+            </small>
+          )}
+        </div>
+      )}
       {presentation.exit !== undefined && presentation.exit !== 0 && (
         <small className="fq-activity-footnote error">
           Exit code {presentation.exit}

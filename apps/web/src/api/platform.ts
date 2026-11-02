@@ -21,6 +21,7 @@ export type PlatformAction = {
     page?: string;
     program_id?: string;
     job_id?: string;
+    comparison?: { left: string; right: string };
   };
 };
 async function request<T>(
@@ -47,6 +48,7 @@ export const platformAPI = {
   publish: (body: unknown, signal?: AbortSignal) =>
     request<{
       ready: boolean;
+      adapter_path?: string;
       source_hash: string;
       backend: { transport: string; backend: string };
     }>("/api/workspace/context", body, signal),

@@ -7,6 +7,7 @@ import { loadPythonExperiments } from "../api/python-experiments";
 import { quantumAPI } from "../api/quantum-workspace";
 import { useEffect, useRef, useState } from "react";
 import { pythonAPI, type PythonRun } from "../api/python-runs";
+import { pythonActivityUpdating } from "../state/python-activity";
 import { platformAPI } from "../api/platform";
 import type {
   WorkspaceState,
@@ -22,17 +23,23 @@ export function usePythonWorkspace(
   const [runs, setRuns] = useState<PythonRun[]>([]);
   const [environment, setEnvironment] = useState<PythonRun["environment"]>();
   const [error, setError] = useState("");
+  const [readError, setReadError] = useState("");
+  const [stopError, setStopError] = useState<{ id: string; message: string }>();
   const [submitting, setSubmitting] = useState(false);
   const [stopRequests, setStopRequests] = useState<Set<string>>(new Set());
   const cancelLocks = useRef(new Set<string>());
   useEffect(() => {
-    if (run && !["running", "queued"].includes(run.status))
+    if (run && !["running", "queued"].includes(run.status)) {
+      setStopError((previous) =>
+        previous?.id === run.id ? undefined : previous,
+      );
       setStopRequests((previous) => {
         if (!previous.has(run.id)) return previous;
         const next = new Set(previous);
         next.delete(run.id);
         return next;
       });
+    }
   }, [run?.id, run?.status]);
   const [recovering, setRecovering] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -60,6 +67,10 @@ export function usePythonWorkspace(
       .catch(() => {});
   }, []);
   useEffect(() => {
+    setRun(undefined);
+    setReadError("");
+    setError("");
+    setStopError(undefined);
     if (!state.pythonRunId) return;
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout>;
@@ -70,8 +81,12 @@ export function usePythonWorkspace(
           controller.signal,
         );
         if (controller.signal.aborted) return;
+        if (result.id !== state.pythonRunId)
+          throw Error(
+            "Received output for another run. Retrying the selected run.",
+          );
         setRun(result);
-        setError("");
+        setReadError("");
         setRuns((previous) => [
           result,
           ...previous.filter((item) => item.id !== result.id),
@@ -131,19 +146,16 @@ export function usePythonWorkspace(
             ),
           },
         }));
-        if (
-          ["queued", "running"].includes(result.status) ||
-          result.collection_status === "collecting"
-        )
-          timer = setTimeout(refresh, 400);
+        if (pythonActivityUpdating(result)) timer = setTimeout(refresh, 400);
       } catch (problem) {
         if (!controller.signal.aborted) {
-          setError(String(problem));
+          setReadError(
+            problem instanceof Error ? problem.message : String(problem),
+          );
           timer = setTimeout(refresh, 2000);
         }
       }
     };
-    setRun(undefined);
     void refresh();
     return () => {
       controller.abort();
@@ -274,6 +286,8 @@ export function usePythonWorkspace(
     )
       return;
     const id = run.id;
+    setError("");
+    setStopError(undefined);
     cancelLocks.current.add(id);
     setStopRequests((previous) => new Set(previous).add(id));
     try {
@@ -286,11 +300,13 @@ export function usePythonWorkspace(
         return next;
       });
       if (currentRunId.current === id)
-        setError(
-          problem instanceof Error
-            ? problem.message
-            : "Could not request a stop. Try again.",
-        );
+        setStopError({
+          id,
+          message:
+            problem instanceof Error
+              ? problem.message
+              : "Could not request a stop. Try again.",
+        });
     } finally {
       cancelLocks.current.delete(id);
     }
@@ -340,7 +356,13 @@ export function usePythonWorkspace(
     run,
     runs,
     environment,
-    error,
+    error:
+      error ||
+      (stopError && stopError.id === state.pythonRunId
+        ? stopError.message
+        : "") ||
+      readError,
+    updatesInterrupted: !!readError,
     submitting,
     selectedRunId: state.pythonRunId,
     stopping: stopRequests.has(state.pythonRunId || ""),

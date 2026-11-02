@@ -1,4 +1,5 @@
 import type { SessionViewRow } from "../../../../packages/sdk/index.d.ts";
+import { workbenchActivity } from "./workbench-activity.ts";
 export type Tool = NonNullable<SessionViewRow["tool"]>;
 const object = (value: unknown): Record<string, unknown> =>
   value && typeof value === "object" && !Array.isArray(value)
@@ -103,9 +104,23 @@ export function toolPresentation(tool: Tool) {
           )
         ? "exec"
         : "other";
+  const workbench = workbenchActivity(
+    tool.name,
+    args,
+    cleanToolOutput(body),
+    !!tool.errorText || tool.status === "error",
+  );
   return {
-    detail: cleanToolOutput(detail).replace(/\s+/g, " ").slice(0, 480),
-    body: cleanToolOutput(body),
+    label: workbench?.label || tool.name,
+    workbench: !!workbench,
+    status: workbench?.status,
+    tone: workbench?.tone,
+    runningLabel: workbench?.runningLabel,
+    runId: workbench?.runId,
+    detail: cleanToolOutput(workbench ? workbench.detail : detail)
+      .replace(/\s+/g, " ")
+      .slice(0, 480),
+    body: cleanToolOutput(workbench ? workbench.body : body),
     category,
     diff: view.card === "diff",
     exit: typeof view.exitCode === "number" ? view.exitCode : undefined,

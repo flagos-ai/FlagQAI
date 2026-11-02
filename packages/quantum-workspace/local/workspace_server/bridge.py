@@ -9,6 +9,7 @@ import sqlite3
 import threading
 import time
 import uuid
+from pathlib import Path
 from .editor_files import create_model, read_model
 from quantum_workspace_protocol import source_hash
 
@@ -63,7 +64,8 @@ class WorkspaceBridge:
                 for key in expired: self.contexts.pop(key, None)
                 if len(self.contexts) >= 64: raise BridgeConflict('Too many active workbench clients.')
             self.contexts[client] = value
-        return {'ready': True, 'source_hash': value['source_hash'], 'backend': self.service.health()}
+        return {'ready': True, 'source_hash': value['source_hash'], 'backend': self.service.health(),
+                'adapter_path': str(Path(__file__).resolve().parents[2] / 'workbench.py')}
 
     @staticmethod
     def identity(data):
@@ -113,7 +115,7 @@ class WorkspaceBridge:
                 result = (self.python_runs.experiments.get(data.get('job_id')) or {}).get('job')
             if not result: raise ValueError('Job not found.')
             return result
-        if operation not in ('model.create', 'model.share', 'compile', 'run', 'focus', 'python.run', 'python.cancel', 'project.run'):
+        if operation not in ('model.create', 'model.share', 'compile', 'run', 'focus', 'python.run', 'python.cancel', 'project.run', 'experiment.compare'):
             raise ValueError('Unsupported workbench action.')
         key = data.get('request_id')
         if not isinstance(key, str) or not re.fullmatch(r'[a-zA-Z0-9-]{1,128}', key):
@@ -191,3 +193,11 @@ class WorkspaceBridge:
         if operation == 'focus':
             if data.get('page') not in ('model', 'program', 'execution', 'jobs'): raise ValueError('Invalid target page.')
             return {key: data.get(key) for key in ('page', 'program_id', 'job_id')}
+        if operation == 'experiment.compare':
+            if not self.python_runs: raise ValueError('Python runtime unavailable.')
+            left, right = data.get('baseline_id'), data.get('variant_id')
+            if not left or not right or left == right: raise ValueError('Choose two distinct saved experiments.')
+            for identity in (left, right):
+                record = self.python_runs.experiments.get(identity)
+                if not record or not record.get('job'): raise ValueError('Both experiments need saved results.')
+            return {'page': 'jobs', 'comparison': {'left': left, 'right': right}}

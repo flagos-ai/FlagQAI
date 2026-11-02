@@ -118,6 +118,76 @@ test("Jobs view preferences survive remounts, stay scoped by result and clamp st
     64,
   );
 });
+test("read outages keep active runs uncertain without hiding confirmed terminal states", () => {
+  const run = { id: "a", status: "running" };
+  const feedback = pythonRunFeedback({
+    selectedId: "a",
+    run,
+    updatesInterrupted: true,
+  });
+  assert.equal(feedback.label, "Reconnecting…");
+  assert.match(feedback.message, /existing run/);
+  assert.match(
+    pythonRunFeedback({
+      selectedId: "a",
+      run,
+      updatesInterrupted: true,
+      stopping: true,
+    }).message,
+    /confirm this run/,
+  );
+  assert.equal(
+    pythonRunFeedback({
+      selectedId: "a",
+      run: { ...run, status: "completed", collection_status: "pending" },
+      updatesInterrupted: true,
+    }).label,
+    "Reconnecting…",
+  );
+  assert.equal(
+    pythonRunFeedback({
+      selectedId: "a",
+      run: { ...run, status: "failed", collection_status: "pending" },
+      updatesInterrupted: true,
+    }).label,
+    "Failed",
+  );
+  assert.equal(
+    pythonRunFeedback({ run, updatesInterrupted: true }).label,
+    "Ready",
+  );
+  assert.equal(
+    pythonRunFeedback({
+      selectedId: "a",
+      run: {
+        ...run,
+        execution_status: "completed",
+        collection_status: "collecting",
+      },
+    }).label,
+    "Collecting results…",
+  );
+  assert.match(
+    pythonRunFeedback({
+      selectedId: "a",
+      run: {
+        ...run,
+        execution_status: "failed",
+        collection_status: "collecting",
+      },
+    }).message,
+    /exited with an error/,
+  );
+});
+test("state searches migrate from old preferences and reject invalid saved values", () => {
+  const job = { id: "a", result: { counts: { "00": 2 } } };
+  assert.equal(normalizeJobView({}, job).query, "");
+  assert.equal(normalizeJobView({ query: { bad: true } }, job).query, "");
+  assert.equal(
+    normalizeJobView({ query: "x".repeat(1000) }, job).query.length,
+    128,
+  );
+});
 test("corrupt or unavailable view storage cannot affect the result or editor data", () => {
   const job = { id: "a", result: { counts: { "00": 3 } } };
   const bad = {
@@ -131,14 +201,4 @@ test("corrupt or unavailable view storage cannot affect the result or editor dat
   assert.deepEqual(readJobView(bad, job), defaultJobView);
   assert.doesNotThrow(() => writeJobView(bad, job, defaultJobView));
   assert.equal(job.result.counts["00"], 3);
-});
-
-test("state searches migrate from old preferences and reject invalid saved values", () => {
-  const job = { id: "a", result: { counts: { "00": 2 } } };
-  assert.equal(normalizeJobView({}, job).query, "");
-  assert.equal(normalizeJobView({ query: { bad: true } }, job).query, "");
-  assert.equal(
-    normalizeJobView({ query: "x".repeat(1000) }, job).query.length,
-    128,
-  );
 });

@@ -28,6 +28,40 @@ const state = () => ({
   language: "python",
   undo: ["previous"],
 });
+test("structured comparison resolves both saved records and preserves the unsaved editor", async () => {
+  const other = "fqx-" + "a".repeat(32);
+  const before = state();
+  const changes = await platformNavigation(
+    {
+      operation: "experiment.compare",
+      result: { page: "jobs", comparison: { left: id, right: other } },
+    },
+    before,
+    {
+      experiment: async (key) => ({
+        ...record,
+        id: key,
+        program: { ...record.program, id: key },
+        job: { ...record.job, id: key },
+      }),
+      job: async () => {
+        throw Error("Must use actual saved experiments");
+      },
+    },
+  );
+  const after = changes.reduce(reduce, before);
+  assert.equal(after.source, before.source);
+  assert.deepEqual(after.comparison, { left: id, right: other });
+  assert.equal(after.page, "jobs");
+  await assert.rejects(
+    platformNavigation(
+      { result: { comparison: { left: id, right: other } } },
+      before,
+      { experiment: async () => ({ ...record, job: null }) },
+    ),
+    /saved results/,
+  );
+});
 test("focus resolves a new archive before selecting its circuit or result from Execution", async () => {
   for (const page of ["program", "jobs"]) {
     const before = state();

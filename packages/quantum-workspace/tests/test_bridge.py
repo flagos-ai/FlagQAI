@@ -17,6 +17,7 @@ from workspace_server.job_store import SQLiteJobStore
 from workspace_server.service import QuantumWorkspaceService
 from flagquantum_adapter.local_cpu import LocalCPUAdapter
 from unittest.mock import patch
+from types import SimpleNamespace
 
 SOURCE = 'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\ncreg c[2];\nh q[0];\ncx q[0],q[1];\nmeasure q[0] -> c[0];\nmeasure q[1] -> c[1];'
 class ScriptedCPU:
@@ -72,6 +73,16 @@ class BridgeTests(unittest.TestCase):
         second=self.action('model.create','create-2',source=SOURCE)['file']
         self.assertNotEqual(first['id'],second['id'])
         self.assertEqual((self.root/first['path']).read_text(),SOURCE)
+    def test_comparison_requires_two_recorded_results_and_is_retry_safe(self):
+        records = {'fqx-a': {'job': {'id': 'fqx-a'}}, 'fqx-b': {'job': {'id': 'fqx-b'}}, 'fqx-circuit': {'job': None}}
+        self.bridge.python_runs = SimpleNamespace(experiments=SimpleNamespace(get=records.get))
+        result = self.action('experiment.compare', 'pair', baseline_id='fqx-a', variant_id='fqx-b')
+        self.assertEqual(result, {'page': 'jobs', 'comparison': {'left': 'fqx-a', 'right': 'fqx-b'}})
+        self.assertEqual(result, self.action('experiment.compare', 'pair', baseline_id='fqx-a', variant_id='fqx-b'))
+        self.assertEqual(len(self.bridge.events('client-1','session-1',0)), 1)
+        for key, right in [('same', 'fqx-a'), ('missing', 'fqx-missing'), ('circuit-only', 'fqx-circuit')]:
+            with self.assertRaises(ValueError): self.action('experiment.compare', key, baseline_id='fqx-a', variant_id=right)
+        self.assertEqual(self.bridge.context('client-1')['source'], SOURCE)
     def test_failed_compile_settles_the_observable_action(self):
         with patch.object(self.adapter, 'execute', side_effect=RuntimeError('Compiler rejected the circuit')):
             with self.assertRaisesRegex(RuntimeError, 'Compiler rejected'):

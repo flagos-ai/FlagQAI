@@ -12,6 +12,8 @@ import { pythonFailure } from "../state/python-failure";
 import { Modal } from "./Modal";
 import { CloseButton } from "./CloseButton";
 import { CodeExample } from "./CodeExample";
+import { pythonOutputText } from "../state/python-output";
+import { pythonHistoryLabel, pythonRunTime } from "../state/python-history";
 export function PythonConsole({
   python,
   source,
@@ -38,13 +40,54 @@ export function PythonConsole({
     submitting: python.submitting,
     stopping: python.stopping,
     error,
+    updatesInterrupted: python.updatesInterrupted,
   });
   const logs = useRef<HTMLPreElement>(null);
   const upload = useRef<HTMLInputElement>(null);
   const [follow, setFollow] = useState(true);
-  const [repairing, setRepairing] = useState(false),
-    [repairError, setRepairError] = useState("");
+  const [repairingId, setRepairingId] = useState<string | null>(null),
+    [repairError, setRepairError] = useState<{
+      id: string;
+      message: string;
+    } | null>(null);
+  const repairLock = useRef(false);
   const [failedSource, setFailedSource] = useState<PythonRun | null>(null);
+  const [copyResult, setCopyResult] = useState<{
+    id: string;
+    status: "copied" | "error";
+  } | null>(null);
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
+  const currentRunId = useRef(run?.id);
+  currentRunId.current = run?.id;
+  useEffect(() => {
+    setCopyResult(null);
+    clearTimeout(copyTimer.current);
+  }, [run?.id]);
+  useEffect(
+    () => () => {
+      currentRunId.current = undefined;
+      clearTimeout(copyTimer.current);
+    },
+    [],
+  );
+  const copyStatus =
+    copyResult?.id === run?.id ? copyResult?.status : undefined;
+  const outputText = pythonOutputText(run);
+  const copyOutput = async () => {
+    if (!run || !outputText) return;
+    const id = run.id;
+    clearTimeout(copyTimer.current);
+    try {
+      await navigator.clipboard.writeText(outputText);
+      if (currentRunId.current !== id) return;
+      setCopyResult({ id, status: "copied" });
+      copyTimer.current = setTimeout(() => setCopyResult(null), 2500);
+    } catch {
+      if (currentRunId.current === id) setCopyResult({ id, status: "error" });
+    }
+  };
   useEffect(() => {
     setFollow(true);
   }, [python.selectedRunId]);
@@ -79,6 +122,7 @@ export function PythonConsole({
             title="Executed Python snapshot"
             code={failedSource.source}
             language="python"
+            highlightLine={pythonFailure(failedSource)?.line}
           />
         </Modal>
       )}
@@ -92,25 +136,51 @@ export function PythonConsole({
           }
           role="status"
           aria-label="Python run status"
-          title={feedback.label}
+          title={feedback.label + " · " + feedback.message}
         >
           {feedback.busy && <i aria-hidden="true" />}
           <span>{feedback.label}</span>
         </span>
-        <button
-          className="fq-console-latest"
-          aria-label="Jump to latest Python output"
-          title={follow ? "Latest output is visible" : "Jump to latest output"}
-          disabled={follow || !run?.logs.length}
-          onClick={() => {
-            setFollow(true);
-            logs.current?.focus({ preventScroll: true });
-          }}
-        >
-          <UIIcon name="arrow" size={14} />
-        </button>
+        <div className="fq-console-actions">
+          <button
+            className="fq-console-icon"
+            aria-label="Copy Python output"
+            title={
+              copyStatus === "copied" ? "Output copied" : "Copy current output"
+            }
+            disabled={!outputText}
+            onClick={() => void copyOutput()}
+          >
+            <UIIcon
+              name={copyStatus === "copied" ? "check" : "copy"}
+              size={14}
+            />
+          </button>
+          <span role="status" className="fq-sr-only">
+            {copyStatus === "copied" ? "Python output copied" : ""}
+          </span>
+          <button
+            className="fq-console-icon fq-console-latest"
+            aria-label="Jump to latest Python output"
+            title={
+              follow ? "Latest output is visible" : "Jump to latest output"
+            }
+            disabled={follow || !run?.logs.length}
+            onClick={() => {
+              setFollow(true);
+              logs.current?.focus({ preventScroll: true });
+            }}
+          >
+            <UIIcon name="arrow" size={14} />
+          </button>
+        </div>
         <select
           aria-label="Python run history"
+          title={
+            run
+              ? `${pythonHistoryLabel(run)} · Run ${run.id}`
+              : python.selectedRunId || "Recent Python runs"
+          }
           value={python.selectedRunId || ""}
           disabled={python.submitting}
           onChange={(event) =>
@@ -127,8 +197,8 @@ export function PythonConsole({
               </option>
             )}
           {python.runs.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.name} · {item.status}
+            <option key={item.id} value={item.id} title={`Run ${item.id}`}>
+              {pythonHistoryLabel(item)}
             </option>
           ))}
         </select>
@@ -149,27 +219,41 @@ export function PythonConsole({
           <button onClick={() => setFailedSource(run)}>
             View failed source
           </button>{" "}
+          {!!line && freshness === "current" && (
+            <button onClick={() => onLocate(line)}>Go to line {line} ↗</button>
+          )}{" "}
           <button
-            disabled={repairing}
+            disabled={!!repairingId}
             onClick={async () => {
-              setRepairing(true);
-              setRepairError("");
+              if (repairLock.current) return;
+              repairLock.current = true;
+              setRepairingId(run.id);
+              setRepairError(null);
               try {
                 await onRepair(run);
               } catch (problem) {
-                setRepairError(
-                  problem instanceof Error
-                    ? problem.message
-                    : "Cannot prepare repair request.",
-                );
+                setRepairError({
+                  id: run.id,
+                  message:
+                    problem instanceof Error
+                      ? problem.message
+                      : "Cannot prepare repair request.",
+                });
               } finally {
-                setRepairing(false);
+                repairLock.current = false;
+                setRepairingId(null);
               }
             }}
           >
-            {repairing ? "Preparing…" : "Ask Agent to fix"}
+            {repairingId === run.id
+              ? "Preparing…"
+              : repairingId
+                ? "Preparing another run…"
+                : "Ask Agent to fix"}
           </button>
-          {repairError && <p role="alert">{repairError}</p>}
+          {repairError?.id === run.id && (
+            <p role="alert">{repairError.message}</p>
+          )}
         </section>
       )}
       {run && freshness && freshness !== "current" && (
@@ -300,7 +384,9 @@ export function PythonConsole({
           <details className="fq-python-run-details">
             <summary>Run details</summary>
             <div>
-              {" "}
+              {pythonRunTime(run.created_at) && (
+                <small>Submitted {pythonRunTime(run.created_at)}</small>
+              )}{" "}
               {run?.project && (
                 <small>
                   {run.project.name} / {run.project.entry} ·{" "}
@@ -352,9 +438,6 @@ export function PythonConsole({
         {run?.artifact?.job && (
           <button onClick={python.openResults}>View results ↗</button>
         )}
-        {!!line && run?.source === source && (
-          <button onClick={() => onLocate(line)}>Go to line {line} ↗</button>
-        )}
       </div>
       {!!run?.collection_errors?.length && (
         <section className="fq-python-collection-errors" role="alert">
@@ -398,6 +481,15 @@ export function PythonConsole({
           {!run && python.selectedRunId && (
             <button onClick={python.retryLoading}>Retry loading</button>
           )}
+        </div>
+      )}
+      {copyStatus === "error" && (
+        <div
+          className="fq-python-request-error fq-console-copy-error"
+          role="alert"
+        >
+          Cannot copy output. Select the logs to copy manually, or check your
+          browser's clipboard permission.
         </div>
       )}
       <pre

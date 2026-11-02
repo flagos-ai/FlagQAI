@@ -172,8 +172,10 @@ test("refresh and navigation retain a selected historical result and newer draft
 
 test("missing output and real Python errors are distinct and preserve run history", async ({
   page,
-}) => {
+}, testInfo) => {
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
   const empty = await runPython(page, "print('no archive saved')");
+  const failedRuns = [];
   expect(empty.status).toBe("completed");
   expect(empty.experiments).toHaveLength(0);
   await expect(
@@ -183,18 +185,274 @@ test("missing output and real Python errors are distinct and preserve run histor
     ["def broken(:\n pass", "SyntaxError"],
     ["import flagqai_nonexistent_acceptance_dependency", "ModuleNotFoundError"],
     ["import flagquantum as fq\nfq.Circuit(1).h(99)", "ValidationError"],
+    [
+      "# " +
+        "long context ".repeat(150) +
+        "\n" +
+        "# preserved context\n".repeat(79) +
+        "raise ValueError('snapshot location')",
+      "ValueError",
+    ],
   ]) {
     const run = await runPython(page, source);
     expect(run.status).toBe("failed");
+    failedRuns.push(run.id);
+    const runHistory = page.getByLabel("Python run history");
+    await expect(runHistory.locator(`option[value="${run.id}"]`)).toContainText(
+      run.id.slice(0, 8),
+    );
+    await expect(
+      runHistory.locator(`option[value="${empty.id}"]`),
+    ).toContainText(empty.id.slice(0, 8));
+    await expect(runHistory).toHaveAttribute("title", new RegExp(run.id));
     expect(run.logs.map((item) => item.text).join("")).toContain(error);
     await expect(
       page.getByRole("button", { name: "Ask Agent to fix", exact: true }),
     ).toBeVisible();
+    const expectedLine =
+      error === "ValueError" ? 81 : error === "ValidationError" ? 2 : 1;
+    const failure = page.getByRole("region", {
+      name: "Python failure",
+      exact: true,
+    });
+    if (error === "ValueError") {
+      await editor(page).evaluate((element) => {
+        element.scrollLeft = 1000;
+        element.scrollTop = 0;
+        element.dispatchEvent(new Event("scroll"));
+      });
+      expect(
+        await editor(page).evaluate((element) => element.scrollLeft),
+      ).toBeGreaterThan(500);
+    }
+    await expect(
+      failure.getByRole("button", {
+        name: `Go to line ${expectedLine} ↗`,
+        exact: true,
+      }),
+    ).toBeVisible();
+    await failure
+      .getByRole("button", {
+        name: `Go to line ${expectedLine} ↗`,
+        exact: true,
+      })
+      .click();
+    expect(
+      await editor(page).evaluate((element) =>
+        element.value.slice(element.selectionStart, element.selectionEnd),
+      ),
+    ).toBe(source.split("\n")[expectedLine - 1]);
+    await expect(editor(page)).toBeFocused();
+    if (error === "ValueError") {
+      await expect
+        .poll(() => editor(page).evaluate((element) => element.scrollLeft))
+        .toBe(0);
+      await expect
+        .poll(() =>
+          page
+            .locator(`[data-editor-line="${expectedLine}"]`)
+            .evaluate((element) => {
+              const line = element.getBoundingClientRect();
+              const editor = document
+                .querySelector(
+                  'textarea[aria-label="Quantum model code editor"]',
+                )
+                .getBoundingClientRect();
+              return line.top >= editor.top && line.bottom <= editor.bottom;
+            }),
+        )
+        .toBe(true);
+    }
+    await editor(page).fill(source + "\n# newer unsaved work");
+    await expect(
+      failure.getByRole("button", { name: /^Go to line/ }),
+    ).toHaveCount(0);
+    await failure
+      .getByRole("button", { name: "View failed source", exact: true })
+      .click();
+    const snapshot = page.getByRole("dialog", {
+      name: "Failed Python source",
+      exact: true,
+    });
+    const highlighted = snapshot.locator('[data-highlighted="true"]');
+    await expect(highlighted).toHaveAttribute(
+      "data-line",
+      String(expectedLine),
+    );
+    await expect
+      .poll(() =>
+        highlighted.evaluate((element) => {
+          const panel = element.closest("pre").getBoundingClientRect(),
+            line = element.getBoundingClientRect();
+          return line.top >= panel.top && line.bottom <= panel.bottom;
+        }),
+      )
+      .toBe(true);
+    if (error === "ValueError") {
+      await snapshot
+        .getByRole("button", {
+          name: "Copy Executed Python snapshot",
+          exact: true,
+        })
+        .click();
+      await expect
+        .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+        .toBe(source);
+      await page.screenshot({
+        path: testInfo.outputPath("failed-line.png"),
+        fullPage: true,
+      });
+    }
+    await snapshot
+      .getByRole("button", { name: "Close failed source", exact: true })
+      .click();
+    await expect(editor(page)).toHaveValue(source + "\n# newer unsaved work");
+    expect((await get(page, "/api/python/runs/" + run.id)).source).toBe(source);
+  }
+  let releaseRepair;
+  const repairGate = new Promise((resolve) => {
+    releaseRepair = resolve;
+  });
+  let repairRequests = 0;
+  await page.route("**/api/editor/files", async (route) => {
+    repairRequests++;
+    await repairGate;
+    await route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ error: "Acceptance repair unavailable" }),
+    });
+  });
+  try {
+    await page
+      .getByRole("button", { name: "Ask Agent to fix", exact: true })
+      .click();
+    await expect(
+      page.getByRole("button", { name: "Preparing…", exact: true }),
+    ).toBeDisabled();
+    await page.getByLabel("Python run history").selectOption(failedRuns[0]);
+    await expect(
+      page.getByRole("button", { name: "Preparing another run…", exact: true }),
+    ).toBeDisabled();
+    await expect.poll(() => repairRequests).toBe(1);
+    releaseRepair();
+    await expect(
+      page.getByRole("button", { name: "Ask Agent to fix", exact: true }),
+    ).toBeEnabled();
+    await expect(
+      page
+        .getByRole("alert")
+        .filter({ hasText: "Acceptance repair unavailable" }),
+    ).toHaveCount(0);
+    await page.getByLabel("Python run history").selectOption(failedRuns.at(-1));
+    await expect(
+      page
+        .getByRole("alert")
+        .filter({ hasText: "Acceptance repair unavailable" }),
+    ).toBeVisible();
+  } finally {
+    releaseRepair();
+    await page.unroute("**/api/editor/files");
   }
   await page.getByLabel("Python run history").selectOption(empty.id);
   await expect(
     page.getByText("no archive saved", { exact: false }).last(),
   ).toBeVisible();
+  await page
+    .getByRole("group", { name: "Source language", exact: true })
+    .getByRole("button", { name: "OpenQASM", exact: true })
+    .click();
+  const invalid =
+    "OPENQASM 2.0;\nqreg q[1];\n" + "\t".repeat(50) + "x missing[0];";
+  await editor(page).fill(invalid);
+  await page
+    .locator(".fq-error-list")
+    .getByRole("button")
+    .filter({ hasText: 'Undeclared register "missing"' })
+    .click();
+  await expect(editor(page)).toBeFocused();
+  expect(
+    await editor(page).evaluate((element) =>
+      element.value.slice(element.selectionStart, element.selectionEnd),
+    ),
+  ).toBe("missing[0]");
+  await expect
+    .poll(() => editor(page).evaluate((element) => element.scrollLeft))
+    .toBeGreaterThan(100);
+  await expect
+    .poll(() =>
+      page
+        .locator('[data-editor-line="3"] .fq-token-number')
+        .evaluate((element) => {
+          const token = element.getBoundingClientRect();
+          const editor = document
+            .querySelector('textarea[aria-label="Quantum model code editor"]')
+            .getBoundingClientRect();
+          return (
+            token.left >= editor.left &&
+            token.right <= editor.right &&
+            token.top >= editor.top &&
+            token.bottom <= editor.bottom
+          );
+        }),
+    )
+    .toBe(true);
+  await expect(editor(page)).toHaveValue(invalid);
+  await page.screenshot({
+    path: testInfo.outputPath("qasm-error-location.png"),
+    fullPage: true,
+  });
+  await editor(page).fill(invalid.replace("missing", "q"));
+  await expect(page.locator(".fq-error-list .fq-diagnostic.error")).toHaveCount(
+    0,
+  );
+  await page
+    .getByRole("group", { name: "Source language", exact: true })
+    .getByRole("button", { name: "Python", exact: true })
+    .click();
+  const vectorRun = await runPython(
+    page,
+    `import flagquantum as fq
+circuit = fq.Circuit(1).h(0)
+result = fq.run(circuit)
+fq.save("statevector_only.fqx", result.plan, result=result)
+`,
+  );
+  expect(vectorRun.status).toBe("completed");
+  const vectorRecord = await savedRecord(page, vectorRun);
+  await page.getByRole("button", { name: "JOBS", exact: true }).click();
+  await page
+    .getByRole("button", {
+      name: "Open job " + vectorRecord.job.name,
+      exact: true,
+    })
+    .click();
+  const vectorResults = page.getByRole("region", {
+    name: "Job results",
+    exact: true,
+  });
+  await expect(vectorResults).toContainText("No counts distribution");
+  await vectorResults
+    .getByRole("button", { name: "Export results", exact: true })
+    .click();
+  await expect(
+    vectorResults.getByRole("button", {
+      name: "CSV · selected measurement",
+      exact: true,
+    }),
+  ).toBeDisabled();
+  await expect(
+    vectorResults.getByRole("group", { name: "Export formats", exact: true }),
+  ).toContainText("Use JSON for the complete saved result");
+  const vectorDownload = page.waitForEvent("download");
+  await vectorResults
+    .getByRole("button", { name: "JSON", exact: true })
+    .click();
+  const downloadedVector = await vectorDownload;
+  const { readFile: readVector } = await import("node:fs/promises");
+  expect(
+    JSON.parse(await readVector(await downloadedVector.path(), "utf8")).id,
+  ).toBe(vectorRecord.job.id);
 });
 
 test("preview outage recovers same-name files without rerun; corrupt file stays separate", async ({
@@ -1805,11 +2063,157 @@ test("comparison task opens a durable side-by-side experiment with real gate and
   expect(a.job.result.shots).not.toBe(b.job.result.shots);
   expect(Object.keys(a.job.result.counts).sort()).toEqual(["00", "11"]);
   expect(Object.keys(b.job.result.counts).sort()).toEqual(["01", "10"]);
+  const worked = page.locator(".fq-agent-work > summary");
+  await expect(worked).toBeVisible();
+  await worked.click();
+  const waitCard = page
+    .locator('.fq-cli-tool[aria-label="workbench_wait_run tool call"]')
+    .last();
+  await expect(waitCard.locator(".fq-activity-header strong")).toHaveText(
+    "Wait for result",
+  );
+  await expect(waitCard.locator(".fq-activity-meta")).toContainText(
+    "Results ready",
+  );
+  await waitCard.locator(".fq-activity-header").click();
+  const raw = waitCard.locator(".fq-activity-details details").filter({
+    has: page.locator("summary").filter({ hasText: /^Raw result$/ }),
+  });
+  await raw.locator("summary").click();
+  await expect(raw.locator("pre")).toContainText(a.program.origin.run_id);
+  await expect(raw.locator("pre")).toContainText(a.program.origin.source_hash);
+  await raw.locator("summary").click();
+  await waitCard.locator(".fq-activity-header").click();
+  await expect
+    .poll(() =>
+      waitCard
+        .locator(".fq-activity-header")
+        .evaluate((element) => element.scrollWidth <= element.clientWidth + 1),
+    )
+    .toBe(true);
+  await waitCard.scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: testInfo.outputPath("workbench-status.png"),
+    fullPage: true,
+  });
+  await worked.click();
   await page.screenshot({
     path: testInfo.outputPath("experiment-comparison.png"),
     fullPage: true,
   });
+  const collectionRunPath = "**/api/python/runs/" + a.program.origin.run_id;
+  const savedRun = await get(
+    page,
+    "/api/python/runs/" + a.program.origin.run_id,
+  );
+  let collectionPhase = "collecting";
+  let failedComparisonReads = 0,
+    readFaultUntil = 0;
+  await page.route("**/api/experiments", (route) => {
+    if (!readFaultUntil) readFaultUntil = Date.now() + 75;
+    if (Date.now() < readFaultUntil) {
+      failedComparisonReads++;
+      return route.abort("connectionreset");
+    }
+    return route.continue();
+  });
+  await page.route(collectionRunPath, (route) => {
+    if (collectionPhase === "offline")
+      return route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Acceptance connection outage" }),
+      });
+    return route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(
+        collectionPhase === "collecting"
+          ? {
+              ...savedRun,
+              collection_status: "collecting",
+              experiments: [],
+              artifact: undefined,
+            }
+          : savedRun,
+      ),
+    });
+  });
   await page.reload();
+  const experimentActivity = page.locator(".fq-experiment-activity").last();
+  await experimentActivity.locator("summary").first().click();
+  const pythonActivity = experimentActivity
+    .locator(".fq-workspace-artifact")
+    .filter({
+      has: page.locator("strong").filter({ hasText: /^Python execution$/ }),
+    })
+    .first();
+  await expect(
+    pythonActivity.getByRole("status", {
+      name: "Python activity status",
+      exact: true,
+    }),
+  ).toHaveText("Collecting results…");
+  collectionPhase = "offline";
+  await expect(
+    pythonActivity.getByRole("status", {
+      name: "Python activity status",
+      exact: true,
+    }),
+  ).toHaveText("Reconnecting…");
+  await expect(pythonActivity).toContainText("no new run will be submitted");
+  collectionPhase = "ready";
+  await expect(
+    pythonActivity.getByRole("status", {
+      name: "Python activity status",
+      exact: true,
+    }),
+  ).toHaveText("Results ready");
+  await expect(
+    pythonActivity
+      .getByRole("button", { name: "Open circuit ↗", exact: true })
+      .first(),
+  ).toBeVisible();
+  await pythonActivity.scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: testInfo.outputPath("collection-recovered.png"),
+    fullPage: true,
+  });
+  expect(
+    (await get(page, "/api/python/runs")).filter(
+      (run) => run.id === savedRun.id,
+    ),
+  ).toHaveLength(1);
+  await page.unroute(collectionRunPath);
+  const pageChanges = experimentActivity.locator(".fq-page-changes");
+  await expect(pageChanges.locator("summary")).toHaveText("Page changes · 2");
+  await expect(
+    pageChanges.getByRole("button", { includeHidden: true }),
+  ).toHaveCount(2);
+  await expect(pageChanges.getByRole("button").first()).not.toBeVisible();
+  await pageChanges.locator("summary").click();
+  await expect(
+    pageChanges.getByRole("button", { name: "Open Quantum view", exact: true }),
+  ).toBeVisible();
+  await expect(
+    pageChanges.getByRole("button", { name: "Open Results view", exact: true }),
+  ).toBeVisible();
+  await pageChanges.locator("summary").click();
+  await expect(
+    experimentActivity.locator(".fq-workspace-artifact"),
+  ).toHaveCount(3);
+  await expect(experimentActivity).toContainText("Results compared");
+  await expect(
+    experimentActivity.getByRole("button", {
+      name: "Open comparison ↗",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await experimentActivity.scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: testInfo.outputPath("activity-hierarchy.png"),
+    fullPage: true,
+  });
   await expect(comparison).toBeVisible();
   await expect(
     comparison.getByRole("combobox", {
@@ -1823,6 +2227,11 @@ test("comparison task opens a durable side-by-side experiment with real gate and
       exact: true,
     }),
   ).toHaveValue(right);
+  expect(failedComparisonReads).toBeGreaterThan(0);
+  await expect(
+    comparison.getByRole("button", { name: "Retry comparison", exact: true }),
+  ).toHaveCount(0);
+  await page.unroute("**/api/experiments");
   await expect(
     page.getByRole("region", { name: "Experiment progress" }),
   ).toContainText("2 saved results");
@@ -1839,6 +2248,55 @@ test("comparison task opens a durable side-by-side experiment with real gate and
     .getByRole("button", { name: "Single result", exact: true })
     .click();
   await expect(comparison).toHaveCount(0);
+  const savedEntry = pythonActivity
+    .locator(".fq-python-activity-experiments section")
+    .filter({ hasText: a.program.experiment.filename })
+    .first();
+  await savedEntry
+    .getByRole("button", { name: "Open circuit ↗", exact: true })
+    .click();
+  await expect(page).toHaveURL(/#program$/);
+  await expect(page.locator(".fq-visualizer")).toContainText(a.program.name);
+  await savedEntry
+    .getByRole("button", { name: "View results ↗", exact: true })
+    .click();
+  await expect(page).toHaveURL(/#jobs$/);
+  await expect(await showJobEvidence(page)).toContainText(a.id);
+  // Opening the exact historical run is inspection, including after a failed read.
+  await page.locator(".fq-agent-work > summary").click();
+  const outputLink = page
+    .locator('.fq-cli-tool[aria-label="workbench_wait_run tool call"]')
+    .last()
+    .getByRole("button", { name: "View Python output ↗", exact: true });
+  const runPath = "**/api/python/runs/" + a.program.origin.run_id;
+  await page.route(runPath, (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ error: "Acceptance read outage" }),
+    }),
+  );
+  await outputLink.click();
+  await expect(
+    page.getByRole("alert").filter({ hasText: "Could not open this run" }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/#jobs$/);
+  await page.unroute(runPath);
+  const runsBeforeInspection = await get(page, "/api/python/runs");
+  await outputLink.click();
+  await expect(
+    page.getByRole("region", { name: "Python output", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("combobox", { name: "Python run history", exact: true }),
+  ).toHaveValue(a.program.origin.run_id);
+  expect((await get(page, "/api/python/runs")).map((run) => run.id)).toEqual(
+    runsBeforeInspection.map((run) => run.id),
+  );
+  await page.reload();
+  await expect(
+    page.getByRole("combobox", { name: "Python run history", exact: true }),
+  ).toHaveValue(a.program.origin.run_id);
   await page.getByRole("button", { name: "MODEL", exact: true }).click();
   await page
     .getByRole("button", { name: "Show model library", exact: true })
@@ -2283,6 +2741,88 @@ for i in range(600):
     await expect(status).toHaveText("Running…");
     const logs = output.getByLabel("Python console output", { exact: true });
     await expect(logs).toContainText("line 499");
+    const activeRunId = await page
+      .getByLabel("Python run history")
+      .inputValue();
+    const activeReadPath = "**/api/python/runs/" + activeRunId;
+    let readOffline = true,
+      statusReads = 0;
+    await page.route(activeReadPath, (route) => {
+      statusReads++;
+      return readOffline
+        ? route.fulfill({
+            status: 503,
+            contentType: "application/json",
+            body: JSON.stringify({ error: "Acceptance read outage" }),
+          })
+        : route.continue();
+    });
+    await expect(status).toHaveText("Reconnecting…");
+    await expect(logs).toContainText("line 499");
+    await expect(editor(page)).toHaveValue(slow);
+    await logs.evaluate((element) => {
+      element.scrollTop = 0;
+      element.dispatchEvent(new Event("scroll"));
+    });
+    const copyOutput = output.getByRole("button", {
+      name: "Copy Python output",
+      exact: true,
+    });
+    const copiedText = await logs.textContent();
+    await page
+      .context()
+      .grantPermissions(["clipboard-read", "clipboard-write"]);
+    await copyOutput.click();
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+      .toBe(copiedText);
+    await expect
+      .poll(() => logs.evaluate((element) => element.scrollTop))
+      .toBe(0);
+    await page.evaluate(() => {
+      window.originalConsoleCopy = navigator.clipboard.writeText.bind(
+        navigator.clipboard,
+      );
+      navigator.clipboard.writeText = async () => {
+        throw new Error("Clipboard denied");
+      };
+    });
+    await copyOutput.click();
+    await expect(
+      output.getByRole("alert").filter({ hasText: "Cannot copy output" }),
+    ).toBeVisible();
+    await page.evaluate(() => {
+      navigator.clipboard.writeText = window.originalConsoleCopy;
+    });
+    await copyOutput.click();
+    await expect(
+      output.getByRole("alert").filter({ hasText: "Cannot copy output" }),
+    ).toHaveCount(0);
+    await output.screenshot({
+      path: testInfo.outputPath("python-reconnecting.png"),
+    });
+    readOffline = false;
+    await expect(status).toHaveText("Running…");
+    const rejectedStop = "**/api/python/runs/*/cancel";
+    await page.route(rejectedStop, (route) =>
+      route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Acceptance stop rejected" }),
+      }),
+    );
+    await output.getByRole("button", { name: "Stop", exact: true }).click();
+    const stopError = output
+      .getByRole("alert")
+      .filter({ hasText: "Acceptance stop rejected" });
+    await expect(stopError).toBeVisible();
+    const readsAfterRejection = statusReads;
+    await expect
+      .poll(() => statusReads)
+      .toBeGreaterThan(readsAfterRejection + 1);
+    await expect(stopError).toBeVisible();
+    await expect(status).toHaveText("Running…");
+    await page.unroute(rejectedStop);
     await logs.evaluate((element) => {
       element.scrollTop = 0;
       element.dispatchEvent(new Event("scroll"));
@@ -2305,6 +2845,7 @@ for i in range(600):
       output.getByRole("button", { name: "Stopping…", exact: true }),
     ).toBeDisabled();
     await expect(status).toHaveText("Stopping…");
+    await expect(stopError).toHaveCount(0);
     await output.screenshot({
       path: testInfo.outputPath("python-stopping.png"),
     });
@@ -2312,8 +2853,24 @@ for i in range(600):
     stop.release();
     await expect(status).toHaveText("Stopped");
     await expect(editor(page)).toHaveValue(slow);
+    let pendingHistoryRead = 0;
     await page.route("**/api/python/runs/" + baseline.id, async (route) => {
       await history.promise;
+      if (pendingHistoryRead < 2) {
+        const collecting = pendingHistoryRead++ === 1;
+        return route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            ...baseline,
+            status: collecting ? "running" : "completed",
+            execution_status: "completed",
+            collection_status: collecting ? "collecting" : "pending",
+            experiments: [],
+            artifact: undefined,
+          }),
+        });
+      }
       await route.continue();
     });
     await page.getByLabel("Python run history").selectOption(baseline.id);
@@ -2325,7 +2882,9 @@ for i in range(600):
       baseline.id,
     );
     await expect(logs).toContainText("Loading the selected run");
+    await expect(copyOutput).toBeDisabled();
     history.release();
+    await expect(status).toHaveText("Collecting results…");
     await expect(status).toHaveText("Completed");
     await page.getByRole("button", { name: "JOBS", exact: true }).click();
     await page
