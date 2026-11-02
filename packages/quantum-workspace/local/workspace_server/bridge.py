@@ -65,7 +65,7 @@ class WorkspaceBridge:
                 if len(self.contexts) >= 64: raise BridgeConflict('Too many active workbench clients.')
             self.contexts[client] = value
         return {'ready': True, 'source_hash': value['source_hash'], 'backend': self.service.health(),
-                'adapter_path': str(Path(__file__).resolve().parents[2] / 'workbench.py')}
+                'adapter_path': str(self.root / 'packages/quantum-workspace/workbench.py' if (self.root / 'packages/quantum-workspace/workbench.py').is_file() else Path(__file__).resolve().parents[2] / 'workbench.py')}
 
     @staticmethod
     def identity(data):

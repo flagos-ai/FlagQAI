@@ -101,7 +101,7 @@ def supervise():
         emit({'type':'runtime', 'python':sys.version.split()[0], 'cwd':str(root)})
         # Observe the actual SDK imported by the script without requiring it for
         # ordinary Python tasks or changing the user's source file.
-        driver = """import runpy,sys,json
+        driver = RUNTIME_MANIFEST_CODE + "\n" + """import runpy,sys,json
 from pathlib import Path
 try:
     sys.path.insert(0, str(Path(sys.argv[1]).resolve().parent))
@@ -112,8 +112,8 @@ finally:
         import os
         fd = os.open('.runtime.json', os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW | os.O_NONBLOCK, 0o600)
         with os.fdopen(fd, 'w') as stream:
-            json.dump({'sdk_version': getattr(fq, '__version__', None), 'save_load_supported': bool(fq and 'save' in getattr(fq, '__all__', ()) and 'load' in getattr(fq, '__all__', ()))}, stream)
-    except OSError: pass
+            json.dump(runtime_manifest(fq), stream)
+    except Exception: pass
 """
         process = subprocess.Popen([sys.executable, '-u', '-c', driver, entry], cwd=root,
             stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -149,14 +149,14 @@ finally:
         for pipe in (process.stdout, process.stderr): pipe.close()
         elapsed = round(time.monotonic() - started, 3)
         runtime = root / '.runtime.json'
-        if not runtime.is_symlink() and runtime.is_file() and runtime.stat().st_size < 4096:
+        if not runtime.is_symlink() and runtime.is_file() and runtime.stat().st_size < 65536:
             try:
                 facts = json.loads(runtime.read_text())
                 if isinstance(facts, dict):
                     version = facts.get('sdk_version')
                     emit({'type': 'runtime', 'python': sys.version.split()[0], 'cwd': str(root),
                           'sdk_version': version[:64] if isinstance(version, str) else None,
-                          'save_load_supported': facts.get('save_load_supported') is True})
+                          'save_load_supported': facts.get('save_load_supported') is True, 'environment_manifest': facts})
             except (ValueError, OSError): pass
         if not reason:
             try: collect_experiments(root, emit)

@@ -14,12 +14,16 @@ from .history_preferences import history_trash
 from .bridge import WorkspaceBridge, BridgeConflict
 from .python_runs import PythonRuns
 from .experiments import ExperimentImports, MAX_UPLOAD_BYTES
+from .research_packages import ResearchPackages, MAX_PACKAGE
+from .reproduction import Reproductions
 from .projects import ProjectConflict
 
 
 def create_server(settings, service):
     experiments = ExperimentImports(settings)
     python_runs = PythonRuns(settings, service, experiments)
+    research_packages = ResearchPackages(settings, experiments, python_runs)
+    reproductions = Reproductions(settings, research_packages, python_runs, experiments)
     bridge = WorkspaceBridge(settings, service, python_runs)
     class WorkspaceHandler(SimpleHTTPRequestHandler):
         def __init__(self, *args, **kwargs):
@@ -174,6 +178,16 @@ def create_server(settings, service):
                     return self.reply(python_runs.projects.tree(match.group(1)))
                 except ProjectConflict as error: return self.reply({'error': str(error)}, 409)
                 except (ValueError, OSError) as error: return self.reply({'error': str(error)}, 400)
+            verification = re.fullmatch(r'/api/reproduction/(verify-[a-f0-9]{32})', self.path)
+            if verification:
+                try: return self.reply(reproductions.get(verification.group(1)))
+                except (ValueError, TypeError, KeyError, OSError) as error: return self.reply({'error': str(error)}, 400)
+            if self.path == '/api/research':
+                return self.reply(research_packages.records())
+            research_match = re.fullmatch(r'/api/research/(research-[a-f0-9]{32})', self.path)
+            if research_match:
+                record = research_packages.get(research_match.group(1))
+                return self.reply(record or {'error': 'Imported research not found.'}, 200 if record else 404)
             if self.path == '/api/experiments':
                 return self.reply(experiments.records())
             record_match = re.fullmatch(r'/api/experiments/(fqx-[a-f0-9]{32})', self.path)
@@ -295,6 +309,38 @@ def create_server(settings, service):
                 return self.history_preferences(True)
             if self.path.startswith('/v1/'):
                 return self.agent_proxy('POST')
+            if self.path in ('/api/reproduction/check', '/api/reproduction/start', '/api/reproduction/list'):
+                try:
+                    length = int(self.headers.get('Content-Length', '0'))
+                    if self.headers.get('Content-Type', '').split(';')[0] != 'application/json' or not 0 < length <= 4096: raise ValueError('Use a bounded JSON request.')
+                    request = json.loads(self.rfile.read(length))
+                    if not isinstance(request, dict): raise ValueError('Use a JSON object.')
+                    if self.path.endswith('/check'): return self.reply(reproductions.check(request))
+                    if self.path.endswith('/list'): return self.reply(reproductions.list(request))
+                    return self.reply(reproductions.start(request.get('id')), 202)
+                except (ValueError, TypeError, KeyError, OSError, RuntimeError) as error: return self.reply({'error': str(error)}, 400)
+            if self.path in ('/api/research/import', '/api/research/export'):
+                try:
+                    length = int(self.headers.get('Content-Length', '0'))
+                    limit = MAX_PACKAGE if self.path.endswith('/import') else 8 * 1024 * 1024
+                    if not 0 < length <= limit: raise ValueError('Research request is too large or empty.')
+                    raw = self.rfile.read(length)
+                    if self.path.endswith('/import'):
+                        if self.headers.get('Content-Type', '').split(';')[0] != 'application/zip': raise ValueError('Use a research ZIP file.')
+                        return self.reply(research_packages.import_package(raw, unquote(self.headers.get('X-Filename', 'research.zip'))), 201)
+                    if self.headers.get('Content-Type', '').split(';')[0] != 'application/json': raise ValueError('Use application/json.')
+                    request = json.loads(raw)
+                    if not isinstance(request, dict): raise ValueError('Use a JSON object.')
+                    content = research_packages.export(request)
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/zip')
+                    self.send_header('Content-Disposition', 'attachment; filename="qaoa-research.zip"')
+                    self.send_header('Content-Length', str(len(content)))
+                    self.end_headers()
+                    self.wfile.write(content)
+                    return
+                except (ValueError, TypeError, OSError, KeyError) as error:
+                    return self.reply({'error': str(error)}, 400)
             if self.path == '/api/editor/files':
                 if self.headers.get('Content-Type', '').split(';')[0] != 'application/json':
                     return self.reply({'error': 'Use application/json.'}, 415)

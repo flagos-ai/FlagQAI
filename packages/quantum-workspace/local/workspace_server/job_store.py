@@ -25,12 +25,17 @@ class SQLiteJobStore:
         with self.lock, closing(sqlite3.connect(self.path)) as db, db:
             db.execute('INSERT OR REPLACE INTO jobs VALUES (?,?)', (job['id'], json.dumps(job)))
 
-    def list(self):
+    def list(self, limit=100):
         with self.lock, closing(sqlite3.connect(self.path)) as db, db:
-            rows = db.execute('SELECT payload FROM jobs ORDER BY rowid DESC LIMIT 100')
+            query = 'SELECT payload FROM jobs ORDER BY rowid DESC'
+            rows = db.execute(query if limit is None else query + ' LIMIT ?', () if limit is None else (limit,))
             return [json.loads(row[0]) for row in rows]
 
     def get(self, job_id):
         with self.lock, closing(sqlite3.connect(self.path)) as db, db:
             row = db.execute('SELECT payload FROM jobs WHERE id=?', (job_id,)).fetchone()
             return json.loads(row[0]) if row else None
+
+    def delete(self, job_id):
+        with self.lock, closing(sqlite3.connect(self.path)) as db, db:
+            db.execute('DELETE FROM jobs WHERE id=?', (job_id,))
