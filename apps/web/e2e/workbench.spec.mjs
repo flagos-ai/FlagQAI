@@ -4758,6 +4758,10 @@ test("Execution backend uses service metadata and preserves folded limits and ma
 test("QAOA Max-Cut reference: scripted Agent orchestration, real optimization, comparison and reproducible archives", async ({
   page,
 }, testInfo) => {
+  // This journey performs multiple real SDK runs and independent replays.
+  // Keep individual operation deadlines and zero retries; allow enough total
+  // time for the full provenance workflow on shared CI runners.
+  testInfo.setTimeout(240000);
   const { qaoaTaskPrompt, qaoaTaskName, qaoaSource } =
     await import("../src/tasks/qaoa-maxcut.mjs");
   const previousRuns = new Set(
