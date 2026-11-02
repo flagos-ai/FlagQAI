@@ -38,6 +38,13 @@ class PythonRuns:
         self.experiments = experiments or ExperimentImports(settings)
         self.store = SQLiteJobStore(settings.database_path.with_suffix('.python.sqlite3'))
         self.store.initialize()
+        # No worker survives this service instance. Settle interrupted collection
+        # without rerunning code or discarding known execution facts and logs.
+        for run in self.store.list(limit=None):
+            if run['status'] == 'failed' and run.get('collection_status') in ('pending', 'collecting'):
+                run['collection_status'] = 'failed'
+                collection_error(run, '', 'Service restarted before artifact collection completed. No task was resubmitted.')
+                self.store.put(run)
         self.pool = ThreadPoolExecutor(max_workers=1)
         self.lock = threading.RLock()
         self.active = {}
@@ -144,8 +151,8 @@ class PythonRuns:
                 self.store.put(run)
             with self.lock: self.recollecting.discard(run_id)
 
-    def command(self):
-        worker = (Path(__file__).parent/'python_worker.py').read_text()
+    def command(self, worker=None):
+        worker = worker or ('RUNTIME_MANIFEST_CODE = ' + repr((Path(__file__).parent/'runtime_facts.py').read_text()) + '\n' + (Path(__file__).parent/'python_worker.py').read_text())
         if self.settings.compute_transport == 'local':
             return [self.settings.local_python or sys.executable, '-u', '-c', worker]
         if not self.settings.ssh_target: raise RuntimeError('Configure the SSH CPU target before running Python.')
