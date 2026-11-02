@@ -19,10 +19,10 @@ export type Verification = {
   run_id?: string;
   configured_environment: PythonRun["environment"];
   runtime: {
-    python: string;
-    sdk_version: string;
-    pytorch: string;
-    cuda_available: boolean;
+    python?: string;
+    sdk_version?: string;
+    pytorch?: string;
+    cuda_available?: boolean;
   };
   reproduced_runtime?: PythonRun["runtime"];
   producer_versions: string[];

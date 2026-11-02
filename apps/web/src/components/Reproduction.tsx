@@ -138,9 +138,12 @@ export function Reproduction({
               {archive ? "Recorded verification runtime" : "Configured runtime"}
             </dt>
             <dd>
-              SDK {record.runtime.sdk_version || "missing"} · Python{" "}
-              {record.runtime.python} · PyTorch{" "}
-              {record.runtime.pytorch || "missing"}
+              SDK{" "}
+              {record.runtime.sdk_version ||
+                (record.error ? "unavailable" : "missing")}{" "}
+              · Python {record.runtime.python || "unavailable"} · PyTorch{" "}
+              {record.runtime.pytorch ||
+                (record.error ? "unavailable" : "missing")}
             </dd>
             <dt>{archive ? "Recorded compute" : "Compute"}</dt>
             <dd>

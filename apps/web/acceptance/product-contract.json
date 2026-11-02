@@ -36,7 +36,8 @@
         "QAOA Max-Cut reference: scripted Agent orchestration, real optimization, comparison and reproducible archives",
         "reviewed Agent snapshots save independently, reject stale validation and run exact merged code with undo and failure history",
         "reviewed OpenQASM compilation uses the accepted snapshot instead of the previous draft",
-        "five-cycle user journey: reviewed parameters, offline recovery and independent delivery retain drafts"
+        "five-cycle user journey: reviewed parameters, offline recovery and independent delivery retain drafts",
+        "weighted Max-Cut user journey: review, reconnect and independent reproduction preserve drafts"
       ]
     },
     {

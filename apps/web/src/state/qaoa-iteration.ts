@@ -71,7 +71,7 @@ Read the baseline code with workbench python.read --run-id and its artifact with
 Requested QAOA layers p=${layers}, shots=${shots}, seed=${seed}. Keep the same graph and CPU/PyTorch runtime, no backend fallback. Optimize the new circuit with a bounded search; state search limits and parameter sharing, without claiming a global optimum. Compare against the previous optimized archive, not just uniform superposition. Report actual cut expectation, sampled optimum rate, compiled depth, gate count and total Python compute time; report regressions honestly.
 Include this exact lineage comment once in the new Python source:
 ${iterationPrefix}${JSON.stringify(ref)}
-Save a new run's results as 01-maxcut-baseline.fqx, 02-maxcut-qaoa.fqx and 03-maxcut-replay.fqx. Keep EDGES as a literal list/tuple of integer pairs for the outcome summary. Run the real SDK and check archive replay with the recorded seed; never fabricate results. Preserve failures and do not rerun the baseline. Present the new circuit and compare the previous optimized archive with the new optimized archive. Do not silently change the requested settings.`;
+Save a new run's results as 01-maxcut-baseline.fqx, 02-maxcut-qaoa.fqx and 03-maxcut-replay.fqx. Keep EDGES as the same literal list/tuple of integer vertex pairs or (u, v, positive_weight) triples for the outcome summary; preserve every edge weight. Run the real SDK and check archive replay with the recorded seed; never fabricate results. Preserve failures and do not rerun the baseline. Present the new circuit and compare the previous optimized archive with the new optimized archive. Do not silently change the requested settings.`;
 }
 export function compareQaoaVersions(
   ref: QaoaIteration,

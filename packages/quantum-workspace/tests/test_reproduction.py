@@ -1,5 +1,6 @@
 """Reproduction comparison and durable explicit-submission contracts."""
 import copy
+import subprocess
 from hashlib import sha256
 from pathlib import Path
 import sys
@@ -8,7 +9,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'local'))
-from workspace_server.reproduction import Reproductions, compare_runs
+from workspace_server.reproduction import Reproductions, compare_runs, qaoa_metrics
 from workspace_server.config import WorkspaceSettings
 
 
@@ -53,6 +54,43 @@ class ReproductionTest(unittest.TestCase):
                 self.assertEqual(len(restored.store.list()), 1)
             finally:
                 restored.close()
+
+    def test_weighted_metrics_use_saved_weights_and_reject_invalid_graphs(self):
+        _, _, expected, _ = fixture()
+        record = next(iter(expected.values()))
+        metrics = qaoa_metrics('EDGES = [(0, 1, 12.5)]\n', record)
+        self.assertEqual(metrics['classical_optimum'], 12.5)
+        self.assertEqual(metrics['expected_cut'], 12.5)
+        self.assertEqual(metrics['optimal_sample_rate'], 1)
+        for graph in ('[(0,1,0)]', '[(0,1,-1)]', '[(0,1,True)]', '[(0,1,1e309)]',
+                      '[(0,0,2)]', '[(0,1),(1,0,2)]', '[(0,2,2)]', '[(0.0,1,2)]'):
+            with self.subTest(graph=graph):
+                self.assertIsNone(qaoa_metrics('EDGES = ' + graph, record))
+
+    def test_unavailable_probe_is_a_durable_blocker_and_never_submits(self):
+        for mode in ('missing', 'permission', 'timeout', 'exit', 'metadata'):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as directory:
+                settings = WorkspaceSettings(Path(directory), Path(directory) / 'jobs.sqlite3')
+                runs = Mock(); runs.environment.return_value = {'transport': 'local', 'python': '/missing/python'}
+                service = Reproductions(settings, None, runs, None)
+                old, _, records, _ = fixture()
+                process = Mock(); process.returncode = 0
+                process.communicate.return_value = ('[]' if mode == 'metadata' else '{}', 'private stderr')
+                if mode == 'exit': process.returncode = 1
+                if mode == 'timeout': process.communicate.side_effect = [subprocess.TimeoutExpired('probe', 25), ('', '')]
+                problem = FileNotFoundError() if mode == 'missing' else PermissionError() if mode == 'permission' else None
+                with patch.object(service, 'original', return_value=(old, records)), patch('workspace_server.reproduction.subprocess.Popen', return_value=process, side_effect=problem), patch('workspace_server.reproduction.os.killpg'):
+                    saved = service.check({'run_id': old['id']})
+                self.assertEqual(saved['status'], 'blocked')
+                self.assertTrue(saved['error'])
+                self.assertNotIn('private stderr', saved['error'])
+                self.assertEqual(saved['runtime'], {})
+                self.assertTrue(all(d['state'] == 'unchecked' for d in saved['preparation']['dependencies']))
+                self.assertIn('python3 -m venv', saved['preparation']['commands'])
+                self.assertFalse(saved['preparation']['installation_performed'])
+                self.assertEqual(service.start(saved['id'])['status'], 'blocked')
+                self.assertEqual(Reproductions(settings, None, runs, None).get(saved['id'])['source_hash'], old['source_hash'])
+                runs.submit.assert_not_called()
 
     def test_exact_tolerance_count_difference_and_metrics(self):
         old, new, a, b = fixture()

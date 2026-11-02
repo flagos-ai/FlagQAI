@@ -11,32 +11,64 @@ export const qaoaFiles = [
 ];
 
 // Only literal graph data is supported. Never execute or evaluate Python source.
-function graphFromSource(source: string) {
-  const literal = source.match(/^EDGES\s*=\s*([\[(][^\n]+[\])])\s*$/m)?.[1];
-  if (!literal || !/^[\s\d,()[\]]+$/.test(literal))
-    throw Error("The saved source has no supported literal Max-Cut graph.");
-  const edges: number[][] = JSON.parse(
-    literal.replaceAll("(", "[").replaceAll(")", "]"),
-  );
-  const n = Math.max(...edges.flat()) + 1;
-  if (
-    !edges.length ||
-    n < 2 ||
-    n > 12 ||
-    edges.some(
-      (e) =>
-        !Array.isArray(e) ||
-        e.length !== 2 ||
-        e.some((q) => !Number.isSafeInteger(q) || q < 0) ||
-        e[0] === e[1],
-    ) ||
-    new Set(edges.map((e) => [...e].sort((a, b) => a - b).join(","))).size !==
-      edges.length
-  )
-    throw Error(
-      "The saved Max-Cut graph is invalid or too large for a summary.",
+export function graphFromSource(source: string) {
+  const literals = [
+    ...source.matchAll(/^EDGES\s*=\s*([\[(][^\n]+[\])])\s*$/gm),
+  ];
+  const literal =
+    literals.length === 1 && [...source.matchAll(/^EDGES\s*=/gm)].length === 1
+      ? literals[0][1]
+      : "";
+  const invalid = () =>
+    Error(
+      "Use one literal Max-Cut graph with distinct integer vertex pairs and optional finite positive weights.",
     );
-  return { n, edges };
+  if (
+    !literal ||
+    ({ "[": "]", "(": ")" } as Record<string, string>)[literal[0]] !==
+      literal.at(-1)
+  )
+    throw invalid();
+  const body = literal.slice(1, -1);
+  const rows = [
+    ...body.matchAll(
+      /[\[(]\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?))?\s*[\])]/g,
+    ),
+  ];
+  let end = 0;
+  const edges = rows.map((row, i) => {
+    if (
+      !(i ? /^\s*,\s*$/ : /^\s*$/).test(body.slice(end, row.index)) ||
+      ({ "[": "]", "(": ")" } as Record<string, string>)[row[0][0]] !==
+        row[0].at(-1)
+    )
+      throw invalid();
+    end = row.index! + row[0].length;
+    return [
+      Number(row[1]),
+      Number(row[2]),
+      row[3] === undefined ? 1 : Number(row[3]),
+    ];
+  });
+  if (
+    !/^\s*,?\s*$/.test(body.slice(end)) ||
+    !edges.length ||
+    edges.some(
+      ([u, v, w]) =>
+        !Number.isSafeInteger(u) ||
+        !Number.isSafeInteger(v) ||
+        u === v ||
+        !Number.isFinite(w) ||
+        w <= 0,
+    ) ||
+    !Number.isFinite(edges.reduce((sum, e) => sum + e[2], 0)) ||
+    new Set(edges.map(([u, v]) => [Math.min(u, v), Math.max(u, v)].join(",")))
+      .size !== edges.length
+  )
+    throw invalid();
+  const n = Math.max(...edges.flatMap(([u, v]) => [u, v])) + 1;
+  if (n < 2 || n > 12) throw invalid();
+  return { n, edges, weighted: edges.some((e) => e[2] !== 1) };
 }
 function measurement(record: ExperimentImport, kind: string, n: number) {
   const matches = record.program.experiment!.measurements.filter(
@@ -139,12 +171,15 @@ export async function qaoaOutcome(run: PythonRun, records: ExperimentImport[]) {
       );
     return record;
   });
-  const { n, edges } = graphFromSource(run.source);
+  const { n, edges, weighted } = graphFromSource(run.source);
   if (ordered.some((r) => r.program.compiled.qubits !== n))
     throw Error("Graph and saved circuit sizes differ.");
   const costs = Array.from({ length: 2 ** n }, (_, i) => {
     const bits = i.toString(2).padStart(n, "0");
-    return edges.reduce((sum, [u, v]) => sum + Number(bits[u] !== bits[v]), 0);
+    return edges.reduce(
+      (sum, [u, v, w]) => sum + w * Number(bits[u] !== bits[v]),
+      0,
+    );
   });
   const optimum = Math.max(...costs);
   const data = ordered.map((record) => {
@@ -206,9 +241,10 @@ export async function qaoaOutcome(run: PythonRun, records: ExperimentImport[]) {
     probabilityDelta,
     n,
     edges: edges.length,
+    weighted,
     graph: JSON.stringify(
       edges
-        .map((e) => [...e].sort((a, b) => a - b))
+        .map(([u, v, w]) => [Math.min(u, v), Math.max(u, v), w])
         .sort((a, b) => a[0] - b[0] || a[1] - b[1]),
     ),
     optimum,
