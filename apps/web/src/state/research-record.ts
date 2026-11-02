@@ -32,6 +32,9 @@ export type ResearchAdoption = {
   reason: string;
 };
 type Readers = {
+  // Archived versions can be created by explicit review after the Agent turn.
+  // Discover them through verified lineage, without inventing chat ownership.
+  runIds?: string[];
   run: (id: string) => Promise<PythonRun>;
   experiment: (id: string) => Promise<ExperimentImport>;
 };
@@ -119,6 +122,7 @@ export async function loadResearchRecord(
   const allIds = [
       ...new Set([
         ...chain,
+        ...(readers.runIds || []),
         ...turns.flatMap((t) => [...t.runs, ...(t.candidates || [])]),
       ]),
     ],

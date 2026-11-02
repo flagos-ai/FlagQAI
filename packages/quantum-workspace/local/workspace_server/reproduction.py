@@ -89,7 +89,7 @@ def comparable(record):
 def qaoa_metrics(source, record):
     """Only inspect a literal graph; never evaluate user source."""
     try:
-        assignments = [n for n in ast.parse(source).body if isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id == 'EDGES' for t in n.targets)]
+        assignments = [n for n in ast.parse(source).body if (isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id == 'EDGES' for t in n.targets)) or (isinstance(n, ast.AnnAssign) and n.value is not None and isinstance(n.target, ast.Name) and n.target.id == 'EDGES')]
         if len(assignments) != 1: return None
         edges = ast.literal_eval(assignments[0].value)
         n = record['program']['compiled']['qubits']

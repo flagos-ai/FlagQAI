@@ -65,6 +65,7 @@ export function ResearchRecord({
     setAdopted(null);
     setStorageNote("");
     void loadResearchRecord(runId, turns, {
+      runIds: imported ? Object.keys(imported.runs) : undefined,
       run: async (id) =>
         imported
           ? (imported.runs[id] ??

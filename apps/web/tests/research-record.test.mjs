@@ -233,3 +233,39 @@ test("large conversation snapshots are bounded and disclose omitted history", as
   assert.ok(record.entries.length <= 64);
   assert.ok(record.notices.some((n) => n.includes("64")));
 });
+
+test("archived reviewed versions restore by verified lineage without fabricated turn ownership", async () => {
+  const f = fixture();
+  const turns = [f.turns[0]];
+  const record = await loadResearchRecord("root", turns, {
+    ...f.readers,
+    runIds: [...f.runs.keys()],
+  });
+  assert.deepEqual(
+    record.entries.map((e) => e.id),
+    ["failed", "root", "child"],
+  );
+  const adopted = adoptionFor(
+    record.entries.find((e) => e.id === "child"),
+    "Reviewed separately",
+  );
+  assert.equal(validAdoption(record, adopted), true);
+  assert.deepEqual(
+    record.turns,
+    turns.map((turn) => ({ ...turn, candidates: undefined })),
+  );
+  const invalid = fixture();
+  invalid.child.source = invalid.child.source.replace(
+    invalid.root.source_hash,
+    "f".repeat(64),
+  );
+  const rejected = await loadResearchRecord("root", turns, {
+    ...invalid.readers,
+    runIds: [...invalid.runs.keys()],
+  });
+  assert.equal(
+    rejected.entries.some((e) => e.id === "child"),
+    false,
+  );
+  assert.equal(validAdoption(rejected, adopted), false);
+});

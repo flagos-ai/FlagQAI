@@ -62,6 +62,7 @@ class ReproductionTest(unittest.TestCase):
         self.assertEqual(metrics['classical_optimum'], 12.5)
         self.assertEqual(metrics['expected_cut'], 12.5)
         self.assertEqual(metrics['optimal_sample_rate'], 1)
+        self.assertEqual(qaoa_metrics('EDGES: list = [\n(0, 1, 12.5), # bracket ] in comment\n]\n', record), metrics)
         for graph in ('[(0,1,0)]', '[(0,1,-1)]', '[(0,1,True)]', '[(0,1,1e309)]',
                       '[(0,0,2)]', '[(0,1),(1,0,2)]', '[(0,2,2)]', '[(0.0,1,2)]'):
             with self.subTest(graph=graph):
