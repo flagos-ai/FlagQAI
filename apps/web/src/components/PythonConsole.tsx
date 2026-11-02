@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import type { PythonWorkspace } from "../hooks/usePythonWorkspace";
+import { ResearchRecord } from "./ResearchRecord";
+import type { PlatformBridge } from "../hooks/usePlatformBridge";
+import type { ResearchTurn } from "../state/research-record";
+import { qaoaFiles } from "../state/qaoa-outcome";
 import { UIIcon } from "./UIIcon";
 import {
   pythonRunFeedback,
@@ -21,6 +25,9 @@ export function PythonConsole({
   dispatch,
   onLocate,
   onRepair,
+  research,
+  compact = false,
+  onCompactChange,
 }: {
   python: PythonWorkspace;
   source: string;
@@ -28,12 +35,28 @@ export function PythonConsole({
   dispatch: React.Dispatch<WorkspaceAction>;
   onLocate: (line: number) => void;
   onRepair: (run: PythonRun) => Promise<void>;
+  research?: { turns: ResearchTurn[]; bridge: PlatformBridge };
+  compact?: boolean;
+  onCompactChange?: (compact: boolean) => void;
 }) {
   const { error } = python;
+  const [researchOpen, setResearchOpen] = useState(false);
   const run =
     !python.submitting && python.run?.id === python.selectedRunId
       ? python.run
       : undefined;
+  const researchAction =
+    run?.status === "completed" &&
+    run.collection_status === "completed" &&
+    research &&
+    qaoaFiles.every((name) =>
+      run.experiments?.some((file) => file.filename === name),
+    ) &&
+    !research.turns.some((turn) => turn.runs.includes(run.id)) ? (
+      <button className="link" onClick={() => setResearchOpen(true)}>
+        View research record
+      </button>
+    ) : null;
   const feedback = pythonRunFeedback({
     selectedId: python.selectedRunId,
     run: python.run,
@@ -100,7 +123,20 @@ export function PythonConsole({
   const freshness = run ? pythonResultFreshness(run, state) : undefined;
   const working = ["queued", "running"].includes(run?.status || "");
   return (
-    <section className="fq-python-console" aria-label="Python output">
+    <section
+      className={"fq-python-console" + (compact ? " is-compact" : "")}
+      aria-label="Python output"
+    >
+      {researchOpen && run && research && (
+        <ResearchRecord
+          runId={run.id}
+          turns={research.turns}
+          onClose={() => setResearchOpen(false)}
+          onCompare={research.bridge.compare}
+          onCircuit={research.bridge.openCircuit}
+          onInspect={research.bridge.inspectRun}
+        />
+      )}
       {failedSource && (
         <Modal
           className="fq-attachment-preview"
@@ -142,6 +178,34 @@ export function PythonConsole({
           <span>{feedback.label}</span>
         </span>
         <div className="fq-console-actions">
+          <button
+            className="fq-console-icon"
+            aria-label={python.importing ? "Importing…" : "Import .fqx"}
+            title={
+              python.importing ? "Importing…" : "Import saved .fqx experiment"
+            }
+            disabled={python.importing || python.recovering}
+            onClick={() => upload.current?.click()}
+          >
+            <UIIcon name="upload" size={14} />
+          </button>
+          {onCompactChange && (
+            <button
+              className="fq-console-icon"
+              aria-label={
+                compact ? "Expand Python output" : "Compact Python output"
+              }
+              title={
+                compact
+                  ? "Expand output and logs"
+                  : "Show a compact result summary"
+              }
+              aria-expanded={!compact}
+              onClick={() => onCompactChange(!compact)}
+            >
+              <UIIcon name={compact ? "expand" : "restore"} size={14} />
+            </button>
+          )}
           <button
             className="fq-console-icon"
             aria-label="Copy Python output"
@@ -293,6 +357,7 @@ export function PythonConsole({
                   : "Recorded from this run"}
               </small>
             </span>
+            {!compact && researchAction}
           </div>
           {run.experiments.map((reference) => (
             <div
@@ -348,13 +413,8 @@ export function PythonConsole({
           ))}
         </section>
       )}
-      <div className="fq-python-result-toolbar">
-        <button
-          disabled={python.importing || python.recovering}
-          onClick={() => upload.current?.click()}
-        >
-          {python.importing ? "Importing…" : "Import .fqx"}
-        </button>
+      <div className="fq-python-result-toolbar" hidden={!run}>
+        {compact && researchAction}
         {run?.collection_errors?.some((item) => item.file_id) && (
           <button
             disabled={

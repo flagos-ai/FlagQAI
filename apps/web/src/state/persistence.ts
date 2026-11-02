@@ -158,7 +158,7 @@ export function restoreWorkspace(
     execution: null,
     shots: saved.shots || 2048,
     seed: saved.seed ?? 42,
-    jobName: "",
+    jobName: typeof saved.jobName === "string" ? saved.jobName : "",
     zoom: 90,
     agentOpen: saved.agentOpen === true,
     busy: false,
@@ -181,6 +181,7 @@ export function workspaceBackup(state: WorkspaceState) {
     selectedJobId,
     shots,
     seed,
+    jobName,
     schema,
     project,
     projectTabs,
@@ -210,6 +211,7 @@ export function workspaceBackup(state: WorkspaceState) {
     selectedJobId,
     shots,
     seed,
+    jobName,
   });
 }
 

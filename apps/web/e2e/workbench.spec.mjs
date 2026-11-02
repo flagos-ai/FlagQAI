@@ -63,6 +63,12 @@ async function savedRecord(page, run, filename) {
   expect(record.program.experiment.sha256).toBe(reference.sha256);
   return record;
 }
+async function openProgramMetadata(page) {
+  const details = page.locator(".fq-program-metadata");
+  await expect(details).toBeVisible();
+  if (!(await details.evaluate((element) => element.open)))
+    await details.locator(":scope > summary").click();
+}
 async function openCircuit(page, run, filename) {
   const reference = run.experiments.find(
     (item) => !filename || item.filename === filename,
@@ -72,12 +78,14 @@ async function openCircuit(page, run, filename) {
     .getByRole("button", { name: "View circuit ↗" })
     .click();
   await expect(page).toHaveURL(/#program$/);
+  await openProgramMetadata(page);
   await expect(
     page.getByRole("link", { name: "Download original .fqx ↓" }),
   ).toHaveAttribute("href", `/api/experiments/${reference.id}/file`);
   await expect(
     page.getByText("· run " + run.id.slice(0, 8), { exact: false }),
   ).toBeVisible();
+  await page.locator(".fq-program-metadata > summary").click();
   return reference;
 }
 
@@ -162,6 +170,7 @@ test("refresh and navigation retain a selected historical result and newer draft
   ).toBeVisible();
   await page.reload();
   await expect(page).toHaveURL(/#program$/);
+  await openProgramMetadata(page);
   await expect(
     page.getByRole("link", { name: "Download original .fqx ↓" }),
   ).toHaveAttribute("href", `/api/experiments/${reference.id}/file`);
@@ -518,7 +527,7 @@ Path("invalid.fqx").write_bytes(b"invalid archive")
 
 test("scripted Agent streams tools, survives lost receipt + refresh, and protects code and chat drafts", async ({
   page,
-}) => {
+}, testInfo) => {
   const agent = page.getByRole("button", {
     name: "FlagQAI Agent",
     exact: true,
@@ -531,6 +540,100 @@ test("scripted Agent streams tools, survives lost receipt + refresh, and protect
   await expect(
     page.getByRole("status", { name: "Connected", exact: true }),
   ).toBeVisible();
+  const header = page.locator(".fq-agent-header");
+  expect((await header.boundingBox()).height).toBeLessThanOrEqual(40);
+  await expect(page.locator(".fq-agent-state-note")).toHaveCount(0);
+  await expect(
+    page
+      .locator(".fq-agent-draft-meta")
+      .getByRole("button", { name: "Connection", exact: true }),
+  ).toHaveCount(0);
+  const connectionControl = header.getByRole("button", {
+    name: "Agent connection details",
+    exact: true,
+  });
+  await connectionControl.click();
+  const connectionDialog = page.getByRole("dialog", {
+    name: "Agent connection",
+    exact: true,
+  });
+  await expect(
+    connectionDialog.getByRole("button", {
+      name: "Reconnect Agent",
+      exact: true,
+    }),
+  ).toBeEnabled();
+  await expect(connectionDialog).toContainText("flagqai serve --port 4096");
+  await expect(
+    connectionDialog.locator(".fq-agent-connection-technical"),
+  ).not.toHaveAttribute("open", "");
+  expect(
+    await connectionDialog.evaluate(
+      (element) => getComputedStyle(element).outlineStyle,
+    ),
+  ).toBe("none");
+  await page.screenshot({
+    path: testInfo.outputPath("agent-connection-dialog.png"),
+    fullPage: true,
+  });
+  await connectionDialog
+    .getByText("Connection details", { exact: true })
+    .click();
+  await expect(connectionDialog.locator("code")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(connectionDialog).toHaveCount(0);
+  await expect(connectionControl).toBeFocused();
+  await expect(
+    header.getByRole("button", { name: "New chat", exact: true }),
+  ).toBeEnabled();
+  await header
+    .getByRole("button", { name: "Models and providers", exact: true })
+    .click();
+  const settings = page.getByRole("dialog", {
+    name: "Models and providers",
+    exact: true,
+  });
+  await expect(
+    settings.getByRole("combobox", { name: "Agent backend", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    settings.getByRole("button", { name: "Providers", exact: true }),
+  ).toBeVisible();
+  await settings
+    .getByRole("button", { name: "Close Agent settings", exact: true })
+    .click();
+  await header
+    .getByRole("button", { name: "Resume Agent session", exact: true })
+    .click();
+  await expect(
+    page.getByRole("dialog", { name: "Resume Agent session", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Close session history", exact: true })
+    .click();
+  await page.screenshot({
+    path: testInfo.outputPath("compact-agent-header.png"),
+    fullPage: true,
+  });
+  const sidebar = page.getByRole("separator", {
+    name: "Resize left sidebar",
+    exact: true,
+  });
+  for (let step = 0; step < 3; step++) await sidebar.press("Shift+ArrowLeft");
+  await expect(sidebar).toHaveAttribute("aria-valuenow", "170");
+  expect(
+    await header.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth + 1,
+    ),
+  ).toBe(true);
+  await expect(
+    header.getByRole("button", { name: "Show model library", exact: true }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: testInfo.outputPath("compact-agent-header-narrow.png"),
+    fullPage: true,
+  });
+  await sidebar.dblclick();
   const failed = await runPython(
     page,
     "# repair-case: syntax\nimport flagquantum as fq\nfq.Circuit(",
@@ -776,6 +879,7 @@ test("project files, native Agent edits, draft review and multi-file SDK snapsho
       .filter({ hasText: "These results are from an earlier snapshot" }),
   ).toHaveCount(0);
   await openCircuit(page, final);
+  await openProgramMetadata(page);
   await expect(
     page.getByText("PROJECT SNAPSHOT", { exact: true }),
   ).toBeVisible();
@@ -1652,6 +1756,7 @@ test("failed run → Agent repair → review and undo → changed SDK result rem
   await expect(page.locator(".fq-agent-message.assistant")).toContainText(
     "Repaired failed run " + failed.id,
   );
+  await openProgramMetadata(page);
   await expect(
     page.getByRole("link", { name: "Download original .fqx ↓" }),
   ).toHaveAttribute("href", `/api/experiments/${original.id}/file`);
@@ -1956,6 +2061,7 @@ test("Follow Agent from Execution handles the first action batch, cold archive f
     await expect(
       page.getByRole("button", { name: "Inspect X gate 3", exact: true }),
     ).toBeVisible();
+    await openProgramMetadata(page);
     const archive = await page
       .getByRole("link", { name: "Download original .fqx ↓" })
       .getAttribute("href");
@@ -2140,8 +2246,13 @@ test("comparison task opens a durable side-by-side experiment with real gate and
     });
   });
   await page.reload();
-  const experimentActivity = page.locator(".fq-experiment-activity").last();
-  await experimentActivity.locator("summary").first().click();
+  const completedWork = page.locator(".fq-agent-work").last();
+  await expect(completedWork).not.toHaveAttribute("open");
+  await completedWork.locator(":scope > summary").click();
+  const experimentActivity = completedWork
+    .locator(".fq-experiment-activity")
+    .last();
+  await expect(experimentActivity).toHaveAttribute("open");
   const pythonActivity = experimentActivity
     .locator(".fq-workspace-artifact")
     .filter({
@@ -2263,7 +2374,9 @@ test("comparison task opens a durable side-by-side experiment with real gate and
   await expect(page).toHaveURL(/#jobs$/);
   await expect(await showJobEvidence(page)).toContainText(a.id);
   // Opening the exact historical run is inspection, including after a failed read.
-  await page.locator(".fq-agent-work > summary").click();
+  const inspectedWork = page.locator(".fq-agent-work").last();
+  if (!(await inspectedWork.evaluate((element) => element.open)))
+    await inspectedWork.locator(":scope > summary").click();
   const outputLink = page
     .locator('.fq-cli-tool[aria-label="workbench_wait_run tool call"]')
     .last()
@@ -2332,6 +2445,60 @@ test("Jobs prioritizes results, filters history and compares only explicitly sel
   await expect(
     results.getByRole("region", { name: "Measurement distribution" }),
   ).toBeVisible();
+  const distribution = results.getByRole("region", {
+    name: "Measurement distribution",
+    exact: true,
+  });
+  await expect(
+    results.getByLabel("Saved measurement summary", { exact: true }),
+  ).toContainText("counts");
+  await expect(
+    results.getByRole("combobox", { name: "Saved measurement", exact: true }),
+  ).toHaveCount(0);
+  const reading = distribution.locator(".fq-job-reading-note details");
+  await expect(reading).not.toHaveAttribute("open");
+  await reading.locator("summary").click();
+  await expect(reading).toContainText("Probabilities use all recorded counts");
+  await reading.locator("summary").click();
+  expect(
+    (await distribution.boundingBox()).y - (await results.boundingBox()).y,
+  ).toBeLessThan(220);
+  expect(
+    (await page.locator(".fq-job-row.selected").boundingBox()).height,
+  ).toBeLessThanOrEqual(60);
+  const searchBounds = await page
+    .getByRole("textbox", { name: "Search jobs", exact: true })
+    .boundingBox();
+  const filterBounds = await page
+    .getByRole("combobox", { name: "Filter jobs by status", exact: true })
+    .boundingBox();
+  expect(Math.abs(searchBounds.y - filterBounds.y)).toBeLessThan(5);
+  await page.screenshot({
+    path: testInfo.outputPath("compact-jobs-results.png"),
+    fullPage: true,
+  });
+  const sidebar = page.getByRole("separator", {
+    name: "Resize left sidebar",
+    exact: true,
+  });
+  for (let step = 0; step < 3; step++) await sidebar.press("Shift+ArrowLeft");
+  await expect(sidebar).toHaveAttribute("aria-valuenow", "170");
+  for (const selector of [
+    ".fq-jobs-search",
+    ".fq-jobs-list",
+    ".fq-jobs-compare-action",
+  ]) {
+    expect(
+      await page
+        .locator(selector)
+        .evaluate((element) => element.scrollWidth <= element.clientWidth + 1),
+    ).toBe(true);
+  }
+  await page.screenshot({
+    path: testInfo.outputPath("compact-jobs-narrow.png"),
+    fullPage: true,
+  });
+  await sidebar.dblclick();
   await expect(
     results.getByRole("link", { name: "Download original .fqx ↓" }),
   ).not.toBeVisible();
@@ -2374,6 +2541,111 @@ test("Jobs prioritizes results, filters history and compares only explicitly sel
   await expect(
     page.getByRole("region", { name: "Experiment comparison" }),
   ).toContainText("+ X on q1");
+  const comparison = page.getByRole("region", {
+    name: "Experiment comparison",
+    exact: true,
+  });
+  await page.setViewportSize({ width: 1440, height: 800 });
+  const overview = comparison.getByRole("region", {
+    name: "Observed differences",
+    exact: true,
+  });
+  expect((await overview.boundingBox()).y).toBeLessThan(
+    (await comparison.locator(".fq-comparison-grid").boundingBox()).y,
+  );
+  const bars = comparison.locator(".fq-compare-bars");
+  await expect(bars).toHaveCount(2);
+  for (const chart of await bars.all()) {
+    const box = await chart.boundingBox();
+    expect(box.y + box.height).toBeLessThan(800);
+  }
+  const previews = comparison.locator(".fq-compare-circuit");
+  const compactHeight = await previews
+    .first()
+    .evaluate((element) => element.clientHeight);
+  expect(compactHeight).toBeLessThan(180);
+  await page.screenshot({
+    path: testInfo.outputPath("compact-experiment-comparison.png"),
+    fullPage: true,
+  });
+  await comparison
+    .getByRole("button", { name: "Expand circuit previews", exact: true })
+    .click();
+  expect(
+    await previews.first().evaluate((element) => element.clientHeight),
+  ).toBeGreaterThan(compactHeight + 20);
+  await page.reload();
+  await expect(
+    comparison.getByRole("button", {
+      name: "Compact circuit previews",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(previews).toHaveCount(2);
+  expect(
+    await previews.first().evaluate((element) => element.clientHeight),
+  ).toBeGreaterThan(compactHeight + 20);
+  await comparison
+    .getByRole("button", { name: "Compact circuit previews", exact: true })
+    .click();
+  await page.reload();
+  await expect(
+    comparison.getByRole("button", {
+      name: "Expand circuit previews",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(previews).toHaveCount(2);
+  expect(
+    await previews.first().evaluate((element) => element.clientHeight),
+  ).toBe(compactHeight);
+  const comparisonSidebar = page.getByRole("separator", {
+    name: "Resize left sidebar",
+    exact: true,
+  });
+  const comparisonHandle = await comparisonSidebar.boundingBox();
+  await page.mouse.move(
+    comparisonHandle.x + comparisonHandle.width / 2,
+    comparisonHandle.y + 50,
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    comparisonHandle.x + comparisonHandle.width / 2 + 24,
+    comparisonHandle.y + 50,
+  );
+  await page.mouse.up();
+  await expect(comparisonSidebar).toHaveAttribute("aria-valuenow", "304");
+  await page.reload();
+  await expect(comparisonSidebar).toHaveAttribute("aria-valuenow", "304");
+  const baselineCard = comparison.getByRole("article", {
+    name: "Baseline experiment",
+    exact: true,
+  });
+  await baselineCard.locator("details > summary").click();
+  await expect(
+    baselineCard.getByRole("link", {
+      name: "Download original .fqx",
+      exact: true,
+    }),
+  ).toHaveAttribute("href", `/api/experiments/${a.id}/file`);
+  await baselineCard.locator("details > summary").click();
+  await page.setViewportSize({ width: 820, height: 700 });
+  expect(
+    await comparison.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth + 1,
+    ),
+  ).toBe(true);
+  expect(
+    await page.evaluate(() => ({
+      document: document.documentElement.scrollHeight,
+      viewport: window.innerHeight,
+    })),
+  ).toEqual({ document: 700, viewport: 700 });
+  await page.screenshot({
+    path: testInfo.outputPath("compact-experiment-comparison-narrow.png"),
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1440, height: 1000 });
   await page
     .getByRole("button", { name: "Single result", exact: true })
     .click();
@@ -2574,11 +2846,12 @@ fq.save("jobs_many_states.fqx", result.plan, result=result)
     .getByRole("button", { name: "Compare 2 / 2", exact: true })
     .click();
   const findings = page.getByRole("region", {
-    name: "Observed differences",
+    name: "State differences",
     exact: true,
   });
   await expect(findings).toContainText("Showing 1–32 of 64 compared states");
-  const metric = findings
+  const metric = page
+    .getByRole("region", { name: "Observed differences", exact: true })
     .locator("p")
     .filter({ hasText: "Observed distribution distance:" });
   const completeMetric = await metric.innerText();
@@ -2958,6 +3231,41 @@ test("model import explains invalid files and preserves the newest draft during 
   });
   if ((await agent.getAttribute("aria-expanded")) === "true")
     await agent.click();
+  const examples = page.getByRole("region", {
+    name: "Example models",
+    exact: true,
+  });
+  expect((await examples.boundingBox()).height).toBeLessThan(260);
+  await page.screenshot({
+    path: testInfo.outputPath("compact-model-library.png"),
+    fullPage: true,
+  });
+  const sidebarResize = page.getByRole("separator", {
+    name: "Resize left sidebar",
+    exact: true,
+  });
+  for (let step = 0; step < 3; step++)
+    await sidebarResize.press("Shift+ArrowLeft");
+  await expect(sidebarResize).toHaveAttribute("aria-valuenow", "170");
+  const library = page.locator(".fq-model-library");
+  expect(
+    await library.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth + 1,
+    ),
+  ).toBe(true);
+  expect(
+    await page
+      .locator(".fq-model-library-tabs")
+      .evaluate((element) => element.scrollWidth <= element.clientWidth + 1),
+  ).toBe(true);
+  await expect(examples.getByRole("button").last()).toContainText(
+    "Quantum Arithmetic",
+  );
+  await page.screenshot({
+    path: testInfo.outputPath("compact-model-library-narrow.png"),
+    fullPage: true,
+  });
+  await sidebarResize.dblclick();
   await editor(page).fill(draft);
   const upload = page.locator('.fq-library-body input[type="file"]').first();
   const modelSearch = page.getByRole("textbox", {
@@ -3165,6 +3473,7 @@ fq.save("${filename}", result.plan, result=result)
     ).toBeVisible();
     await page.reload();
     await expect(page).toHaveURL(/#program$/);
+    await openProgramMetadata(page);
     await expect(
       page.getByRole("link", { name: "Download original .fqx ↓" }),
     ).toHaveAttribute("href", `/api/experiments/${record.id}/file`);
@@ -3218,6 +3527,69 @@ fq.save("viewport.fqx", result.plan, result=result)
   await openCircuit(page, run);
   const canvas = page.locator(".fq-circuit-canvas");
   const zoom = page.getByRole("status", { name: "Circuit zoom", exact: true });
+  const detail = page.getByRole("combobox", {
+    name: "Circuit detail",
+    exact: true,
+  });
+  const wireDisplay = page.getByRole("combobox", {
+    name: "Circuit wire display",
+    exact: true,
+  });
+  const chromeHeight = await page
+    .locator(".fq-visualizer")
+    .evaluate((element) => {
+      const canvas = element.querySelector(".fq-circuit-workarea");
+      return (
+        canvas.getBoundingClientRect().top - element.getBoundingClientRect().top
+      );
+    });
+  expect(chromeHeight).toBeLessThan(125);
+  for (const level of ["1", "3", "100", "0"]) {
+    await detail.selectOption(level);
+    await expect(detail).toHaveValue(level);
+  }
+  await page.getByRole("button", { name: "Compiled", exact: true }).click();
+  await expect(detail).toHaveValue("custom");
+  await page.getByRole("button", { name: "Logical", exact: true }).click();
+  await detail.selectOption("100");
+  await wireDisplay.selectOption("registers");
+  await expect(wireDisplay).toHaveValue("registers");
+  await wireDisplay.selectOption("qubits");
+  const resizeInfo = page.getByRole("separator", {
+    name: "Resize program information",
+    exact: true,
+  });
+  await resizeInfo.press("ArrowLeft");
+  await expect(resizeInfo).toHaveAttribute("aria-valuenow", "312");
+  await expect
+    .poll(async () =>
+      page.evaluate(
+        () => JSON.parse(localStorage.getItem("fq-pane-layout-v1")).programInfo,
+      ),
+    )
+    .toBe(312);
+  await resizeInfo.dblclick();
+  await expect(resizeInfo).toHaveAttribute("aria-valuenow", "300");
+  const handle = await resizeInfo.boundingBox();
+  await page.mouse.move(handle.x + handle.width / 2, handle.y + 50);
+  await page.mouse.down();
+  await page.mouse.move(handle.x + handle.width / 2 - 24, handle.y + 50);
+  await page.mouse.up();
+  await expect(resizeInfo).toHaveAttribute("aria-valuenow", "324");
+  const focusCircuit = page.getByRole("button", {
+    name: "Focus quantum circuit",
+    exact: true,
+  });
+  await focusCircuit.click();
+  await expect(page.locator(".fq-program-info")).toBeHidden();
+  await expect(focusCircuit).toHaveAttribute("aria-pressed", "true");
+  await focusCircuit.click();
+  await expect(resizeInfo).toHaveAttribute("aria-valuenow", "324");
+  await resizeInfo.dblclick();
+  await page.screenshot({
+    path: testInfo.outputPath("compact-circuit-toolbar.png"),
+    fullPage: true,
+  });
   for (
     let step = 0;
     step < 18 && parseInt(await zoom.innerText()) < 150;
@@ -3302,9 +3674,25 @@ fq.save("viewport.fqx", result.plan, result=result)
     );
   await page.setViewportSize({ width: 1200, height: 480 });
   await expect.poll(fits).toBe(true);
+  for (const selector of [".fq-circuit-header", ".fq-circuit-toolbar"]) {
+    expect(
+      await page
+        .locator(selector)
+        .evaluate((element) => element.scrollWidth <= element.clientWidth + 1),
+    ).toBe(true);
+  }
+  await expect(
+    page.getByRole("button", { name: "Zoom in", exact: true }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: testInfo.outputPath("compact-circuit-toolbar-narrow.png"),
+    fullPage: true,
+  });
   await page.getByRole("button", { name: "Tree", exact: true }).click();
   await expect.poll(fits).toBe(true);
-  await page.getByRole("button", { name: "All gates", exact: true }).click();
+  await page
+    .getByRole("combobox", { name: "Circuit detail", exact: true })
+    .selectOption("100");
   await expect.poll(fits).toBe(true);
   await page.getByRole("button", { name: "Zoom in", exact: true }).click();
   await expect(fitButton).toHaveAttribute("aria-pressed", "false");
@@ -3349,7 +3737,9 @@ fq.save("viewport.fqx", result.plan, result=result)
   await expect(page.locator(".fq-node-details")).toContainText(
     "Measurement · q0",
   );
-  await page.getByRole("button", { name: "Collapse all", exact: true }).click();
+  await page
+    .getByRole("combobox", { name: "Circuit detail", exact: true })
+    .selectOption("0");
   await expect(measurement).toHaveAttribute("aria-pressed", "false");
   const module = canvas.getByRole("button", {
     name: "Select ungrouped",
@@ -3692,4 +4082,2162 @@ test("backup draft recovery previews and merges code without replacing live work
     stored.models.every((model) => !model.editorLink && !model.project),
   ).toBe(true);
   expect((await get(page, "/api/python/runs")).length).toBe(beforeRuns);
+});
+
+test("compact editor output preserves manual heights and keeps file actions available", async ({
+  page,
+}, testInfo) => {
+  await page.evaluate(() =>
+    localStorage.setItem("fq-pane-layout-v1", JSON.stringify({ errors: 328 })),
+  );
+  await page.reload();
+  const resize = page.getByRole("separator", {
+    name: "Resize model errors panel",
+    exact: true,
+  });
+  await expect(resize).toHaveAttribute("aria-valuenow", "328");
+  const toolbar = page.locator(".fq-model-toolbar");
+  await expect(toolbar.locator(".fq-editor-sync")).toBeVisible();
+  await expect(
+    toolbar.getByRole("button", { name: "Save", exact: true }),
+  ).toBeVisible();
+  await expect(
+    toolbar.getByRole("button", { name: "Share with Agent", exact: true }),
+  ).toBeVisible();
+  await runPython(page, bell);
+  const fullHeight = await editor(page).evaluate(
+    (element) => element.clientHeight,
+  );
+  await page
+    .getByRole("button", { name: "Compact Python output", exact: true })
+    .click();
+  await expect(resize).toHaveAttribute("aria-valuenow", "112");
+  await expect(
+    page
+      .getByRole("region", { name: "Python output", exact: true })
+      .locator(".fq-python-logs"),
+  ).toBeHidden();
+  await expect(
+    page.getByRole("button", { name: "View circuit ↗", exact: true }),
+  ).toBeVisible();
+  expect(
+    await editor(page).evaluate((element) => element.clientHeight),
+  ).toBeGreaterThan(fullHeight + 150);
+  await page.screenshot({
+    path: testInfo.outputPath("compact-output.png"),
+    fullPage: true,
+  });
+  await page.reload();
+  await expect(resize).toHaveAttribute("aria-valuenow", "112");
+  await page
+    .getByRole("button", { name: "Expand Python output", exact: true })
+    .click();
+  await expect(resize).toHaveAttribute("aria-valuenow", "328");
+  await page
+    .getByRole("button", { name: "Compact Python output", exact: true })
+    .click();
+  await resize.focus();
+  await resize.press("ArrowUp");
+  await expect(resize).toHaveAttribute("aria-valuenow", "124");
+  await expect(
+    page.getByRole("button", { name: "Compact Python output", exact: true }),
+  ).toBeVisible();
+  await page.reload();
+  await expect(resize).toHaveAttribute("aria-valuenow", "124");
+  await page
+    .getByRole("button", { name: "Compact Python output", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Expand Python output", exact: true })
+    .click();
+  await expect(resize).toHaveAttribute("aria-valuenow", "124");
+  const handle = await resize.boundingBox();
+  await page.mouse.move(
+    handle.x + handle.width / 2,
+    handle.y + handle.height / 2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    handle.x + handle.width / 2,
+    handle.y + handle.height / 2 - 80,
+  );
+  await page.mouse.up();
+  await expect(resize).toHaveAttribute("aria-valuenow", "204");
+  await page.reload();
+  await expect(resize).toHaveAttribute("aria-valuenow", "204");
+  await page.setViewportSize({ width: 1100, height: 800 });
+  expect(
+    await toolbar.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth + 1,
+    ),
+  ).toBe(true);
+  await expect(
+    toolbar.getByRole("button", { name: "Save", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Compact Python output", exact: true })
+    .click();
+  await editor(page).fill(
+    "import time\nprint('running', flush=True)\ntime.sleep(30)\n",
+  );
+  await page.getByRole("button", { name: "Run Python", exact: true }).click();
+  const stop = page.getByRole("button", { name: "Stop", exact: true });
+  await expect(stop).toBeVisible();
+  await expect(resize).toHaveAttribute("aria-valuenow", "112");
+  await stop.click();
+  await expect(
+    page.getByRole("status", { name: "Python run status", exact: true }),
+  ).toContainText("Stopped");
+});
+
+test("Execution separates common settings from advanced options without losing snapshots or manual layout", async ({
+  page,
+}, testInfo) => {
+  const run = await runPython(page, bell);
+  const record = await savedRecord(page, run);
+  await editor(page).fill(draft);
+  await openCircuit(page, run);
+  await page.getByRole("button", { name: "Run again", exact: true }).click();
+  const execution = page.getByRole("region", {
+    name: "Execution configuration",
+    exact: true,
+  });
+  const settings = execution.getByRole("region", {
+    name: "Run settings",
+    exact: true,
+  });
+  const advanced = execution.locator(".fq-execution-advanced");
+  const runtime = page
+    .getByRole("region", { name: "Compute backend", exact: true })
+    .locator("details");
+  const shots = execution.getByRole("spinbutton", {
+    name: "Num Shots",
+    exact: true,
+  });
+  const seed = execution.getByRole("spinbutton", {
+    name: "Random Seed",
+    exact: true,
+  });
+  const name = execution.getByRole("textbox", {
+    name: "Job Name",
+    exact: true,
+  });
+  const submit = execution.getByRole("button", { name: "Run", exact: true });
+  await expect(advanced).not.toHaveAttribute("open");
+  await expect(runtime).not.toHaveAttribute("open");
+  await expect(seed).toBeHidden();
+  await expect(
+    execution.getByRole("region", { name: "Execution source", exact: true }),
+  ).toContainText("Your Model draft is unchanged");
+  expect((await settings.boundingBox()).height).toBeLessThan(170);
+  await shots.fill("64");
+  await name.fill("compact-execution-validation");
+  await advanced.locator("summary").click();
+  await seed.fill("-1");
+  await expect(submit).toBeDisabled();
+  await expect(settings.getByRole("alert")).toBeVisible();
+  await seed.fill("7");
+  await expect(submit).toBeEnabled();
+  await advanced.locator("summary").click();
+  await expect(advanced.locator("summary")).toContainText("Seed 7");
+  await page.reload();
+  await expect(shots).toHaveValue("64");
+  await expect(name).toHaveValue("compact-execution-validation");
+  await expect(seed).toBeHidden();
+  await advanced.locator("summary").click();
+  await expect(seed).toHaveValue("7");
+  await page.reload();
+  await expect(seed).toBeVisible();
+  await advanced.locator("summary").click();
+  await runtime.locator("summary").click();
+  await expect(runtime).toContainText("CPU threads / task");
+  await runtime.locator("summary").click();
+  const sidebar = page.getByRole("separator", {
+    name: "Resize left sidebar",
+    exact: true,
+  });
+  const handle = await sidebar.boundingBox();
+  await page.mouse.move(handle.x + handle.width / 2, handle.y + 50);
+  await page.mouse.down();
+  await page.mouse.move(handle.x + handle.width / 2 + 40, handle.y + 50);
+  await page.mouse.up();
+  await expect(sidebar).toHaveAttribute("aria-valuenow", "320");
+  await page.reload();
+  await expect(sidebar).toHaveAttribute("aria-valuenow", "320");
+  await page.screenshot({
+    path: testInfo.outputPath("compact-execution.png"),
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 820, height: 700 });
+  expect(
+    await execution.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth + 1,
+    ),
+  ).toBe(true);
+  await expect(shots).toBeVisible();
+  await expect(name).toBeVisible();
+  await page.screenshot({
+    path: testInfo.outputPath("compact-execution-narrow.png"),
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  // Execution targets are intentionally transient; explicitly choose the archived
+  // circuit again after refresh before checking submission of that snapshot.
+  await page.getByRole("button", { name: "QUANTUM", exact: true }).click();
+  await page.getByRole("button", { name: "Run again", exact: true }).click();
+  const request = page.waitForRequest(
+    (request) =>
+      request.method() === "POST" &&
+      new URL(request.url()).pathname === "/api/jobs",
+  );
+  await submit.click();
+  const payload = (await request).postDataJSON();
+  expect(payload).toMatchObject({
+    shots: 64,
+    seed: 7,
+    name: "compact-execution-validation",
+    source: record.program.source,
+  });
+  await expect(page).toHaveURL(/#jobs$/);
+  await expect
+    .poll(
+      async () => {
+        const job = (await get(page, "/api/jobs")).find(
+          (job) => job.name === "compact-execution-validation",
+        );
+        return job?.status;
+      },
+      { timeout: 90000 },
+    )
+    .toBe("completed");
+  const job = (await get(page, "/api/jobs")).find(
+    (job) => job.name === "compact-execution-validation",
+  );
+  expect(
+    Object.values(job.result.counts).reduce((sum, count) => sum + count, 0),
+  ).toBe(64);
+  expect(Object.keys(job.result.counts).sort()).toEqual(["00", "11"]);
+  await page.getByRole("button", { name: "QUANTUM", exact: true }).click();
+  await page.getByRole("button", { name: "Run again", exact: true }).click();
+  await execution
+    .getByRole("button", {
+      name: "Use current Model draft instead",
+      exact: true,
+    })
+    .click();
+  await expect(
+    execution.getByRole("region", { name: "Execution source", exact: true }),
+  ).toHaveCount(0);
+  await expect(execution.locator(".fq-execution-identity")).toContainText(
+    "Model draft",
+  );
+  await page.getByRole("button", { name: "MODEL", exact: true }).click();
+  await expect(editor(page)).toHaveValue(draft);
+});
+
+test("Synthesis shows source-bound compilation status and reusable results without replacing drafts", async ({
+  page,
+}, testInfo) => {
+  const pythonDraft = await editor(page).inputValue();
+  await page.getByRole("button", { name: "SYNTHESIS", exact: true }).click();
+  const synthesis = page.getByRole("region", {
+    name: "Synthesis workspace",
+    exact: true,
+  });
+  const status = synthesis.getByRole("status", {
+    name: "Compilation status",
+    exact: true,
+  });
+  await expect(status).toHaveText("Python runs in Model");
+  await synthesis
+    .getByRole("button", { name: "Open Python in Model", exact: true })
+    .click();
+  await expect(editor(page)).toHaveValue(pythonDraft);
+  await page.getByRole("button", { name: "OpenQASM", exact: true }).click();
+  const source =
+    'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\ncreg c[2];\n// Source-bound synthesis acceptance\nh q[0];\ncx q[0],q[1];\nmeasure q[0] -> c[0];\nmeasure q[1] -> c[1];\n';
+  await editor(page).fill(source);
+  await page.getByRole("button", { name: "SYNTHESIS", exact: true }).click();
+  await expect(status).toHaveText("Ready to compile");
+  const compile = synthesis.getByRole("button", {
+    name: "Compile model →",
+    exact: true,
+  });
+  let release;
+  let hold = new Promise((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/api/compile", async (route) => {
+    await hold;
+    await route.continue();
+  });
+  const compiledResponse = page.waitForResponse(
+    (response) => new URL(response.url()).pathname === "/api/compile",
+  );
+  try {
+    await compile.click();
+    await expect(status).toHaveText("Compiling…");
+    await expect(
+      synthesis.getByRole("button", { name: "Compiling…", exact: true }),
+    ).toBeDisabled();
+    await page.screenshot({
+      path: testInfo.outputPath("compact-synthesis-working.png"),
+      fullPage: true,
+    });
+  } finally {
+    release();
+  }
+  const response = await compiledResponse;
+  expect(response.ok(), JSON.stringify(await response.json())).toBe(true);
+  await expect(page).toHaveURL(/#program$/, { timeout: 90000 });
+  await expect(
+    page.getByRole("group", {
+      name: "Interactive hierarchical quantum circuit",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "SYNTHESIS", exact: true }).click();
+  await expect(status).toHaveText("Compiled");
+  const result = synthesis.getByRole("region", {
+    name: "Compilation result",
+    exact: true,
+  });
+  await expect(result.locator(".fq-synthesis-metrics")).toContainText(
+    "Qubits2",
+  );
+  await expect(result.locator(".fq-synthesis-metrics")).toContainText("Gates2");
+  expect(
+    (await result.boundingBox()).y - (await synthesis.boundingBox()).y,
+  ).toBeLessThan(150);
+  const sidebar = page.getByRole("separator", {
+    name: "Resize left sidebar",
+    exact: true,
+  });
+  const handle = await sidebar.boundingBox();
+  await page.mouse.move(handle.x + handle.width / 2, handle.y + 50);
+  await page.mouse.down();
+  await page.mouse.move(handle.x + handle.width / 2 + 40, handle.y + 50);
+  await page.mouse.up();
+  await expect(sidebar).toHaveAttribute("aria-valuenow", "320");
+  await page.reload();
+  await expect(sidebar).toHaveAttribute("aria-valuenow", "320");
+  await expect(status).toHaveText("Compiled");
+  await page.screenshot({
+    path: testInfo.outputPath("compact-synthesis-result.png"),
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 820, height: 700 });
+  expect(
+    await synthesis.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth + 1,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: testInfo.outputPath("compact-synthesis-narrow.png"),
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await result
+    .getByRole("button", { name: "Open circuit", exact: true })
+    .click();
+  await expect(page).toHaveURL(/#program$/);
+  await page.getByRole("button", { name: "SYNTHESIS", exact: true }).click();
+  await synthesis
+    .getByRole("button", { name: "Edit model", exact: true })
+    .click();
+  const changed = source.replace("measure q[0]", "x q[1];\nmeasure q[0]");
+  await editor(page).fill(changed);
+  await page.getByRole("button", { name: "SYNTHESIS", exact: true }).click();
+  await expect(status).toHaveText("Ready to compile");
+  await expect(
+    synthesis.getByRole("region", {
+      name: "Previous compilation",
+      exact: true,
+    }),
+  ).toContainText("Source differs from the current model");
+  hold = new Promise((resolve) => {
+    release = resolve;
+  });
+  const newer = changed + "// Keep this newer draft\n";
+  try {
+    await compile.click();
+    await expect(status).toHaveText("Compiling…");
+    await synthesis
+      .getByRole("button", { name: "Edit model", exact: true })
+      .click();
+    await editor(page).fill(newer);
+    await page.getByRole("button", { name: "SYNTHESIS", exact: true }).click();
+    await expect(status).toHaveText("Compiling another source…");
+  } finally {
+    release();
+  }
+  await expect(status).toHaveText("Ready to compile", { timeout: 90000 });
+  await expect(page).toHaveURL(/#synthesis$/);
+  await expect(
+    synthesis
+      .getByRole("region", { name: "Previous compilation", exact: true })
+      .locator(".fq-synthesis-metrics"),
+  ).toContainText("Gates3");
+  await synthesis
+    .getByRole("button", { name: "Edit model", exact: true })
+    .click();
+  await expect(editor(page)).toHaveValue(newer);
+  await editor(page).fill(source.replace("h q[0]", "h q[7]"));
+  await page.getByRole("button", { name: "SYNTHESIS", exact: true }).click();
+  await compile.click();
+  await expect(status).toHaveText("Compilation failed", { timeout: 90000 });
+  await expect(synthesis.getByRole("alert")).toBeVisible();
+  await expect(compile).toBeEnabled();
+});
+
+test("Quantum compact list preserves explicit information-panel choices and manual sizes", async ({
+  page,
+}, testInfo) => {
+  const first = await runPython(
+    page,
+    bell.replace("bell.fqx", "quantum_reference.fqx"),
+  );
+  const second = await runPython(
+    page,
+    bell
+      .replace("bell.fqx", "quantum_variant_with_a_long_descriptive_name.fqx")
+      .replace("result = fq.run", "circuit.x(1)\nresult = fq.run"),
+  );
+  const a = await savedRecord(page, first),
+    b = await savedRecord(page, second);
+  await editor(page).fill(draft);
+  await openCircuit(page, second);
+  const library = page.getByRole("list", {
+    name: "Quantum programs",
+    exact: true,
+  });
+  const reference = library.getByRole("button", {
+    name: `Open quantum program ${a.program.name}`,
+    exact: true,
+  });
+  const variant = library.getByRole("button", {
+    name: `Open quantum program ${b.program.name}`,
+    exact: true,
+  });
+  const panel = page.locator(".fq-program-info");
+  const info = page.getByRole("button", { name: "Info", exact: true });
+  const resize = page.getByRole("separator", {
+    name: "Resize program information",
+    exact: true,
+  });
+  const summaryResize = page.getByRole("separator", {
+    name: "Resize program summary and node details",
+    exact: true,
+  });
+  await expect(variant).toHaveAttribute("aria-current", "true");
+  expect((await variant.boundingBox()).height).toBeLessThanOrEqual(60);
+  await expect(variant).toContainText("Saved result");
+  await expect(variant).toHaveAttribute("title", new RegExp(b.program.name));
+  await expect(variant.locator("time")).toHaveAttribute("title", /.+/);
+  expect(
+    (await panel.locator(".fq-metrics").boundingBox()).y -
+      (await panel.boundingBox()).y,
+  ).toBeLessThan(120);
+  const metadata = panel.locator(".fq-program-metadata");
+  await expect(metadata).not.toHaveAttribute("open");
+  await expect(
+    panel.getByRole("button", { name: "View saved result →" }),
+  ).toBeVisible();
+  await metadata.locator(":scope > summary").click();
+  expect((await panel.locator(".fq-metrics").boundingBox()).y).toBeLessThan(
+    (await panel.locator(".fq-experiment-banner").boundingBox()).y,
+  );
+  await expect(
+    panel.getByRole("link", { name: "Download original .fqx ↓" }),
+  ).toBeVisible();
+  await metadata.locator(":scope > summary").click();
+  const handle = await resize.boundingBox();
+  await page.mouse.move(handle.x + handle.width / 2, handle.y + 50);
+  await page.mouse.down();
+  await page.mouse.move(handle.x + handle.width / 2 - 36, handle.y + 50);
+  await page.mouse.up();
+  await expect(resize).toHaveAttribute("aria-valuenow", "336");
+  const summaryHandle = await summaryResize.boundingBox();
+  await page.mouse.move(
+    summaryHandle.x + summaryHandle.width / 2,
+    summaryHandle.y + summaryHandle.height / 2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    summaryHandle.x + summaryHandle.width / 2,
+    summaryHandle.y + summaryHandle.height / 2 + 24,
+  );
+  await page.mouse.up();
+  await expect(summaryResize).toHaveAttribute("aria-valuenow", "314");
+  await page.screenshot({
+    path: testInfo.outputPath("compact-quantum-list-info.png"),
+    fullPage: true,
+  });
+  await page
+    .getByRole("button", { name: "Collapse program information", exact: true })
+    .click();
+  await expect(panel).toBeHidden();
+  await reference.click();
+  await expect(reference).toHaveAttribute("aria-current", "true");
+  await expect(panel).toBeHidden();
+  await page.reload();
+  await expect(panel).toBeHidden();
+  await expect(info).toHaveAttribute("aria-expanded", "false");
+  await info.click();
+  await expect(resize).toHaveAttribute("aria-valuenow", "336");
+  await expect(summaryResize).toHaveAttribute("aria-valuenow", "314");
+  await variant.click();
+  await expect(panel).toBeVisible();
+  await page.reload();
+  await expect(panel).toBeVisible();
+  await expect(resize).toHaveAttribute("aria-valuenow", "336");
+  const focus = page.getByRole("button", {
+    name: "Focus quantum circuit",
+    exact: true,
+  });
+  await focus.click();
+  await expect(panel).toBeHidden();
+  await page.reload();
+  await expect(panel).toBeVisible();
+  await info.click();
+  await expect(panel).toBeHidden();
+  await reference.click();
+  await page
+    .locator(".fq-circuit-canvas")
+    .getByRole("button", { name: /^Inspect H gate / })
+    .first()
+    .click();
+  await expect(panel).toBeVisible();
+  await expect(page.locator(".fq-node-details h3")).toHaveText("H");
+  expect(
+    await page.evaluate(() => localStorage.getItem("fq-program-info-open-v1")),
+  ).toBe("off");
+  await page.reload();
+  await expect(panel).toBeHidden();
+  const leftResize = page.getByRole("separator", {
+    name: "Resize left sidebar",
+    exact: true,
+  });
+  for (let step = 0; step < 3; step++)
+    await leftResize.press("Shift+ArrowLeft");
+  await expect(leftResize).toHaveAttribute("aria-valuenow", "170");
+  expect(
+    await page
+      .locator(".fq-program-library")
+      .evaluate((element) => element.scrollWidth <= element.clientWidth + 1),
+  ).toBe(true);
+  await expect(variant).toBeVisible();
+  await page.screenshot({
+    path: testInfo.outputPath("compact-quantum-list-narrow.png"),
+    fullPage: true,
+  });
+  await page.getByRole("button", { name: "MODEL", exact: true }).click();
+  await expect(editor(page)).toHaveValue(draft);
+  await page.getByRole("button", { name: "QUANTUM", exact: true }).click();
+  await expect(panel).toBeHidden();
+});
+
+test("Execution backend uses service metadata and preserves folded limits and manual width", async ({
+  page,
+}, testInfo) => {
+  const original = await editor(page).inputValue();
+  const actual = await get(page, "/api/health");
+  await page.getByRole("button", { name: "EXECUTION", exact: true }).click();
+  const backend = page.getByRole("region", {
+    name: "Compute backend",
+    exact: true,
+  });
+  const details = backend.locator("details");
+  const refresh = page.getByRole("button", {
+    name: "Refresh compute backend",
+    exact: true,
+  });
+  await expect(backend).toContainText("PyTorch CPU");
+  await expect(backend.locator(".fq-execution-backend-identity")).toContainText(
+    actual.transport,
+  );
+  await expect(details).not.toHaveAttribute("open");
+  await expect(page.getByText("Remote CPU", { exact: true })).toHaveCount(0);
+  await expect(page.locator(".fq-execution-runtime")).toHaveCount(0);
+  expect(
+    (await details.locator("summary").boundingBox()).y -
+      (await backend.locator("h3").boundingBox()).y,
+  ).toBeLessThan(140);
+  await details.locator("summary").click();
+  await expect(details).toContainText(actual.max_qubits.toLocaleString());
+  await expect(details).toContainText(actual.max_shots.toLocaleString());
+  await page.reload();
+  await expect(details).toHaveAttribute("open");
+  await details.locator("summary").click();
+  const resize = page.getByRole("separator", {
+    name: "Resize left sidebar",
+    exact: true,
+  });
+  const handle = await resize.boundingBox();
+  await page.mouse.move(handle.x + handle.width / 2, handle.y + 50);
+  await page.mouse.down();
+  await page.mouse.move(handle.x + handle.width / 2 + 24, handle.y + 50);
+  await page.mouse.up();
+  await expect(resize).toHaveAttribute("aria-valuenow", "304");
+  await page.reload();
+  await expect(resize).toHaveAttribute("aria-valuenow", "304");
+  await expect(details).not.toHaveAttribute("open");
+  await page.screenshot({
+    path: testInfo.outputPath("compact-execution-backend.png"),
+    fullPage: true,
+  });
+  let phase = "custom";
+  await page.route("**/api/health", (route) =>
+    route.fulfill({
+      status: phase === "offline" ? 503 : 200,
+      contentType: "application/json",
+      body: JSON.stringify(
+        phase === "offline"
+          ? { error: "Metadata unavailable" }
+          : phase === "custom"
+            ? {
+                backend: "custom_accelerator",
+                transport: "cluster",
+                max_qubits: 24,
+                max_shots: 50000,
+              }
+            : { ...actual, transport: phase === "ssh" ? "SSH" : "local" },
+      ),
+    }),
+  );
+  await refresh.click();
+  await expect(backend.locator("h3")).toHaveText("custom_accelerator");
+  await expect(backend).not.toContainText("PyTorch CPU");
+  await details.locator("summary").click();
+  await expect(details).toContainText("24");
+  await expect(details).toContainText((50000).toLocaleString());
+  await expect(details).not.toContainText("CPU threads / task");
+  await details.locator("summary").click();
+  phase = "ssh";
+  await refresh.click();
+  await expect(backend.locator(".fq-execution-backend-identity")).toHaveText(
+    "PyTorch CPUSSH",
+  );
+  phase = "offline";
+  await refresh.click();
+  await expect(backend.getByRole("alert")).toContainText(
+    "Showing the last received details",
+  );
+  await expect(backend.locator("h3")).toHaveText("PyTorch CPU");
+  await expect(
+    page
+      .getByRole("region", { name: "Execution configuration", exact: true })
+      .getByRole("button", { name: "Run", exact: true }),
+  ).toBeEnabled();
+  await page.reload();
+  await expect(backend.locator("h3")).toHaveText("Backend details unavailable");
+  await expect(backend.getByRole("alert")).toContainText(
+    "Metadata unavailable",
+  );
+  phase = "local";
+  await refresh.click();
+  await expect(backend.locator(".fq-execution-backend-identity")).toHaveText(
+    "PyTorch CPUlocal",
+  );
+  await expect(backend.getByRole("alert")).toHaveCount(0);
+  for (let step = 0; step < 4; step++) await resize.press("Shift+ArrowLeft");
+  await expect(resize).toHaveAttribute("aria-valuenow", "170");
+  expect(
+    await backend.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth + 1,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: testInfo.outputPath("compact-execution-backend-narrow.png"),
+    fullPage: true,
+  });
+  await page.getByRole("button", { name: "MODEL", exact: true }).click();
+  await expect(editor(page)).toHaveValue(original);
+});
+
+test("QAOA Max-Cut reference: scripted Agent orchestration, real optimization, comparison and reproducible archives", async ({
+  page,
+}, testInfo) => {
+  const { qaoaTaskPrompt, qaoaTaskName, qaoaSource } =
+    await import("../src/tasks/qaoa-maxcut.mjs");
+  const previousRuns = new Set(
+    (await get(page, "/api/python/runs")).map((item) => item.id),
+  );
+  await editor(page).fill(draft);
+  const agent = page.getByRole("button", {
+    name: "FlagQAI Agent",
+    exact: true,
+  });
+  if ((await agent.getAttribute("aria-expanded")) !== "true")
+    await agent.click();
+  await page
+    .getByRole("button", { name: "Connect Agent", exact: true })
+    .click();
+  await expect(
+    page.getByRole("status", { name: "Connected", exact: true }),
+  ).toBeVisible();
+  const follow = page.getByRole("switch", { name: /Follow Agent/ });
+  if ((await follow.getAttribute("aria-checked")) === "true")
+    await follow.click();
+  await page.getByRole("button", { name: /Optimize Max-Cut/ }).click();
+  await expect(
+    page.getByRole("textbox", { name: "Message FlagQAI", exact: true }),
+  ).toHaveValue(qaoaTaskPrompt);
+  await page.getByRole("button", { name: "Send message", exact: true }).click();
+  await expect(page.locator(".fq-agent-message.assistant")).toContainText(
+    "QAOA reference workflow verified",
+    { timeout: 90000 },
+  );
+  await expect(page.locator(".fq-agent-message.assistant")).toContainText(
+    "no model was called",
+  );
+  await expect(editor(page)).toHaveValue(draft);
+  const progress = page.getByRole("region", {
+    name: "Experiment progress",
+    exact: true,
+  });
+  await expect(progress).toContainText("Experiment ready");
+  await expect(progress).not.toContainText("Run needs attention");
+  const outcomeCard = progress.getByRole("region", {
+    name: "QAOA outcome",
+    exact: true,
+  });
+  await expect(outcomeCard).toContainText(
+    "Seeded replay matches saved results",
+  );
+  await expect(outcomeCard).toContainText("4.50");
+  await expect(outcomeCard).toContainText("5.87");
+  await outcomeCard
+    .getByRole("button", { name: "View code", exact: true })
+    .click();
+  const savedCode = page.getByRole("dialog", {
+    name: "QAOA saved code",
+    exact: true,
+  });
+  await expect(savedCode).toContainText("EDGES");
+  await savedCode
+    .getByRole("button", { name: "Close saved code", exact: true })
+    .click();
+  await expect(editor(page)).toHaveValue(draft);
+  await outcomeCard
+    .getByRole("button", { name: "View circuit", exact: true })
+    .click();
+  await expect(page).toHaveURL(/#program$/);
+  await expect(
+    page.getByRole("group", {
+      name: "Interactive hierarchical quantum circuit",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "MODEL", exact: true }).click();
+  await expect(editor(page)).toHaveValue(draft);
+  const failedAttempt = (await get(page, "/api/python/runs")).find(
+    (item) => !previousRuns.has(item.id) && item.status === "failed",
+  );
+  expect(failedAttempt).toBeTruthy();
+  const history = progress.locator(".fq-experiment-run-history");
+  await expect(history).not.toHaveAttribute("open");
+  await history.locator("summary").click();
+  await expect(history).toContainText("Earlier run issues · 1");
+  await history
+    .getByRole("button", {
+      name: "Inspect earlier run " + failedAttempt.id,
+      exact: true,
+    })
+    .click();
+  await expect(page.getByLabel("Python run history")).toHaveValue(
+    failedAttempt.id,
+  );
+  await expect(
+    page.getByRole("region", { name: "Python output", exact: true }),
+  ).toContainText("Intentional recoverable acceptance failure");
+  await expect(editor(page)).toHaveValue(draft);
+  await expect(progress).toContainText("Experiment ready");
+  await history.locator("summary").click();
+  const run = (await get(page, "/api/python/runs")).find(
+    (item) => !previousRuns.has(item.id),
+  );
+  expect(run).toBeTruthy();
+  const full = await get(page, "/api/python/runs/" + run.id);
+  expect(full.status).toBe("completed");
+  expect(full.collection_errors).toEqual([]);
+  expect(full.experiments.map((item) => item.filename).sort()).toEqual([
+    "01-maxcut-baseline.fqx",
+    "02-maxcut-qaoa.fqx",
+    "03-maxcut-replay.fqx",
+  ]);
+  const report = JSON.parse(
+    full.logs
+      .map((item) => item.text)
+      .join("")
+      .split("\n")
+      .find((line) => line.startsWith("MAXCUT_REPORT="))
+      .slice("MAXCUT_REPORT=".length),
+  );
+  expect(report.classical_optimum).toBe(7);
+  expect(report.grid_evaluations).toBe(81);
+  expect(report.baseline.expected_cut).toBeCloseTo(4.5, 4);
+  expect(report.optimized.expected_cut).toBeGreaterThan(5.7);
+  expect(report.optimized.expected_cut).toBeLessThan(7);
+  expect(report.optimized.optimum_probability).toBeGreaterThan(0.35);
+  expect(report.replay_matches).toBe(true);
+  const baseline = await savedRecord(page, full, "01-maxcut-baseline.fqx");
+  const optimized = await savedRecord(page, full, "02-maxcut-qaoa.fqx");
+  const replay = await savedRecord(page, full, "03-maxcut-replay.fqx");
+  expect(optimized.program.origin.source).toBe(qaoaSource);
+  expect(optimized.job.result.qubits).toBe(6);
+  expect(optimized.job.result.counts).toEqual(replay.job.result.counts);
+  expect(optimized.job.result.counts).not.toEqual(baseline.job.result.counts);
+  await page
+    .getByRole("button", { name: "Compare results", exact: true })
+    .click();
+  const comparison = page.getByRole("region", {
+    name: "Experiment comparison",
+    exact: true,
+  });
+  await expect(
+    comparison.getByRole("combobox", {
+      name: "Baseline experiment",
+      exact: true,
+    }),
+  ).toHaveValue(baseline.id);
+  await expect(
+    comparison.getByRole("combobox", {
+      name: "Variant experiment",
+      exact: true,
+    }),
+  ).toHaveValue(optimized.id);
+  await page.screenshot({
+    path: testInfo.outputPath("qaoa-baseline-optimized.png"),
+    fullPage: true,
+  });
+  await comparison
+    .getByRole("combobox", { name: "Variant experiment", exact: true })
+    .selectOption({ value: replay.id });
+  await comparison
+    .getByRole("combobox", { name: "Baseline experiment", exact: true })
+    .selectOption({ value: optimized.id });
+  await expect(
+    comparison.getByRole("region", {
+      name: "Observed differences",
+      exact: true,
+    }),
+  ).toContainText("0.0%");
+  await page.reload();
+  await expect(
+    comparison.getByRole("combobox", {
+      name: "Variant experiment",
+      exact: true,
+    }),
+  ).toHaveValue(replay.id);
+  await expect(
+    comparison.getByRole("region", {
+      name: "Observed differences",
+      exact: true,
+    }),
+  ).toContainText("0.0%");
+  await expect(progress).toContainText("Experiment ready");
+  await progress.locator(".fq-experiment-run-history > summary").click();
+  await expect(
+    progress.getByRole("button", {
+      name: "Inspect earlier run " + failedAttempt.id,
+      exact: true,
+    }),
+  ).toBeVisible();
+  await progress.locator(".fq-experiment-run-history > summary").click();
+  await expect(outcomeCard).toContainText(
+    "Seeded replay matches saved results",
+  );
+  const downloaded = await page.request.get(
+    `/api/experiments/${optimized.id}/file`,
+  );
+  expect(downloaded.ok()).toBe(true);
+  expect((await downloaded.body()).length).toBeGreaterThan(100);
+  await page.screenshot({
+    path: testInfo.outputPath("qaoa-exact-replay.png"),
+    fullPage: true,
+  });
+  await page.getByRole("button", { name: "MODEL", exact: true }).click();
+  await expect(editor(page)).toHaveValue(draft);
+  if ((await agent.getAttribute("aria-expanded")) === "true")
+    await agent.click();
+  await page.getByRole("button", { name: "MODELS", exact: true }).click();
+  await page
+    .getByRole("region", { name: "Reference research task", exact: true })
+    .getByRole("button", { name: new RegExp(qaoaTaskName) })
+    .click();
+  await expect(editor(page)).toHaveValue(qaoaSource);
+  const independentRun = await runPython(page);
+  const independent = await savedRecord(
+    page,
+    independentRun,
+    "02-maxcut-qaoa.fqx",
+  );
+  expect(independentRun.id).not.toBe(full.id);
+  expect(independent.program.origin.source_hash).toBe(
+    optimized.program.origin.source_hash,
+  );
+  expect(independent.job.result.counts).toEqual(optimized.job.result.counts);
+  const retained = page.getByRole("region", { name: "My models", exact: true });
+  await retained
+    .getByRole("button")
+    .filter({ hasText: "Python Bell pair" })
+    .first()
+    .click();
+  await expect(editor(page)).toHaveValue(draft);
+  // Prepare a new version without overwriting either editor or composer drafts.
+  if ((await agent.getAttribute("aria-expanded")) !== "true")
+    await agent.click();
+  const composer = page.getByRole("textbox", {
+    name: "Message FlagQAI",
+    exact: true,
+  });
+  await composer.fill("Keep this existing chat draft.");
+  const beforeIteration = (await get(page, "/api/python/runs")).length;
+  await outcomeCard
+    .getByRole("button", { name: "Iterate parameters", exact: true })
+    .click();
+  const iterationDialog = page.getByRole("dialog", {
+    name: "New QAOA iteration",
+    exact: true,
+  });
+  await expect(
+    iterationDialog.getByRole("spinbutton", {
+      name: "Iteration shots",
+      exact: true,
+    }),
+  ).toHaveValue("4096");
+  await iterationDialog
+    .getByRole("spinbutton", { name: "QAOA layers", exact: true })
+    .fill("2");
+  await iterationDialog
+    .getByRole("button", { name: "Prepare iteration", exact: true })
+    .click();
+  await expect(composer).toHaveValue(
+    /^Keep this existing chat draft\.\n\nIterate the saved QAOA/,
+  );
+  expect((await get(page, "/api/python/runs")).length).toBe(beforeIteration);
+  await expect(editor(page)).toHaveValue(draft);
+  const holdIteration = join(
+    process.env.FQ_E2E_CONTROL_DIR,
+    "hold-qaoa-iteration",
+  );
+  await writeFile(holdIteration, "hold");
+  try {
+    await page
+      .getByRole("button", { name: "Send message", exact: true })
+      .click();
+    const question = page
+      .getByRole("article", { name: "Your message", exact: true })
+      .last();
+    await expect(question).toContainText(
+      "Iterate QAOA with p=2, 4,096 shots and seed 42.",
+    );
+    await expect(question.locator(".fq-agent-attachment")).not.toHaveAttribute(
+      "open",
+    );
+    const version = page
+      .getByRole("region", { name: "QAOA version comparison", exact: true })
+      .last();
+    await expect(version).toContainText("Latest attempt failed", {
+      timeout: 90000,
+    });
+    await expect(version).toContainText("Previous optimized result: 5.87");
+    await expect(editor(page)).toHaveValue(draft);
+    await rm(holdIteration, { force: true });
+    await expect(
+      page.locator(".fq-agent-message.assistant").last(),
+    ).toContainText("QAOA iteration verified", { timeout: 90000 });
+    await expect(version).toContainText("Compiled depth");
+    await expect(version).toContainText("Compiled gates");
+    await expect(version).toContainText("Python compute");
+    await version
+      .getByRole("button", { name: "Compare versions", exact: true })
+      .click();
+    await expect(
+      comparison.getByRole("combobox", {
+        name: "Baseline experiment",
+        exact: true,
+      }),
+    ).toHaveValue(optimized.id);
+    const variantID = await comparison
+      .getByRole("combobox", { name: "Variant experiment", exact: true })
+      .inputValue();
+    expect(variantID).not.toBe(optimized.id);
+    const newer = await get(page, "/api/experiments/" + variantID);
+    expect(newer.program.origin.run_id).not.toBe(full.id);
+    expect(newer.program.origin.source_hash).not.toBe(full.source_hash);
+    expect(newer.program.compiled.depth).toBeGreaterThan(
+      optimized.program.compiled.depth,
+    );
+    expect(newer.program.origin.source).toContain("for layer in range(2)");
+    expect(
+      (await page.request.get(`/api/experiments/${optimized.id}/file`)).ok(),
+    ).toBe(true);
+    await page.reload();
+    await expect(version).toContainText("Compiled depth");
+    await expect(
+      comparison.getByRole("combobox", {
+        name: "Baseline experiment",
+        exact: true,
+      }),
+    ).toHaveValue(optimized.id);
+    await page
+      .getByRole("region", { name: "Experiment progress", exact: true })
+      .last()
+      .locator(".fq-experiment-run-history > summary")
+      .click();
+    await expect(
+      page
+        .getByRole("region", { name: "Experiment progress", exact: true })
+        .last(),
+    ).toContainText("Earlier run issues · 1");
+    await page.getByRole("button", { name: "MODEL", exact: true }).click();
+    await expect(editor(page)).toHaveValue(draft);
+    const latestOutcome = page
+      .getByRole("region", { name: "QAOA outcome", exact: true })
+      .last();
+    await latestOutcome
+      .getByRole("button", { name: "View research record", exact: true })
+      .click();
+    const research = page.getByRole("dialog", {
+      name: "Research record",
+      exact: true,
+    });
+    await expect(
+      research.getByRole("region", { name: "Research objective", exact: true }),
+    ).toContainText("QAOA Max-Cut reference task");
+    await expect(
+      research
+        .getByRole("region", { name: "Research versions", exact: true })
+        .getByRole("row"),
+    ).toHaveCount(5);
+    await expect(research).toContainText("Model cost: unrecorded");
+    const detailedRuns = await Promise.all(
+      (await get(page, "/api/python/runs"))
+        .filter((r) => !previousRuns.has(r.id))
+        .map((r) => get(page, "/api/python/runs/" + r.id)),
+    );
+    const versions = detailedRuns.filter((r) =>
+      r.source.includes("# FLAGQAI_QAOA_ITERATION="),
+    );
+    const finalVersion = versions.find((r) => r.status === "completed");
+    const failedVersion = versions.find((r) => r.status === "failed");
+    expect(finalVersion).toBeTruthy();
+    expect(failedVersion).toBeTruthy();
+    await research
+      .getByRole("textbox", { name: "Research adoption reason", exact: true })
+      .fill("Selected for the next QAOA experiment; depth tradeoff reviewed.");
+    await research
+      .getByRole("button", { name: "Adopt selected version", exact: true })
+      .click();
+    await expect(
+      research.getByRole("region", {
+        name: "Research conclusion",
+        exact: true,
+      }),
+    ).toContainText("depth tradeoff reviewed");
+    const manifestDownload = page.waitForEvent("download");
+    await research
+      .getByRole("button", { name: "Download research record", exact: true })
+      .click();
+    const manifest = JSON.parse(
+      await readFile(await (await manifestDownload).path(), "utf8"),
+    );
+    expect(manifest.root_run).toBe(full.id);
+    expect(manifest.adopted.run).toBe(finalVersion.id);
+    expect(manifest.runs.filter((r) => r.status === "failed")).toHaveLength(2);
+    expect(manifest.model_cost).toBe(null);
+    expect(manifest.runs.find((r) => r.id === finalVersion.id).source).toBe(
+      newer.program.origin.source,
+    );
+    await research.screenshot({
+      path: testInfo.outputPath("qaoa-research-record.png"),
+    });
+    const bundleDownload = page.waitForEvent("download");
+    await research
+      .getByRole("button", { name: "Export research package", exact: true })
+      .click();
+    const bundle = await readFile(await (await bundleDownload).path());
+    expect(bundle.subarray(0, 2).toString()).toBe("PK");
+    const freshContext = await page
+      .context()
+      .browser()
+      .newContext({ viewport: { width: 1440, height: 1000 } });
+    const fresh = await freshContext.newPage();
+    try {
+      await fresh.goto(new URL("/#model", page.url()).href);
+      const cleanDraft =
+        "# Clean browser draft: keep this while restoring a research package\nprint('keep')\n";
+      await editor(fresh).fill(cleanDraft);
+      const beforeRestoring = (await get(fresh, "/api/python/runs")).map(
+        (r) => r.id,
+      );
+      let nativeRunReads = 0;
+      await fresh.route("**/api/python/runs/*", (route) => {
+        nativeRunReads++;
+        return route.abort("blockedbyclient");
+      });
+      const packagesBefore = (await get(fresh, "/api/research")).length;
+      await fresh
+        .getByRole("button", { name: "Research", exact: true })
+        .click();
+      const library = fresh.getByRole("dialog", {
+        name: "Research packages",
+        exact: true,
+      });
+      await library
+        .getByLabel("Import research ZIP", { exact: true })
+        .setInputFiles({
+          name: "qaoa-research.zip",
+          mimeType: "application/zip",
+          buffer: bundle,
+        });
+      const restored = fresh.getByRole("dialog", {
+        name: "Research record",
+        exact: true,
+      });
+      await expect(restored).toContainText(
+        "Imported evidence · read-only source history",
+        { timeout: 60000 },
+      );
+      await expect(
+        restored.getByRole("region", {
+          name: "Research conclusion",
+          exact: true,
+        }),
+      ).toContainText(finalVersion.id.slice(0, 8));
+      await restored.evaluate((el) => (el.scrollTop = 0));
+      await restored.screenshot({
+        path: testInfo.outputPath("research-package-restored.png"),
+      });
+
+      await expect(
+        restored.getByRole("region", {
+          name: "Research objective",
+          exact: true,
+        }),
+      ).toContainText("QAOA Max-Cut reference task");
+      const firstImport = (await get(fresh, "/api/research"))[0];
+      await restored
+        .getByRole("button", { name: "Clear adopted version", exact: true })
+        .click();
+      await restored
+        .getByRole("button", {
+          name: "Select research run " + failedVersion.id,
+          exact: true,
+        })
+        .click();
+      await restored
+        .getByRole("button", { name: "View run and logs", exact: true })
+        .click();
+      await expect(restored.getByLabel("Archived run output")).toContainText(
+        "Intentional recoverable acceptance failure",
+      );
+      await restored
+        .getByRole("button", { name: "Close research record", exact: true })
+        .click();
+      const corrupt = Buffer.from(bundle);
+      corrupt[0] = 0;
+      await library
+        .getByLabel("Import research ZIP", { exact: true })
+        .setInputFiles({
+          name: "damaged.zip",
+          mimeType: "application/zip",
+          buffer: corrupt,
+        });
+      await expect(library.getByRole("alert")).toContainText("Invalid");
+      expect((await get(fresh, "/api/research")).length).toBe(
+        packagesBefore + 1,
+      );
+      await library
+        .getByLabel("Import research ZIP", { exact: true })
+        .setInputFiles({
+          name: "qaoa-research.zip",
+          mimeType: "application/zip",
+          buffer: bundle,
+        });
+      await expect(restored).toContainText(
+        "Imported evidence · read-only source history",
+        { timeout: 60000 },
+      );
+      await expect(
+        restored.getByRole("region", {
+          name: "Research conclusion",
+          exact: true,
+        }),
+      ).toContainText(finalVersion.id.slice(0, 8));
+      const secondImport = (await get(fresh, "/api/research"))[0];
+      expect(secondImport.id).not.toBe(firstImport.id);
+      expect((await get(fresh, "/api/research")).length).toBe(
+        packagesBefore + 2,
+      );
+      const firstData = await get(fresh, "/api/research/" + firstImport.id),
+        secondData = await get(fresh, "/api/research/" + secondImport.id);
+      expect(
+        Object.values(secondData.local_ids).some((id) =>
+          Object.values(firstData.local_ids).includes(id),
+        ),
+      ).toBe(false);
+      await restored
+        .getByRole("button", { name: "Close research record", exact: true })
+        .click();
+      await library
+        .getByRole("button", { name: "Close research packages", exact: true })
+        .click();
+      await fresh.reload();
+      await expect(editor(fresh)).toHaveValue(cleanDraft);
+      await fresh
+        .getByRole("button", { name: "Research", exact: true })
+        .click();
+      await library
+        .getByRole("button", { name: new RegExp(secondImport.id.slice(-8)) })
+        .click();
+      await expect(
+        restored
+          .getByRole("region", { name: "Research versions", exact: true })
+          .getByRole("row"),
+      ).toHaveCount(5);
+      const preparation = restored.locator("details").filter({
+        has: fresh
+          .locator("summary")
+          .filter({ hasText: /^Reproduction preparation$/ }),
+      });
+      await preparation.locator("summary").click();
+      await preparation
+        .getByRole("button", { name: "Check configured runtime", exact: true })
+        .click();
+      await expect(preparation).toContainText("No execution was submitted");
+      expect((await get(fresh, "/api/python/runs")).map((r) => r.id)).toEqual(
+        beforeRestoring,
+      );
+      const verification = restored.getByRole("region", {
+        name: "Reproduction verification",
+        exact: true,
+      });
+      await verification
+        .getByRole("button", {
+          name: "Check reproduction environment",
+          exact: true,
+        })
+        .click();
+      await expect(verification).toContainText("Environment checked", {
+        timeout: 30000,
+      });
+      expect((await get(fresh, "/api/python/runs")).map((r) => r.id)).toEqual(
+        beforeRestoring,
+      );
+      await expect(editor(fresh)).toHaveValue(cleanDraft);
+      const environmentDetails = verification
+        .locator(".fq-environment-preparation")
+        .first();
+      await environmentDetails.locator("summary").click();
+      await expect(environmentDetails).toContainText("Nothing was installed");
+      await expect(environmentDetails).toContainText("Preparation commands");
+      const environmentDownload = fresh.waitForEvent("download");
+      await environmentDetails
+        .getByRole("button", {
+          name: "Download environment manifest",
+          exact: true,
+        })
+        .click();
+      const environmentFile = await environmentDownload;
+      const environmentManifest = JSON.parse(
+        await readFile(await environmentFile.path(), "utf8"),
+      );
+      expect(environmentManifest.schema).toBe(
+        "flagqai.environment-preparation.v1",
+      );
+      expect(environmentManifest.installation_performed).toBe(false);
+      expect(environmentManifest.current.sdk_version).toBe("0.4.0");
+      expect(environmentManifest.current.packages.torch).toMatch(
+        /^2\.13\.0(?:\+cpu)?$/,
+      );
+      expect(environmentManifest.current.sdk_code_sha256).toMatch(
+        /^[a-f0-9]{64}$/,
+      );
+      await restored.screenshot({
+        path: testInfo.outputPath("reproduction-environment-preparation.png"),
+      });
+      await environmentDetails.locator("summary").click();
+      await verification
+        .getByRole("button", {
+          name: "Run archived source & verify",
+          exact: true,
+        })
+        .click();
+      await expect(verification).toContainText("Verified · exact match", {
+        timeout: 90000,
+      });
+      await expect(verification).toContainText("Expected cut");
+      await expect(editor(fresh)).toHaveValue(cleanDraft);
+      const verificationReply = await fresh.request.post(
+        "/api/reproduction/list",
+        { data: { package_id: secondImport.id, run_id: finalVersion.id } },
+      );
+      const verificationRecords = await verificationReply.json();
+      expect(verificationRecords[0].source_hash).toBe(
+        newer.program.origin.source_hash,
+      );
+      expect(verificationRecords[0].artifacts).toHaveLength(3);
+      expect(
+        verificationRecords[0].reproduced_runtime.environment_manifest
+          .sdk_code_sha256,
+      ).toBe(environmentManifest.current.sdk_code_sha256);
+
+      expect((await get(fresh, "/api/python/runs")).length).toBe(
+        beforeRestoring.length + 1,
+      );
+      // Retrying the same receipt never creates another task.
+      await fresh.request.post("/api/reproduction/start", {
+        data: { id: verificationRecords[0].id },
+      });
+      expect((await get(fresh, "/api/python/runs")).length).toBe(
+        beforeRestoring.length + 1,
+      );
+      await verification.screenshot({
+        path: testInfo.outputPath("research-reproduction-verified.png"),
+      });
+      const reportDownload = fresh.waitForEvent("download");
+      await verification
+        .getByRole("button", {
+          name: "Download verification record",
+          exact: true,
+        })
+        .click();
+      const reportFile = await reportDownload;
+      expect(
+        JSON.parse(await readFile(await reportFile.path(), "utf8")).status,
+      ).toBe("exact");
+      await restored
+        .getByRole("button", { name: "Close research record", exact: true })
+        .click();
+      await library
+        .getByRole("button", { name: "Close research packages", exact: true })
+        .click();
+      await fresh.reload();
+      await expect(editor(fresh)).toHaveValue(cleanDraft);
+      await fresh
+        .getByRole("button", { name: "Research", exact: true })
+        .click();
+      await library
+        .getByRole("button", { name: new RegExp(secondImport.id.slice(-8)) })
+        .click();
+      await expect(verification).toContainText("Verified · exact match");
+      await expect(verification).toContainText(
+        verificationRecords[0].run_id.slice(0, 8),
+      );
+      const deliveryDownload = fresh.waitForEvent("download");
+      await restored
+        .getByRole("button", { name: "Export research package", exact: true })
+        .click();
+      const deliveryFile = await deliveryDownload;
+      const deliveryBytes = await readFile(await deliveryFile.path());
+      await restored
+        .getByRole("button", { name: "Close research record", exact: true })
+        .click();
+      await library
+        .getByLabel("Import research ZIP", { exact: true })
+        .setInputFiles({
+          name: "qaoa-delivery.zip",
+          mimeType: "application/zip",
+          buffer: deliveryBytes,
+        });
+      await expect(restored).toContainText(
+        "Imported evidence · read-only source history",
+        { timeout: 60000 },
+      );
+      const archivedVerification = verification.locator(
+        '[data-evidence-scope="archived"]',
+      );
+      await expect(archivedVerification).toHaveCount(1);
+      await expect(archivedVerification).toContainText("Archived verification");
+      await expect(
+        verification.locator('[data-evidence-scope="current"]'),
+      ).toHaveCount(0);
+      const deliverySummary = restored.getByRole("region", {
+        name: "Delivery verification summary",
+        exact: true,
+      });
+      await expect(deliverySummary).toContainText(
+        "Not verified in the current environment",
+      );
+      await expect(deliverySummary).toContainText(
+        "Archived verification: 1 records · 1 passing",
+      );
+      await expect(
+        archivedVerification.getByRole("button", {
+          name: "Run archived source & verify",
+          exact: true,
+        }),
+      ).toHaveCount(0);
+      await archivedVerification
+        .getByRole("button", { name: "View reproduction logs", exact: true })
+        .click();
+      await expect(archivedVerification).toContainText(
+        "Run " + verificationRecords[0].run_id + " · completed",
+      );
+      expect(nativeRunReads).toBe(0);
+      expect((await get(fresh, "/api/python/runs")).length).toBe(
+        beforeRestoring.length + 1,
+      );
+      await expect(editor(fresh)).toHaveValue(cleanDraft);
+      await verification
+        .getByRole("button", {
+          name: "Check reproduction environment",
+          exact: true,
+        })
+        .click();
+      await expect(
+        verification.locator('[data-evidence-scope="current"]'),
+      ).toContainText("Environment checked", { timeout: 30000 });
+      await verification
+        .locator('[data-evidence-scope="current"]')
+        .getByRole("button", {
+          name: "Run archived source & verify",
+          exact: true,
+        })
+        .click();
+      await expect(
+        verification.locator('[data-evidence-scope="current"]'),
+      ).toContainText("Verified · exact match", { timeout: 90000 });
+      await expect(deliverySummary).toContainText(
+        "Current environment: 1 records · 1 passing",
+      );
+      await expect(archivedVerification).toHaveCount(1);
+      await expect(editor(fresh)).toHaveValue(cleanDraft);
+      expect((await get(fresh, "/api/python/runs")).length).toBe(
+        beforeRestoring.length + 2,
+      );
+      await restored.screenshot({
+        path: testInfo.outputPath("research-delivery-archive-and-current.png"),
+      });
+      await preparation.locator("summary").click();
+      await preparation
+        .getByRole("button", { name: "Open source in editor", exact: true })
+        .click();
+      await expect(editor(fresh)).toHaveValue(newer.program.origin.source);
+      expect(
+        await fresh.evaluate(
+          (source) =>
+            JSON.parse(
+              localStorage.getItem("fq-react-workspace-v1"),
+            ).models.some((m) => m.source === source),
+          cleanDraft,
+        ),
+      ).toBe(true);
+      expect(nativeRunReads).toBe(0);
+      await fresh.unroute("**/api/python/runs/*");
+      const explicitReplay = await runPython(fresh);
+      expect(explicitReplay.source_hash).toBe(newer.program.origin.source_hash);
+      expect(explicitReplay.id).not.toBe(full.id);
+      expect(
+        (await savedRecord(fresh, explicitReplay, "02-maxcut-qaoa.fqx")).job
+          .result.counts,
+      ).toEqual(newer.job.result.counts);
+      await fresh.screenshot({
+        path: testInfo.outputPath("research-package-explicit-reproduction.png"),
+        fullPage: true,
+      });
+    } finally {
+      await freshContext.close();
+    }
+
+    await research
+      .getByRole("button", { name: "Close research record", exact: true })
+      .click();
+    await page.reload();
+    await page
+      .getByRole("region", { name: "QAOA outcome", exact: true })
+      .first()
+      .getByRole("button", { name: "View research record", exact: true })
+      .click();
+    await expect(
+      research.getByRole("region", {
+        name: "Research conclusion",
+        exact: true,
+      }),
+    ).toContainText(finalVersion.id.slice(0, 8));
+    await research
+      .getByRole("button", {
+        name: "Select research run " + failedVersion.id,
+        exact: true,
+      })
+      .click();
+    await expect(
+      research.getByRole("button", {
+        name: "Adopt selected version",
+        exact: true,
+      }),
+    ).toHaveCount(0);
+    await research
+      .getByRole("button", { name: "View run and logs", exact: true })
+      .click();
+    await expect(page.getByLabel("Python run history")).toHaveValue(
+      failedVersion.id,
+    );
+    await expect(editor(page)).toHaveValue(draft);
+    await page
+      .getByRole("region", { name: "QAOA outcome", exact: true })
+      .first()
+      .getByRole("button", { name: "View research record", exact: true })
+      .click();
+    await research
+      .getByRole("button", {
+        name: "Select research run " + finalVersion.id,
+        exact: true,
+      })
+      .click();
+    await research
+      .getByRole("button", { name: "Compare with baseline", exact: true })
+      .click();
+    await expect(
+      comparison.getByRole("combobox", {
+        name: "Baseline experiment",
+        exact: true,
+      }),
+    ).toHaveValue(optimized.id);
+    await expect(
+      comparison.getByRole("combobox", {
+        name: "Variant experiment",
+        exact: true,
+      }),
+    ).toHaveValue(variantID);
+    await page.getByRole("button", { name: "MODEL", exact: true }).click();
+    await expect(editor(page)).toHaveValue(draft);
+    await version.scrollIntoViewIfNeeded();
+    await page.screenshot({
+      path: testInfo.outputPath("qaoa-iteration-versions.png"),
+      fullPage: true,
+    });
+  } finally {
+    await rm(holdIteration, { force: true });
+  }
+});
+
+test("reviewed Agent snapshots save independently, reject stale validation and run exact merged code with undo and failure history", async ({
+  page,
+}, testInfo) => {
+  await editor(page).fill(bell);
+  const shared = page.waitForResponse(
+    (r) =>
+      r.url().endsWith("/api/editor/files") && r.request().method() === "POST",
+  );
+  await page
+    .getByRole("button", { name: "Share with Agent", exact: true })
+    .click();
+  const file = await (await shared).json();
+  const root = (await get(page, "/api/projects")).workspace_root;
+  const path = join(root, file.path);
+  const local = bell + "# My unsaved draft stays recoverable\n";
+  await editor(page).fill(local);
+  const proposal = bell.replace(
+    "result = fq.run",
+    "circuit.x(1)\nresult = fq.run",
+  );
+  await writeFile(path, proposal);
+  const reviewButton = page.getByRole("button", {
+    name: "Review changes",
+    exact: true,
+  });
+  await expect(reviewButton).toBeVisible();
+  await reviewButton.click();
+  const review = page.getByRole("dialog", {
+    name: "Review Agent code changes",
+    exact: true,
+  });
+  const base = review.locator(".fq-review-base");
+  await base.locator("summary").click();
+  await expect(base).toContainText("Shared base");
+  await expect(base).toContainText("My unsaved draft");
+  await review
+    .getByRole("button", {
+      name: "Save proposal as independent version",
+      exact: true,
+    })
+    .click();
+  await expect(review).toContainText("Your draft and disk file are unchanged");
+  const models = () =>
+    page.evaluate(
+      () => JSON.parse(localStorage.getItem("fq-react-workspace-v1")).models,
+    );
+  expect(
+    (await models()).some(
+      (m) => m.source === proposal && m.reviewOrigin?.fileId === file.id,
+    ),
+  ).toBe(true);
+  expect(await readFile(path, "utf8")).toBe(proposal);
+  await review
+    .getByRole("button", { name: "Close code review", exact: true })
+    .click();
+  await page.reload();
+  await expect(editor(page)).toHaveValue(local);
+  expect(
+    (await models()).some(
+      (m) => m.source === proposal && m.reviewOrigin?.fileId === file.id,
+    ),
+  ).toBe(true);
+  await reviewButton.click();
+  const before = (await get(page, "/api/python/runs")).map((r) => r.id);
+  let release, arrive;
+  const gate = new Promise((resolve) => (release = resolve)),
+    arrived = new Promise((resolve) => (arrive = resolve));
+  await page.route("**/api/python/check", async (route) => {
+    arrive();
+    await gate;
+    await route.continue();
+  });
+  try {
+    await review
+      .getByRole("button", { name: "Accept & run", exact: true })
+      .click();
+    await arrived;
+    await writeFile(path, proposal + "# newer Agent revision during review\n");
+    await expect(review).toContainText(
+      "The editor or Agent file changed while this review was open",
+    );
+    release();
+    await expect(review).toContainText("nothing was run");
+    expect((await get(page, "/api/python/runs")).map((r) => r.id)).toEqual(
+      before,
+    );
+    await expect(editor(page)).toHaveValue(local);
+  } finally {
+    release();
+    await page.unroute("**/api/python/check");
+  }
+  await review
+    .getByRole("button", { name: "Close code review", exact: true })
+    .click();
+  await writeFile(path, "def broken(\n");
+  await expect
+    .poll(async () => (await get(page, "/api/editor/files/" + file.id)).source)
+    .toBe("def broken(\n");
+  await reviewButton.click();
+  // Wait for the polling observer if this review initially captured the previous revision.
+  if (!(await review.textContent()).includes("broken")) {
+    await expect(
+      review.getByRole("button", { name: "Refresh comparison" }),
+    ).toBeVisible();
+    await review.getByRole("button", { name: "Refresh comparison" }).click();
+  }
+  await review
+    .getByRole("button", { name: "Accept & run", exact: true })
+    .click();
+  await expect(review.getByRole("alert")).toContainText(
+    "Syntax error at line 1",
+  );
+  expect((await get(page, "/api/python/runs")).map((r) => r.id)).toEqual(
+    before,
+  );
+  await expect(editor(page)).toHaveValue(local);
+  await review
+    .getByRole("button", { name: "Close code review", exact: true })
+    .click();
+  const failing = 'raise RuntimeError("Reviewed runtime failure retained")\n';
+  await writeFile(path, failing);
+  await expect
+    .poll(async () =>
+      page.evaluate(
+        () =>
+          JSON.parse(localStorage.getItem("fq-react-workspace-v1")).editorLink
+            ?.incoming?.source,
+      ),
+    )
+    .toBe(failing);
+  await reviewButton.click();
+  await review
+    .getByRole("button", { name: "Accept & run", exact: true })
+    .click();
+  await expect(review).toHaveCount(0);
+  await expect(editor(page)).toHaveValue(failing);
+  let failed;
+  await expect
+    .poll(
+      async () => {
+        failed = (await get(page, "/api/python/runs")).find(
+          (r) => !before.includes(r.id),
+        );
+        return failed?.status;
+      },
+      { timeout: 90000 },
+    )
+    .toBe("failed");
+  expect((await get(page, "/api/python/runs/" + failed.id)).source).toBe(
+    failing,
+  );
+  await page
+    .getByRole("button", { name: "Undo Agent change", exact: true })
+    .click();
+  await expect(editor(page)).toHaveValue(local);
+  await page.reload();
+  await expect(editor(page)).toHaveValue(local);
+  await writeFile(path, proposal + "# final Agent proposal\n");
+  await expect(reviewButton).toBeVisible();
+  await reviewButton.click();
+  const merge = review.locator(".fq-review-merge");
+  await merge.locator("summary").click();
+  const merged = proposal + "# Human-reviewed merged version\n";
+  await merge
+    .getByRole("textbox", { name: "Reviewed merged code", exact: true })
+    .fill(merged);
+  await merge
+    .getByRole("button", { name: "Save reviewed version", exact: true })
+    .click();
+  const ids = new Set((await get(page, "/api/python/runs")).map((r) => r.id));
+  await merge
+    .getByRole("button", { name: "Apply & run reviewed code", exact: true })
+    .dblclick();
+  await expect(review).toHaveCount(0);
+  let success;
+  await expect
+    .poll(
+      async () => {
+        success = (await get(page, "/api/python/runs")).find(
+          (r) => !ids.has(r.id),
+        );
+        return success?.status;
+      },
+      { timeout: 90000 },
+    )
+    .toBe("completed");
+  const complete = await get(page, "/api/python/runs/" + success.id);
+  expect(complete.source).toBe(merged);
+  expect(
+    (await get(page, "/api/python/runs")).filter((r) => !ids.has(r.id)),
+  ).toHaveLength(1);
+  const saved = await savedRecord(page, complete, "bell.fqx");
+  expect(Object.keys(saved.job.result.counts).sort()).toEqual(["01", "10"]);
+  expect(await readFile(path, "utf8")).toBe(
+    proposal + "# final Agent proposal\n",
+  );
+  await expect(editor(page)).toHaveValue(merged);
+  await page
+    .getByRole("button", { name: "Undo Agent change", exact: true })
+    .click();
+  await expect(editor(page)).toHaveValue(local);
+  await page.reload();
+  await expect(editor(page)).toHaveValue(local);
+  expect((await models()).some((m) => m.source === merged)).toBe(true);
+  await page.getByLabel("Python run history").selectOption(failed.id);
+  await expect(
+    page.getByRole("region", { name: "Python failure", exact: true }),
+  ).toContainText("Reviewed runtime failure retained");
+  await expect(editor(page)).toHaveValue(local);
+  await page.screenshot({
+    path: testInfo.outputPath("reviewed-version-and-failure-history.png"),
+    fullPage: true,
+  });
+});
+
+test("reviewed OpenQASM compilation uses the accepted snapshot instead of the previous draft", async ({
+  page,
+}) => {
+  await page.getByRole("button", { name: "OpenQASM", exact: true }).click();
+  const base =
+    'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\ncreg c[2];\nh q[0];\n';
+  const proposal =
+    base + "cx q[0],q[1];\nmeasure q[0] -> c[0];\nmeasure q[1] -> c[1];\n";
+  await editor(page).fill(base);
+  const shared = page.waitForResponse(
+    (r) =>
+      r.url().endsWith("/api/editor/files") && r.request().method() === "POST",
+  );
+  await page
+    .getByRole("button", { name: "Share with Agent", exact: true })
+    .click();
+  const file = await (await shared).json(),
+    root = (await get(page, "/api/projects")).workspace_root;
+  const local = base + "// unsaved local notes\n";
+  await editor(page).fill(local);
+  await writeFile(join(root, file.path), proposal);
+  await page
+    .getByRole("button", { name: "Review changes", exact: true })
+    .click();
+  const compilation = page.waitForResponse(
+    (r) => new URL(r.url()).pathname === "/api/compile",
+  );
+  await page
+    .getByRole("button", { name: "Accept & compile", exact: true })
+    .click();
+  const response = await compilation;
+  expect(response.request().postDataJSON().source).toBe(proposal);
+  expect(response.ok(), JSON.stringify(await response.json())).toBe(true);
+  await expect(page).toHaveURL(/#program$/, { timeout: 90000 });
+  await page.getByRole("button", { name: "MODEL", exact: true }).click();
+  await expect(editor(page)).toHaveValue(proposal);
+  const programs = await page.evaluate(
+    () => JSON.parse(localStorage.getItem("fq-react-workspace-v1")).programs,
+  );
+  expect(programs[0].source).toBe(proposal);
+  expect(
+    programs[0].compiled.instructions.some(
+      (g) => g.name.toLowerCase() === "cx",
+    ),
+  ).toBe(true);
+  await page
+    .getByRole("button", { name: "Undo Agent change", exact: true })
+    .click();
+  await expect(editor(page)).toHaveValue(local);
+});
+
+test("five-cycle user journey: reviewed parameters, offline recovery and independent delivery retain drafts", async ({
+  page,
+}, testInfo) => {
+  const { fiveCyclePrompt, fiveCycleSource } =
+    await import("./five-cycle-task.mjs");
+  await editor(page).fill(draft);
+  const agentButton = page.getByRole("button", {
+    name: "FlagQAI Agent",
+    exact: true,
+  });
+  if ((await agentButton.getAttribute("aria-expanded")) !== "true")
+    await agentButton.click();
+  await page
+    .getByRole("button", { name: "Connect Agent", exact: true })
+    .click();
+  await expect(
+    page.getByRole("status", { name: "Connected", exact: true }),
+  ).toBeVisible();
+  const follow = page.getByRole("switch", { name: /Follow Agent/ });
+  if ((await follow.getAttribute("aria-checked")) === "true")
+    await follow.click();
+  const before = new Set(
+    (await get(page, "/api/python/runs")).map((r) => r.id),
+  );
+  await page
+    .getByRole("textbox", { name: "Message FlagQAI", exact: true })
+    .fill(fiveCyclePrompt);
+  await page.getByRole("button", { name: "Send message", exact: true }).click();
+  await expect(
+    page.locator(".fq-agent-message.assistant").last(),
+  ).toContainText("QAOA reference workflow verified", { timeout: 90000 });
+  await expect(editor(page)).toHaveValue(draft);
+  const newRuns = (await get(page, "/api/python/runs")).filter(
+    (r) => !before.has(r.id),
+  );
+  const baseline = await get(
+    page,
+    "/api/python/runs/" + newRuns.find((r) => r.status === "completed").id,
+  );
+  const optimized = await savedRecord(page, baseline, "02-maxcut-qaoa.fqx");
+  expect(optimized.program.compiled.qubits).toBe(5);
+  expect(baseline.source).toBe(fiveCycleSource);
+  expect(baseline.logs.map((l) => l.text).join("")).toContain(
+    '"classical_optimum": 4',
+  );
+  const failed = newRuns.find((r) => r.status === "failed");
+  expect(failed).toBeTruthy();
+  // Opening the Agent's model is an explicit UI action and keeps the older draft.
+  await page.locator(".fq-agent-work > summary").last().click();
+  await page
+    .locator(".fq-workspace-artifact")
+    .filter({ hasText: "QAOA Max-Cut · five-node cycle" })
+    .getByRole("button", { name: "Open model ↗", exact: true })
+    .click();
+  await expect(editor(page)).toHaveValue(fiveCycleSource);
+  const local = fiveCycleSource + "# My unsaved review note\n";
+  await editor(page).fill(local);
+  const state = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem("fq-react-workspace-v1")),
+  );
+  expect(state.models.some((m) => m.source === draft)).toBe(true);
+  const path = join(
+    (await get(page, "/api/projects")).workspace_root,
+    state.editorLink.path,
+  );
+  const lineage = {
+    version: 1,
+    run: baseline.id,
+    source: baseline.source_hash,
+    archive: optimized.id,
+    sha256: optimized.program.experiment.sha256,
+    layers: 1,
+    shots: 1024,
+    seed: 43,
+  };
+  const proposal =
+    "# FLAGQAI_QAOA_ITERATION=" +
+    JSON.stringify(lineage) +
+    "\n" +
+    fiveCycleSource.replace("5, 4096, 42, 9", "5, 1024, 43, 7");
+  // Deterministic stand-in for an Agent file edit; no reasoning/model call is claimed.
+  await writeFile(path, proposal);
+  const reviewButton = page.getByRole("button", {
+    name: "Review changes",
+    exact: true,
+  });
+  await expect(reviewButton).toBeVisible();
+  await reviewButton.click();
+  const review = page.getByRole("dialog", {
+    name: "Review Agent code changes",
+    exact: true,
+  });
+  const merge = review.locator(".fq-review-merge");
+  await merge.locator("summary").click();
+  const accepted = proposal + "# My reviewed note is retained\n";
+  await merge
+    .getByRole("textbox", { name: "Reviewed merged code", exact: true })
+    .fill(accepted);
+  const runsBeforeReview = new Set(
+    (await get(page, "/api/python/runs")).map((r) => r.id),
+  );
+  await merge
+    .getByRole("button", { name: "Apply & run reviewed code", exact: true })
+    .click();
+  let reviewed;
+  await expect
+    .poll(
+      async () => {
+        const candidate = (await get(page, "/api/python/runs")).find(
+          (r) => !runsBeforeReview.has(r.id),
+        );
+        if (candidate)
+          reviewed = await get(page, "/api/python/runs/" + candidate.id);
+        return reviewed?.status;
+      },
+      { timeout: 90000 },
+    )
+    .toBe("completed");
+  expect(reviewed.source).toBe(accepted);
+  const reviewedOptimized = await savedRecord(
+    page,
+    reviewed,
+    "02-maxcut-qaoa.fqx",
+  );
+  expect(reviewedOptimized.program.compiled.qubits).toBe(5);
+  expect(
+    Object.values(reviewedOptimized.job.result.counts).reduce(
+      (a, b) => a + b,
+      0,
+    ),
+  ).toBe(1024);
+
+  await page
+    .getByRole("button", { name: "Undo Agent change", exact: true })
+    .click();
+  await expect(editor(page)).toHaveValue(local);
+  const outcome = page
+    .locator(".fq-python-console")
+    .getByRole("button", { name: "View research record", exact: true });
+  await expect(outcome).toBeVisible();
+  await outcome.click();
+  const research = page.getByRole("dialog", {
+    name: "Research record",
+    exact: true,
+  });
+  await expect(
+    research.getByRole("region", { name: "Research objective", exact: true }),
+  ).toContainText("five-node cycle");
+  await research
+    .getByRole("textbox", { name: "Research adoption reason", exact: true })
+    .fill(
+      "Use the reviewed 5-cycle source; sampling settings differ from the baseline.",
+    );
+  await research
+    .getByRole("button", { name: "Adopt selected version", exact: true })
+    .click();
+  await research
+    .getByRole("button", { name: "Compare with baseline", exact: true })
+    .click();
+  await expect(
+    page.getByRole("dialog", { name: "Research record", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("combobox", { name: "Baseline experiment", exact: true }),
+  ).toHaveValue(optimized.id);
+  await expect(
+    page.getByRole("combobox", { name: "Variant experiment", exact: true }),
+  ).toHaveValue(reviewedOptimized.id);
+  await page.getByRole("button", { name: "MODEL", exact: true }).click();
+  await expect(editor(page)).toHaveValue(local);
+  await outcome.click();
+  const verification = research.getByRole("region", {
+    name: "Reproduction verification",
+    exact: true,
+  });
+  await verification
+    .getByRole("button", {
+      name: "Check reproduction environment",
+      exact: true,
+    })
+    .click();
+  await expect(verification).toContainText("Environment checked", {
+    timeout: 30000,
+  });
+  const receiptResponse = page.waitForResponse(
+    (r) =>
+      r.url().endsWith("/api/reproduction/start") &&
+      r.request().method() === "POST",
+  );
+  await verification
+    .getByRole("button", { name: "Run archived source & verify", exact: true })
+    .click();
+  const receipt = await (await receiptResponse).json();
+  const countAfterSubmit = (await get(page, "/api/python/runs")).length;
+  await page.route("**/api/reproduction/list", (route) =>
+    route.abort("connectionfailed"),
+  );
+  await expect(verification.getByRole("alert")).toContainText(
+    "Verification updates interrupted",
+  );
+  const summary = research.getByRole("region", {
+    name: "Delivery verification summary",
+    exact: true,
+  });
+  await expect(summary).toContainText("Current environment: unavailable");
+  await page.reload();
+  await expect(editor(page)).toHaveValue(local);
+  await outcome.click();
+  await expect(summary).toContainText("Current environment: unavailable");
+  expect((await get(page, "/api/python/runs")).length).toBe(countAfterSubmit);
+  await page.unroute("**/api/reproduction/list");
+  await expect(verification).toContainText("Verified · exact match", {
+    timeout: 90000,
+  });
+  await expect(verification).toContainText(receipt.run_id.slice(0, 8));
+  await expect(summary).toContainText(
+    "Current environment: 1 records · 1 passing",
+  );
+  expect((await get(page, "/api/python/runs")).length).toBe(countAfterSubmit);
+  // A later outage must not continue to certify the previous green count.
+  await page.route("**/api/reproduction/list", (route) =>
+    route.abort("connectionfailed"),
+  );
+  await expect(summary).toContainText("Current environment: unavailable");
+  await expect(summary).not.toContainText(
+    "Current environment: 1 records · 1 passing",
+  );
+  await expect(
+    verification.locator('[data-evidence-scope="current"]'),
+  ).toHaveAttribute("data-updates-interrupted", "true");
+  await verification.screenshot({
+    path: testInfo.outputPath("five-cycle-verification-offline.png"),
+  });
+  await page.unroute("**/api/reproduction/list");
+  await expect(summary).toContainText(
+    "Current environment: 1 records · 1 passing",
+  );
+  const downloadPromise = page.waitForEvent("download");
+  await research
+    .getByRole("button", { name: "Export research package", exact: true })
+    .click();
+  const exported = await downloadPromise;
+  const buffer = await readFile(await exported.path());
+  await writeFile(
+    testInfo.outputPath("five-cycle-reviewed-delivery.zip"),
+    buffer,
+  );
+  await research
+    .getByRole("button", { name: "Close research record", exact: true })
+    .click();
+  const context = await page
+    .context()
+    .browser()
+    .newContext({ viewport: { width: 1440, height: 1000 } });
+  try {
+    const fresh = await context.newPage();
+    await fresh.goto(page.url());
+    await expect(editor(fresh)).toBeVisible();
+    const handoffDraft = "# Independent handoff draft\n";
+    await editor(fresh).fill(handoffDraft);
+    await fresh.getByRole("button", { name: "Research", exact: true }).click();
+    const library = fresh.getByRole("dialog", {
+      name: "Research packages",
+      exact: true,
+    });
+    await library
+      .getByLabel("Import research ZIP", { exact: true })
+      .setInputFiles({
+        name: "five-cycle.zip",
+        mimeType: "application/zip",
+        buffer,
+      });
+    const restored = fresh.getByRole("dialog", {
+      name: "Research record",
+      exact: true,
+    });
+    await expect(restored).toContainText("read-only source history", {
+      timeout: 60000,
+    });
+    await expect(
+      restored.getByRole("region", { name: "Research objective", exact: true }),
+    ).toContainText("five-node cycle");
+    await expect(
+      restored.getByRole("region", {
+        name: "Delivery verification summary",
+        exact: true,
+      }),
+    ).toContainText("Not verified in the current environment");
+    const freshVerification = restored.getByRole("region", {
+      name: "Reproduction verification",
+      exact: true,
+    });
+    await expect(
+      freshVerification.locator('[data-evidence-scope="archived"]'),
+    ).toHaveCount(1);
+    await freshVerification
+      .getByRole("button", {
+        name: "Check reproduction environment",
+        exact: true,
+      })
+      .click();
+    await expect(
+      freshVerification.locator('[data-evidence-scope="current"]'),
+    ).toContainText("Environment checked", { timeout: 30000 });
+    await freshVerification
+      .locator('[data-evidence-scope="current"]')
+      .getByRole("button", {
+        name: "Run archived source & verify",
+        exact: true,
+      })
+      .click();
+    await expect(
+      freshVerification.locator('[data-evidence-scope="current"]'),
+    ).toContainText("Verified · exact match", { timeout: 90000 });
+    await expect(editor(fresh)).toHaveValue(handoffDraft);
+    await restored.screenshot({
+      path: testInfo.outputPath("five-cycle-independent-verification.png"),
+    });
+  } finally {
+    await context.close();
+  }
+  expect((await get(page, "/api/python/runs/" + failed.id)).status).toBe(
+    "failed",
+  );
+  await expect(editor(page)).toHaveValue(local);
+  const sdkReport = (run) =>
+    JSON.parse(
+      run.logs
+        .map((log) => log.text)
+        .join("")
+        .split("\n")
+        .find((line) => line.startsWith("MAXCUT_REPORT="))
+        .slice("MAXCUT_REPORT=".length),
+    );
+  await writeFile(
+    testInfo.outputPath("five-cycle-user-audit.json"),
+    JSON.stringify(
+      {
+        status: "passed",
+        graph: "five-node cycle",
+        agent_input:
+          "scripted protocol and deterministic file-edit fixture; no reasoning model called",
+        model_calls: 0,
+        baseline_run: baseline.id,
+        reviewed_run: reviewed.id,
+        accepted_source_hash: reviewed.source_hash,
+        verification_receipt: receipt.id,
+        preserved_failure: failed.id,
+        baseline: sdkReport(baseline),
+        reviewed: sdkReport(reviewed),
+        connection_loss:
+          "verification history reads failed during execution and after success; refresh retained receipt and no task was resubmitted",
+        drafts_preserved: true,
+        independent_import_and_verification: true,
+      },
+      null,
+      2,
+    ),
+  );
 });

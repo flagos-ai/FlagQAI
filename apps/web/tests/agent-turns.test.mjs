@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { transcriptTurns, workDuration } from "../src/state/agent-turns.ts";
+import {
+  transcriptTurns,
+  workDuration,
+  actionBelongsToTurn,
+} from "../src/state/agent-turns.ts";
 import { emptyAgentView } from "../src/state/agent-view.ts";
 const view = (rows, working = false) => ({
   ...emptyAgentView(),
@@ -104,4 +108,15 @@ test("native turn timestamps produce stable elapsed time through history replay"
   });
   assert.equal(workDuration(transcriptTurns(state)[0].durationMs), "1m 5s");
   assert.equal(transcriptTurns(state)[0].outcome, "completed");
+});
+
+test("workbench actions tagged by injected context stay with their human turn", () => {
+  assert.equal(actionBelongsToTurn(8, 8, 40), true);
+  assert.equal(actionBelongsToTurn(11, 8, 40), true);
+  assert.equal(actionBelongsToTurn(40, 8, 40), false);
+  assert.equal(actionBelongsToTurn(41, 40, 60), true);
+  assert.equal(actionBelongsToTurn(7, 8), false);
+  assert.equal(actionBelongsToTurn(undefined, 8), false);
+  assert.equal(actionBelongsToTurn(11, undefined), false);
+  assert.equal(actionBelongsToTurn(NaN, 8), false);
 });

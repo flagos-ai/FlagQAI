@@ -39,6 +39,28 @@ export function AgentSettings({
         <h2>Models & providers</h2>
         <CloseButton label="Close Agent settings" onClick={onClose} />
       </header>
+      <label className="fq-agent-backend-setting">
+        Agent backend
+        <select
+          aria-label="Agent backend"
+          value={agent.backend}
+          disabled={!!agent.session || agent.busy}
+          onChange={(event) => agent.setBackend(event.target.value)}
+        >
+          {agent.backends.length ? (
+            agent.backends.map((backend) => (
+              <option key={backend.id} value={backend.id}>
+                {backend.label || backend.id}
+              </option>
+            ))
+          ) : (
+            <option value="dsh">FlagQAI Harness</option>
+          )}
+        </select>
+        {agent.session && (
+          <small>The backend is fixed for the current session.</small>
+        )}
+      </label>
       <nav aria-label="Agent settings sections">
         <button
           className={tab === "models" ? "selected" : ""}

@@ -1,3 +1,5 @@
+import { reviewActionValid, type ReviewAction } from "../state/agent-review";
+import { workspaceReducer } from "../state/reducer";
 import { UIIcon } from "../components/UIIcon";
 import { EditorFind } from "../components/EditorFind";
 import { markCodeMatch, type CodeMatch } from "../state/editor-find";
@@ -32,6 +34,8 @@ import type {
 import { download } from "../state/exports";
 import type { PythonRun } from "../api/python-runs";
 
+import type { PlatformBridge } from "../hooks/usePlatformBridge";
+import type { ResearchTurn } from "../state/research-record";
 export function ModelPage({
   state,
   dispatch,
@@ -44,6 +48,7 @@ export function ModelPage({
   onAttachSelection,
   onRepairPython,
   backendLabel = "Configured CPU backend",
+  research,
 }: {
   projectWorkspace: ProjectWorkspace;
   onOpenProject: () => void;
@@ -51,6 +56,7 @@ export function ModelPage({
   editorSync: EditorSync;
   python: PythonWorkspace;
   backendLabel?: string;
+  research?: { turns: ResearchTurn[]; bridge: PlatformBridge };
   onRepairPython: (run: PythonRun) => Promise<void>;
   onAttachSelection: (
     source: string,
@@ -59,7 +65,7 @@ export function ModelPage({
   ) => void;
   state: WorkspaceState;
   dispatch: React.Dispatch<WorkspaceAction>;
-  compile: () => void;
+  compile: (source?: string, name?: string) => Promise<void>;
 }) {
   const [reviewRequest, setReviewRequest] = useState<{
     id: string;
@@ -128,6 +134,26 @@ export function ModelPage({
       110,
       500,
     );
+  const [compactOutput, setCompactOutput] = useState(() => {
+    try {
+      return localStorage.getItem("fq-python-output-compact-v1") === "on";
+    } catch {
+      return false;
+    }
+  });
+  const changeOutputMode = (compact: boolean) => {
+    setCompactOutput(compact);
+    try {
+      localStorage.setItem(
+        "fq-python-output-compact-v1",
+        compact ? "on" : "off",
+      );
+    } catch {
+      /* Keep the current tab usable without storage. */
+    }
+  };
+  const outputHeight =
+    state.language === "python" && compactOutput ? 112 : errorsHeight;
   const capturePosition = useEditorPosition(
     state.editorLink?.id ||
       `${state.project?.id || "models"}:${state.language}:${state.name}`,
@@ -297,7 +323,7 @@ export function ModelPage({
             title="Find in code (⌘F / Ctrl+F)"
             onClick={openFind}
           >
-            <UIIcon name="search" size={14} />
+            <UIIcon name="code" size={14} />
           </button>
           <button
             className="fq-project-open"
@@ -364,14 +390,41 @@ export function ModelPage({
             }));
           }}
         />
-        <div className="fq-toolbar">
-          <span className="fq-filename">
-            <UIIcon name="file" size={14} />
-            <span>
-              {state.name}.{isPython ? "py" : "qasm"}
+        <div className="fq-toolbar fq-model-toolbar">
+          <div className="fq-model-document">
+            <span className="fq-filename">
+              <UIIcon name="file" size={14} />
+              <span>
+                {state.name}.{isPython ? "py" : "qasm"}
+              </span>
             </span>
-          </span>
-          <div className="push" />
+            <EditorSyncBar
+              state={state}
+              dispatch={dispatch}
+              sync={editorSync}
+              reviewRequest={reviewRequest}
+              runDisabled={isPython ? !canRun : state.busy}
+              runLabel={isPython ? "Accept & run" : "Accept & compile"}
+              onRunReview={async (action: ReviewAction) => {
+                if (isPython) {
+                  await python.startReviewed(action);
+                  return;
+                }
+                if (!reviewActionValid(state, action))
+                  throw Error("The review is stale. Refresh before compiling.");
+                const snapshot = workspaceReducer(state, action);
+                const problem = (
+                  lintOpenQASM(snapshot.source) as Diagnostic[]
+                ).find((d) => d.severity === "error");
+                if (problem)
+                  throw Error(
+                    `Syntax error at line ${problem.line}, column ${problem.column}: ${problem.message}`,
+                  );
+                dispatch(action);
+                await compile(snapshot.source, snapshot.name);
+              }}
+            />
+          </div>
           <button
             onClick={() => dispatch({ type: "undo" })}
             disabled={!state.undo.length}
@@ -481,12 +534,7 @@ export function ModelPage({
             </button>
           </div>
         )}
-        <EditorSyncBar
-          state={state}
-          dispatch={dispatch}
-          sync={editorSync}
-          reviewRequest={reviewRequest}
-        />
+
         {projectWorkspace.error &&
           projectWorkspace.error !== editorSync.error && (
             <p className="fq-project-error" role="alert">
@@ -701,16 +749,22 @@ export function ModelPage({
               label="Resize model errors panel"
               orientation="horizontal"
               reverse
-              value={errorsHeight}
-              onChange={setErrorsHeight}
+              value={outputHeight}
+              onChange={(height) => {
+                changeOutputMode(false);
+                setErrorsHeight(height);
+              }}
               min={80}
               max={500}
               initial={180}
             />
-            <section className="fq-errors" style={{ height: errorsHeight }}>
+            <section className="fq-errors" style={{ height: outputHeight }}>
               {isPython ? (
                 <PythonConsole
+                  compact={compactOutput}
+                  onCompactChange={changeOutputMode}
                   python={python}
+                  research={research}
                   state={state}
                   source={state.source}
                   dispatch={dispatch}
@@ -834,7 +888,7 @@ export function ModelPage({
                 <>
                   <label>
                     Max Width (qubits)
-                    <input readOnly value="16" />
+                    <span className="fq-readonly-value">16</span>
                   </label>
                   <p>Current CPU backend limit.</p>
                 </>
@@ -854,52 +908,50 @@ export function ModelPage({
                 <h3>Runtime</h3>
                 <label>
                   Interpreter
-                  <input
-                    readOnly
-                    value={python.environment?.python || "Configured Python"}
-                  />
+                  <span className="fq-readonly-value">
+                    {python.environment?.python || "Configured Python"}
+                  </span>
                 </label>
                 <label>
                   Python version
-                  <input
-                    readOnly
-                    value={
-                      python.run?.runtime?.python || "Detected when running"
-                    }
-                  />
+                  <span className="fq-readonly-value">
+                    {python.run?.runtime?.python || "Detected when running"}
+                  </span>
                 </label>
                 <p>Uses the packages installed in this Python environment.</p>
-                <h3>Save experiments</h3>
-                <button
-                  onClick={() =>
-                    dispatch({
-                      type: "model",
-                      model: {
-                        name: "Python Bell experiment",
-                        source: pythonExample,
-                        language: "python",
-                      },
-                      preserveDraft: true,
-                    })
-                  }
-                >
-                  Load save/load example
-                </button>
-                <p>
-                  <code>fq.save("bell.fqx", result.plan, result=result)</code>
-                </p>
+                <details className="fq-settings-help">
+                  <summary>Save experiments</summary>
+                  <button
+                    onClick={() =>
+                      dispatch({
+                        type: "model",
+                        model: {
+                          name: "Python Bell experiment",
+                          source: pythonExample,
+                          language: "python",
+                        },
+                        preserveDraft: true,
+                      })
+                    }
+                  >
+                    Load save/load example
+                  </button>
+                  <p>
+                    <code>fq.save("bell.fqx", result.plan, result=result)</code>
+                  </p>
 
-                <p>
-                  Saves the actual circuit and returned measurements. Relative
-                  .fqx files are automatically collected from this run. Set
-                  shots, seed and device in your Python code.
-                </p>
-                <p>
-                  Saved .fqx experiments are retained.{" "}
-                  {state.editorLink?.project
-                    ? "Project sources stay on disk; runs use an isolated frozen copy."
-                    : "Other working files are temporary and removed after each run."}
-                </p>
+                  <p>
+                    Saves the actual circuit and returned measurements. Relative
+                    .fqx files are automatically collected from this run. Set
+                    shots, seed and device in your Python code.
+                  </p>
+                  <p>
+                    Saved .fqx experiments are retained.{" "}
+                    {state.editorLink?.project
+                      ? "Project sources stay on disk; runs use an isolated frozen copy."
+                      : "Other working files are temporary and removed after each run."}
+                  </p>
+                </details>
               </section>
             ) : (
               <section className="fq-preferences">
@@ -917,7 +969,7 @@ export function ModelPage({
                 ].map(([name, value]) => (
                   <label key={name}>
                     {name}
-                    <input value={value} readOnly />
+                    <span className="fq-readonly-value">{value}</span>
                   </label>
                 ))}
                 <label>
@@ -952,7 +1004,7 @@ export function ModelPage({
                 </label>
                 <label>
                   Remote process timeout
-                  <input value="90 seconds" readOnly />
+                  <span className="fq-readonly-value">90 seconds</span>
                 </label>
               </section>
             )}

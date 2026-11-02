@@ -1,3 +1,6 @@
+import { editorFiles } from "../api/editor-files";
+import { reviewActionValid, type ReviewAction } from "../state/agent-review";
+import { workspaceReducer } from "../state/reducer";
 import { saveProjectTab } from "./useProjectWorkspace";
 import { projectsAPI } from "../api/projects";
 import { checkpointProject, projectDirty } from "../state/project-workspace";
@@ -19,6 +22,8 @@ export function usePythonWorkspace(
   dispatch: React.Dispatch<WorkspaceAction>,
   bridge: PlatformBridge,
 ) {
+  const latest = useRef(state);
+  latest.current = state;
   const [run, setRun] = useState<PythonRun>();
   const [runs, setRuns] = useState<PythonRun[]>([]);
   const [environment, setEnvironment] = useState<PythonRun["environment"]>();
@@ -197,27 +202,91 @@ export function usePythonWorkspace(
       setImporting(false);
     }
   };
-  const start = async (saveProject = false) => {
-    if (lock.current) return;
+  const start = async (saveProject = false, reviewed?: ReviewAction) => {
+    if (lock.current) {
+      if (reviewed) throw Error("A Python submission is already in progress.");
+      return;
+    }
     lock.current = true;
     setSubmitting(true);
     setError("");
     try {
-      const project = state.editorLink?.project;
+      const original = latest.current;
+      if (
+        reviewed &&
+        (!reviewActionValid(original, reviewed) ||
+          original.language !== "python")
+      )
+        throw Error("The review is stale. Refresh before running.");
+      const snapshot = reviewed
+        ? workspaceReducer(original, reviewed)
+        : original;
+      if (reviewed) {
+        if (["queued", "running"].includes(run?.status || ""))
+          throw Error(
+            "Wait for the current Python run before accepting and running.",
+          );
+        const project = snapshot.editorLink?.project;
+        const blocked = snapshot.projectTabs?.filter(
+          (tab) =>
+            tab.project.id === project?.id &&
+            tab.id !== snapshot.activeProjectTab &&
+            (projectDirty(tab) ||
+              tab.editorLink.incoming ||
+              tab.editorLink.change?.outcome === "pending"),
+        );
+        if (blocked?.length)
+          throw Error(
+            "Review and save project dependencies first: " +
+              blocked.map((tab) => tab.path).join(", "),
+          );
+        const check = await pythonAPI.check(snapshot.source);
+        if (check.diagnostic)
+          throw Error(
+            `Syntax error at line ${check.diagnostic.line}, column ${check.diagnostic.column}: ${check.diagnostic.message}`,
+          );
+        const file = project
+          ? await projectsAPI.read(project.id, project.path)
+          : await editorFiles.read(reviewed.id, new AbortController().signal);
+        if (file.revision !== reviewed.revision) {
+          dispatch({
+            type: "file-changed",
+            id: reviewed.id,
+            revision: file.revision,
+            source: file.source,
+            time: Date.now(),
+          });
+          throw Error(
+            "The Agent file changed during validation. Refresh the review; nothing was run.",
+          );
+        }
+        if (
+          !reviewActionValid(latest.current, reviewed) ||
+          latest.current.name !== original.name ||
+          latest.current.language !== original.language ||
+          latest.current.activeProjectTab !== original.activeProjectTab
+        )
+          throw Error(
+            "The editor or Agent file changed during validation. Refresh the review; nothing was run.",
+          );
+        dispatch(reviewed);
+      }
+      const project = snapshot.editorLink?.project;
       const dirtyDependencies =
         project &&
-        state.projectTabs?.filter(
+        snapshot.projectTabs?.filter(
           (tab) =>
             tab.project.id === project.id &&
-            tab.id !== state.activeProjectTab &&
+            tab.id !== snapshot.activeProjectTab &&
             projectDirty(tab),
         );
-      let entryRevision = state.editorLink?.revision;
+      let entryRevision = snapshot.editorLink?.revision;
       if (project && saveProject) {
-        for (const tab of checkpointProject(state).projectTabs || []) {
+        for (const tab of checkpointProject(snapshot).projectTabs || []) {
           if (tab.project.id !== project.id || !projectDirty(tab)) continue;
           const saved = await saveProjectTab(tab, dispatch);
-          if (tab.id === state.activeProjectTab) entryRevision = saved.revision;
+          if (tab.id === snapshot.activeProjectTab)
+            entryRevision = saved.revision;
         }
       }
       if (!saveProject && dirtyDependencies && dirtyDependencies.length)
@@ -237,14 +306,14 @@ export function usePythonWorkspace(
                 operation: "project.run",
                 project_id: project.id,
                 entry: project.path,
-                source: state.source,
+                source: snapshot.source,
                 expected_revision: entryRevision,
               })
             ).python_run
           : await projectsAPI.run(
               project.id,
               project.path,
-              state.source,
+              snapshot.source,
               entryRevision!,
             )
         : bridge.ready && bridge.session
@@ -255,23 +324,29 @@ export function usePythonWorkspace(
                 request_id: crypto.randomUUID(),
                 origin: "ui",
                 operation: "python.run",
-                source: state.source,
-                name: state.name,
+                source: snapshot.source,
+                name: snapshot.name,
               })
             ).python_run
-          : await pythonAPI.run(state.source, state.name);
+          : await pythonAPI.run(snapshot.source, snapshot.name);
+      if (reviewed && result.source !== snapshot.source)
+        throw Error(
+          "The run reported a different source snapshot. Inspect run history before retrying.",
+        );
       setRun(result);
       setRuns((previous) => [
         result,
         ...previous.filter((item) => item.id !== result.id),
       ]);
       dispatch({ type: "python-run", id: result.id });
+      return result;
     } catch (problem) {
       setError(
         problem instanceof Error
           ? problem.message
           : "Python submission failed.",
       );
+      if (reviewed) throw problem;
     } finally {
       lock.current = false;
       setSubmitting(false);
@@ -376,6 +451,7 @@ export function usePythonWorkspace(
     recollect,
     importFile,
     start,
+    startReviewed: (action: ReviewAction) => start(false, action),
     cancel,
     openCircuit,
     openResults,

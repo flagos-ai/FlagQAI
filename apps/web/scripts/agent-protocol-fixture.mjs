@@ -10,6 +10,12 @@ import { fileURLToPath } from "node:url";
 import { createFlagQaiServer } from "../../../packages/server/index.mjs";
 import { createWebSessionView } from "../../cli/lib/types/dsh-adapter/web-session-view.js";
 import { createWorkbenchTools } from "../../cli/lib/types/dsh-adapter/workbench-tools.js";
+import {
+  qaoaTaskPrompt,
+  qaoaTaskName,
+  qaoaSource,
+} from "../src/tasks/qaoa-maxcut.mjs";
+import { fiveCyclePrompt, fiveCycleSource } from "../e2e/five-cycle-task.mjs";
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const records = new Map();
 // Match the Python server's resolved paths (macOS /var aliases /private/var).
@@ -401,6 +407,208 @@ const backend = {
               });
               return result;
             };
+            const iterationLine = requestText
+              .split("\n")
+              .find((line) => line.startsWith("# FLAGQAI_QAOA_ITERATION="));
+            const iteration =
+              process.env.FQ_E2E_CONTROL_DIR &&
+              requestText.includes(
+                "Iterate the saved QAOA Max-Cut experiment",
+              ) &&
+              iterationLine
+                ? JSON.parse(
+                    iterationLine.slice("# FLAGQAI_QAOA_ITERATION=".length),
+                  )
+                : null;
+            if (
+              process.env.FQ_E2E_CONTROL_DIR &&
+              (requestText.trim() === qaoaTaskPrompt.trim() ||
+                requestText.trim() === fiveCyclePrompt ||
+                iteration)
+            ) {
+              let source =
+                requestText.trim() === fiveCyclePrompt
+                  ? fiveCycleSource
+                  : qaoaSource;
+              let nodes = requestText.trim() === fiveCyclePrompt ? 5 : 6;
+              if (iteration) {
+                const parent = await typed("workbench_inspect", {
+                  resource: "run",
+                  id: iteration.run,
+                  detail: "full",
+                });
+                if (
+                  parent.source_hash !== iteration.source ||
+                  !parent.experiments.some(
+                    (e) =>
+                      e.id === iteration.archive &&
+                      e.sha256 === iteration.sha256,
+                  )
+                )
+                  throw Error("Iteration baseline mismatch");
+                if (
+                  !Number.isInteger(iteration.layers) ||
+                  iteration.layers < 1 ||
+                  iteration.layers > 8
+                )
+                  throw Error("Invalid iteration layers");
+                if (parent.source.includes("# FIVE_CYCLE_USER_ACCEPTANCE")) {
+                  source = fiveCycleSource;
+                  nodes = 5;
+                }
+                const start =
+                  source.indexOf("    if gamma is not None:\n") +
+                  "    if gamma is not None:\n".length;
+                const end = source.indexOf("    return program", start);
+                source =
+                  source.slice(0, start) +
+                  `        for layer in range(${iteration.layers}):\n` +
+                  source
+                    .slice(start, end)
+                    .split("\n")
+                    .map((line) => (line ? "    " + line : line))
+                    .join("\n") +
+                  source.slice(end);
+                source =
+                  iterationLine +
+                  "\n" +
+                  source
+                    .replace(
+                      `N, SHOTS, SEED, GRID = ${nodes}, 4096, 42, 9`,
+                      `N, SHOTS, SEED, GRID = ${nodes}, ${iteration.shots}, ${iteration.seed}, 9`,
+                    )
+                    .replace('"depth_p": 1', `"depth_p": ${iteration.layers}`);
+              }
+              emit({
+                type: "user.message",
+                id: randomUUID(),
+                source: "injected",
+                seq: ++seq,
+                text: "Isolated native capability context; not a new user task.",
+                time: Date.now(),
+              });
+              // A genuine failed process precedes the successful reference run.
+              // This validates recovered UI state without making a model call.
+              const failedModel = await typed("workbench_create_python", {
+                source:
+                  (iteration ? iterationLine + "\n" : "") +
+                  'raise ValueError("Intentional recoverable acceptance failure")\n',
+                name: "QAOA recoverable attempt",
+                request_id: randomUUID(),
+              });
+              const failedStart = await typed("workbench_run_python", {
+                model_id: failedModel.file.id,
+                revision: failedModel.file.revision,
+                request_id: randomUUID(),
+              });
+              let failedRun;
+              const failureDeadline = Date.now() + 90000;
+              do {
+                if (Date.now() > failureDeadline)
+                  throw Error("Recovery fixture timed out");
+                failedRun = await typed("workbench_wait_run", {
+                  run_id: failedStart.python_run.id,
+                  timeout_ms: 10000,
+                });
+              } while (!failedRun.settled);
+              if (failedRun.status !== "failed")
+                throw Error("Expected recoverable failed process");
+              if (iteration) {
+                const hold = join(
+                  process.env.FQ_E2E_CONTROL_DIR,
+                  "hold-qaoa-iteration",
+                );
+                const deadline = Date.now() + 60000;
+                while (existsSync(hold)) {
+                  if (Date.now() > deadline)
+                    throw Error("Iteration hold timed out");
+                  await delay(100);
+                }
+              }
+              const created = await typed("workbench_create_python", {
+                source,
+                name: iteration
+                  ? "QAOA iteration · shared angles"
+                  : nodes === 5
+                    ? "QAOA Max-Cut · five-node cycle"
+                    : qaoaTaskName,
+                request_id: randomUUID(),
+              });
+              const started = await typed("workbench_run_python", {
+                model_id: created.file.id,
+                revision: created.file.revision,
+                request_id: randomUUID(),
+              });
+              let run;
+              const deadline = Date.now() + 90000;
+              do {
+                if (Date.now() > deadline) throw Error("QAOA task timed out");
+                run = await typed("workbench_wait_run", {
+                  run_id: started.python_run.id,
+                  timeout_ms: 10000,
+                });
+              } while (!run.settled);
+              if (run.status !== "completed" || run.experiments.length !== 3)
+                throw Error(
+                  "QAOA computation or artifact collection failed: " +
+                    JSON.stringify(run),
+                );
+              const complete = await typed("workbench_inspect", {
+                resource: "run",
+                id: run.id,
+                detail: "full",
+              });
+              const reportLine = complete.logs
+                .map((item) => item.text)
+                .join("")
+                .split("\n")
+                .find((line) => line.startsWith("MAXCUT_REPORT="));
+              if (!reportLine) throw Error("Actual SDK report missing");
+              const report = JSON.parse(
+                reportLine.slice("MAXCUT_REPORT=".length),
+              );
+              if (
+                !report.replay_matches ||
+                report.classical_optimum !== (nodes === 5 ? 4 : 7) ||
+                report.optimized.expected_cut <= report.baseline.expected_cut
+              )
+                throw Error("QAOA acceptance invariants failed");
+              const artifact = (name) => {
+                const result = run.experiments.find(
+                  (item) => item.filename === name,
+                );
+                if (!result) throw Error("Missing saved experiment: " + name);
+                return result;
+              };
+              const baseline = artifact("01-maxcut-baseline.fqx"),
+                optimized = artifact("02-maxcut-qaoa.fqx");
+              artifact("03-maxcut-replay.fqx");
+              await typed("workbench_present_experiment", {
+                experiment_id: optimized.id,
+                view: "circuit",
+                request_id: randomUUID(),
+              });
+              await typed("workbench_compare_experiments", {
+                baseline_id: iteration ? iteration.archive : baseline.id,
+                variant_id: optimized.id,
+                request_id: randomUUID(),
+              });
+              await streamText(
+                `${iteration ? "QAOA iteration verified with shared angles per layer; this is a bounded search, not an unrestricted p-layer optimum. " : ""}QAOA reference workflow verified. Classical optimum: ${report.classical_optimum}. Expected cut: ${report.baseline.expected_cut.toFixed(3)} → ${report.optimized.expected_cut.toFixed(3)}. Optimal-cut probability: ${(report.baseline.optimum_probability * 100).toFixed(2)}% → ${(report.optimized.optimum_probability * 100).toFixed(2)}%. Three .fqx files saved; archive replay counts match. This is a small ideal CPU simulation, not quantum advantage. Scripted protocol orchestration with real SDK computation; no model was called.`,
+                2,
+              );
+              status = "idle";
+              emit(
+                {
+                  type: "turn.end",
+                  turn,
+                  reason: { kind: "completed" },
+                  time: Date.now(),
+                },
+                { type: "session.status", status },
+              );
+              return;
+            }
             if (
               process.env.FQ_E2E_CONTROL_DIR &&
               ["follow acceptance", "comparison acceptance"].includes(

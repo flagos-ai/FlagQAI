@@ -1,3 +1,10 @@
+import {
+  openAgentReview,
+  reviewMatches,
+  acceptReviewAction,
+  type AgentReview,
+  type ReviewAction,
+} from "../state/agent-review";
 import { UIIcon } from "./UIIcon";
 import { useEffect, useRef, useState } from "react";
 import { Modal } from "./Modal";
@@ -8,36 +15,31 @@ import type {
   WorkspaceAction,
   WorkspaceState,
 } from "../contracts/quantum-workspace";
-type Review = {
-  id: string;
-  revision: string;
-  mode: "incoming" | "synced";
-  draft: string;
-  before: string;
-  incoming: string;
-  merged: string;
-};
 export function EditorSyncBar({
   state,
   dispatch,
   sync,
   reviewRequest,
+  onRunReview,
+  runDisabled = false,
+  runLabel = "Accept & run",
 }: {
   state: WorkspaceState;
   dispatch: React.Dispatch<WorkspaceAction>;
   sync: EditorSync;
   reviewRequest?: { id: string; sequence: number };
+  onRunReview: (action: ReviewAction) => Promise<void>;
+  runDisabled?: boolean;
+  runLabel?: string;
 }) {
-  const [review, setReview] = useState<Review | null>(null);
+  const [review, setReview] = useState<AgentReview | null>(null);
   const link = state.editorLink,
     change = link?.change;
-  const stale =
-    !!review &&
-    (state.source !== review.draft ||
-      link?.id !== review.id ||
-      (review.mode === "incoming"
-        ? link.incoming?.revision !== review.revision
-        : !!link.incoming || change?.revision !== review.revision));
+  const stale = !!review && !reviewMatches(state, review);
+  const [reviewError, setReviewError] = useState(""),
+    [running, setRunning] = useState(false),
+    [savedVersion, setSavedVersion] = useState(false);
+  const reviewLock = useRef(false);
   const settledReview =
     review?.mode === "synced" &&
     (change?.outcome === "undone" || change?.outcome === "kept");
@@ -47,27 +49,29 @@ export function EditorSyncBar({
     state.source === change.after &&
     ["pending", "accepted"].includes(change.outcome);
   const open = () => {
-    if (!link) return;
-    if (link.incoming)
-      setReview({
-        id: link.id,
-        revision: link.incoming.revision,
-        mode: "incoming",
-        draft: state.source,
-        before: state.source,
-        incoming: link.incoming.source,
-        merged: state.source,
-      });
-    else if (change)
-      setReview({
-        id: link.id,
-        revision: change.revision,
-        mode: "synced",
-        draft: state.source,
-        before: change.before,
-        incoming: change.agentSource ?? change.after,
-        merged: state.source,
-      });
+    setReview(openAgentReview(state));
+    setReviewError("");
+    setSavedVersion(false);
+  };
+  const acceptAndRun = async (source?: string) => {
+    if (!review || stale || reviewLock.current || runDisabled) return;
+    reviewLock.current = true;
+    setRunning(true);
+    setReviewError("");
+    try {
+      await onRunReview(acceptReviewAction(state, review, source));
+      setReview(null);
+    } catch (error) {
+      setReviewError(error instanceof Error ? error.message : String(error));
+    } finally {
+      reviewLock.current = false;
+      setRunning(false);
+    }
+  };
+  const saveVersion = (source: string) => {
+    if (!review || stale || running) return;
+    dispatch({ type: "save-review-version", review, source });
+    setSavedVersion(true);
   };
   const handledReview = useRef(0);
   useEffect(() => {
@@ -81,7 +85,7 @@ export function EditorSyncBar({
     }
   }, [reviewRequest?.id, reviewRequest?.sequence, link?.id]);
   const resolve = (source: string) => {
-    if (!review || stale) return;
+    if (!review || stale || running) return;
     dispatch({
       type: "resolve-file",
       id: review.id,
@@ -92,7 +96,7 @@ export function EditorSyncBar({
     setReview(null);
   };
   const decide = (decision: "accept" | "keep" | "undo") => {
-    if (!link || !change || stale) return;
+    if (!link || !change || stale || running) return;
     dispatch({
       type: "review-agent-change",
       id: link.id,
@@ -121,7 +125,7 @@ export function EditorSyncBar({
   return (
     <>
       <div className={"fq-editor-sync " + (link?.incoming ? "conflict" : "")}>
-        <span role="status">
+        <span role="status" hidden={!link && !sync.error}>
           {sync.error ||
             (link?.project
               ? link.incoming
@@ -202,7 +206,11 @@ export function EditorSyncBar({
             </details>
           </>
         ) : (
-          <button disabled={sync.sharing} onClick={() => void sync.share()}>
+          <button
+            disabled={sync.sharing}
+            title="Share a model file to see Agent edits here"
+            onClick={() => void sync.share()}
+          >
             {sync.sharing ? "Sharing…" : "Share with Agent"}
           </button>
         )}
@@ -217,7 +225,7 @@ export function EditorSyncBar({
             <div>
               <h2>Review Agent changes</h2>
               <small>
-                {state.name}.{state.language === "python" ? "py" : "qasm"} ·{" "}
+                {review.name}.{review.language === "python" ? "py" : "qasm"} ·{" "}
                 {review.revision.slice(0, 8)}
               </small>
             </div>
@@ -234,8 +242,30 @@ export function EditorSyncBar({
                 : change?.outcome === "kept"
                   ? "You kept your version. This comparison shows the saved Agent proposal; your current draft is preserved."
                   : "These changes are already in the editor. Accept to keep them, or restore your previous code. Newer edits are protected."}{" "}
-            Decisions update the browser draft only.
+            Accepting updates the browser draft only. Running submits that exact
+            reviewed snapshot without saving disk files.
           </p>
+          {(review.mode === "incoming" || review.draft !== review.incoming) && (
+            <details className="fq-review-base">
+              <summary>
+                Three-way comparison · shared base, your draft, Agent proposal
+              </summary>
+              <CodeDiff
+                beforeLabel="Shared base"
+                afterLabel="Your draft"
+                before={review.base}
+                after={review.draft}
+                language={review.language}
+              />
+              <CodeDiff
+                beforeLabel="Shared base"
+                afterLabel="Agent proposal"
+                before={review.base}
+                after={review.incoming}
+                language={review.language}
+              />
+            </details>
+          )}
           <CodeDiff
             beforeLabel={
               review.mode === "incoming" ? "Your draft" : "Before change"
@@ -243,7 +273,7 @@ export function EditorSyncBar({
             afterLabel="Agent proposal"
             before={review.before}
             after={review.incoming}
-            language={state.language || "qasm"}
+            language={review.language}
           />
           {review.mode === "synced" &&
             !settledReview &&
@@ -260,6 +290,7 @@ export function EditorSyncBar({
                 Reviewed code
                 <textarea
                   aria-label="Reviewed merged code"
+                  disabled={running}
                   value={review.merged}
                   onChange={(event) =>
                     setReview({ ...review, merged: event.target.value })
@@ -268,12 +299,37 @@ export function EditorSyncBar({
               </label>
               <button
                 className="primary"
-                disabled={stale}
+                disabled={stale || running}
                 onClick={() => resolve(review.merged)}
               >
                 Apply reviewed code
               </button>
+              <button
+                disabled={stale || running || runDisabled}
+                onClick={() => void acceptAndRun(review.merged)}
+              >
+                {running
+                  ? "Checking reviewed code…"
+                  : "Apply & run reviewed code"}
+              </button>
+              <button
+                disabled={stale || running}
+                onClick={() => saveVersion(review.merged)}
+              >
+                Save reviewed version
+              </button>
             </details>
+          )}
+          {reviewError && (
+            <p role="alert" className="fq-review-notice">
+              {reviewError}
+            </p>
+          )}
+          {savedVersion && (
+            <p role="status">
+              Independent version added to My models. Your draft and disk file
+              are unchanged.
+            </p>
           )}
           {stale && (
             <p role="alert" className="fq-review-notice">
@@ -282,36 +338,58 @@ export function EditorSyncBar({
             </p>
           )}
           <footer>
+            {!stale && (
+              <button
+                disabled={running}
+                onClick={() => saveVersion(review.incoming)}
+              >
+                Save proposal as independent version
+              </button>
+            )}
             {stale ? (
               <button onClick={open} disabled={!link?.incoming && !change}>
                 Refresh comparison
               </button>
             ) : review.mode === "incoming" ? (
               <>
-                <button onClick={() => resolve(review.draft)}>
+                <button
+                  disabled={running}
+                  onClick={() => resolve(review.draft)}
+                >
                   Keep my draft
                 </button>
                 <button
-                  className="primary"
+                  disabled={running}
                   onClick={() => resolve(review.incoming)}
                 >
                   Accept Agent changes
+                </button>
+                <button
+                  className="primary"
+                  disabled={running || runDisabled}
+                  onClick={() => void acceptAndRun()}
+                >
+                  {running ? "Checking reviewed code…" : runLabel}
                 </button>
               </>
             ) : (
               <>
                 {change?.outcome === "pending" && (
                   <>
-                    <button onClick={() => decide("keep")}>
+                    <button disabled={running} onClick={() => decide("keep")}>
                       {review.draft === review.incoming
                         ? "Keep my version"
                         : "Keep my draft"}
                     </button>
+                    <button disabled={running} onClick={() => decide("accept")}>
+                      Accept changes
+                    </button>
                     <button
                       className="primary"
-                      onClick={() => decide("accept")}
+                      disabled={running || runDisabled}
+                      onClick={() => void acceptAndRun()}
                     >
-                      Accept changes
+                      {running ? "Checking reviewed code…" : runLabel}
                     </button>
                   </>
                 )}

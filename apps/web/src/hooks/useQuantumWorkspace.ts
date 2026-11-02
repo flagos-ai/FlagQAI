@@ -1,3 +1,4 @@
+import { useComputeBackend } from "./useComputeBackend";
 import { listExperiments } from "../api/experiments";
 import { platformAPI } from "../api/platform";
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
@@ -22,24 +23,9 @@ const workspaceStorage = {
 };
 
 export function useQuantumWorkspace() {
-  const [backendLabel, setBackendLabel] = useState("Configured CPU backend");
-  useEffect(() => {
-    let live = true;
-    void quantumAPI
-      .health()
-      .then((health) => {
-        if (live)
-          setBackendLabel(
-            health.backend === "test-only"
-              ? "Scripted compute fixture"
-              : "PyTorch CPU · " + health.transport,
-          );
-      })
-      .catch(() => {});
-    return () => {
-      live = false;
-    };
-  }, []);
+  const backend = useComputeBackend();
+  const backendLabel = backend.label;
+  const [compilingSource, setCompilingSource] = useState<string | null>(null);
   const actionContext = useRef<{ client: string; session: string } | undefined>(
     undefined,
   );
@@ -107,6 +93,7 @@ export function useQuantumWorkspace() {
         return;
       }
       operation.current = true;
+      setCompilingSource(source);
       dispatch({ type: "busy", value: true });
       try {
         const context = actionContext.current;
@@ -141,6 +128,7 @@ export function useQuantumWorkspace() {
         });
       } finally {
         operation.current = false;
+        setCompilingSource(null);
         dispatch({ type: "busy", value: false });
       }
     },
@@ -227,9 +215,11 @@ export function useQuantumWorkspace() {
     state,
     dispatch,
     compile,
+    compilingSource,
     run,
     setActionContext,
     backendLabel,
+    backend,
     backupStatus,
     retryBackup,
   };

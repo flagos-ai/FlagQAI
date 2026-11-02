@@ -1,6 +1,21 @@
 import type { SessionViewRow } from "../../../../packages/sdk/index.d.ts";
 import type { AgentView } from "./agent-view";
 
+// Older clients tagged actions with the last injected context-message sequence.
+// Native message order still assigns those records to the preceding human turn.
+export function actionBelongsToTurn(
+  sequence: number | undefined,
+  userSequence: number | undefined,
+  nextUserSequence?: number,
+) {
+  return (
+    Number.isSafeInteger(sequence) &&
+    Number.isSafeInteger(userSequence) &&
+    sequence! >= userSequence! &&
+    (nextUserSequence === undefined || sequence! < nextUserSequence)
+  );
+}
+
 // Group presentation only; the native transcript and its row IDs stay intact.
 export function transcriptTurns(view: AgentView) {
   const turns: { id: number; rows: SessionViewRow[]; active: boolean }[] = [];

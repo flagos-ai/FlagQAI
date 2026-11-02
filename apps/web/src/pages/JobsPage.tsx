@@ -123,26 +123,27 @@ function JobResults({ job, state, dispatch }: Props & { job: QuantumJob }) {
     job.experiment?.python_run?.elapsed_seconds ?? result?.elapsed_seconds;
   return (
     <section className="fq-jobs fq-jobs-redesign" aria-label="Job results">
-      <div className="fq-pane-title">RESULTS</div>
       <div className="fq-job-content">
         <header className="fq-job-heading">
-          <div>
-            <span className="fq-job-status">
-              <i className={"fq-job-dot " + job.status} />
-              {jobStatus(job)}
-              {job.experiment && (
-                <span>
-                  {" "}
-                  · {job.experiment.python_run ? "Python" : "Imported .fqx"}
-                </span>
-              )}
-            </span>
+          <div className="fq-job-identity">
             <h1>{job.name}</h1>
-            {job.experiment && (
-              <p>
-                Added {new Date(job.experiment.imported_at).toLocaleString()}
-              </p>
-            )}
+            <div className="fq-job-subtitle">
+              <span className="fq-job-status">
+                <i className={"fq-job-dot " + job.status} />
+                {jobStatus(job)}
+                {job.experiment && (
+                  <span>
+                    {" "}
+                    · {job.experiment.python_run ? "Python" : "Imported .fqx"}
+                  </span>
+                )}
+              </span>
+              {job.experiment && (
+                <time>
+                  {new Date(job.experiment.imported_at).toLocaleString()}
+                </time>
+              )}
+            </div>
           </div>
           <ExportMenu
             hasCounts={!!result && observedStates > 0 && total > 0}
@@ -185,6 +186,15 @@ function JobResults({ job, state, dispatch }: Props & { job: QuantumJob }) {
                   : observedStates.toLocaleString()}
               </dd>
             </div>
+            {job.experiment?.measurements.length === 1 && measurement && (
+              <div
+                className="fq-job-single-measurement"
+                aria-label="Saved measurement summary"
+              >
+                <dt>Measurement</dt>
+                <dd>{measurement.kind}</dd>
+              </div>
+            )}
             {elapsed != null && (
               <div>
                 <dt>{job.experiment ? "Python run" : "Execution"}</dt>
@@ -236,55 +246,61 @@ function JobResults({ job, state, dispatch }: Props & { job: QuantumJob }) {
                 </div>
               ) : (
                 <>
-                  {job.experiment && job.experiment.measurements.length > 0 && (
-                    <div className="fq-job-measurements">
-                      <label>
-                        Measurement{" "}
-                        <select
-                          aria-label="Saved measurement"
-                          value={measurementIndex}
-                          onChange={(e) => {
-                            setMeasurementIndex(Number(e.target.value));
-                            setBatchIndex(0);
-                            setPage(0);
-                          }}
-                        >
-                          {job.experiment.measurements.map((item, index) => (
-                            <option key={index} value={index}>
-                              {index + 1}. {item.kind} · qubits [
-                              {item.qubits.join(", ")}]
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      {measurement?.batches &&
-                        measurement.batches.length > 1 && (
+                  {job.experiment &&
+                    (job.experiment.measurements.length > 1 ||
+                      (measurement?.batches?.length || 0) > 1) && (
+                      <div className="fq-job-measurements">
+                        {job.experiment.measurements.length > 1 && (
                           <label>
-                            Batch{" "}
+                            Measurement{" "}
                             <select
-                              aria-label="Saved measurement batch"
-                              value={batchIndex}
+                              aria-label="Saved measurement"
+                              value={measurementIndex}
                               onChange={(e) => {
-                                setBatchIndex(Number(e.target.value));
+                                setMeasurementIndex(Number(e.target.value));
+                                setBatchIndex(0);
                                 setPage(0);
                               }}
                             >
-                              {measurement.batches.map((_, index) => (
-                                <option key={index} value={index}>
-                                  {index + 1}
-                                </option>
-                              ))}
+                              {job.experiment.measurements.map(
+                                (item, index) => (
+                                  <option key={index} value={index}>
+                                    {index + 1}. {item.kind} · qubits [
+                                    {item.qubits.join(", ")}]
+                                  </option>
+                                ),
+                              )}
                             </select>
                           </label>
                         )}
-                    </div>
-                  )}
+                        {measurement?.batches &&
+                          measurement.batches.length > 1 && (
+                            <label>
+                              Batch{" "}
+                              <select
+                                aria-label="Saved measurement batch"
+                                value={batchIndex}
+                                onChange={(e) => {
+                                  setBatchIndex(Number(e.target.value));
+                                  setPage(0);
+                                }}
+                              >
+                                {measurement.batches.map((_, index) => (
+                                  <option key={index} value={index}>
+                                    {index + 1}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          )}
+                      </div>
+                    )}
                   {observedStates > 0 && total > 0 ? (
                     <section
                       className="fq-job-distribution"
                       aria-label="Measurement distribution"
                     >
-                      <div className="fq-job-distribution-heading">
+                      <div className="fq-job-distribution-heading fq-job-chart-controls">
                         <h2>Measurement distribution</h2>
                         <div
                           className="fq-job-segment"
@@ -300,8 +316,6 @@ function JobResults({ job, state, dispatch }: Props & { job: QuantumJob }) {
                             </button>
                           ))}
                         </div>
-                      </div>
-                      <div className="fq-job-chart-controls">
                         <div
                           className="fq-job-segment"
                           aria-label="Distribution units"
@@ -462,7 +476,10 @@ function JobResults({ job, state, dispatch }: Props & { job: QuantumJob }) {
                           </table>
                         </div>
                       )}
-                      <div className="fq-job-chart-footer">
+                      <div
+                        className="fq-job-chart-footer"
+                        hidden={rows.length <= 32 && !filtering}
+                      >
                         <span
                           role="status"
                           aria-label="Measurement state range"
@@ -470,8 +487,7 @@ function JobResults({ job, state, dispatch }: Props & { job: QuantumJob }) {
                           {rows.length > 32
                             ? `Showing ${currentPage * 32 + 1}–${Math.min((currentPage + 1) * 32, rows.length)} of ${rows.length} ${filtering ? "matching" : "observed"} states`
                             : `${rows.length} ${filtering ? "matching" : "observed"} ${rows.length === 1 ? "state" : "states"}`}
-                          {filtering ? ` of ${observedStates} observed` : ""} ·{" "}
-                          {total.toLocaleString()} recorded counts
+                          {filtering ? ` of ${observedStates} observed` : ""}
                         </span>
                         {rows.length > 32 && (
                           <div>
@@ -490,12 +506,21 @@ function JobResults({ job, state, dispatch }: Props & { job: QuantumJob }) {
                           </div>
                         )}
                       </div>
-                      <p className="fq-job-order">
-                        {measurement
-                          ? `Recorded qubit order: [${measurement.qubits.join(", ")}]. Keys are shown as saved; integer keys are labeled.`
-                          : "Bit order: q0 first."}{" "}
-                        Probabilities use all recorded counts.
-                      </p>
+                      <div className="fq-job-reading-note">
+                        <span className="fq-job-order">
+                          {measurement
+                            ? `Qubit order: [${measurement.qubits.join(", ")}]`
+                            : "Bit order: q0 first"}
+                        </span>
+                        <details>
+                          <summary>How to read</summary>
+                          <p>
+                            Keys are shown as saved; integer keys are labeled.
+                            Probabilities use all recorded counts, including
+                            states outside the current filter or page.
+                          </p>
+                        </details>
+                      </div>
                     </section>
                   ) : (
                     <div className="fq-job-notice">

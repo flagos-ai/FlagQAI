@@ -1,3 +1,5 @@
+import { ResearchPackages } from "./components/ResearchPackages";
+import { ExecutionBackend } from "./components/ExecutionBackend";
 import { WorkspaceBackupNotice } from "./components/WorkspaceBackupNotice";
 import { WorkspaceBackups } from "./components/WorkspaceBackups";
 import { JobsLibrary } from "./components/JobsLibrary";
@@ -15,7 +17,7 @@ import { useEditorSync } from "./hooks/useEditorSync";
 import { useAgentConversation } from "./hooks/useAgentConversation";
 import { Modal } from "./components/Modal";
 import { CloseButton } from "./components/CloseButton";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "./components/Icons";
 import { ModelLibrary } from "./components/ModelLibrary";
 import { AgentPanel } from "./components/AgentPanel";
@@ -23,6 +25,7 @@ import { Separator } from "./components/Separator";
 import { ModelPage } from "./pages/ModelPage";
 import { ProgramPage } from "./pages/ProgramPage";
 import { ExecutionPage } from "./pages/ExecutionPage";
+import { SynthesisPage } from "./pages/SynthesisPage";
 import { JobsPage } from "./pages/JobsPage";
 import { useQuantumWorkspace } from "./hooks/useQuantumWorkspace";
 import { usePanelSize } from "./hooks/usePanelSize";
@@ -33,6 +36,8 @@ import {
   type PythonRepairRequest,
 } from "./state/python-failure";
 
+import { researchTurnsFromProgress } from "./state/research-turns";
+import { progressTurns } from "./state/agent-progress";
 export default function App() {
   const agent = useAgentConversation();
   const [pendingAttachment, setPendingAttachment] = useState<AgentAttachment>();
@@ -41,9 +46,11 @@ export default function App() {
       state,
       dispatch,
       compile,
+      compilingSource,
       run,
       setActionContext,
       backendLabel,
+      backend,
       backupStatus,
       retryBackup,
     } = useQuantumWorkspace(),
@@ -51,6 +58,11 @@ export default function App() {
     [guide, setGuide] = useState(false),
     [uploadError, setUploadError] = useState("");
   const bridge = usePlatformBridge(state, dispatch, agent);
+  const researchTurns = useMemo(
+    () =>
+      researchTurnsFromProgress(progressTurns(agent.view, []), bridge.actions),
+    [agent.view, bridge.actions],
+  );
   const latest = useRef(state);
   latest.current = state;
   useEffect(() => {
@@ -217,96 +229,111 @@ export default function App() {
           <div className="fq-pane-title">
             QUANTUM PROGRAMS <small>{state.programs.length}</small>
           </div>
-          <div className="fq-library-body">
-            <button
-              className="outline"
-              disabled={state.busy || importing}
-              onClick={() => programUpload.current?.click()}
-            >
-              <UIIcon name="upload" size={14} />
-              {importing ? "Importing file…" : "Upload Quantum Program"}
-            </button>
-            <small>
-              OpenQASM: up to 32 KiB · .fqx experiment: up to 16 MiB
-            </small>
-            <input
-              ref={programUpload}
-              hidden
-              type="file"
-              accept=".qasm,.txt,.fqx"
-              onChange={(e) => {
-                if (e.target.files?.[0]) void upload(e.target.files[0], true);
-                e.target.value = "";
-              }}
-            />
-            {state.error && <p role="alert">{state.error.message}</p>}
-            {state.programs.map((p) => (
+          <div className="fq-library-body fq-program-library">
+            <div className="fq-program-library-tools">
               <button
-                key={p.id}
-                className={
-                  "fq-library-card " +
-                  (p.id === state.selectedProgramId ? "selected" : "")
-                }
-                onClick={() => dispatch({ type: "program", id: p.id })}
+                className="outline"
+                disabled={state.busy || importing}
+                onClick={() => programUpload.current?.click()}
               >
-                <span className="fq-library-title">
-                  <UIIcon name="circuit" size={14} />
-                  {p.name}
-                </span>
-                <small>
-                  {p.compiled.qubits} qubits · depth {p.compiled.depth}
-                  {p.experiment && (
-                    <>
-                      <br />
-                      {p.experiment.has_result
-                        ? "Saved result"
-                        : "No saved result"}{" "}
-                      · .fqx
-                    </>
-                  )}
-                  <br />
-                  {new Date(p.created).toLocaleString()}
-                </small>
+                <UIIcon name="upload" size={14} />
+                {importing ? "Importing file…" : "Upload Quantum Program"}
               </button>
-            ))}
+              <small>
+                OpenQASM: up to 32 KiB · .fqx experiment: up to 16 MiB
+              </small>
+              <input
+                ref={programUpload}
+                hidden
+                type="file"
+                accept=".qasm,.txt,.fqx"
+                onChange={(e) => {
+                  if (e.target.files?.[0]) void upload(e.target.files[0], true);
+                  e.target.value = "";
+                }}
+              />
+            </div>
+            {state.error && <p role="alert">{state.error.message}</p>}
+            <ul className="fq-program-list" aria-label="Quantum programs">
+              {state.programs.map((p) => (
+                <li key={p.id}>
+                  <button
+                    aria-label={`Open quantum program ${p.name}`}
+                    aria-current={
+                      p.id === state.selectedProgramId ? "true" : undefined
+                    }
+                    title={`${p.name} · ${p.experiment?.filename || "Compiled program"} · ${new Date(p.created).toLocaleString()}`}
+                    className={
+                      "fq-library-card " +
+                      (p.id === state.selectedProgramId ? "selected" : "")
+                    }
+                    onClick={() => dispatch({ type: "program", id: p.id })}
+                  >
+                    <span className="fq-program-row-title">
+                      <UIIcon name="circuit" size={14} />
+                      <strong>{p.name}</strong>
+                      <time
+                        title={new Date(p.created).toLocaleString()}
+                        aria-label={`Created ${new Date(p.created).toLocaleString()}`}
+                      >
+                        {new Date(p.created).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </time>
+                    </span>
+                    <small className="fq-program-row-summary">
+                      <span>
+                        {p.compiled.qubits} qubits · depth {p.compiled.depth}
+                      </span>
+                      {p.experiment && (
+                        <span>
+                          ·{" "}
+                          {p.experiment.has_result
+                            ? "Saved result"
+                            : "Circuit only"}
+                        </span>
+                      )}
+                    </small>
+                  </button>
+                </li>
+              ))}
+            </ul>
             {!state.programs.length && (
               <p>Compiled programs will appear here.</p>
             )}
           </div>
-          <footer>Local snapshots · {state.programs.length}/8 programs</footer>
+          <footer>Up to 8 local snapshots</footer>
         </>
       );
     if (state.page === "jobs")
       return <JobsLibrary state={state} dispatch={dispatch} />;
-    return (
-      <>
-        <div className="fq-pane-title">
-          {state.page === "execution" ? "EXECUTION BACKEND" : "COMPILER"}
-        </div>
-        <div className="fq-library-body">
-          <h2>
-            {state.page === "execution" ? "Remote CPU" : "FlagQuantum compiler"}
-          </h2>
-          <small className="eyebrow">PYTORCH STATEVECTOR · CPU</small>
-          <p>
-            OpenQASM 2/3 import and compilation through the installed
-            FlagQuantum package.
-          </p>
-          <p>
-            2 CPU threads per task
-            <br />1 active task + up to 3 waiting
-            <br />
-            16 qubits · 100,000 shots maximum
-            <br />
-            90-second remote process limit
-          </p>
-          <p>SSH credentials stay in the local environment.</p>
-        </div>
-      </>
-    );
+    if (state.page === "synthesis")
+      return (
+        <>
+          <div className="fq-pane-title">COMPILER</div>
+          <div className="fq-library-body fq-compiler-sidebar">
+            <h3>FlagQuantum</h3>
+            <p>{backendLabel}</p>
+            <details>
+              <summary>Compiler details</summary>
+              <p>
+                OpenQASM 2/3 import and compilation through the installed
+                FlagQuantum package.
+              </p>
+              <p>
+                2 CPU threads per task · 1 active task + up to 3 waiting · 16
+                qubits · 100,000 shots maximum · 90-second process limit.
+              </p>
+              <p>Credentials stay in the local environment.</p>
+            </details>
+          </div>
+        </>
+      );
+    return <ExecutionBackend backend={backend} />;
   };
   return (
-    <div className="fq-workspace">
+    <div className="fq-workspace fq-ui-controls">
       {quickOpen && (
         <QuickOpen
           project={state.project}
@@ -335,6 +362,7 @@ export default function App() {
           User Guide ↗
         </button>
         <WorkspaceBackups state={state} dispatch={dispatch} />
+        <ResearchPackages dispatch={dispatch} />
         <div className="fq-header-partners" aria-label="BAAI and FlagOS">
           <img
             className="fq-partner-baai"
@@ -425,6 +453,10 @@ export default function App() {
                 dispatch({ type: "agent", open: false });
               }}
               python={python}
+              research={{
+                turns: researchTurns,
+                bridge,
+              }}
               editorSync={editorSync}
               backendLabel={backendLabel}
               onRepairPython={async (failed) => {
@@ -480,7 +512,7 @@ export default function App() {
               }}
               state={state}
               dispatch={dispatch}
-              compile={() => void compile()}
+              compile={compile}
             />
           )}
           {state.page === "program" && (
@@ -493,7 +525,6 @@ export default function App() {
           )}
           {state.page === "execution" && (
             <ExecutionPage
-              backendLabel={backendLabel}
               state={state}
               dispatch={dispatch}
               run={() => void run()}
@@ -503,23 +534,12 @@ export default function App() {
             <JobsPage state={state} dispatch={dispatch} />
           )}
           {state.page === "synthesis" && (
-            <section className="fq-synthesis">
-              <small className="eyebrow">REAL COMPILATION · SSH</small>
-              <h1>Compile your quantum circuit.</h1>
-              <p>{state.name} · OpenQASM</p>
-              <p>
-                Inspect gate information and depth from the actual compiler
-                output.
-              </p>
-              <button
-                className="primary"
-                disabled={state.busy}
-                onClick={() => void compile()}
-              >
-                {state.busy ? "Compiling…" : "Compile model →"}
-              </button>
-              {state.error && <p role="alert">{state.error.message}</p>}
-            </section>
+            <SynthesisPage
+              state={state}
+              dispatch={dispatch}
+              compile={() => void compile()}
+              compilingSource={compilingSource}
+            />
           )}
         </main>
       </div>
@@ -529,13 +549,10 @@ export default function App() {
           label="FlagQuantum guide"
           onClose={() => setGuide(false)}
         >
-          <CloseButton
-            className="fq-close"
-            label="Close guide"
-            onClick={() => setGuide(false)}
-          />
-          <small className="eyebrow">FLAGQUANTUM GUIDE</small>
-          <h1>From model to measurement.</h1>
+          <header>
+            <h2>From model to measurement.</h2>
+            <CloseButton label="Close guide" onClick={() => setGuide(false)} />
+          </header>
           <ol>
             <li>Edit or upload OpenQASM or Python in Model.</li>
             <li>Compile OpenQASM, or Run Python and publish its circuit.</li>

@@ -1,3 +1,4 @@
+import type { ComputeHealth } from "../state/compute-backend";
 import type {
   CompiledProgram,
   QuantumJob,
@@ -24,7 +25,7 @@ async function request<T>(path: string, body?: unknown): Promise<T> {
   return result;
 }
 export const quantumAPI = {
-  health: () => request<{ transport: string; backend: string }>("/api/health"),
+  health: () => request<ComputeHealth>("/api/health"),
   compile: (source: string) =>
     request<CompiledProgram>("/api/compile", { source }),
   job: (id: string) =>

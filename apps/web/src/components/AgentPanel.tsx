@@ -1,3 +1,5 @@
+import { qaoaTaskPrompt } from "../tasks/qaoa-maxcut.mjs";
+import { UIIcon } from "./UIIcon";
 import { agentRunStatus } from "../state/agent-run-status";
 import type { PlatformBridge } from "../hooks/usePlatformBridge";
 import type { QuantumJob } from "../contracts/quantum-workspace";
@@ -35,6 +37,12 @@ import { AgentTranscript } from "./AgentTranscript";
 import type { PythonRepairRequest } from "../state/python-failure";
 const DRAFT_KEY = "fq-agent-prompt-draft-v1";
 const suggestions = [
+  {
+    title: "Optimize Max-Cut",
+    detail: "6 nodes · QAOA · compare and reproduce",
+    icon: "experiment",
+    prompt: qaoaTaskPrompt,
+  },
   {
     title: "Explain this circuit",
     detail: "Gates, registers and what they do",
@@ -446,9 +454,12 @@ export function AgentPanel({
           onClose={() => setSettingsTab(null)}
         />
       )}
-      <div className="fq-pane-title">
-        <span>
-          FlagQAI{" "}
+      <div
+        className="fq-agent-session-controls fq-agent-header"
+        aria-label="Agent controls"
+      >
+        <span className="fq-agent-identity">
+          <span>FlagQAI</span>
           {agent.view.model && (
             <button
               className="fq-agent-model-label"
@@ -461,32 +472,30 @@ export function AgentPanel({
           )}
         </span>
         <button
-          className="fq-agent-models"
-          aria-label="Show model library"
-          onClick={onClose}
-        >
-          {contextLabel === "CURRENT PROGRAM" ? "Programs" : "Models"} ↗
-        </button>
-      </div>
-      <div className="fq-agent-session-controls">
-        <button
           className={"fq-agent-connection-status " + (ready ? "available" : "")}
-          disabled={agent.busy}
+          disabled={agent.busy && agent.phase !== "connected"}
           aria-label={
-            agent.phase === "connected" ? "Reconnect Agent" : "Connect Agent"
+            agent.phase === "connected"
+              ? "Agent connection details"
+              : "Connect Agent"
           }
+          aria-expanded={agent.phase === "connected" ? details : undefined}
           title={
             runStatus +
-            " · Click to " +
-            (agent.phase === "connected" ? "reconnect" : "connect")
+            (agent.phase === "connected"
+              ? " · Connection details"
+              : " · Click to connect")
           }
-          onClick={() => void agent.connect()}
+          onClick={() =>
+            agent.phase === "connected"
+              ? setDetails(!details)
+              : void agent.connect()
+          }
         >
           <span role="status" aria-label={runStatus}>
             <i
               className={ready && (agent.stopping || running) ? "active" : ""}
             />
-            {runStatus !== "Connected" && <span>{runStatus}</span>}
           </span>
         </button>
         <button
@@ -508,27 +517,13 @@ export function AgentPanel({
             <circle cx="10" cy="10" r="3" />
           </svg>
         </button>
-        <select
-          aria-label="Agent backend"
-          value={agent.backend}
-          disabled={!!agent.session || agent.busy}
-          onChange={(event) => agent.setBackend(event.target.value)}
-        >
-          {agent.backends.length ? (
-            agent.backends.map((backend) => (
-              <option key={backend.id} value={backend.id}>
-                {backend.label || backend.id}
-              </option>
-            ))
-          ) : (
-            <option value="dsh">FlagQAI Harness</option>
-          )}
-        </select>
         <button
+          aria-label="New chat"
+          title="New chat · /new"
           disabled={!agent.cwd || agent.busy || running || !!pending}
           onClick={() => void agent.choose()}
         >
-          New chat
+          <UIIcon name="plus" size={14} />
         </button>
         <button
           aria-label="Resume Agent session"
@@ -552,7 +547,22 @@ export function AgentPanel({
             <path d="M3 9a7 7 0 1 1 2 6M3 4v5h5m2-3v4l3 2" />
           </svg>
         </button>
+        <button
+          className="fq-agent-models"
+          aria-label="Show model library"
+          title={
+            contextLabel === "CURRENT PROGRAM"
+              ? "Show quantum programs"
+              : "Show model library"
+          }
+          onClick={onClose}
+        >
+          <UIIcon name="workspace" size={14} />
+        </button>
       </div>
+      {!["Connected", "Working"].includes(runStatus) && (
+        <div className="fq-agent-state-note">{runStatus}</div>
+      )}
       {agent.pendingDelivery && !agent.sending && (
         <div className="fq-agent-error" role="status">
           <span>
@@ -594,6 +604,16 @@ export function AgentPanel({
           roster={roster}
           bridge={bridge}
           jobs={jobs}
+          onPrepare={(prompt) => {
+            const next = draft.trim() ? draft + "\n\n" + prompt : prompt;
+            if (next.length > 6000)
+              throw Error(
+                "The chat draft is too long to append an iteration request. Save or shorten it first; nothing has been replaced.",
+              );
+            setDraft(next);
+            setCaret(next.length);
+            input.current?.focus();
+          }}
         />
       ) : (
         <div
@@ -1014,13 +1034,15 @@ export function AgentPanel({
                   : "Draft kept in this panel"}
             </small>
           )}
-          <button
-            className="link"
-            aria-expanded={details}
-            onClick={() => setDetails(!details)}
-          >
-            Connection
-          </button>
+          {!ready && (
+            <button
+              className="link"
+              aria-expanded={details}
+              onClick={() => setDetails(!details)}
+            >
+              Connection
+            </button>
+          )}
         </div>
         {agent.compactionNotice && (
           <small className="fq-agent-compact-notice" role="status">
@@ -1028,33 +1050,66 @@ export function AgentPanel({
           </small>
         )}
         {details && (
-          <div className="fq-agent-connection-details">
-            <p>{agent.cwd || "Workspace configuration unavailable"}</p>
-            <code>flagqai serve --port 4096</code>
-            <small>
-              Sessions, tools and permissions are owned by the native Harness.
-              Enter sends; Shift+Enter adds a line.
-            </small>
-            <button
-              className="link"
-              onClick={() => setSettingsTab("providers")}
-            >
-              Models & providers
-            </button>
-            <button
-              className="fq-agent-copy"
-              disabled={!draft.trim()}
-              onClick={() => void copy()}
-              aria-label="Copy agent request"
-            >
-              {copied ? "Copied ✓" : "Copy draft"}
-            </button>
-            {draft && (
-              <button className="link" onClick={() => setDraft("")}>
-                Clear draft
+          <Modal
+            className="fq-agent-connection-dialog"
+            label="Agent connection"
+            onClose={() => setDetails(false)}
+          >
+            <header>
+              <h2>Agent connection</h2>
+              <CloseButton
+                label="Close connection details"
+                onClick={() => setDetails(false)}
+              />
+            </header>
+            <div className="fq-agent-connection-details">
+              <div className="fq-agent-connection-summary">
+                <p role="status">{runStatus}</p>
+                <button
+                  disabled={agent.busy}
+                  onClick={() => void agent.connect()}
+                >
+                  {ready ? "Reconnect Agent" : "Connect Agent"}
+                </button>
+              </div>
+              <div className="fq-agent-connection-workspace">
+                <span>Workspace</span>
+                <p>{agent.cwd || "Workspace configuration unavailable"}</p>
+              </div>
+              <details className="fq-agent-connection-technical">
+                <summary>Connection details</summary>
+                <code>flagqai serve --port 4096</code>
+                <p>
+                  Sessions, tools and permissions are managed by the native
+                  Harness.
+                </p>
+              </details>
+              <small>Enter to send · Shift+Enter for a new line</small>
+            </div>
+            <footer>
+              <button
+                onClick={() => {
+                  setDetails(false);
+                  setSettingsTab("providers");
+                }}
+              >
+                Models & providers
               </button>
-            )}
-          </div>
+              <button
+                className="fq-agent-copy"
+                disabled={!draft.trim()}
+                onClick={() => void copy()}
+                aria-label="Copy agent request"
+              >
+                {copied ? "Copied ✓" : "Copy draft"}
+              </button>
+              {draft && (
+                <button className="link" onClick={() => setDraft("")}>
+                  Clear draft
+                </button>
+              )}
+            </footer>
+          </Modal>
         )}
       </div>
     </section>
