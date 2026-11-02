@@ -1,6 +1,6 @@
 import { UIIcon } from "./UIIcon";
 import { useProjectFolders } from "../hooks/useProjectFolders";
-import { useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { ProjectWorkspace } from "../hooks/useProjectWorkspace";
 import type {
   WorkspaceState,
@@ -43,12 +43,21 @@ function FileTree({
           className="fq-project-folder"
           key={`${folder}:${searching ? "search" : "tree"}`}
           open={searching || !folders.closed.includes(prefix + folder)}
-          onToggle={(event) => {
-            if (!searching)
-              folders.toggle(prefix + folder, !event.currentTarget.open);
-          }}
         >
-          <summary>{folder}</summary>
+          <summary
+            onClick={(event) => {
+              // Keep one source of truth. Native asynchronous toggle events can
+              // race a polling rerender and restore the previous open state.
+              event.preventDefault();
+              if (!searching)
+                folders.toggle(
+                  prefix + folder,
+                  !folders.closed.includes(prefix + folder),
+                );
+            }}
+          >
+            {folder}
+          </summary>
           <FileTree
             files={files.filter((file) =>
               file.path.startsWith(prefix + folder + "/"),
@@ -106,13 +115,58 @@ export function ProjectExplorer({
     [file, setFile] = useState(""),
     [creating, setCreating] = useState(false),
     [query, setQuery] = useState("");
+  const [creatingFile, setCreatingFile] = useState(false);
+  const createLock = useRef(false);
+  const chooserVersion = useRef(0);
+  const chooserErrorId = useId();
+  const [attemptedProject, setAttemptedProject] = useState<number | null>(null);
+  const projectLock = useRef(false);
+  const [pendingProject, setPendingProject] = useState<{
+    version: number;
+    create: boolean;
+  } | null>(null);
+  const showChooser = () => {
+    chooserVersion.current++;
+    setAttemptedProject(null);
+    setOpening(true);
+  };
+  const closeChooser = () => {
+    chooserVersion.current++;
+    setOpening(false);
+  };
+  const editChooser = () => {
+    chooserVersion.current++;
+    setAttemptedProject(null);
+  };
+  const chooserError =
+    attemptedProject === chooserVersion.current ? workspace.error : "";
   const pathInput = useRef<HTMLInputElement>(null);
+  const newFileButton = useRef<HTMLButtonElement>(null);
+  const fileSearch = useRef<HTMLInputElement>(null);
   const project = state.project;
+  const search = query.trim().toLowerCase();
+  const matchingFiles = (project?.files || []).filter((item) =>
+    item.path.toLowerCase().includes(search),
+  );
+  useEffect(() => {
+    setCreating(false);
+    setFile("");
+    setQuery("");
+  }, [project?.id]);
   const folders = useProjectFolders(project?.id);
   const openProject = async (value: string, create = false) => {
-    if (await workspace.openProject(value, create)) {
-      setOpening(false);
-      setQuery("");
+    if (projectLock.current || workspace.busy || !value.trim()) return;
+    projectLock.current = true;
+    const version = chooserVersion.current;
+    setAttemptedProject(version);
+    setPendingProject({ version, create });
+    try {
+      if (await workspace.openProject(value, create)) {
+        if (version === chooserVersion.current) closeChooser();
+      }
+    } finally {
+      projectLock.current = false;
+      setPendingProject(null);
     }
   };
   const outputs = state.programs.filter(
@@ -124,15 +178,12 @@ export function ProjectExplorer({
         <Modal
           className="fq-project-dialog"
           label="Open local project"
-          onClose={() => setOpening(false)}
+          onClose={closeChooser}
           initialFocus={pathInput}
         >
           <header>
             <h2>{mode === "open" ? "Open project" : "New project"}</h2>
-            <CloseButton
-              label="Close project chooser"
-              onClick={() => setOpening(false)}
-            />
+            <CloseButton label="Close project chooser" onClick={closeChooser} />
           </header>
           <div
             className="fq-project-mode"
@@ -141,13 +192,19 @@ export function ProjectExplorer({
           >
             <button
               aria-pressed={mode === "open"}
-              onClick={() => setMode("open")}
+              disabled={workspace.busy}
+              onClick={() => {
+                editChooser();
+                setMode("open");
+              }}
             >
               Open existing
             </button>
             <button
               aria-pressed={mode === "create"}
+              disabled={workspace.busy}
               onClick={() => {
+                editChooser();
                 setMode("create");
                 if (path === ".") setPath("");
               }}
@@ -167,8 +224,19 @@ export function ProjectExplorer({
                 ref={pathInput}
                 aria-label="Project directory"
                 value={path}
-                onChange={(event) => setPath(event.target.value)}
+                onChange={(event) => {
+                  editChooser();
+                  setPath(event.target.value);
+                }}
+                aria-invalid={!!chooserError}
+                aria-describedby={chooserError ? chooserErrorId : undefined}
                 placeholder="experiments/bell"
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && event.nativeEvent.isComposing) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }
+                }}
               />
             </label>
             <p className="fq-project-hint">
@@ -182,9 +250,13 @@ export function ProjectExplorer({
                   "Configured Agent workspace"}
               </code>
             </details>
-            {workspace.error && <p role="alert">{workspace.error}</p>}
+            {chooserError && (
+              <p role="alert" id={chooserErrorId}>
+                {chooserError}
+              </p>
+            )}
             <footer>
-              <button type="button" onClick={() => setOpening(false)}>
+              <button type="button" onClick={closeChooser}>
                 Cancel
               </button>
               <button
@@ -196,7 +268,11 @@ export function ProjectExplorer({
                 }
               >
                 {workspace.busy
-                  ? "Opening…"
+                  ? pendingProject?.version === chooserVersion.current
+                    ? pendingProject.create
+                      ? "Creating…"
+                      : "Opening…"
+                    : "Waiting…"
                   : mode === "create"
                     ? "Create folder"
                     : "Open folder"}
@@ -234,21 +310,45 @@ export function ProjectExplorer({
               onClick={() => {
                 setPath(project.path);
                 setMode("open");
-                setOpening(true);
+                showChooser();
               }}
             >
               <UIIcon name="more" />
             </button>
           </div>
           <div className="fq-project-file-tools">
-            <input
-              aria-label="Find project file"
-              placeholder="Find a file…"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-            />
+            <div className="fq-project-file-search">
+              <input
+                ref={fileSearch}
+                aria-label="Find project file"
+                placeholder="Find a file…"
+                value={query}
+                maxLength={256}
+                onChange={(event) => setQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key !== "Escape" || !query) return;
+                  event.preventDefault();
+                  event.stopPropagation();
+                  if (!event.nativeEvent.isComposing) setQuery("");
+                }}
+              />
+              {!!query && (
+                <button
+                  type="button"
+                  aria-label="Clear project file search"
+                  title="Clear search"
+                  onClick={() => {
+                    setQuery("");
+                    fileSearch.current?.focus({ preventScroll: true });
+                  }}
+                >
+                  <UIIcon name="close" size={12} />
+                </button>
+              )}
+            </div>
             <button
               aria-label="New file"
+              ref={newFileButton}
               title="New Python or OpenQASM file"
               aria-expanded={creating}
               onClick={() => setCreating(!creating)}
@@ -259,43 +359,63 @@ export function ProjectExplorer({
           {creating && (
             <form
               className="fq-project-create"
+              aria-busy={creatingFile}
               onSubmit={(event) => {
                 event.preventDefault();
-                void workspace.createFile(file).then((saved) => {
-                  if (saved) {
-                    setFile("");
-                    setCreating(false);
-                  }
-                });
+                if (createLock.current || workspace.busy || !file.trim())
+                  return;
+                createLock.current = true;
+                setCreatingFile(true);
+                void workspace
+                  .createFile(file)
+                  .then((saved) => {
+                    if (saved) {
+                      setFile("");
+                      setCreating(false);
+                    }
+                  })
+                  .finally(() => {
+                    createLock.current = false;
+                    setCreatingFile(false);
+                  });
               }}
             >
               <input
                 autoFocus
+                readOnly={creatingFile}
                 aria-label="New project file"
                 placeholder="src/main.py"
                 value={file}
                 onChange={(event) => setFile(event.target.value)}
                 onKeyDown={(event) => {
-                  if (event.key === "Escape") setCreating(false);
+                  if (event.key === "Enter" && event.nativeEvent.isComposing) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    return;
+                  }
+                  if (event.key !== "Escape") return;
+                  event.preventDefault();
+                  event.stopPropagation();
+                  if (!event.nativeEvent.isComposing) {
+                    setCreating(false);
+                    newFileButton.current?.focus({ preventScroll: true });
+                  }
                 }}
               />
               <button
                 aria-label="Create project file"
-                disabled={workspace.busy || !file.trim()}
+                disabled={creatingFile || workspace.busy || !file.trim()}
               >
-                Add
+                {creatingFile ? "Creating…" : "Add"}
               </button>
             </form>
           )}
-          {workspace.error && !opening && <p role="alert">{workspace.error}</p>}
           <div className="fq-project-tree" aria-label="Project files">
             <FileTree
-              files={(project.files || []).filter((item) =>
-                item.path.toLowerCase().includes(query.toLowerCase()),
-              )}
+              files={matchingFiles}
               busy={workspace.busy}
               folders={folders}
-              searching={!!query}
+              searching={!!search}
               selected={
                 state.editorLink?.project?.id === project.id
                   ? state.editorLink.project.path
@@ -316,10 +436,11 @@ export function ProjectExplorer({
               </button>
             </div>
           )}
-          {!!query &&
-            !project.files?.some((item) =>
-              item.path.toLowerCase().includes(query.toLowerCase()),
-            ) && <p className="fq-project-hint">No matching files.</p>}
+          {!!search && !!project.files?.length && !matchingFiles.length && (
+            <p className="fq-project-hint" role="status">
+              No matching files. Clear the search to show all files.
+            </p>
+          )}
           {!!outputs.length && (
             <section className="fq-project-outputs">
               <small className="eyebrow">RECENT OUTPUTS</small>
@@ -382,7 +503,7 @@ export function ProjectExplorer({
             className="primary"
             onClick={() => {
               setMode("open");
-              setOpening(true);
+              showChooser();
             }}
           >
             Open project

@@ -6,6 +6,7 @@ import { workspaceShortcut } from "./state/workspace-continuity";
 import { useProjectWorkspace } from "./hooks/useProjectWorkspace";
 import { ProjectExplorer } from "./components/ProjectExplorer";
 import { importExperiment } from "./api/experiments";
+import { modelImportKind, readModelImport } from "./state/model-import";
 import { usePythonWorkspace } from "./hooks/usePythonWorkspace";
 import { usePlatformBridge } from "./hooks/usePlatformBridge";
 import type { AgentAttachment } from "./state/agent-attachments";
@@ -95,40 +96,32 @@ export default function App() {
   }, [dispatch]);
   const upload = async (file: File, program = false) => {
     if (state.busy || importingRef.current) return;
-    if (file.name.toLowerCase().endsWith(".fqx")) {
-      setUploadError("");
-      importingRef.current = true;
-      setImporting(true);
-      try {
+    importingRef.current = true;
+    setImporting(true);
+    setUploadError("");
+    try {
+      const kind = modelImportKind(file, program);
+      if (kind === "experiment") {
         const record = await importExperiment(file);
         dispatch({ type: "import-experiment", record, open: true });
-      } catch (error) {
-        setUploadError(
-          error instanceof Error ? error.message : "Cannot import experiment.",
-        );
-      } finally {
-        importingRef.current = false;
-        setImporting(false);
+      } else {
+        const model = await readModelImport(file);
+        if (program) await compile(model.source, model.name);
+        else
+          dispatch({
+            type: "model",
+            model: { ...model, language: kind },
+            preserveDraft: true,
+          });
       }
-      return;
+    } catch (error) {
+      setUploadError(
+        error instanceof Error ? error.message : "Cannot import this file.",
+      );
+    } finally {
+      importingRef.current = false;
+      setImporting(false);
     }
-    if (file.size > 32768) {
-      setUploadError("Upload a model smaller than 32 KiB.");
-      return;
-    }
-    setUploadError("");
-    const source = await file.text(),
-      name = file.name.replace(/\.[^.]+$/, "");
-    if (program) await compile(source, name);
-    else
-      dispatch({
-        type: "model",
-        model: {
-          name,
-          source,
-          language: file.name.endsWith(".py") ? "python" : "qasm",
-        },
-      });
   };
   const navigate = (page: Page) => {
     dispatch({ type: "navigate", page });
@@ -213,7 +206,6 @@ export default function App() {
             dispatch({ type: "model", model, preserveDraft: true })
           }
           onUpload={(file) => void upload(file)}
-          uploadError={uploadError}
           busy={state.busy || importing}
           importing={importing}
         />
@@ -231,9 +223,11 @@ export default function App() {
               onClick={() => programUpload.current?.click()}
             >
               <UIIcon name="upload" size={14} />
-              {importing ? "Importing experiment…" : "Upload Quantum Program"}
+              {importing ? "Importing file…" : "Upload Quantum Program"}
             </button>
-            <small>OpenQASM .qasm · Experiment .fqx (up to 16 MiB)</small>
+            <small>
+              OpenQASM: up to 32 KiB · .fqx experiment: up to 16 MiB
+            </small>
             <input
               ref={programUpload}
               hidden
@@ -244,9 +238,7 @@ export default function App() {
                 e.target.value = "";
               }}
             />
-            {(uploadError || state.error) && (
-              <p role="alert">{uploadError || state.error?.message}</p>
-            )}
+            {state.error && <p role="alert">{state.error.message}</p>}
             {state.programs.map((p) => (
               <button
                 key={p.id}
@@ -319,6 +311,7 @@ export default function App() {
           project={state.project}
           activePath={state.editorLink?.project?.path}
           onOpen={projectWorkspace.openFile}
+          workspaceBusy={projectWorkspace.busy}
           error={projectWorkspace.error}
           onClose={() => setQuickOpen(false)}
           onProject={() => {
@@ -414,7 +407,11 @@ export default function App() {
           {uploadError && (
             <div className="fq-diagnostic error" role="alert">
               {uploadError}
-              <button onClick={() => setUploadError("")}>×</button>
+              <CloseButton
+                label="Dismiss import error"
+                title="Dismiss import error"
+                onClick={() => setUploadError("")}
+              />
             </div>
           )}
           {state.page === "model" && (

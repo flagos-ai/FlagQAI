@@ -1,4 +1,5 @@
 import { UIIcon } from "./UIIcon";
+import { CodeExample } from "./CodeExample";
 import { useEffect, useRef, useState } from "react";
 import type { Model } from "../contracts/quantum-workspace";
 import {
@@ -10,7 +11,6 @@ export function ModelLibrary({
   models,
   onSelect,
   onUpload,
-  uploadError,
   busy,
   importing,
   projectPanel,
@@ -18,7 +18,6 @@ export function ModelLibrary({
 }: {
   projectPanel?: React.ReactNode;
   projectRequest?: number;
-  uploadError?: string;
   busy?: boolean;
   importing?: boolean;
   models: Model[];
@@ -43,7 +42,20 @@ export function ModelLibrary({
     [query, setQuery] = useState(""),
     [prompt, setPrompt] = useState(""),
     [candidate, setCandidate] = useState<Model | null>(null);
+  const [attempted, setAttempted] = useState(false);
   const upload = useRef<HTMLInputElement>(null);
+  const search = useRef<HTMLInputElement>(null);
+  const term = query.trim().toLowerCase();
+  const visibleExamples = examples.filter((model) =>
+    model.name.toLowerCase().includes(term),
+  );
+  const visibleModels = models.filter((model) =>
+    model.name.toLowerCase().includes(term),
+  );
+  const clearSearch = () => {
+    setQuery("");
+    search.current?.focus({ preventScroll: true });
+  };
   useEffect(() => {
     try {
       localStorage.setItem("fq-model-library-tab-v1", tab);
@@ -88,7 +100,7 @@ export function ModelLibrary({
             onClick={() => upload.current?.click()}
           >
             <UIIcon name="upload" size={14} />
-            {importing ? "Importing experiment…" : "Import model or experiment"}
+            {importing ? "Importing file…" : "Import model or experiment"}
           </button>
           <input
             hidden
@@ -100,47 +112,76 @@ export function ModelLibrary({
               e.target.value = "";
             }}
           />
-          <small>Python · OpenQASM · .fqx experiment (up to 16 MiB)</small>
-          {uploadError && <p role="alert">{uploadError}</p>}
-          <input
-            aria-label="Search models"
-            placeholder="⌕ Search models"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          <small className="eyebrow">EXAMPLES</small>
-          {examples
-            .filter((m) => m.name.toLowerCase().includes(query.toLowerCase()))
-            .map((m) => (
+          <small>Python / OpenQASM: up to 32 KiB · .fqx: up to 16 MiB</small>
+          <div className="fq-library-search">
+            <input
+              ref={search}
+              aria-label="Search models"
+              placeholder="⌕ Search models"
+              value={query}
+              maxLength={128}
+              onKeyDown={(event) => {
+                if (event.key !== "Escape") return;
+                if (event.nativeEvent.isComposing) {
+                  event.preventDefault();
+                  event.stopPropagation();
+                } else if (query) {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  clearSearch();
+                }
+              }}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            {query && (
               <button
-                className="fq-library-card"
-                key={m.name}
-                onClick={() => onSelect(m)}
+                className="fq-control-icon"
+                aria-label="Clear model search"
+                title="Clear search (Esc)"
+                onClick={clearSearch}
               >
-                <span className="fq-library-title">
-                  <UIIcon name="file" size={14} />
-                  {m.name}
-                </span>
-                <small>
-                  {m.name.includes("Arithmetic")
-                    ? "Superposition · res = 3x + 2"
-                    : "Python · Quantum circuit"}
-                </small>
+                <UIIcon name="close" size={14} />
               </button>
-            ))}
-          <small className="eyebrow">MY MODELS {models.length}</small>
-          {models
-            .filter((m) => m.name.toLowerCase().includes(query.toLowerCase()))
-            .map((m) => (
-              <button
-                key={(m.language || "qasm") + ":" + m.name}
-                className="fq-library-card"
-                onClick={() => onSelect(m)}
-              >
-                ▤ {m.name}
-                <small>{m.language === "python" ? "Python" : "OpenQASM"}</small>
-              </button>
-            ))}
+            )}
+          </div>
+          {!visibleExamples.length && !visibleModels.length && (
+            <p role="status">
+              No models match your search. Try another name or clear the search.
+            </p>
+          )}
+          {(!term || visibleExamples.length > 0) && (
+            <small className="eyebrow">EXAMPLES</small>
+          )}
+          {visibleExamples.map((m) => (
+            <button
+              className="fq-library-card"
+              key={m.name}
+              onClick={() => onSelect(m)}
+            >
+              <span className="fq-library-title">
+                <UIIcon name="file" size={14} />
+                {m.name}
+              </span>
+              <small>
+                {m.name.includes("Arithmetic")
+                  ? "Superposition · res = 3x + 2"
+                  : "Python · Quantum circuit"}
+              </small>
+            </button>
+          ))}
+          {(!term || visibleModels.length > 0) && (
+            <small className="eyebrow">MY MODELS {models.length}</small>
+          )}
+          {visibleModels.map((m) => (
+            <button
+              key={(m.language || "qasm") + ":" + m.name}
+              className="fq-library-card"
+              onClick={() => onSelect(m)}
+            >
+              ▤ {m.name}
+              <small>{m.language === "python" ? "Python" : "OpenQASM"}</small>
+            </button>
+          ))}
           <button
             className="secondary"
             onClick={() =>
@@ -156,7 +197,7 @@ export function ModelLibrary({
           </button>
         </div>
       ) : (
-        <div className="fq-library-body">
+        <div className="fq-library-body fq-template-library">
           <small className="eyebrow">LOCAL TEMPLATE GENERATOR</small>
           <h2>What would you like to build?</h2>
           <p>
@@ -166,12 +207,20 @@ export function ModelLibrary({
           <textarea
             aria-label="Template description"
             value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
+            onChange={(e) => {
+              setPrompt(e.target.value);
+              setCandidate(null);
+              setAttempted(false);
+            }}
             placeholder="Create quantum arithmetic: 3*x + 2"
           />
           <button
             className="primary"
-            onClick={() => setCandidate(interpretPrompt(prompt) || null)}
+            disabled={!prompt.trim()}
+            onClick={() => {
+              setAttempted(true);
+              setCandidate(interpretPrompt(prompt) || null);
+            }}
           >
             Generate model →
           </button>
@@ -182,6 +231,7 @@ export function ModelLibrary({
                   key={text}
                   onClick={() => {
                     setPrompt(text);
+                    setAttempted(true);
                     setCandidate(interpretPrompt(text) || null);
                   }}
                 >
@@ -192,11 +242,21 @@ export function ModelLibrary({
           </div>
           {candidate ? (
             <>
-              <pre>{candidate.source}</pre>
+              <CodeExample
+                key={candidate.name}
+                title={candidate.name}
+                code={candidate.source}
+                language="python"
+              />
               <button className="primary" onClick={() => onSelect(candidate)}>
                 Apply model →
               </button>
             </>
+          ) : attempted ? (
+            <p role="alert">
+              No matching local template. Try Bell, GHZ, or arithmetic a*x + b
+              with a from 1–7 and b from 0–3.
+            </p>
           ) : (
             <p>
               Choose a supported template, then review and apply its source.

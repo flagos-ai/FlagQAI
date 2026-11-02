@@ -101,11 +101,17 @@ test("file search ranks exact names, scopes path terms and leaves source orderin
 test("shortcut matching respects composition and extra modifiers for both platforms", () => {
   assert.equal(workspaceShortcut({ key: "P", metaKey: true }), "find");
   assert.equal(workspaceShortcut({ key: "Enter", ctrlKey: true }), "run");
+  assert.equal(workspaceShortcut({ key: "s", metaKey: true }), "save");
+  assert.equal(workspaceShortcut({ key: "S", ctrlKey: true }), "save");
   for (const event of [
     { key: "Enter" },
     { key: "Enter", ctrlKey: true, isComposing: true },
     { key: "p", metaKey: true, altKey: true },
     { key: "Enter", ctrlKey: true, shiftKey: true },
+    { key: "s", ctrlKey: true, isComposing: true },
+    { key: "s", metaKey: true, altKey: true },
+    { key: "S", ctrlKey: true, shiftKey: true },
+    { key: "s" },
   ])
     assert.equal(workspaceShortcut(event), undefined);
 });

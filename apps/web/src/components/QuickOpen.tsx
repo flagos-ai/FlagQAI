@@ -1,5 +1,5 @@
 import { UIIcon } from "./UIIcon";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ProjectInfo } from "../state/project-workspace";
 import { findProjectFiles } from "../state/workspace-continuity";
 import { Modal } from "./Modal";
@@ -11,6 +11,7 @@ export function QuickOpen({
   onClose,
   onProject,
   error,
+  workspaceBusy = false,
 }: {
   project?: ProjectInfo;
   activePath?: string;
@@ -18,29 +19,41 @@ export function QuickOpen({
   onClose: () => void;
   onProject: () => void;
   error: string;
+  workspaceBusy?: boolean;
 }) {
   const [query, setQuery] = useState(""),
     [index, setIndex] = useState(0),
     [busy, setBusy] = useState(false),
-    [attempted, setAttempted] = useState(false);
+    [attemptedPath, setAttemptedPath] = useState<string | null>(null);
   const input = useRef<HTMLInputElement>(null),
     lock = useRef(false);
-  const files = useMemo(
-    () =>
-      findProjectFiles(project?.files || [], query, activePath).slice(0, 40),
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
+  const matches = useMemo(
+    () => findProjectFiles(project?.files || [], query, activePath),
     [project?.files, query, activePath],
   );
+  const files = matches.slice(0, 40);
   const selected = Math.min(index, Math.max(0, files.length - 1));
   const open = async (path: string) => {
-    if (lock.current) return;
+    if (lock.current || workspaceBusy) return;
     lock.current = true;
     setBusy(true);
-    setAttempted(true);
+    setAttemptedPath(path);
     try {
-      if (await onOpen(path)) onClose();
+      const opened = await onOpen(path);
+      if (alive.current) {
+        if (opened) onClose();
+        else input.current?.focus({ preventScroll: true });
+      }
     } finally {
       lock.current = false;
-      setBusy(false);
+      if (alive.current) setBusy(false);
     }
   };
   return (
@@ -63,17 +76,32 @@ export function QuickOpen({
         aria-autocomplete="list"
         aria-expanded="true"
         aria-controls="fq-file-matches"
+        aria-describedby="fq-file-match-count"
         aria-activedescendant={
           files.length ? `fq-file-match-${selected}` : undefined
         }
         placeholder="Search by filename or path…"
+        maxLength={128}
         value={query}
         onChange={(event) => {
           setQuery(event.target.value);
           setIndex(0);
+          setAttemptedPath(null);
         }}
         onKeyDown={(event) => {
           if (event.nativeEvent.isComposing) return;
+          if (event.key === "Home" || event.key === "End") {
+            // Keep modified caret-navigation shortcuts available inside the query.
+            if (
+              event.ctrlKey ||
+              event.metaKey ||
+              event.altKey ||
+              event.shiftKey
+            )
+              return;
+            event.preventDefault();
+            setIndex(event.key === "Home" ? 0 : Math.max(0, files.length - 1));
+          }
           if (event.key === "ArrowDown" || event.key === "ArrowUp") {
             event.preventDefault();
             setIndex(
@@ -92,6 +120,11 @@ export function QuickOpen({
           }
         }}
       />
+      <small id="fq-file-match-count" role="status" className="fq-quick-count">
+        {matches.length > 40
+          ? `Showing 40 of ${matches.length} matching files · Type more to narrow the list`
+          : `${matches.length} matching ${matches.length === 1 ? "file" : "files"}`}
+      </small>
       <div
         id="fq-file-matches"
         role="listbox"
@@ -104,7 +137,7 @@ export function QuickOpen({
             role="option"
             aria-selected={position === selected}
             tabIndex={-1}
-            disabled={busy}
+            disabled={busy || workspaceBusy}
             onClick={() => void open(file.path)}
             ref={(element) => {
               if (element && position === selected)
@@ -124,7 +157,7 @@ export function QuickOpen({
             <small>
               {file.kind === "artifact"
                 ? "Experiment"
-                : file.path.endsWith(".py")
+                : file.path.toLowerCase().endsWith(".py")
                   ? "Python"
                   : "OpenQASM"}
             </small>
@@ -143,9 +176,31 @@ export function QuickOpen({
           </p>
         )
       )}
-      {attempted && error && <p role="alert">{error}</p>}
+      {attemptedPath && error && !busy && !workspaceBusy && (
+        <div className="fq-quick-error" role="alert">
+          <strong>
+            {activePath === attemptedPath
+              ? "Could not refresh"
+              : "Could not open"}{" "}
+            {attemptedPath}
+          </strong>
+          <p>{error}</p>
+          <button
+            onClick={() => void open(attemptedPath)}
+            aria-label={`Retry opening ${attemptedPath}`}
+          >
+            Retry opening
+          </button>
+        </div>
+      )}
       <footer>
-        <span>{busy ? "Opening…" : "↑ ↓ to select · Enter to open"}</span>
+        <span>
+          {busy
+            ? "Opening…"
+            : workspaceBusy
+              ? "Waiting for current project operation…"
+              : "↑ ↓ to select · Enter to open"}
+        </span>
         <span>Esc to close</span>
       </footer>
     </Modal>

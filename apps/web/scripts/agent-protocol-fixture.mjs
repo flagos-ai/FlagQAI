@@ -1,6 +1,6 @@
 // Explicit local UI integration fixture, not an Agent backend shipped to users.
 // Exercises the real protocol server and CLI-owned shared projector; no LLM call.
-import { mkdtemp, rm, writeFile, readFile } from "node:fs/promises";
+import { mkdtemp, rm, writeFile, readFile, realpath } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -11,7 +11,10 @@ import { createFlagQaiServer } from "../../../packages/server/index.mjs";
 import { createWebSessionView } from "../../cli/lib/types/dsh-adapter/web-session-view.js";
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const records = new Map();
-const testWorkspace = await mkdtemp(join(tmpdir(), "flagqai-ui-test-"));
+// Match the local server's canonical paths, including macOS /var aliases.
+const testWorkspace = await realpath(
+  await mkdtemp(join(tmpdir(), "flagqai-ui-test-")),
+);
 let testModel = "scripted-test (no LLM)";
 const testProviders = new Map();
 const testPort = Number(process.env.FQ_TEST_PORT || 4190);
