@@ -790,15 +790,21 @@ check('场景渲染：DRAGPAD/PLAIN 标记定位', padPos.col >= 0 && plainPos.c
   await settled(() => sliderValue === 10)
   release(sPos.col + 23, sPos.row)
   check('I5 拖到右端 v=10', await settled(() => sliderValue === 10), `v=${sliderValue}`)
+  // React state is observable before throttled rendering and xterm parsing finish.
+  check('I5 screen presents right endpoint', await settled(() =>
+    screenLines().some(line => line.includes('SLIDERMARKER') && /\bv=10\s*$/.test(line))))
   // 再拖回左端 → v=0
   press(sPos.col + 22, sPos.row)
   motion(sPos.col + 1, sPos.row)
   await settled(() => sliderValue === 0)
   release(sPos.col + 1, sPos.row)
   check('I5 拖回左端 v=0', await settled(() => sliderValue === 0), `v=${sliderValue}`)
-  const lines = screenLines()
-  const barLine = lines.find((l) => l.includes('SLIDERMARKER'))
-  check('I5 屏幕呈现最终值', barLine !== undefined && barLine.includes('v=0'), barLine ?? '')
+  let barLine: string | undefined
+  const finalFrame = await settled(() => {
+    barLine = screenLines().find(line => line.includes('SLIDERMARKER'))
+    return barLine !== undefined && /\bv=0\s*$/.test(barLine)
+  })
+  check('I5 屏幕呈现最终值', finalFrame, barLine ?? '')
   check('I5 前后值确有变化（拖拽生效）', before !== 10 || sliderValue === 0, `before=${before}`)
 }
 
