@@ -45,12 +45,14 @@ export function pythonRunFeedback({
   submitting = false,
   stopping = false,
   error = "",
+  updatesInterrupted = false,
 }: {
   selectedId?: string | null;
   run?: PythonRun;
   submitting?: boolean;
   stopping?: boolean;
   error?: string;
+  updatesInterrupted?: boolean;
 }) {
   if (submitting)
     return {
@@ -71,17 +73,43 @@ export function pythonRunFeedback({
           busy: true,
           message: "Loading the selected run. Your current code is unchanged.",
         };
-  if (!run)
+  if (!run || !selectedId)
     return {
       label: "Ready",
       busy: false,
       message: "Run Python to see output and saved results here.",
+    };
+  if (
+    updatesInterrupted &&
+    (["queued", "running"].includes(run.status) ||
+      (run.status === "completed" &&
+        ["pending", "collecting"].includes(run.collection_status || "")))
+  )
+    return {
+      label: "Reconnecting…",
+      busy: true,
+      message: stopping
+        ? "Stop requested. Reconnecting to confirm this run's status."
+        : "Updates interrupted. Reconnecting to the existing run; code and logs are retained.",
     };
   if (stopping && ["running", "queued"].includes(run.status))
     return {
       label: "Stopping…",
       busy: true,
       message: "Stop requested. Waiting for the Python service to confirm.",
+    };
+  if (
+    run.status === "running" &&
+    ["completed", "failed"].includes(run.execution_status || "") &&
+    ["pending", "collecting"].includes(run.collection_status || "")
+  )
+    return {
+      label: "Collecting results…",
+      busy: true,
+      message:
+        run.execution_status === "failed"
+          ? "Python exited with an error. Checking for saved experiments…"
+          : "Python finished. Opening the saved experiments…",
     };
   if (run.status === "queued")
     return {

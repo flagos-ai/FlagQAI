@@ -31,6 +31,7 @@ import { createDshTranslator, type DshTranslator } from './translate.js'
 import type { ModelRoute } from '../../modelRoute.js'
 import type { HeadlessSessionInteractions } from '../headless-interactions.js'
 import { createNativeSession } from '#flagqai/harness-adapter/native-session'
+import { createWorkbenchTools, workbenchBinding } from '../workbench-tools.js'
 
 declare module '#flagqai/protocol/agent/capabilities' {
   interface DshNative {
@@ -79,6 +80,8 @@ export function createDshSession(
 ): AgentSession {
   const agent = target.agent
   const handle = 'handle' in target ? target.handle : target
+  let workbench: ReturnType<typeof workbenchBinding>
+  let workbenchDisposers: (() => void)[] = []
   let tools: { readonly registry: ToolsRegistryLike | undefined } | undefined
   const translatorDeps = {
     tools: () => (tools ??= { registry: ctx.get('tools') as ToolsRegistryLike | undefined }).registry,
@@ -95,6 +98,18 @@ export function createDshSession(
     snapshot: () => snapshotLiveSessionEvents(agent.session),
     removePending: id => agent.inbox.remove(MessageId(id)),
     messageFor(input) {
+      workbench = workbenchBinding(input.text, String(agent.session.id))
+      if (!workbench) {
+        for (const dispose of workbenchDisposers.splice(0)) dispose()
+      } else if (!workbenchDisposers.length) {
+        try {
+          for (const tool of createWorkbenchTools(() => workbench, agent.session.header.cwd || process.cwd()))
+            workbenchDisposers.push(agent.ctx.tools.register(tool))
+        } catch (error) {
+          for (const dispose of workbenchDisposers.splice(0)) dispose()
+          throw error
+        }
+      }
       const native = input.native as UserMessage | undefined
       if (native !== undefined && native.id === input.clientMessageId) return native
       const message = createUserMessage({

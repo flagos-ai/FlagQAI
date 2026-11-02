@@ -137,6 +137,9 @@ def main():
     if any(level == 'ERROR' for level, _ in checks): return 1
     if args.check: return 0
     with socket.socket() as check:
+        # Match HTTPServer's reuse policy so a just-stopped workbench can
+        # restart while closed connections remain in TIME_WAIT.
+        check.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try: check.bind(('127.0.0.1', settings.port))
         except OSError:
             print('Web port %s is in use. Reuse that host or choose FQ_PORT; no existing process was stopped.' % settings.port)

@@ -17,8 +17,17 @@ import { splitWorkspaceContext } from "../state/agent-view";
 import { AgentTool, AgentThinking } from "./AgentActivity";
 import { AgentReplyActions } from "./AgentReplyActions";
 import { AgentMarkdown } from "./AgentMarkdown";
-function Row({ row, thinking }: { row: SessionViewRow; thinking: boolean }) {
-  if (row.kind === "tool" && row.tool) return <AgentTool tool={row.tool} />;
+function Row({
+  row,
+  thinking,
+  onOpenRun,
+}: {
+  row: SessionViewRow;
+  thinking: boolean;
+  onOpenRun: (id: string) => Promise<void>;
+}) {
+  if (row.kind === "tool" && row.tool)
+    return <AgentTool tool={row.tool} onOpenRun={onOpenRun} />;
   if (row.kind === "reasoning")
     return <AgentThinking row={row} active={thinking} />;
   if (row.kind === "user" || row.kind === "assistant") {
@@ -305,6 +314,7 @@ export function AgentTranscript({
               >
                 <Row
                   row={row}
+                  onOpenRun={bridge.inspectRun}
                   thinking={
                     turn.active &&
                     row.durationMs === undefined &&

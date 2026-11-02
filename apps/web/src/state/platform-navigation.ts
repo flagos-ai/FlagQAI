@@ -20,6 +20,26 @@ export async function platformNavigation(
   const result = action.result;
   if (!result) return [];
   const changes: WorkspaceAction[] = [];
+  if (result.comparison) {
+    const { left, right } = result.comparison;
+    if (left === right) throw Error("Choose two distinct saved experiments.");
+    const records = await Promise.all([
+      readers.experiment(left),
+      readers.experiment(right),
+    ]);
+    if (
+      records.some((record, i) => record.id !== [left, right][i] || !record.job)
+    )
+      throw Error("Both experiments need saved results.");
+    for (const record of records)
+      changes.push({ type: "import-experiment", record });
+    changes.push(
+      { type: "compare-experiments", left, right },
+      { type: "navigate", page: "jobs" },
+      { type: "agent", open: true },
+    );
+    return changes;
+  }
   if (result.file && action.operation === "model.create")
     changes.push({
       type: "open-agent-model",

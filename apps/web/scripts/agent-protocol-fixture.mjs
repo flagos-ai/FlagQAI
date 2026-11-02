@@ -9,9 +9,10 @@ import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { createFlagQaiServer } from "../../../packages/server/index.mjs";
 import { createWebSessionView } from "../../cli/lib/types/dsh-adapter/web-session-view.js";
+import { createWorkbenchTools } from "../../cli/lib/types/dsh-adapter/workbench-tools.js";
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const records = new Map();
-// Match the local server's canonical paths, including macOS /var aliases.
+// Match the Python server's resolved paths (macOS /var aliases /private/var).
 const testWorkspace = await realpath(
   await mkdtemp(join(tmpdir(), "flagqai-ui-test-")),
 );
@@ -367,6 +368,39 @@ const backend = {
               });
               return JSON.parse(output).result;
             };
+            const typed = async (name, args) => {
+              const tool = createWorkbenchTools(
+                () => ({
+                  port: testPort,
+                  client,
+                  session: session.ref.sessionId,
+                }),
+                testWorkspace,
+              ).find((tool) => tool.name === name);
+              const callId = "typed-workbench-" + ++seq;
+              emit({
+                type: "tool.call",
+                seq: ++seq,
+                callId,
+                name,
+                turn,
+                step: 1,
+                time: Date.now(),
+                argsJson: JSON.stringify(args),
+              });
+              const result = await tool.execute(args, {
+                signal: new AbortController().signal,
+              });
+              emit({
+                type: "tool.result",
+                seq: ++seq,
+                callId,
+                text: JSON.stringify(result),
+                isError: false,
+                time: Date.now(),
+              });
+              return result;
+            };
             if (
               process.env.FQ_E2E_CONTROL_DIR &&
               ["follow acceptance", "comparison acceptance"].includes(
@@ -397,57 +431,116 @@ const backend = {
                     path,
                     'import flagquantum as fq\ncircuit = fq.Circuit(2).h(0).cx(0, 1)\nresult = fq.run(circuit, outputs=fq.counts(), options=fq.ExecutionOptions(shots=128, seed=42))\nfq.save("01-bell.fqx", result.plan, result=result)\ncircuit.x(1)\nvariant = fq.run(circuit, outputs=fq.counts(), options=fq.ExecutionOptions(shots=256, seed=42))\nfq.save("02-bell-x.fqx", variant.plan, result=variant)\n',
                   );
-                created = await command("model.create", [
-                  "--language",
-                  "python",
-                  "--source-file",
-                  path,
-                  "--name",
-                  "Follow Bell",
-                ]);
+                created = comparing
+                  ? await typed("workbench_create_python", {
+                      source: await readFile(path, "utf8"),
+                      name: "Follow Bell",
+                      request_id: randomUUID(),
+                    })
+                  : await command("model.create", [
+                      "--language",
+                      "python",
+                      "--source-file",
+                      path,
+                      "--name",
+                      "Follow Bell",
+                    ]);
               } finally {
                 await rm(sourceFolder, { recursive: true, force: true });
               }
               await barrier("hold-follow-model");
-              const started = await command("python.run", [
-                "--model-id",
-                created.file.id,
-                "--revision",
-                created.file.revision,
-              ]);
+              const started = comparing
+                ? await typed("workbench_run_python", {
+                    model_id: created.file.id,
+                    revision: created.file.revision,
+                    request_id: randomUUID(),
+                  })
+                : await command("python.run", [
+                    "--model-id",
+                    created.file.id,
+                    "--revision",
+                    created.file.revision,
+                  ]);
               let run;
               const deadline = Date.now() + 90000;
               do {
                 if (Date.now() > deadline)
                   throw Error("Follow SDK run timed out.");
-                await delay(400);
-                run = await command("python.read", [
-                  "--run-id",
-                  started.python_run.id,
-                ]);
-              } while (["queued", "running"].includes(run.status));
+                if (comparing)
+                  run = await typed("workbench_wait_run", {
+                    run_id: started.python_run.id,
+                    timeout_ms: 10000,
+                  });
+                else {
+                  await delay(400);
+                  run = await command("python.read", [
+                    "--run-id",
+                    started.python_run.id,
+                  ]);
+                }
+              } while (
+                ["queued", "running"].includes(run.status) ||
+                (comparing && !run.settled)
+              );
               if (
                 run.status !== "completed" ||
                 run.experiments?.length !== (comparing ? 2 : 1)
               )
                 throw Error(JSON.stringify(run));
+              // Worker collection order is not an A/B contract.
+              const baseline = run.experiments.find(
+                (item) => item.filename === "01-bell.fqx",
+              );
+              const variant = run.experiments.find(
+                (item) => item.filename === "02-bell-x.fqx",
+              );
+              if (comparing && (!baseline || !variant))
+                throw Error(
+                  "Comparison fixtures are missing their named baseline or variant.",
+                );
               const artifact = await command("experiment.read", [
                 "--experiment-id",
-                run.experiments.at(-1).id,
+                comparing ? variant.id : run.experiments.at(-1).id,
               ]);
-              await command("focus", [
-                "--page",
-                "program",
-                "--program-id",
-                artifact.program.id,
-              ]);
+              if (comparing) {
+                const presented = await typed("workbench_present_experiment", {
+                  experiment_id: artifact.id,
+                  view: "circuit",
+                  request_id: randomUUID(),
+                });
+                if (
+                  presented.evidence.archive.sha256 !==
+                  artifact.program.experiment.sha256
+                )
+                  throw Error(
+                    "Structured evidence does not identify the actual saved archive.",
+                  );
+              } else
+                await command("focus", [
+                  "--page",
+                  "program",
+                  "--program-id",
+                  artifact.program.id,
+                ]);
               await barrier("hold-follow-result");
-              await command("focus", [
-                "--page",
-                "jobs",
-                "--job-id",
-                artifact.job.id,
-              ]);
+              if (comparing) {
+                await typed("workbench_present_experiment", {
+                  experiment_id: artifact.id,
+                  view: "result",
+                  request_id: randomUUID(),
+                });
+                await typed("workbench_compare_experiments", {
+                  baseline_id: baseline.id,
+                  variant_id: variant.id,
+                  request_id: randomUUID(),
+                });
+              } else
+                await command("focus", [
+                  "--page",
+                  "jobs",
+                  "--job-id",
+                  artifact.job.id,
+                ]);
               await streamText(
                 comparing
                   ? "Comparison acceptance completed using two actual SDK results. No model was called."

@@ -5,6 +5,7 @@ import shlex
 import subprocess
 import tempfile
 import unittest
+import json
 from unittest.mock import Mock, patch
 
 spec = importlib.util.spec_from_file_location('workspace_dev', Path(__file__).resolve().parents[1] / 'dev.py')
@@ -12,6 +13,14 @@ dev = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(dev)
 
 class LauncherTests(unittest.TestCase):
+    def test_local_archive_reader_survives_restart_and_environment_can_override_it(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder); local=root/'.flagqai/quantum-workspace'; local.mkdir(parents=True)
+            (local/'settings.json').write_text(json.dumps({'experiment_python':'/saved/reader'}))
+            with patch.dict(dev.os.environ, {}, clear=True):
+                self.assertEqual(dev.WorkspaceSettings.from_root(root).experiment_python, '/saved/reader')
+            with patch.dict(dev.os.environ, {'FQ_EXPERIMENT_PYTHON':'/explicit/reader'}, clear=True):
+                self.assertEqual(dev.WorkspaceSettings.from_root(root).experiment_python, '/explicit/reader')
     def test_editor_only_start_reports_missing_compute_without_starting_an_agent(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder); (root / 'assets').mkdir(); (root / 'assets/app.mjs').write_text('')

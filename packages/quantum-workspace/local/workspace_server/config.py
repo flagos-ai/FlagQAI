@@ -33,7 +33,7 @@ class WorkspaceSettings:
             ssh_target=os.environ.get('FQ_SSH_TARGET') or settings.get('ssh_target'),
             compute_transport=os.environ.get("FQ_COMPUTE_TRANSPORT", "ssh"),
             local_python=os.environ.get("FQ_LOCAL_PYTHON"),
-            experiment_python=os.environ.get("FQ_EXPERIMENT_PYTHON"),
+            experiment_python=os.environ.get("FQ_EXPERIMENT_PYTHON") or settings.get("experiment_python"),
             remote_python=os.environ.get("FQ_REMOTE_PYTHON") or settings.get("remote_python"),
             ssh_port=int(os.environ.get('FQ_SSH_PORT', settings.get('ssh_port', 2222))),
         )
