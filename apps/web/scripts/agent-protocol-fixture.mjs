@@ -16,6 +16,11 @@ import {
   qaoaSource,
 } from "../src/tasks/qaoa-maxcut.mjs";
 import { fiveCyclePrompt, fiveCycleSource } from "../e2e/five-cycle-task.mjs";
+import {
+  weightedMaxcutPrompt,
+  weightedMaxcutSource,
+  weightedMaxcutName,
+} from "../e2e/weighted-maxcut-task.mjs";
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const records = new Map();
 // Match the Python server's resolved paths (macOS /var aliases /private/var).
@@ -424,13 +429,16 @@ const backend = {
               process.env.FQ_E2E_CONTROL_DIR &&
               (requestText.trim() === qaoaTaskPrompt.trim() ||
                 requestText.trim() === fiveCyclePrompt ||
+                requestText.trim() === weightedMaxcutPrompt ||
                 iteration)
             ) {
               let source =
-                requestText.trim() === fiveCyclePrompt
-                  ? fiveCycleSource
-                  : qaoaSource;
-              let nodes = requestText.trim() === fiveCyclePrompt ? 5 : 6;
+                requestText.trim() === weightedMaxcutPrompt
+                  ? weightedMaxcutSource
+                  : requestText.trim() === fiveCyclePrompt
+                    ? fiveCycleSource
+                    : qaoaSource;
+              let nodes = source === qaoaSource ? 6 : 5;
               if (iteration) {
                 const parent = await typed("workbench_inspect", {
                   resource: "run",
@@ -454,6 +462,12 @@ const backend = {
                   throw Error("Invalid iteration layers");
                 if (parent.source.includes("# FIVE_CYCLE_USER_ACCEPTANCE")) {
                   source = fiveCycleSource;
+                  nodes = 5;
+                }
+                if (
+                  parent.source.includes("# WEIGHTED_MAXCUT_USER_ACCEPTANCE")
+                ) {
+                  source = weightedMaxcutSource;
                   nodes = 5;
                 }
                 const start =
@@ -529,9 +543,11 @@ const backend = {
                 source,
                 name: iteration
                   ? "QAOA iteration · shared angles"
-                  : nodes === 5
-                    ? "QAOA Max-Cut · five-node cycle"
-                    : qaoaTaskName,
+                  : source.includes("# WEIGHTED_MAXCUT_USER_ACCEPTANCE")
+                    ? weightedMaxcutName
+                    : nodes === 5
+                      ? "QAOA Max-Cut · five-node cycle"
+                      : qaoaTaskName,
                 request_id: randomUUID(),
               });
               const started = await typed("workbench_run_python", {
@@ -569,7 +585,12 @@ const backend = {
               );
               if (
                 !report.replay_matches ||
-                report.classical_optimum !== (nodes === 5 ? 4 : 7) ||
+                report.classical_optimum !==
+                  (source.includes("# WEIGHTED_MAXCUT_USER_ACCEPTANCE")
+                    ? 6.5
+                    : nodes === 5
+                      ? 4
+                      : 7) ||
                 report.optimized.expected_cut <= report.baseline.expected_cut
               )
                 throw Error("QAOA acceptance invariants failed");

@@ -1,7 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { qaoaFiles, qaoaOutcome } from "../src/state/qaoa-outcome.ts";
+import {
+  graphFromSource,
+  qaoaFiles,
+  qaoaOutcome,
+} from "../src/state/qaoa-outcome.ts";
 function fixture() {
   const source = "EDGES = [(0, 1)]\n# saved QAOA experiment\n";
   const source_hash = createHash("sha256").update(source).digest("hex");
@@ -159,4 +163,61 @@ test("unsupported executable graph expressions are never evaluated", async () =>
     r.program.experiment.python_run.source_hash = f.run.source_hash;
   }
   await assert.rejects(qaoaOutcome(f.run, f.records), /literal/);
+});
+
+function withSource(f, source) {
+  f.run.source = source;
+  f.run.source_hash = createHash("sha256").update(source).digest("hex");
+  for (const record of f.records) {
+    record.program.origin.source = source;
+    record.program.origin.source_hash = f.run.source_hash;
+    record.program.experiment.python_run.source_hash = f.run.source_hash;
+  }
+  return f;
+}
+test("weighted outcomes use edge weights, not vertex count or unweighted costs", async () => {
+  const { run, records } = withSource(fixture(), "EDGES = [(1, 0, 12.5)]\n");
+  const s = await qaoaOutcome(run, records);
+  assert.equal(s.n, 2);
+  assert.equal(s.weighted, true);
+  assert.equal(s.optimum, 12.5);
+  assert.equal(s.baseline.expected, 6.25);
+  assert.equal(s.optimized.expected, 12.5);
+  assert.equal(s.graph, "[[0,1,12.5]]");
+  const changed = withSource(fixture(), "EDGES = [(0, 1, 2)]\n");
+  assert.notEqual(
+    (await qaoaOutcome(changed.run, changed.records)).graph,
+    s.graph,
+  );
+  const original = fixture();
+  const unweighted = await qaoaOutcome(original.run, original.records);
+  const unit = withSource(fixture(), "EDGES = [(1, 0, 1)]\n");
+  assert.equal(
+    (await qaoaOutcome(unit.run, unit.records)).graph,
+    unweighted.graph,
+  );
+});
+test("literal weighted graph parser rejects ambiguous, invalid and executable graph data", () => {
+  for (const source of [
+    "EDGES = [(0, 1, 0)]",
+    "EDGES = [(0, 1, -1)]",
+    "EDGES = [(0, 1, 1e309)]",
+    "EDGES = [(0, 1, True)]",
+    "EDGES = [(0.0, 1, 2)]",
+    "EDGES = [(0, 0, 2)]",
+    "EDGES = [(0, 1), (1, 0, 2)]",
+    "EDGES = [(0, 12, 2)]",
+    "EDGES = []",
+    "EDGES = [(0, 1, __import__('os').system('bad'))]",
+    "EDGES = [(0,1)]\nEDGES = [(1,2)]",
+    "EDGES = [(0,1),,(1,2)]",
+  ])
+    assert.throws(() => graphFromSource(source), undefined, source);
+  assert.deepEqual(
+    graphFromSource("EDGES = ((0, 1, .5), [1, 2, 2e0],)\n").edges,
+    [
+      [0, 1, 0.5],
+      [1, 2, 2],
+    ],
+  );
 });

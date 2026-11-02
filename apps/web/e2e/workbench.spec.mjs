@@ -5885,11 +5885,16 @@ test("reviewed OpenQASM compilation uses the accepted snapshot instead of the pr
   await expect(editor(page)).toHaveValue(local);
 });
 
-test("five-cycle user journey: reviewed parameters, offline recovery and independent delivery retain drafts", async ({
-  page,
-}, testInfo) => {
-  const { fiveCyclePrompt, fiveCycleSource } =
-    await import("./five-cycle-task.mjs");
+async function maxcutUserJourney(page, testInfo, weighted) {
+  testInfo.setTimeout(240000);
+  const graphName = weighted ? "weighted five-node Max-Cut" : "five-node cycle";
+  const auditName = weighted ? "weighted-maxcut" : "five-cycle";
+  const { fiveCyclePrompt: taskPrompt, fiveCycleSource: taskSource } = weighted
+    ? await import("./weighted-maxcut-task.mjs").then((task) => ({
+        fiveCyclePrompt: task.weightedMaxcutPrompt,
+        fiveCycleSource: task.weightedMaxcutSource,
+      }))
+    : await import("./five-cycle-task.mjs");
   await editor(page).fill(draft);
   const agentButton = page.getByRole("button", {
     name: "FlagQAI Agent",
@@ -5911,11 +5916,16 @@ test("five-cycle user journey: reviewed parameters, offline recovery and indepen
   );
   await page
     .getByRole("textbox", { name: "Message FlagQAI", exact: true })
-    .fill(fiveCyclePrompt);
+    .fill(taskPrompt);
   await page.getByRole("button", { name: "Send message", exact: true }).click();
   await expect(
     page.locator(".fq-agent-message.assistant").last(),
   ).toContainText("QAOA reference workflow verified", { timeout: 90000 });
+  const progress = page
+    .getByRole("region", { name: "Experiment progress", exact: true })
+    .last();
+  await expect(progress).toBeVisible();
+  await expect(progress).not.toContainText("Run needs attention");
   await expect(editor(page)).toHaveValue(draft);
   const newRuns = (await get(page, "/api/python/runs")).filter(
     (r) => !before.has(r.id),
@@ -5926,21 +5936,32 @@ test("five-cycle user journey: reviewed parameters, offline recovery and indepen
   );
   const optimized = await savedRecord(page, baseline, "02-maxcut-qaoa.fqx");
   expect(optimized.program.compiled.qubits).toBe(5);
-  expect(baseline.source).toBe(fiveCycleSource);
+  expect(baseline.source).toBe(taskSource);
   expect(baseline.logs.map((l) => l.text).join("")).toContain(
-    '"classical_optimum": 4',
+    weighted ? '"classical_optimum": 6.5' : '"classical_optimum": 4',
   );
+  if (weighted) {
+    const card = page
+      .getByRole("region", { name: "QAOA outcome", exact: true })
+      .last();
+    await expect(card).toContainText("6 weighted edges · optimum 6.5");
+    await expect(card).toContainText("Expected cut weight");
+    await expect(card).toContainText("3.50");
+    await expect(card).toContainText("4.99");
+  }
   const failed = newRuns.find((r) => r.status === "failed");
   expect(failed).toBeTruthy();
   // Opening the Agent's model is an explicit UI action and keeps the older draft.
   await page.locator(".fq-agent-work > summary").last().click();
   await page
     .locator(".fq-workspace-artifact")
-    .filter({ hasText: "QAOA Max-Cut · five-node cycle" })
+    .filter({
+      hasText: weighted ? graphName : "QAOA Max-Cut · five-node cycle",
+    })
     .getByRole("button", { name: "Open model ↗", exact: true })
     .click();
-  await expect(editor(page)).toHaveValue(fiveCycleSource);
-  const local = fiveCycleSource + "# My unsaved review note\n";
+  await expect(editor(page)).toHaveValue(taskSource);
+  const local = taskSource + "# My unsaved review note\n";
   await editor(page).fill(local);
   const state = await page.evaluate(() =>
     JSON.parse(localStorage.getItem("fq-react-workspace-v1")),
@@ -5964,7 +5985,7 @@ test("five-cycle user journey: reviewed parameters, offline recovery and indepen
     "# FLAGQAI_QAOA_ITERATION=" +
     JSON.stringify(lineage) +
     "\n" +
-    fiveCycleSource.replace("5, 4096, 42, 9", "5, 1024, 43, 7");
+    taskSource.replace("5, 4096, 42, 9", "5, 1024, 43, 7");
   // Deterministic stand-in for an Agent file edit; no reasoning/model call is claimed.
   await writeFile(path, proposal);
   const reviewButton = page.getByRole("button", {
@@ -6032,11 +6053,11 @@ test("five-cycle user journey: reviewed parameters, offline recovery and indepen
   });
   await expect(
     research.getByRole("region", { name: "Research objective", exact: true }),
-  ).toContainText("five-node cycle");
+  ).toContainText(graphName);
   await research
     .getByRole("textbox", { name: "Research adoption reason", exact: true })
     .fill(
-      "Use the reviewed 5-cycle source; sampling settings differ from the baseline.",
+      `Use the reviewed ${graphName} source; sampling settings differ from the baseline.`,
     );
   await research
     .getByRole("button", { name: "Adopt selected version", exact: true })
@@ -6116,7 +6137,7 @@ test("five-cycle user journey: reviewed parameters, offline recovery and indepen
     verification.locator('[data-evidence-scope="current"]'),
   ).toHaveAttribute("data-updates-interrupted", "true");
   await verification.screenshot({
-    path: testInfo.outputPath("five-cycle-verification-offline.png"),
+    path: testInfo.outputPath(`${auditName}-verification-offline.png`),
   });
   await page.unroute("**/api/reproduction/list");
   await expect(summary).toContainText(
@@ -6129,7 +6150,7 @@ test("five-cycle user journey: reviewed parameters, offline recovery and indepen
   const exported = await downloadPromise;
   const buffer = await readFile(await exported.path());
   await writeFile(
-    testInfo.outputPath("five-cycle-reviewed-delivery.zip"),
+    testInfo.outputPath(`${auditName}-reviewed-delivery.zip`),
     buffer,
   );
   await research
@@ -6153,7 +6174,7 @@ test("five-cycle user journey: reviewed parameters, offline recovery and indepen
     await library
       .getByLabel("Import research ZIP", { exact: true })
       .setInputFiles({
-        name: "five-cycle.zip",
+        name: `${auditName}.zip`,
         mimeType: "application/zip",
         buffer,
       });
@@ -6166,7 +6187,13 @@ test("five-cycle user journey: reviewed parameters, offline recovery and indepen
     });
     await expect(
       restored.getByRole("region", { name: "Research objective", exact: true }),
-    ).toContainText("five-node cycle");
+    ).toContainText(graphName);
+    await expect(
+      restored.getByRole("button", {
+        name: "Select research run " + reviewed.id,
+        exact: true,
+      }),
+    ).toHaveAttribute("aria-pressed", "true");
     await expect(
       restored.getByRole("region", {
         name: "Delivery verification summary",
@@ -6189,6 +6216,11 @@ test("five-cycle user journey: reviewed parameters, offline recovery and indepen
     await expect(
       freshVerification.locator('[data-evidence-scope="current"]'),
     ).toContainText("Environment checked", { timeout: 30000 });
+    const independentSubmission = fresh.waitForResponse(
+      (r) =>
+        r.url().endsWith("/api/reproduction/start") &&
+        r.request().method() === "POST",
+    );
     await freshVerification
       .locator('[data-evidence-scope="current"]')
       .getByRole("button", {
@@ -6196,12 +6228,16 @@ test("five-cycle user journey: reviewed parameters, offline recovery and indepen
         exact: true,
       })
       .click();
+    const independentReceipt = await (await independentSubmission).json();
+    expect(independentReceipt.original_run).toBe(reviewed.id);
+    expect(independentReceipt.source_hash).toBe(reviewed.source_hash);
+
     await expect(
       freshVerification.locator('[data-evidence-scope="current"]'),
     ).toContainText("Verified · exact match", { timeout: 90000 });
     await expect(editor(fresh)).toHaveValue(handoffDraft);
     await restored.screenshot({
-      path: testInfo.outputPath("five-cycle-independent-verification.png"),
+      path: testInfo.outputPath(`${auditName}-independent-verification.png`),
     });
   } finally {
     await context.close();
@@ -6220,11 +6256,11 @@ test("five-cycle user journey: reviewed parameters, offline recovery and indepen
         .slice("MAXCUT_REPORT=".length),
     );
   await writeFile(
-    testInfo.outputPath("five-cycle-user-audit.json"),
+    testInfo.outputPath(`${auditName}-user-audit.json`),
     JSON.stringify(
       {
         status: "passed",
-        graph: "five-node cycle",
+        graph: graphName,
         agent_input:
           "scripted protocol and deterministic file-edit fixture; no reasoning model called",
         model_calls: 0,
@@ -6244,4 +6280,14 @@ test("five-cycle user journey: reviewed parameters, offline recovery and indepen
       2,
     ),
   );
+}
+test("five-cycle user journey: reviewed parameters, offline recovery and independent delivery retain drafts", async ({
+  page,
+}, testInfo) => {
+  await maxcutUserJourney(page, testInfo, false);
+});
+test("weighted Max-Cut user journey: review, reconnect and independent reproduction preserve drafts", async ({
+  page,
+}, testInfo) => {
+  await maxcutUserJourney(page, testInfo, true);
 });

@@ -89,17 +89,27 @@ def comparable(record):
 def qaoa_metrics(source, record):
     """Only inspect a literal graph; never evaluate user source."""
     try:
-        edges = next(ast.literal_eval(n.value) for n in ast.parse(source).body if isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id == 'EDGES' for t in n.targets))
+        assignments = [n for n in ast.parse(source).body if isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id == 'EDGES' for t in n.targets)]
+        if len(assignments) != 1: return None
+        edges = ast.literal_eval(assignments[0].value)
         n = record['program']['compiled']['qubits']
-        if not 2 <= n <= 12 or not edges or any(len(e) != 2 or any(type(q) != int or not 0 <= q < n for q in e) for e in edges): return None
-        costs = [sum(format(i, f'0{n}b')[u] != format(i, f'0{n}b')[v] for u, v in edges) for i in range(2 ** n)]
+        if type(n) != int or not 2 <= n <= 12 or not isinstance(edges, (list, tuple)) or not edges: return None
+        normalized = []
+        for edge in edges:
+            if not isinstance(edge, (list, tuple)) or len(edge) not in (2, 3): return None
+            u, v = edge[:2]; weight = edge[2] if len(edge) == 3 else 1
+            if any(type(q) != int or not 0 <= q < n for q in (u, v)) or u == v: return None
+            if type(weight) not in (int, float) or not math.isfinite(weight) or weight <= 0: return None
+            normalized.append((min(u, v), max(u, v), weight))
+        if len({(u, v) for u, v, _ in normalized}) != len(normalized) or not math.isfinite(sum(w for _, _, w in normalized)): return None
+        costs = [sum(w * (format(i, f'0{n}b')[u] != format(i, f'0{n}b')[v]) for u, v, w in normalized) for i in range(2 ** n)]
         ms = record['program']['experiment']['measurements']
         p = next(m for m in ms if m['kind'] == 'probabilities' and m['qubits'] == list(range(n)))['value']
         c = next(m for m in ms if m['kind'] == 'counts' and m['qubits'] == list(range(n)))
         if p.get('truncated') or p.get('complex') or len(p['values']) != len(costs) or len(c['batches']) != 1: return None
         optimum = max(costs)
         return {'expected_cut': sum(v * cost for v, cost in zip(p['values'], costs)), 'optimal_sample_rate': sum(row['count'] for row in c['batches'][0] if row['key_type'] == 'string' and costs[int(row['state'], 2)] == optimum) / c['shots'], 'classical_optimum': optimum}
-    except (StopIteration, ValueError, TypeError, KeyError, IndexError, SyntaxError): return None
+    except (StopIteration, ValueError, TypeError, KeyError, IndexError, SyntaxError, OverflowError, ZeroDivisionError): return None
 
 
 def compare_runs(original, replay, expected, actual):
@@ -157,14 +167,26 @@ class Reproductions:
 
     def check(self, request):
         run, records = self.original(request)
-        process = subprocess.Popen(self.runs.command(PROBE + "\nresult = runtime_manifest(fq, " + repr(source_imports(run['source'])) + "); result['import_errors'] = errors; print(json.dumps(result))"), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True)
-        try: output, errors = process.communicate(timeout=25)
-        except subprocess.TimeoutExpired:
-            os.killpg(process.pid, signal.SIGKILL); process.communicate()
-            raise ValueError('Runtime inspection timed out. No reproduction was submitted.')
-        if process.returncode: raise ValueError('Cannot inspect the configured SDK runtime. Check the interpreter and dependencies. No reproduction was submitted.')
-        try: runtime = json.loads(output)
-        except ValueError: raise ValueError('Runtime inspection returned invalid metadata.')
+        runtime, inspection_error = {}, None
+        try:
+            process = subprocess.Popen(self.runs.command(PROBE + "\nresult = runtime_manifest(fq, " + repr(source_imports(run['source'])) + "); result['import_errors'] = errors; print(json.dumps(result))"), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True)
+            try: output, errors = process.communicate(timeout=25)
+            except subprocess.TimeoutExpired:
+                try: os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError: pass
+                process.communicate()
+                raise ValueError('Runtime inspection timed out. No reproduction was submitted.')
+            if process.returncode: raise ValueError('Cannot inspect the configured SDK runtime. Check the interpreter and dependencies. No reproduction was submitted.')
+            try:
+                runtime = json.loads(output)
+                if not isinstance(runtime, dict): raise ValueError()
+            except ValueError:
+                runtime = {}
+                raise ValueError('Runtime inspection returned invalid metadata. No reproduction was submitted.')
+        except OSError:
+            inspection_error = 'Configured Python executable is unavailable or cannot be started. Check its path and permissions. No reproduction was submitted.'
+        except ValueError as error:
+            inspection_error = str(error)
         differences = []
         execution = []
         versions = sorted({r['program']['experiment'].get('producer_version') for r in records.values()} - {None})
@@ -179,10 +201,19 @@ class Reproductions:
             facts = info.get('runtime', {})
             if isinstance(facts, dict) and facts.get('device') == 'cuda' and not runtime.get('cuda_available'): differences.append('The archive used CUDA; this runtime has no CUDA device.')
         plan = environment_plan(run, versions, runtime)
+        if inspection_error:
+            # No runtime inventory was observed: do not claim packages are missing.
+            runtime = {}
+            plan.update(current={}, blockers=[inspection_error], unresolved_imports=[])
+            for dependency in plan['dependencies']:
+                dependency.update(current=None, state='unchecked')
+            plan['notes'].append('Current runtime inventory is unavailable; dependency availability and compatibility remain unchecked.')
+            differences = ['The current runtime could not be inspected. Compatibility is unchecked.']
         identity = 'verify-' + uuid.uuid4().hex
         record = {'id': identity, 'status': 'blocked' if plan['blockers'] else 'prepared', 'created_at': time.time(), 'package_id': request.get('package_id'), 'original_run': run['id'], 'source_hash': run['source_hash'],
                   'original_archives': run['experiments'], 'configured_environment': self.runs.environment(), 'runtime': runtime, 'producer_versions': versions, 'recorded_execution': execution,
                   'preparation': plan, 'differences': sorted(set(differences)), 'notice': 'Backend and device are selected by the unchanged archived code; external dependencies are not bundled. Version agreement does not guarantee reproduction.'}
+        if inspection_error: record['error'] = inspection_error
         self.store.put(record)
         return record
 

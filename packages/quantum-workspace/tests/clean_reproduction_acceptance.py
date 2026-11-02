@@ -14,6 +14,7 @@ import time
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--package', required=True)
+    parser.add_argument('--adopted', action='store_true', help='Explicitly reproduce the adopted version instead of the research root.')
     parser.add_argument('--workspace', required=True)
     parser.add_argument('--runtime-code', required=True)
     parser.add_argument('--missing-python')
@@ -40,7 +41,10 @@ def main():
     packages = ResearchPackages(settings, experiments, runs)
     raw = Path(args.package).read_bytes()
     imported = packages.import_package(raw, 'qaoa-research.zip')
-    original = imported['research']['root_run']
+    adopted = imported['research'].get('adopted')
+    if args.adopted and not adopted:
+        raise RuntimeError('The package has no adopted version; refusing to silently reproduce the baseline.')
+    original = adopted['run'] if args.adopted else imported['research']['root_run']
     if imported['runs'][original]['source_hash'] != args.expected_source_sha256:
         raise RuntimeError('Unexpected archived source; refusing to execute.')
     original_fingerprint = sha256(json.dumps(imported, sort_keys=True).encode()).hexdigest()
@@ -84,7 +88,8 @@ def main():
     assert sha256(json.dumps(packages.get(imported['id']), sort_keys=True).encode()).hexdigest() == original_fingerprint
     failed = sum(r['status'] == 'failed' for r in imported['runs'].values())
     report = {'schema': 'flagqai.clean-reproduction-acceptance.v1', 'status': 'passed', 'verification_status': result['status'],
-              'package_sha256': sha256(raw).hexdigest(), 'source_sha256': args.expected_source_sha256, 'sdk_build_revision': args.build_revision,
+              'package_sha256': sha256(raw).hexdigest(), 'source_sha256': args.expected_source_sha256,
+              'selection': 'adopted' if args.adopted else 'root', 'original_run': original, 'sdk_build_revision': args.build_revision,
               'sdk_path': str(module), 'python_executable': sys.executable, 'sys_path': sys.path, 'runtime_manifest': manifest,
               'observed_execution_manifest': observed, 'blocked_preparation': blocked, 'preserved_archived_failures': failed,
               'run_count': 1, 'verification_id': result['id'], 'model_calls': 0}

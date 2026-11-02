@@ -87,7 +87,7 @@ export function QaoaOutcome({
         <strong>QAOA · Max-Cut</strong>
         <small>
           {s
-            ? `${s.n} qubits · ${s.edges} edges · optimum ${s.optimum}`
+            ? `${s.n} qubits · ${s.edges} ${s.weighted ? "weighted edges" : "edges"} · optimum ${s.optimum}`
             : "Checking saved evidence…"}
         </small>
       </header>
@@ -102,7 +102,7 @@ export function QaoaOutcome({
         <>
           <dl className="fq-qaoa-metrics">
             <div>
-              <dt>Expected cut</dt>
+              <dt>{s.weighted ? "Expected cut weight" : "Expected cut"}</dt>
               <dd>
                 {s.baseline.expected.toFixed(2)} <span>→</span>{" "}
                 {s.optimized.expected.toFixed(2)}
