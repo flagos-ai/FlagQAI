@@ -1,4 +1,15 @@
 export type CodeToken = { text: string; kind: string };
+export function codeTokenLines(tokens: CodeToken[]) {
+  const lines: CodeToken[][] = [[]];
+  for (const token of tokens) {
+    const parts = token.text.split("\n");
+    parts.forEach((text, index) => {
+      if (index) lines.push([]);
+      if (text) lines[lines.length - 1].push({ text, kind: token.kind });
+    });
+  }
+  return lines;
+}
 export function codeTokens(
   source: string,
   language: "python" | "qasm" | "plain",

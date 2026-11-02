@@ -6,6 +6,7 @@ export type JobView = {
   page: number;
   measurement: number;
   batch: number;
+  query: string;
 };
 const key = "fq-job-views-v1";
 export const defaultJobView: JobView = {
@@ -15,6 +16,7 @@ export const defaultJobView: JobView = {
   page: 0,
   measurement: 0,
   batch: 0,
+  query: "",
 };
 const index = (value: unknown, max: number) =>
   typeof value === "number" && Number.isInteger(value) && value >= 0
@@ -39,6 +41,7 @@ export function normalizeJobView(
     sort: value?.sort === "state" ? "state" : "probability",
     measurement,
     batch,
+    query: typeof value?.query === "string" ? value.query.slice(0, 128) : "",
     page: index(value?.page, Math.ceil(count / 32) - 1),
   };
 }

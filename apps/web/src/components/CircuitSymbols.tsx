@@ -96,6 +96,7 @@ export function GateSymbol({
   y,
   bus,
   onSelect,
+  selected = false,
 }: {
   gate: Instruction;
   index: number;
@@ -104,6 +105,7 @@ export function GateSymbol({
   y: (wire: number) => number;
   bus: boolean;
   onSelect: () => void;
+  selected?: boolean;
 }) {
   const style = gateStyle(gate.name),
     color = style.color,
@@ -121,11 +123,28 @@ export function GateSymbol({
       role="button"
       tabIndex={0}
       aria-label={`Inspect ${gate.name.toUpperCase()} gate ${index + 1}`}
+      aria-pressed={selected}
       onClick={onSelect}
       onKeyDown={(e) => activate(e, onSelect)}
       className="fq-circuit-symbol"
     >
       <title>{`${gate.name.toUpperCase()} · ${style.label} · ${gate.wires.map((w) => "q" + w).join(", ")}${gate.line ? " · source line " + gate.line : ""}${gateCaption(gate) ? " · " + gateCaption(gate) : ""}`}</title>
+      {selected && (
+        <rect
+          data-circuit-selection="gate"
+          x={x - boxWidth / 2 - 5}
+          y={Math.min(...ys) - 23}
+          width={boxWidth + 10}
+          height={Math.max(...ys) - Math.min(...ys) + 46}
+          rx={8}
+          fill={color}
+          fillOpacity={0.1}
+          stroke="#dcecff"
+          strokeWidth={1.5}
+          vectorEffect="non-scaling-stroke"
+          pointerEvents="none"
+        />
+      )}
       <rect
         x={x - width / 2}
         y={Math.min(...ys) - 25}
@@ -227,23 +246,41 @@ export function MeasurementSymbol({
   label,
   wires,
   onSelect,
+  selected = false,
 }: {
   x: number;
   y: number;
   label: string;
   wires: number[];
   onSelect: () => void;
+  selected?: boolean;
 }) {
   return (
     <g
       role="button"
       tabIndex={0}
       aria-label={"Measure " + label}
+      aria-pressed={selected}
       onClick={onSelect}
       onKeyDown={(e) => activate(e, onSelect)}
       className="fq-circuit-symbol"
     >
       <title>{"Measurement · " + wires.map((w) => "q" + w).join(", ")}</title>
+      {selected && (
+        <rect
+          data-circuit-selection="measurement"
+          x={x - 23}
+          y={y - 23}
+          width={46}
+          height={46}
+          rx={8}
+          fill="none"
+          stroke="#dcecff"
+          strokeWidth={1.5}
+          vectorEffect="non-scaling-stroke"
+          pointerEvents="none"
+        />
+      )}
       <GateFrame
         x={x}
         y={y}

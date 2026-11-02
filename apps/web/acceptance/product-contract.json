@@ -17,7 +17,9 @@
         "missing output and real Python errors are distinct and preserve run history",
         "Jobs prioritizes results, filters history and compares only explicitly selected experiments",
         "Jobs pages all observed states without renormalizing a truncated chart",
-        "model import explains invalid files and preserves the newest draft during file reads"
+        "model import explains invalid files and preserves the newest draft during file reads",
+        "parameterized Bell keeps angle, source, circuit and changed results linked after refresh",
+        "circuit fit includes tall wires and zoom keeps the current viewport centered"
       ]
     },
     {

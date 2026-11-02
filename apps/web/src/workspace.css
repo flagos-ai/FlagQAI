@@ -4537,3 +4537,114 @@ body,
   margin: 6px 0;
   font-size: 11px;
 }
+
+/* Experiment and circuit presentation refinements. */
+.fq-reference-query {
+  position: relative;
+  min-width: 0;
+  flex: 1;
+}
+.fq-reference-query input {
+  width: 100%;
+  padding-right: 36px;
+}
+.fq-reference-query .fq-control-icon {
+  position: absolute;
+  right: 3px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.fq-attachment-preview .fq-code-example pre.fq-code-numbered {
+  max-height: min(52vh, 520px);
+  overflow: auto;
+  padding: 10px 0;
+}
+.fq-code-numbered code {
+  display: block;
+  min-width: max-content;
+}
+.fq-code-numbered .fq-code-line {
+  display: block;
+  position: relative;
+  min-height: 1.65em;
+  line-height: 1.65;
+  padding: 0 16px 0 48px;
+}
+.fq-code-numbered .fq-code-line::before {
+  content: attr(data-line);
+  position: absolute;
+  left: 0;
+  width: 34px;
+  padding-right: 8px;
+  text-align: right;
+  color: #7e8998;
+  user-select: none;
+}
+.fq-code-numbered .fq-code-line[data-highlighted="true"] {
+  background: #e7959510;
+  box-shadow: inset 2px 0 #e79595;
+}
+.fq-code-numbered .fq-code-line[data-highlighted="true"]::before {
+  color: #e8aaa5;
+}
+.fq-comparison-body h2 {
+  font-size: 23px;
+  letter-spacing: -0.5px;
+  margin: 7px 0;
+  font-weight: 550;
+}
+.fq-jobs-list h3 {
+  color: #8993a0;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  padding: 14px 8px 7px;
+  margin: 0;
+}
+.fq-job-heading h1 {
+  margin: 8px 0 5px;
+  font-size: 23px;
+  font-weight: 550;
+  letter-spacing: -0.5px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.fq-job-state-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 160px;
+  max-width: 260px;
+  min-width: 0;
+}
+.fq-workspace .fq-job-state-search input {
+  width: 100%;
+  min-width: 0;
+  min-height: 29px;
+  padding: 5px 9px;
+  border: 1px solid #ffffff15;
+  border-radius: 6px;
+  background: #1d1f22;
+  color: #d9e0e9;
+  font-size: 11px;
+  box-shadow: none;
+}
+.fq-job-state-search input::-webkit-search-cancel-button {
+  display: none;
+}
+.fq-workspace .fq-job-state-search button,
+.fq-workspace .fq-job-no-states button {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #94c8ee;
+  font-size: 11px;
+  padding: 5px;
+}
+.fq-job-no-states {
+  padding: 32px 12px;
+  text-align: center;
+  color: #9fadb9;
+  font-size: 12px;
+}

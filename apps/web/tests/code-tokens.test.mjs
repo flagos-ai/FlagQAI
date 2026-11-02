@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { codeTokens } from "../src/state/code-tokens.ts";
+import { codeTokens, codeTokenLines } from "../src/state/code-tokens.ts";
 test("syntax colors preserve exact source including comments, strings and whitespace", () => {
   for (const [language, code] of [
     [
@@ -19,5 +19,21 @@ test("syntax colors preserve exact source including comments, strings and whites
     assert.ok(tokens.some((t) => t.kind === "number"));
     assert.ok(tokens.some((t) => t.kind === "function" && t.text === "rx"));
     assert.ok(tokens.some((t) => t.kind === "keyword"));
+  }
+});
+test("numbered snapshots retain blank lines, indentation and exact token text", () => {
+  for (const source of [
+    "",
+    "\n",
+    "\n\n",
+    "# context\n\n  raise ValueError('x')\n",
+    "print('a')\r\n\tpass",
+  ]) {
+    const lines = codeTokenLines(codeTokens(source, "python"));
+    assert.equal(
+      lines.map((line) => line.map((token) => token.text).join("")).join("\n"),
+      source,
+    );
+    assert.equal(lines.length, source.split("\n").length);
   }
 });

@@ -1,11 +1,11 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { UIIcon } from "./UIIcon";
 export function ExportMenu({
-  hasResult,
+  hasCounts,
   onJSON,
   onCSV,
 }: {
-  hasResult: boolean;
+  hasCounts: boolean;
   onJSON: () => void;
   onCSV: () => void;
 }) {
@@ -58,6 +58,10 @@ export function ExportMenu({
       </button>
       {open && (
         <div id={id} role="group" aria-label="Export formats" ref={panel}>
+          <small className="fq-export-note">
+            JSON: complete saved job. CSV: current measurement and batch. Search
+            and pagination do not limit exports.
+          </small>
           <button
             onClick={() => {
               onJSON();
@@ -67,7 +71,12 @@ export function ExportMenu({
             JSON
           </button>
           <button
-            disabled={!hasResult}
+            disabled={!hasCounts}
+            title={
+              hasCounts
+                ? "Export all recorded states"
+                : "CSV needs a measurement with recorded counts"
+            }
             onClick={() => {
               onCSV();
               close();
@@ -75,6 +84,12 @@ export function ExportMenu({
           >
             CSV · selected measurement
           </button>
+          {!hasCounts && (
+            <small className="fq-export-note">
+              CSV needs a measurement with recorded counts. Use JSON for the
+              complete saved result.
+            </small>
+          )}
         </div>
       )}
     </div>
