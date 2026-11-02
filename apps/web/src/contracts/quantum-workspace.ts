@@ -199,6 +199,7 @@ export type WorkspaceState = {
 };
 export type WorkspaceAction =
   | ProjectAction
+  | { type: "import-backup-drafts"; models: Model[] }
   | { type: "compare-experiments"; left?: string; right?: string }
   | { type: "import-experiment"; record: ExperimentImport; open?: boolean }
   | { type: "restore-experiments"; records: ExperimentImport[] }

@@ -4759,3 +4759,13 @@ body,
   align-items: center;
   gap: 4px;
 }
+
+/* Bounded, draft-safe backup recovery preview. */
+.fq-backup-dialog { width: min(680px, calc(100vw - 32px)); }
+.fq-backup-file { display: grid; gap: 8px; margin: 20px 0 12px; }
+.fq-backup-drafts { display: grid; gap: 6px; max-height: 240px; overflow: auto; }
+.fq-backup-drafts > div { display: flex; align-items: center; gap: 12px; padding: 8px; border-bottom: 1px solid var(--border); }
+.fq-backup-drafts label { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.fq-backup-drafts input { margin-right: 8px; }
+.fq-backup-drafts small { display: block; color: var(--muted); margin: 4px 0 0 24px; }
+.fq-backup-dialog .fq-code-example pre { max-height: 240px; overflow: auto; }

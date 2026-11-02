@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { writeFile, rm } from "node:fs/promises";
+import { writeFile, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 
 const editor = (page) =>
@@ -3590,4 +3590,106 @@ fq.save("viewport.fqx", result.plan, result=result)
   await expect(reference).toHaveCount(0);
   await page.getByRole("button", { name: "MODEL", exact: true }).click();
   await expect(editor(page)).toHaveValue(draft);
+});
+
+test("backup draft recovery previews and merges code without replacing live work", async ({
+  page,
+}, testInfo) => {
+  const original = "# Exported unsaved work\nprint('saved backup')\n";
+  await editor(page).fill(original);
+  await page.getByRole("button", { name: "Backups", exact: true }).click();
+  const dialog = page.getByRole("dialog", {
+    name: "Workspace backups",
+    exact: true,
+  });
+  const downloadEvent = page.waitForEvent("download");
+  await dialog
+    .getByRole("button", { name: "Download workspace backup", exact: true })
+    .click();
+  const downloaded = await downloadEvent;
+  const data = JSON.parse(await readFile(await downloaded.path(), "utf8"));
+  expect(data.source).toBe(original);
+  await dialog
+    .getByRole("button", { name: "Close workspace backups", exact: true })
+    .click();
+  await editor(page).fill(draft);
+  const beforeRuns = (await get(page, "/api/python/runs")).length;
+  await page.getByRole("button", { name: "Backups", exact: true }).click();
+  const file = dialog.getByLabel("Choose workspace backup", { exact: true });
+  await file.setInputFiles({
+    name: "broken.json",
+    mimeType: "application/json",
+    buffer: Buffer.from("{"),
+  });
+  await expect(dialog.getByRole("alert")).toContainText(
+    "not valid backup JSON",
+  );
+  const choose = async (value) =>
+    file.setInputFiles({
+      name: "workspace.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(JSON.stringify(value)),
+    });
+  data.editorLink = {
+    incoming: { source: "# incoming Agent proposal\n" },
+    id: "untrusted-file-link",
+  };
+  await choose(data);
+  await expect(dialog.getByRole("alert")).toHaveCount(0);
+  await expect(dialog.getByRole("status")).toContainText(
+    "2 new models selected",
+  );
+  await dialog
+    .getByRole("button", { name: "Preview backup draft 1", exact: true })
+    .click();
+  await expect(
+    dialog.getByLabel("Backup draft preview code", { exact: true }),
+  ).toHaveText(original.trimEnd());
+  await page.screenshot({
+    path: testInfo.outputPath("backup-preview.png"),
+    fullPage: true,
+  });
+  const recover = dialog.getByRole("button", {
+    name: "Recover selected drafts",
+    exact: true,
+  });
+  const choices = dialog.getByRole("checkbox");
+  await choices.nth(1).uncheck();
+  await expect(dialog.getByRole("status").first()).toContainText(
+    "1 new model selected",
+  );
+  await choices.nth(1).check();
+  await recover.click();
+  await expect(dialog.getByRole("status")).toContainText("2 drafts recovered");
+  await choose(data);
+  await expect(recover).toBeDisabled();
+  data.source = "# Alternate restored draft\n";
+  await choose(data);
+  await expect(dialog.getByRole("status")).toContainText(
+    "1 new model selected",
+  );
+  await recover.click();
+  await dialog
+    .getByRole("button", { name: "Close workspace backups", exact: true })
+    .click();
+  await expect(editor(page)).toHaveValue(draft);
+  await page.reload();
+  await expect(editor(page)).toHaveValue(draft);
+  const stored = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem("fq-react-workspace-v1")),
+  );
+  expect(stored.models).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ source: original }),
+      expect.objectContaining({ source: "# incoming Agent proposal\n" }),
+      expect.objectContaining({
+        name: data.name + " · Restored 1",
+        source: data.source,
+      }),
+    ]),
+  );
+  expect(
+    stored.models.every((model) => !model.editorLink && !model.project),
+  ).toBe(true);
+  expect((await get(page, "/api/python/runs")).length).toBe(beforeRuns);
 });
