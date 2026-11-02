@@ -58,6 +58,7 @@ export function QuickOpen({
   };
   return (
     <Modal
+      layout="flush"
       className="fq-quick-open"
       label="Find project file"
       onClose={onClose}

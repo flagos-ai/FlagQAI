@@ -79,6 +79,13 @@ export function JobsLibrary({
                 />
                 <button
                   aria-label={`Open job ${job.name}`}
+                  title={
+                    jobActive(job)
+                      ? "Results appear when execution finishes"
+                      : job.status === "failed"
+                        ? "Open to inspect the error"
+                        : `${job.name} · ${jobStatus(job)}${job.experiment ? " · " + new Date(job.experiment.imported_at).toLocaleString() : ""}`
+                  }
                   aria-current={
                     (state.selectedJobId || state.jobs[0]?.id) === job.id
                       ? "true"
@@ -90,10 +97,8 @@ export function JobsLibrary({
                     dispatch({ type: "job", id: job.id });
                   }}
                 >
-                  <strong title={job.name}>{job.name}</strong>
-                  <span>
-                    <i className={"fq-job-dot " + job.status} />
-                    {jobStatus(job)}
+                  <span className="fq-job-row-title">
+                    <strong title={job.name}>{job.name}</strong>
                     {job.experiment && (
                       <time
                         title={new Date(
@@ -109,19 +114,39 @@ export function JobsLibrary({
                       </time>
                     )}
                   </span>
-                  <small>
-                    {selected.includes(job.id) &&
-                      (selected.indexOf(job.id) === 0
-                        ? "Baseline · "
-                        : "Variant · ")}
-                    {jobActive(job)
-                      ? "Results appear when execution finishes"
-                      : job.status === "failed"
-                        ? "Open to inspect the error"
-                        : job.result
-                          ? `${job.result.qubits} qubits${job.experiment ? " · .fqx" : ` · ${job.result.shots.toLocaleString()} shots`}`
-                          : "No measurement result"}
-                  </small>
+                  <span className="fq-job-row-summary">
+                    <i
+                      className={"fq-job-dot " + job.status}
+                      title={jobStatus(job)}
+                    />
+                    <span
+                      className={
+                        job.status === "completed" ? "fq-sr-only" : undefined
+                      }
+                    >
+                      {jobStatus(job)}
+                    </span>
+                    {selected.includes(job.id) && (
+                      <small className="fq-job-comparison-role">
+                        {selected.indexOf(job.id) === 0
+                          ? "Baseline"
+                          : "Variant"}
+                      </small>
+                    )}
+                    {job.result && (
+                      <small>
+                        {job.status === "completed" ? "" : "· "}
+                        {job.result.qubits} qubits
+                        {!job.experiment &&
+                          ` · ${job.result.shots.toLocaleString()} shots`}
+                      </small>
+                    )}
+                    {!job.result &&
+                      !jobActive(job) &&
+                      job.status !== "failed" && (
+                        <small>· No measurement result</small>
+                      )}
+                  </span>
                 </button>
               </div>
             ))}
@@ -137,6 +162,7 @@ export function JobsLibrary({
       </div>
       <div className="fq-jobs-compare-action">
         <button
+          title="Select two saved results using the checkboxes to compare them"
           disabled={selected.length !== 2}
           onClick={() =>
             dispatch({
@@ -153,9 +179,7 @@ export function JobsLibrary({
           <button className="link" onClick={() => setSelection([])}>
             Clear selection
           </button>
-        ) : (
-          <small>Select two saved results using the checkboxes.</small>
-        )}
+        ) : null}
       </div>
     </>
   );

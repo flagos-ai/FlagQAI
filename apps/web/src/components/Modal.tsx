@@ -6,6 +6,7 @@ export function Modal({
   label,
   labelledBy,
   initialFocus,
+  layout = "standard",
 }: {
   children: React.ReactNode;
   onClose: () => void;
@@ -13,6 +14,7 @@ export function Modal({
   label?: string;
   labelledBy?: string;
   initialFocus?: React.RefObject<HTMLInputElement | null>;
+  layout?: "standard" | "flush";
 }) {
   const dialog = useRef<HTMLDialogElement>(null),
     outsidePress = useRef(false);
@@ -33,7 +35,8 @@ export function Modal({
   return (
     <dialog
       ref={dialog}
-      className={className}
+      className={"fq-modal " + className}
+      data-layout={layout}
       aria-label={label}
       aria-labelledby={labelledBy}
       onPointerDown={(event) => {

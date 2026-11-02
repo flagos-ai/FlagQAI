@@ -194,7 +194,10 @@ export function CircuitCanvas({
   );
   return (
     <>
-      <div className="fq-toolbar">
+      <div
+        className="fq-toolbar fq-circuit-toolbar"
+        aria-label="Circuit view controls"
+      >
         <button
           aria-pressed={mode === "logical"}
           className={mode === "logical" ? "selected" : ""}
@@ -221,77 +224,68 @@ export function CircuitCanvas({
           <UIIcon name="tree" size={14} />
           Tree
         </button>
-        <div className="push" />
-        <button
-          className="fq-control-icon"
-          title="Zoom out"
-          aria-label="Zoom out"
-          disabled={zoom <= 10}
-          onClick={() => {
-            setFitting(false);
-            changeZoom(Math.max(10, zoom - 10));
-          }}
+        <select
+          className="fq-circuit-select"
+          aria-label="Circuit detail"
+          value={detailLevel === null ? "custom" : String(detailLevel)}
+          onChange={(event) => setLevel(Number(event.target.value))}
         >
-          <UIIcon name="minus" />
-        </button>
-        <span role="status" aria-label="Circuit zoom">
-          {zoom}%
-        </span>
-        <button
-          className="fq-control-icon"
-          title="Zoom in"
-          aria-label="Zoom in"
-          disabled={zoom >= 180}
-          onClick={() => {
-            setFitting(false);
-            changeZoom(Math.min(180, zoom + 10));
-          }}
+          <option value="custom" disabled>
+            Detail · Custom
+          </option>
+          <option value="1">Detail · Overview</option>
+          <option value="3">Detail · Modules</option>
+          <option value="100">Detail · All gates</option>
+          <option value="0">Detail · Collapse all</option>
+        </select>
+        <select
+          className="fq-circuit-select"
+          aria-label="Circuit wire display"
+          value={registers ? "registers" : "qubits"}
+          onChange={(event) => setRegisters(event.target.value === "registers")}
         >
-          <UIIcon name="plus" />
-        </button>
-        <button
-          title="Fit the circuit and keep it fitted as the canvas changes"
-          aria-pressed={fitting}
-          onClick={() => {
-            setFitting(true);
-            fit();
-          }}
-        >
-          Fit
-        </button>
-      </div>
-      <div className="fq-toolbar detail">
-        <small>DETAIL</small>
-        <button aria-pressed={detailLevel === 1} onClick={() => setLevel(1)}>
-          Overview
-        </button>
-        <button aria-pressed={detailLevel === 3} onClick={() => setLevel(3)}>
-          Modules
-        </button>
-        <button
-          aria-pressed={detailLevel === 100}
-          onClick={() => setLevel(100)}
-        >
-          All gates
-        </button>
-        <button aria-pressed={detailLevel === 0} onClick={() => setLevel(0)}>
-          Collapse all
-        </button>
-        <div className="push" />
-        <button
-          aria-pressed={!registers}
-          className={!registers ? "selected" : ""}
-          onClick={() => setRegisters(false)}
-        >
-          Qubits
-        </button>
-        <button
-          aria-pressed={registers}
-          className={registers ? "selected" : ""}
-          onClick={() => setRegisters(true)}
-        >
-          Registers
-        </button>
+          <option value="qubits">Qubits</option>
+          <option value="registers">Registers</option>
+        </select>
+        <div className="fq-circuit-zoom">
+          <button
+            className="fq-control-icon"
+            title="Zoom out"
+            aria-label="Zoom out"
+            disabled={zoom <= 10}
+            onClick={() => {
+              setFitting(false);
+              changeZoom(Math.max(10, zoom - 10));
+            }}
+          >
+            <UIIcon name="minus" />
+          </button>
+          <span role="status" aria-label="Circuit zoom">
+            {zoom}%
+          </span>
+          <button
+            className="fq-control-icon"
+            title="Zoom in"
+            aria-label="Zoom in"
+            disabled={zoom >= 180}
+            onClick={() => {
+              setFitting(false);
+              changeZoom(Math.min(180, zoom + 10));
+            }}
+          >
+            <UIIcon name="plus" />
+          </button>
+          <button
+            title="Fit the circuit and keep it fitted as the canvas changes"
+            aria-pressed={fitting}
+            onClick={() => {
+              setFitting(true);
+              fit();
+            }}
+          >
+            Fit
+          </button>
+        </div>
       </div>
       <div className="fq-circuit-metrics">
         <span>

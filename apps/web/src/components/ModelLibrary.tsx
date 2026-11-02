@@ -1,3 +1,4 @@
+import { qaoaTaskName, qaoaSource } from "../tasks/qaoa-maxcut.mjs";
 import { UIIcon } from "./UIIcon";
 import { CodeExample } from "./CodeExample";
 import { useEffect, useRef, useState } from "react";
@@ -49,6 +50,7 @@ export function ModelLibrary({
   const visibleExamples = examples.filter((model) =>
     model.name.toLowerCase().includes(term),
   );
+  const showReferenceTask = qaoaTaskName.toLowerCase().includes(term);
   const visibleModels = models.filter((model) =>
     model.name.toLowerCase().includes(term),
   );
@@ -68,7 +70,7 @@ export function ModelLibrary({
   }, [projectRequest]);
   return (
     <>
-      <div className="fq-tabs">
+      <div className="fq-tabs fq-model-library-tabs">
         {projectPanel && (
           <button
             className={tab === "project" ? "active" : ""}
@@ -93,95 +95,143 @@ export function ModelLibrary({
       {tab === "project" ? (
         projectPanel
       ) : tab === "models" ? (
-        <div className="fq-library-body">
-          <button
-            className="outline"
-            disabled={busy}
-            onClick={() => upload.current?.click()}
-          >
-            <UIIcon name="upload" size={14} />
-            {importing ? "Importing file…" : "Import model or experiment"}
-          </button>
-          <input
-            hidden
-            type="file"
-            ref={upload}
-            accept=".qasm,.txt,.py,.fqx"
-            onChange={(e) => {
-              if (e.target.files?.[0]) onUpload(e.target.files[0]);
-              e.target.value = "";
-            }}
-          />
-          <small>Python / OpenQASM: up to 32 KiB · .fqx: up to 16 MiB</small>
-          <div className="fq-library-search">
+        <div className="fq-library-body fq-model-library">
+          <div className="fq-model-library-tools">
+            <button
+              className="outline"
+              disabled={busy}
+              onClick={() => upload.current?.click()}
+            >
+              <UIIcon name="upload" size={14} />
+              {importing ? "Importing file…" : "Import model or experiment"}
+            </button>
             <input
-              ref={search}
-              aria-label="Search models"
-              placeholder="⌕ Search models"
-              value={query}
-              maxLength={128}
-              onKeyDown={(event) => {
-                if (event.key !== "Escape") return;
-                if (event.nativeEvent.isComposing) {
-                  event.preventDefault();
-                  event.stopPropagation();
-                } else if (query) {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  clearSearch();
-                }
+              hidden
+              type="file"
+              ref={upload}
+              accept=".qasm,.txt,.py,.fqx"
+              onChange={(e) => {
+                if (e.target.files?.[0]) onUpload(e.target.files[0]);
+                e.target.value = "";
               }}
-              onChange={(e) => setQuery(e.target.value)}
             />
-            {query && (
-              <button
-                className="fq-control-icon"
-                aria-label="Clear model search"
-                title="Clear search (Esc)"
-                onClick={clearSearch}
-              >
-                <UIIcon name="close" size={14} />
-              </button>
-            )}
+            <small>Python / OpenQASM: up to 32 KiB · .fqx: up to 16 MiB</small>
+            <div className="fq-library-search">
+              <input
+                ref={search}
+                aria-label="Search models"
+                placeholder="⌕ Search models"
+                value={query}
+                maxLength={128}
+                onKeyDown={(event) => {
+                  if (event.key !== "Escape") return;
+                  if (event.nativeEvent.isComposing) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  } else if (query) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    clearSearch();
+                  }
+                }}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+              {query && (
+                <button
+                  className="fq-control-icon"
+                  aria-label="Clear model search"
+                  title="Clear search (Esc)"
+                  onClick={clearSearch}
+                >
+                  <UIIcon name="close" size={14} />
+                </button>
+              )}
+            </div>
           </div>
-          {!visibleExamples.length && !visibleModels.length && (
-            <p role="status">
-              No models match your search. Try another name or clear the search.
-            </p>
-          )}
+          {!visibleExamples.length &&
+            !visibleModels.length &&
+            !showReferenceTask && (
+              <p role="status">
+                No models match your search. Try another name or clear the
+                search.
+              </p>
+            )}
           {(!term || visibleExamples.length > 0) && (
-            <small className="eyebrow">EXAMPLES</small>
-          )}
-          {visibleExamples.map((m) => (
-            <button
-              className="fq-library-card"
-              key={m.name}
-              onClick={() => onSelect(m)}
+            <section
+              className="fq-model-library-group"
+              aria-label="Example models"
             >
-              <span className="fq-library-title">
-                <UIIcon name="file" size={14} />
-                {m.name}
-              </span>
-              <small>
-                {m.name.includes("Arithmetic")
-                  ? "Superposition · res = 3x + 2"
-                  : "Python · Quantum circuit"}
-              </small>
-            </button>
-          ))}
+              <small className="eyebrow">EXAMPLES</small>
+              {visibleExamples.map((m) => (
+                <button
+                  className="fq-library-card"
+                  key={m.name}
+                  onClick={() => onSelect(m)}
+                >
+                  <span className="fq-library-title">
+                    <UIIcon name="file" size={14} />
+                    {m.name}
+                  </span>
+                  <small>
+                    {m.name.includes("Arithmetic")
+                      ? "Superposition · res = 3x + 2"
+                      : "Python · Quantum circuit"}
+                  </small>
+                </button>
+              ))}
+            </section>
+          )}
+          {showReferenceTask && (
+            <section
+              className="fq-model-library-group"
+              aria-label="Reference research task"
+            >
+              <small className="eyebrow">RESEARCH WORKFLOW</small>
+              <button
+                className="fq-library-card"
+                onClick={() =>
+                  onSelect({
+                    name: qaoaTaskName,
+                    source: qaoaSource,
+                    language: "python",
+                  })
+                }
+              >
+                <span className="fq-library-title">
+                  <UIIcon name="circuit" size={14} />
+                  {qaoaTaskName}
+                </span>
+                <small>Optimize · Compare · Save and replay</small>
+              </button>
+            </section>
+          )}
           {(!term || visibleModels.length > 0) && (
-            <small className="eyebrow">MY MODELS {models.length}</small>
+            <section className="fq-model-library-group" aria-label="My models">
+              <small className="eyebrow">MY MODELS {models.length}</small>
+              {visibleModels.map((m) => (
+                <button
+                  key={(m.language || "qasm") + ":" + m.name}
+                  className="fq-library-card"
+                  onClick={() => onSelect(m)}
+                >
+                  <span className="fq-library-title">
+                    <UIIcon name="file" size={14} />
+                    {m.name}
+                  </span>
+                  <small
+                    title={
+                      m.reviewOrigin
+                        ? `Reviewed file ${m.reviewOrigin.fileId} · revision ${m.reviewOrigin.revision}`
+                        : undefined
+                    }
+                  >
+                    {m.language === "python" ? "Python" : "OpenQASM"}
+                    {m.reviewOrigin ? " · Reviewed snapshot" : ""}
+                  </small>
+                </button>
+              ))}
+            </section>
           )}
-          {visibleModels.map((m) => (
-            <button
-              key={(m.language || "qasm") + ":" + m.name}
-              className="fq-library-card"
-              onClick={() => onSelect(m)}
-            >
-              ▤ {m.name}
-              <small>{m.language === "python" ? "Python" : "OpenQASM"}</small>
-            </button>
-          ))}
           <button
             className="secondary"
             onClick={() =>

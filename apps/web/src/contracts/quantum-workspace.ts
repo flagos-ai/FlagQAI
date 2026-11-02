@@ -139,6 +139,7 @@ export type Diagnostic = {
 };
 export type SourceLanguage = "qasm" | "python";
 export type Model = {
+  reviewOrigin?: { fileId: string; revision: string };
   name: string;
   source: string;
   description?: string;
@@ -259,6 +260,11 @@ export type WorkspaceAction =
       zoom?: number;
     }
   | { type: "agent"; open: boolean }
+  | {
+      type: "save-review-version";
+      review: import("../state/agent-review").AgentReview;
+      source: string;
+    }
   | { type: "save" }
   | { type: "undo" }
   | { type: "use-draft" };

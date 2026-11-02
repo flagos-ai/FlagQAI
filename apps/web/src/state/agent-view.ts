@@ -50,7 +50,11 @@ export function applyAgentRecord(
   const next = { ...previous, cursor: record.id },
     event = record.event;
   // Native timestamps survive replay/reconnect; never time a turn from browser arrival.
-  if (event.type === "user.message" && typeof event.seq === "number") {
+  if (
+    event.type === "user.message" &&
+    event.source !== "injected" &&
+    typeof event.seq === "number"
+  ) {
     next.lastUserSeq = event.seq;
     if (next.activeTiming && next.activeTiming.userSeq === undefined)
       next.activeTiming = { ...next.activeTiming, userSeq: event.seq };

@@ -10,16 +10,18 @@
       "id": "first-use",
       "name": "First successful experiment",
       "required_tests": [
-        "real SDK example: Bell State → .fqx → circuit → results",
-        "real SDK example: GHZ State → .fqx → circuit → results",
-        "real SDK example: X State → .fqx → circuit → results",
-        "real SDK example: Quantum Arithmetic · 3x + 2 → .fqx → circuit → results",
+        "real SDK example: Bell State \u2192 .fqx \u2192 circuit \u2192 results",
+        "real SDK example: GHZ State \u2192 .fqx \u2192 circuit \u2192 results",
+        "real SDK example: X State \u2192 .fqx \u2192 circuit \u2192 results",
+        "real SDK example: Quantum Arithmetic \u00b7 3x + 2 \u2192 .fqx \u2192 circuit \u2192 results",
         "missing output and real Python errors are distinct and preserve run history",
         "Jobs prioritizes results, filters history and compares only explicitly selected experiments",
         "Jobs pages all observed states without renormalizing a truncated chart",
         "model import explains invalid files and preserves the newest draft during file reads",
         "parameterized Bell keeps angle, source, circuit and changed results linked after refresh",
-        "circuit fit includes tall wires and zoom keeps the current viewport centered"
+        "circuit fit includes tall wires and zoom keeps the current viewport centered",
+        "Execution separates common settings from advanced options without losing snapshots or manual layout",
+        "Synthesis shows source-bound compilation status and reusable results without replacing drafts"
       ]
     },
     {
@@ -28,9 +30,13 @@
       "required_tests": [
         "scripted Agent streams tools, survives lost receipt + refresh, and protects code and chat drafts",
         "project files, native Agent edits, draft review and multi-file SDK snapshots survive refresh",
-        "failed run → Agent repair → review and undo → changed SDK result remains traceable after refresh",
+        "failed run \u2192 Agent repair \u2192 review and undo \u2192 changed SDK result remains traceable after refresh",
         "Follow Agent from Execution handles the first action batch, cold archive focus and Follow Off",
-        "comparison task opens a durable side-by-side experiment with real gate and distribution changes"
+        "comparison task opens a durable side-by-side experiment with real gate and distribution changes",
+        "QAOA Max-Cut reference: scripted Agent orchestration, real optimization, comparison and reproducible archives",
+        "reviewed Agent snapshots save independently, reject stale validation and run exact merged code with undo and failure history",
+        "reviewed OpenQASM compilation uses the accepted snapshot instead of the previous draft",
+        "five-cycle user journey: reviewed parameters, offline recovery and independent delivery retain drafts"
       ]
     },
     {
@@ -43,7 +49,10 @@
         "native decisions, uncertain stops and reconnect preserve one task without resubmission",
         "browser backup failure preserves the last snapshot and exposes recovery without losing the live draft",
         "interaction craft keeps run feedback honest and preserves the result reading position",
-        "backup draft recovery previews and merges code without replacing live work"
+        "backup draft recovery previews and merges code without replacing live work",
+        "compact editor output preserves manual heights and keeps file actions available",
+        "Quantum compact list preserves explicit information-panel choices and manual sizes",
+        "Execution backend uses service metadata and preserves folded limits and manual width"
       ]
     }
   ],

@@ -169,3 +169,42 @@ test("attached context folds without hiding unrelated user content", () => {
     text: "<workspace_context>ordinary text",
   });
 });
+
+test("native injected messages cannot replace the human workspace turn anchor", () => {
+  let view = applyAgentRecord(
+    emptyAgentView(),
+    frame(1, { type: "turn.start", turn: 1, time: 1000 }),
+  );
+  view = applyAgentRecord(
+    view,
+    frame(2, {
+      type: "user.message",
+      source: "user",
+      seq: 8,
+      text: "Optimize Max-Cut",
+    }),
+  );
+  for (const seq of [9, 10, 11])
+    view = applyAgentRecord(
+      view,
+      frame(seq, {
+        type: "user.message",
+        source: "injected",
+        seq,
+        text: "Native capability context",
+      }),
+    );
+  assert.equal(view.lastUserSeq, 8);
+  assert.equal(view.activeTiming.userSeq, 8);
+  view = applyAgentRecord(
+    view,
+    frame(12, {
+      type: "turn.end",
+      turn: 1,
+      time: 2000,
+      reason: { kind: "completed" },
+    }),
+  );
+  assert.equal(view.turnTimings[8].durationMs, 1000);
+  assert.equal(view.turnTimings[11], undefined);
+});

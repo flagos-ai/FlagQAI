@@ -1,3 +1,5 @@
+import { researchTurnsFromProgress } from "../state/research-turns";
+import { iterationQuestion } from "../state/qaoa-iteration";
 import { AgentExperimentTask } from "./AgentExperimentTask";
 import { agentRunStatus, stopFeedback } from "../state/agent-run-status";
 import { AgentWorkspaceActions } from "./AgentWorkspaceActions";
@@ -12,7 +14,7 @@ import type {
 } from "../../../../packages/sdk/index.d.ts";
 import type { QuestionRequestView } from "../../../../packages/protocol/agent/events.mjs";
 import type { AgentConversation } from "../hooks/useAgentConversation";
-import { workDuration } from "../state/agent-turns";
+import { workDuration, actionBelongsToTurn } from "../state/agent-turns";
 import { splitWorkspaceContext } from "../state/agent-view";
 import { AgentTool, AgentThinking } from "./AgentActivity";
 import { AgentReplyActions } from "./AgentReplyActions";
@@ -35,13 +37,24 @@ function Row({
       row.kind === "user"
         ? splitWorkspaceContext(row.text)
         : { text: row.text };
+    const iteration =
+      row.kind === "user" ? iterationQuestion(content.text) : null;
     return (
       <article
         className={"fq-agent-message " + row.kind}
         aria-label={row.kind === "user" ? "Your message" : undefined}
       >
         {row.kind === "assistant" && <small>FlagQAI</small>}
-        <AgentMarkdown text={content.text} />
+        <AgentMarkdown text={iteration?.summary || content.text} />
+        {iteration && (
+          <details className="fq-agent-attachment">
+            <summary>
+              Iteration details · baseline{" "}
+              {iteration.reference.source.slice(0, 8)}
+            </summary>
+            <pre>{iteration.details}</pre>
+          </details>
+        )}
         <AgentReplyActions
           markdown={content.text}
           question={row.kind === "user"}
@@ -194,13 +207,16 @@ export function AgentTranscript({
   roster,
   bridge,
   jobs,
+  onPrepare,
 }: {
   agent: AgentConversation;
   roster: SessionSubagentView[];
   bridge: PlatformBridge;
   jobs: QuantumJob[];
+  onPrepare: (prompt: string) => void;
 }) {
   const turns = progressTurns(agent.view, roster);
+  const researchTurns = researchTurnsFromProgress(turns, bridge.actions);
   const stopNotice = stopFeedback(agent.view.stop, agent.view.stopQueued);
   const viewport = useRef<HTMLDivElement>(null);
   const content = useRef<HTMLDivElement>(null);
@@ -245,10 +261,12 @@ export function AgentTranscript({
     if (content.current) observer.observe(content.current);
     return () => observer.disconnect();
   }, [measure]);
-  const questionText =
+  const rawQuestionText =
     pinned !== null && agent.view.rows[pinned]
       ? splitWorkspaceContext(agent.view.rows[pinned].text).text
       : "";
+  const questionText =
+    iterationQuestion(rawQuestionText)?.summary || rawQuestionText;
   return (
     <div className="fq-agent-transcript-shell">
       {questionText && (
@@ -284,7 +302,7 @@ export function AgentTranscript({
         aria-relevant="additions"
       >
         <div ref={content}>
-          {turns.map((turn) => {
+          {turns.map((turn, turnIndex) => {
             const { progress, children } = turn;
             const live = turn.active || children.some(childRunning);
             const progressPanel = (
@@ -329,16 +347,29 @@ export function AgentTranscript({
             const question = turn.visible.filter((row) => row.kind === "user");
             const remaining = turn.visible.filter((row) => row.kind !== "user");
             const duration = workDuration(turn.durationMs);
+            const actions = bridge.actions.filter(
+              (action) =>
+                action.origin !== "ui" &&
+                actionBelongsToTurn(
+                  action.turn_seq,
+                  turn.rows.find((row) => row.kind === "user")?.seq,
+                  turns[turnIndex + 1]?.rows.find((row) => row.kind === "user")
+                    ?.seq,
+                ),
+            );
+            const workspaceActivity = (
+              <AgentWorkspaceActions
+                actions={actions}
+                jobs={jobs}
+                onOpen={bridge.open}
+                embedded={!live}
+              />
+            );
             return (
               <div key={turn.id} className="fq-agent-turn">
                 {question.map(renderRow)}
                 <AgentExperimentTask
-                  actions={bridge.actions.filter(
-                    (action) =>
-                      action.origin !== "ui" &&
-                      action.turn_seq ===
-                        turn.rows.find((row) => row.kind === "user")?.seq,
-                  )}
+                  actions={actions}
                   active={turn.active}
                   outcome={turn.outcome}
                   follow={bridge.follow}
@@ -348,8 +379,12 @@ export function AgentTranscript({
                     ).text,
                   )}
                   onCompare={bridge.compare}
+                  onInspect={bridge.inspectRun}
+                  onCircuit={bridge.openCircuit}
+                  onPrepare={onPrepare}
+                  researchTurns={researchTurns}
                 />
-                {(turn.work.length > 0 || hasProgress) &&
+                {(turn.work.length > 0 || hasProgress || actions.length > 0) &&
                   (live ? (
                     <div className="fq-agent-work-live">
                       {progressPanel}
@@ -368,7 +403,7 @@ export function AgentTranscript({
                         <span className="fq-agent-work-count">
                           {turn.toolCount > 0
                             ? `${turn.toolCount} tool ${turn.toolCount === 1 ? "call" : "calls"}`
-                            : hasProgress
+                            : hasProgress || actions.length > 0
                               ? "Task activity"
                               : "Thought"}
                         </span>
@@ -388,20 +423,12 @@ export function AgentTranscript({
                         {turn.work
                           .filter((row) => row.kind !== "subagent")
                           .map(renderRow)}
+                        {workspaceActivity}
                       </div>
                     </details>
                   ))}
                 {remaining.map(renderRow)}
-                <AgentWorkspaceActions
-                  actions={bridge.actions.filter(
-                    (action) =>
-                      action.origin !== "ui" &&
-                      action.turn_seq ===
-                        turn.rows.find((row) => row.kind === "user")?.seq,
-                  )}
-                  jobs={jobs}
-                  onOpen={bridge.open}
-                />
+                {live && workspaceActivity}
               </div>
             );
           })}

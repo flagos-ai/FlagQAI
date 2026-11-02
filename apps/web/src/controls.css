@@ -1,0 +1,892 @@
+/* Shared control presentation. Structural navigation, lists, editors and circuit
+   glyphs retain their layout rules in workspace.css. */
+.fq-workspace.fq-ui-controls {
+  --control-compact: 28px;
+  --control-standard: 32px;
+  --control-form: 36px;
+  --control-radius: 6px;
+  --dialog-radius: 12px;
+  --dialog-padding: 20px;
+  --space-control: 8px;
+  --input-focus-border: #85b8d680;
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'%3E%3Cpath d='m3 5 4 4 4-4' fill='none' stroke='%23aeb9c7' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.fq-workspace.fq-ui-controls :is(.primary, .secondary, .outline) {
+  min-height: var(--control-standard);
+  border-radius: var(--control-radius);
+  font-size: 12px;
+  line-height: 18px;
+  padding: 6px 10px;
+  box-shadow: none;
+}
+.fq-workspace.fq-ui-controls .outline {
+  min-height: var(--control-form);
+  border-color: #ffffff24;
+}
+.fq-workspace.fq-ui-controls .fq-toolbar > button,
+.fq-workspace.fq-ui-controls .fq-model-toolbar .fq-editor-sync > button,
+.fq-workspace.fq-ui-controls .fq-python-result-toolbar > button {
+  min-height: var(--control-compact);
+  border-radius: var(--control-radius);
+  font-size: 11px;
+  line-height: 18px;
+  padding: 4px 10px;
+}
+.fq-workspace.fq-ui-controls :is(.fq-toolbar, .fq-pane-title) .fq-control-icon,
+.fq-workspace.fq-ui-controls .fq-icon-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-compact);
+  height: var(--control-compact);
+  min-height: var(--control-compact);
+  padding: 0;
+  flex: 0 0 var(--control-compact);
+  border-radius: var(--control-radius);
+}
+.fq-workspace.fq-ui-controls .fq-project-tabs .fq-icon-close {
+  width: 22px;
+  height: 22px;
+  min-height: 22px;
+  flex-basis: 22px;
+}
+
+/* Use the existing field boundary for focus, without a second offset ring.
+   Checkboxes, radios, sliders and buttons retain their keyboard indicators. */
+.fq-workspace.fq-ui-controls
+  :is(
+    input:where(
+      :not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(
+          [type="file"]
+        ):not([type="hidden"])
+    ),
+    select,
+    textarea
+  ):focus-visible {
+  border-color: var(--input-focus-border);
+  outline: none;
+  box-shadow: none;
+}
+
+/* These fields share a boundary with their enclosing control. */
+.fq-workspace.fq-ui-controls .fq-agent-input:focus-within,
+.fq-workspace.fq-ui-controls .fq-jobs-search > label:focus-within {
+  border-color: var(--input-focus-border);
+  box-shadow: none;
+}
+.fq-workspace.fq-ui-controls .fq-jobs-search input:focus-visible,
+.fq-workspace.fq-ui-controls .fq-agent-input textarea:focus-visible {
+  border-color: transparent;
+  outline: none;
+  box-shadow: none;
+}
+
+.fq-workspace.fq-ui-controls select:not([multiple]) {
+  appearance: none;
+  color-scheme: dark;
+  font-family: inherit;
+  font-size: 11px;
+  line-height: 18px;
+  min-height: var(--control-standard);
+  height: auto;
+  border: 1px solid #ffffff16;
+  border-radius: var(--control-radius);
+  background-color: #292b30;
+  background-image: var(--select-chevron);
+  background-repeat: no-repeat;
+  background-size: 14px 14px;
+  background-position: right 8px center;
+  color: #d9e0e9;
+  padding: 6px 30px 6px 9px;
+  box-shadow: none;
+}
+.fq-workspace.fq-ui-controls
+  :is(.fq-toolbar, .fq-pane-title, .fq-job-chart-controls, .fq-job-measurements)
+  select:not([multiple]) {
+  min-height: var(--control-compact);
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+.fq-workspace.fq-ui-controls select:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.fq-workspace.fq-ui-controls
+  :is(.fq-execution-common, .fq-execution-advanced-fields)
+  input {
+  min-height: var(--control-form);
+  border-radius: var(--control-radius);
+  padding: 7px 10px;
+  line-height: 20px;
+}
+
+.fq-workspace.fq-ui-controls .fq-modal {
+  outline: none;
+  color: var(--text);
+  border: 1px solid #ffffff20;
+  border-radius: var(--dialog-radius);
+  background: #2d2e32;
+  box-shadow: 0 24px 80px #0007;
+}
+.fq-workspace.fq-ui-controls .fq-modal::backdrop {
+  background: #0007;
+}
+.fq-workspace.fq-ui-controls .fq-modal[data-layout="standard"] {
+  padding: var(--dialog-padding);
+  max-width: calc(100vw - 32px);
+}
+.fq-workspace.fq-ui-controls .fq-modal > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.fq-workspace.fq-ui-controls .fq-modal[data-layout="standard"] > header {
+  margin: 0 0 16px;
+  padding: 0;
+}
+.fq-workspace.fq-ui-controls .fq-modal > header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 550;
+  line-height: 1.4;
+  letter-spacing: -0.2px;
+  overflow-wrap: anywhere;
+}
+.fq-workspace.fq-ui-controls .fq-modal[data-layout="standard"] > footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-control);
+  margin: 16px 0 0;
+  padding: 0;
+}
+.fq-workspace.fq-ui-controls .fq-modal[data-layout="standard"] > p {
+  font-size: 12px;
+  line-height: 1.6;
+}
+.fq-workspace.fq-ui-controls
+  .fq-modal
+  :is(header, footer)
+  > button:not(.fq-icon-close):not(.link) {
+  min-height: var(--control-standard);
+  border-radius: var(--control-radius);
+  padding: 6px 10px;
+  font-size: 12px;
+  line-height: 18px;
+}
+.fq-workspace.fq-ui-controls .fq-modal select:not([multiple]),
+.fq-workspace.fq-ui-controls
+  .fq-modal
+  input:not([type="radio"]):not([type="checkbox"]):not([type="range"]) {
+  min-height: var(--control-form);
+  height: auto;
+  border-radius: var(--control-radius);
+  font-size: 12px;
+  line-height: 20px;
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+.fq-workspace.fq-ui-controls .fq-gate-reference > header {
+  padding: 16px 20px;
+}
+.fq-workspace.fq-ui-controls .fq-gate-reference > header > div {
+  display: grid;
+  gap: 4px;
+}
+.fq-workspace.fq-ui-controls .fq-quick-open > header {
+  padding: 12px 16px;
+}
+
+/* Keep optional metadata and help out of the main working surface. */
+.fq-workspace.fq-ui-controls .fq-editor-sync > span[hidden],
+.fq-workspace.fq-ui-controls .fq-python-result-toolbar[hidden] {
+  display: none;
+}
+.fq-workspace.fq-ui-controls .fq-settings label:has(> .fq-readonly-value) {
+  display: grid;
+  grid-template-columns: minmax(75px, 0.8fr) minmax(0, 1.2fr);
+  align-items: baseline;
+  gap: 8px;
+  margin: 10px 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.fq-workspace.fq-ui-controls .fq-readonly-value {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  user-select: text;
+}
+.fq-workspace.fq-ui-controls .fq-settings-help {
+  margin: 14px 0 8px;
+  font-size: 11px;
+}
+.fq-workspace.fq-ui-controls .fq-settings-help > summary,
+.fq-workspace.fq-ui-controls .fq-program-metadata > summary {
+  cursor: pointer;
+  padding: 6px 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #b7c3d1;
+}
+.fq-workspace.fq-ui-controls .fq-program-metadata {
+  margin-top: 8px;
+  border-top: 1px solid #ffffff0c;
+}
+.fq-workspace.fq-ui-controls .fq-program-metadata > button {
+  display: block;
+  margin: 8px 0;
+  font-size: 11px;
+}
+.fq-workspace.fq-ui-controls .fq-program-metadata > p {
+  display: flex;
+}
+
+/* Completed Agent activity belongs to one expandable work history. */
+.fq-workspace.fq-ui-controls .fq-agent-work-body .fq-workspace-artifacts {
+  padding-top: 4px;
+  border-top: 1px solid #ffffff0c;
+}
+.fq-workspace.fq-ui-controls
+  .fq-agent-work-body
+  .fq-workspace-artifact.completed {
+  background: transparent;
+  border: 0;
+  border-left: 1px solid #ffffff20;
+  border-radius: 0;
+  padding: 8px 10px;
+  margin: 4px 0;
+}
+.fq-workspace.fq-ui-controls .fq-agent-connection-dialog {
+  width: min(480px, calc(100vw - 32px));
+  max-height: calc(100dvh - 40px);
+  overflow: auto;
+}
+.fq-workspace.fq-ui-controls
+  .fq-agent-connection-dialog
+  .fq-agent-connection-details {
+  display: grid;
+  gap: 16px;
+  border: 0;
+  background: transparent;
+  margin: 0;
+  padding: 0;
+  overflow-wrap: anywhere;
+}
+.fq-workspace.fq-ui-controls .fq-agent-connection-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.fq-workspace.fq-ui-controls .fq-agent-connection-details p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.fq-workspace.fq-ui-controls .fq-agent-connection-summary button {
+  min-height: var(--control-standard);
+  padding: 6px 10px;
+  font-size: 12px;
+}
+.fq-agent-connection-workspace > span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.fq-workspace.fq-ui-controls .fq-agent-connection-technical {
+  border-top: 1px solid #ffffff12;
+  padding-top: 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.fq-agent-connection-technical summary {
+  cursor: pointer;
+}
+.fq-workspace.fq-ui-controls .fq-agent-connection-technical code {
+  margin: 10px 0 6px;
+  font-size: 12px;
+}
+.fq-workspace.fq-ui-controls .fq-agent-connection-details > small {
+  margin: 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* Keep job rows readable when the manually resized library is narrow. */
+.fq-workspace.fq-ui-controls .fq-jobs-list {
+  container-type: inline-size;
+}
+.fq-workspace.fq-ui-controls .fq-job-row-summary {
+  row-gap: 2px;
+}
+.fq-workspace.fq-ui-controls .fq-job-row {
+  /* Contain the visually hidden status inside the scrollable row. */
+  position: relative;
+}
+@container (max-width: 200px) {
+  .fq-workspace.fq-ui-controls .fq-job-row-title time {
+    display: none;
+  }
+}
+.fq-workspace.fq-ui-controls .fq-job-chart-footer[hidden] {
+  display: none;
+}
+.fq-workspace.fq-ui-controls .fq-job-reading-note {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding: 4px 0 0;
+  color: #a1adbb;
+  font-size: 10px;
+  line-height: 1.5;
+}
+.fq-workspace.fq-ui-controls .fq-job-reading-note .fq-job-order {
+  margin: 0;
+  padding: 0;
+}
+.fq-workspace.fq-ui-controls .fq-job-reading-note details {
+  min-width: 0;
+  max-width: 100%;
+}
+.fq-workspace.fq-ui-controls .fq-job-reading-note summary {
+  cursor: pointer;
+}
+.fq-workspace.fq-ui-controls .fq-job-reading-note p {
+  max-width: 640px;
+  margin: 6px 0 0;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.fq-workspace.fq-ui-controls .fq-experiment-run-history {
+  margin: 8px 0;
+  color: #adb8c7;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.fq-workspace.fq-ui-controls .fq-experiment-run-history > summary {
+  cursor: pointer;
+  padding: 4px 0;
+}
+.fq-workspace.fq-ui-controls .fq-experiment-run-history ul {
+  margin: 4px 0;
+  padding: 0;
+  list-style: none;
+}
+.fq-workspace.fq-ui-controls .fq-experiment-run-history li {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  padding: 4px 0;
+}
+.fq-workspace.fq-ui-controls .fq-experiment-run-history li > span {
+  min-width: 0;
+  flex: 1 1 120px;
+  overflow-wrap: anywhere;
+}
+.fq-workspace.fq-ui-controls .fq-experiment-run-history li > button {
+  min-height: 26px;
+  padding: 3px 7px;
+  font-size: 10px;
+  border: 1px solid #ffffff16;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Saved outcome metrics stay compact; provenance is available on demand. */
+.fq-qaoa-outcome {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #ffffff12;
+  min-width: 0;
+}
+.fq-qaoa-outcome header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 10px;
+  align-items: baseline;
+}
+.fq-qaoa-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 14px 0;
+}
+.fq-qaoa-metrics dt {
+  color: #a5acb6;
+  font-size: 11px;
+}
+.fq-qaoa-metrics dd {
+  margin: 4px 0 0;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  color: #e1e5eb;
+}
+.fq-qaoa-metrics dd span {
+  color: #8792a2;
+  font-size: 13px;
+}
+.fq-qaoa-replay {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 5px;
+  color: #cbb78f;
+  font-size: 11px;
+}
+.fq-qaoa-replay[data-match="true"] {
+  color: #94cbb5;
+}
+.fq-qaoa-outcome nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+.fq-workspace .fq-qaoa-outcome nav button,
+.fq-qaoa-outcome nav a {
+  min-height: 26px;
+  font-size: 11px;
+  padding: 3px 8px;
+}
+.fq-qaoa-outcome nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.fq-qaoa-evidence {
+  margin-top: 10px;
+  font-size: 11px;
+}
+.fq-qaoa-evidence summary {
+  cursor: pointer;
+  color: #aab4c1;
+}
+.fq-experiment-task .fq-qaoa-evidence p {
+  color: #9ea8b5;
+}
+.fq-qaoa-evidence dl {
+  margin: 10px 0;
+}
+.fq-qaoa-evidence dt {
+  color: #939dac;
+}
+.fq-qaoa-evidence dd {
+  margin: 2px 0 8px;
+  overflow-wrap: anywhere;
+}
+.fq-qaoa-evidence ul {
+  padding: 0;
+  list-style: none;
+}
+.fq-experiment-task .fq-qaoa-evidence li {
+  display: block;
+  margin-bottom: 8px;
+}
+.fq-experiment-task .fq-qaoa-evidence li::before {
+  display: none;
+}
+.fq-qaoa-evidence li code {
+  display: block;
+  overflow-wrap: anywhere;
+  margin-top: 3px;
+  font-size: 10px;
+}
+.fq-qaoa-code {
+  width: min(900px, 90vw);
+}
+.fq-qaoa-code > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.fq-qaoa-code > p {
+  font-size: 12px;
+  color: #9ea8b5;
+}
+@media (max-width: 420px) {
+  .fq-qaoa-metrics {
+    gap: 8px;
+  }
+  .fq-qaoa-metrics dd {
+    font-size: 15px;
+  }
+}
+.fq-qaoa-outcome {
+  container-type: inline-size;
+}
+.fq-qaoa-metrics dd {
+  white-space: nowrap;
+}
+@container (max-width: 320px) {
+  .fq-qaoa-metrics dd {
+    font-size: 14px;
+  }
+  .fq-qaoa-metrics dd span {
+    font-size: 11px;
+  }
+}
+.fq-qaoa-outcome a,
+.fq-qaoa-outcome a:visited {
+  color: #a6c8e6;
+  text-decoration: none;
+}
+.fq-qaoa-outcome a:hover {
+  text-decoration: underline;
+}
+.fq-qaoa-iteration {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #ffffff12;
+}
+.fq-qaoa-iteration header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: baseline;
+}
+.fq-qaoa-iteration > button {
+  margin: 8px 6px 0 0;
+  min-height: 26px;
+  font-size: 11px;
+}
+.fq-qaoa-version-metrics {
+  margin: 10px 0;
+  font-size: 11px;
+}
+.fq-qaoa-version-metrics > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+.fq-qaoa-version-metrics dt {
+  color: #a5acb6;
+}
+.fq-qaoa-version-metrics dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.fq-qaoa-iterate-dialog {
+  width: min(460px, 90vw);
+}
+.fq-qaoa-iterate-dialog > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.fq-qaoa-iterate-dialog p {
+  font-size: 12px;
+  color: #a5acb6;
+  line-height: 1.5;
+}
+.fq-qaoa-iterate-dialog label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 12px 0;
+  gap: 12px;
+  font-size: 12px;
+}
+.fq-qaoa-iterate-dialog input {
+  width: 150px;
+}
+.fq-qaoa-iterate-dialog form label {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+}
+.fq-qaoa-iterate-dialog label input {
+  width: 100%;
+  min-width: 0;
+}
+.fq-experiment-task .fq-qaoa-iteration p {
+  color: #9ea8b5;
+}
+.fq-experiment-task .fq-qaoa-iteration p[role="status"] {
+  color: #cbb78f;
+}
+.fq-review-base {
+  margin: 12px 0;
+  font-size: 12px;
+}
+.fq-review-base summary {
+  cursor: pointer;
+  color: #a6b3c2;
+}
+.fq-sync-dialog footer {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.fq-sync-dialog > p[role="status"] {
+  font-size: 12px;
+  color: #94cbb5;
+}
+.fq-review-merge > button {
+  margin: 6px 6px 0 0;
+}
+.fq-research-record {
+  width: min(1100px, 94vw);
+}
+.fq-research-record > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.fq-research-record h3 {
+  margin: 18px 0 8px;
+  font-size: 13px;
+}
+.fq-research-record p,
+.fq-research-record li,
+.fq-research-record label {
+  font-size: 12px;
+  line-height: 1.6;
+}
+.fq-research-record small,
+.fq-research-note {
+  color: #9ea8b5;
+  font-size: 11px;
+}
+.fq-research-goal {
+  white-space: pre-wrap;
+  max-height: 150px;
+  overflow: auto;
+}
+.fq-research-record pre {
+  max-height: 260px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+}
+.fq-research-record details {
+  margin: 10px 0;
+  font-size: 12px;
+}
+.fq-research-record summary {
+  cursor: pointer;
+  color: #a9b7c7;
+}
+.fq-research-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin-top: 16px;
+  font-size: 12px;
+}
+.fq-research-table {
+  overflow: auto;
+}
+.fq-research-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+.fq-research-table th,
+.fq-research-table td {
+  text-align: left;
+  padding: 8px;
+  border-bottom: 1px solid #ffffff10;
+  white-space: nowrap;
+}
+.fq-research-table th button {
+  text-align: left;
+  font-size: 11px;
+}
+.fq-research-table th small {
+  display: block;
+  margin-top: 4px;
+}
+.fq-research-table tr[data-selected="true"] {
+  background: #6dbbff0c;
+}
+.fq-research-detail {
+  border-top: 1px solid #ffffff12;
+  margin-top: 16px;
+}
+.fq-research-actions,
+.fq-research-record footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+.fq-research-detail label {
+  display: block;
+  margin: 12px 0 6px;
+}
+.fq-research-detail textarea {
+  display: block;
+  width: 100%;
+  margin-top: 5px;
+  min-height: 60px;
+}
+.fq-research-detail > button {
+  margin: 6px 8px 6px 0;
+}
+.fq-research-detail li code {
+  display: block;
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+.fq-research-record a {
+  color: #a6c8e6;
+}
+.fq-research-record p[role="alert"],
+.fq-research-record p[role="status"] {
+  color: #cbb78f;
+}
+.fq-experiment-task .fq-research-record p {
+  color: #b2bac6;
+}
+.fq-experiment-task .fq-research-record p[role="status"],
+.fq-experiment-task .fq-research-record p[role="alert"] {
+  color: #cbb78f;
+}
+.fq-experiment-task .fq-research-record li {
+  display: list-item;
+  font-size: 12px;
+}
+.fq-experiment-task .fq-research-record li::before {
+  display: none;
+}
+.fq-research-library {
+  width: min(680px, 94vw);
+}
+.fq-research-library > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.fq-research-library p {
+  font-size: 12px;
+  color: #b2bac6;
+  line-height: 1.6;
+}
+.fq-research-library p[role="alert"] {
+  color: #e6a2a2;
+}
+.fq-research-upload {
+  display: block;
+  margin: 14px 0;
+  font-size: 12px;
+}
+.fq-research-upload input {
+  display: block;
+  margin-top: 8px;
+}
+.fq-research-library section > button {
+  display: block;
+  margin: 8px 0;
+  text-align: left;
+  width: 100%;
+}
+.fq-research-upload input {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+.fq-research-upload input::file-selector-button {
+  font: inherit;
+  color: #dde1e7;
+  background: #38393d;
+  border: 1px solid #ffffff1c;
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-right: 10px;
+  cursor: pointer;
+}
+
+/* Reproduction reports stay inside the research record, without new page chrome. */
+.fq-reproduction {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #ffffff18;
+}
+.fq-reproduction-record {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: #ffffff04;
+  border: 1px solid #ffffff12;
+  border-radius: 8px;
+}
+.fq-reproduction-record > summary {
+  cursor: pointer;
+}
+.fq-reproduction-environment {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 12px;
+  font-size: 12px;
+}
+.fq-reproduction-environment dt {
+  color: var(--muted);
+}
+.fq-reproduction-environment dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.fq-reproduction-table {
+  overflow-x: auto;
+}
+.fq-reproduction-table small {
+  display: block;
+  color: var(--muted);
+}
+.fq-reproduction-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.fq-reproduction-record:is([data-verdict="exact"], [data-verdict="tolerance"])
+  > summary {
+  color: #9bcab8;
+}
+.fq-reproduction-record:is(
+    [data-verdict="different"],
+    [data-verdict="incomplete"],
+    [data-verdict="submission_unknown"]
+  )
+  > summary {
+  color: #d8bb8d;
+}
+.fq-reproduction-record[data-verdict="failed"] > summary {
+  color: #e6a5a5;
+}
+.fq-reproduction-record[data-verdict="blocked"] > summary {
+  color: #d8bb8d;
+}
+.fq-environment-preparation > summary {
+  cursor: pointer;
+}
+.fq-environment-preparation {
+  margin: 12px 0;
+}
+.fq-environment-preparation .fq-reproduction-table {
+  max-height: 240px;
+  overflow: auto;
+}
+.fq-reproduction-record[data-updates-interrupted="true"] > summary {
+  color: var(--muted);
+}
+.fq-run-completion > button {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 11px;
+}

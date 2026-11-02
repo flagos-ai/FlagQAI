@@ -40,6 +40,7 @@ export type PythonRun = {
     python: string;
     cwd: string;
     sdk_version?: string | null;
+    environment_manifest?: Record<string, unknown>;
     save_load_supported?: boolean;
   };
   exit_code?: number;

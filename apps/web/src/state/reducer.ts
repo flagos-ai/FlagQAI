@@ -1,3 +1,4 @@
+import { reviewMatches } from "./agent-review.ts";
 import { checkpointProject, projectTransition } from "./project-workspace.ts";
 import { mergeBackupDrafts } from "./backup-import.ts";
 import { examples } from "./templates.ts";
@@ -468,6 +469,36 @@ function reduceWorkspace(
       return { ...state, agentOpen: action.open };
     case "use-draft":
       return { ...state, execution: null };
+    case "save-review-version": {
+      const { review, source } = action;
+      if (!reviewMatches(state, review)) return state;
+      if (
+        state.models.some(
+          (m) =>
+            m.source === source &&
+            m.language === review.language &&
+            m.reviewOrigin?.fileId === review.id &&
+            m.reviewOrigin.revision === review.revision,
+        )
+      )
+        return state;
+      let name = `${review.name} · Reviewed ${review.revision.slice(0, 8)}`,
+        n = 2;
+      while (state.models.some((m) => m.name === name))
+        name = `${review.name} · Reviewed ${review.revision.slice(0, 8)} · ${n++}`;
+      return {
+        ...state,
+        models: [
+          {
+            name,
+            source,
+            language: review.language,
+            reviewOrigin: { fileId: review.id, revision: review.revision },
+          },
+          ...state.models,
+        ],
+      };
+    }
     case "save":
       return {
         ...state,

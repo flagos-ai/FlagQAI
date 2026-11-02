@@ -95,6 +95,13 @@ export function usePlatformBridge(
     dispatch({ type: "navigate", page: "model" });
     dispatch({ type: "agent", open: true });
   };
+  const openCircuit = async (id: string) => {
+    const record = await readExperiment(id);
+    if (record.id !== id || record.program.id !== id)
+      throw Error("Circuit identity did not match.");
+    dispatch({ type: "import-experiment", record, open: true });
+    dispatch({ type: "agent", open: true });
+  };
   const openRef = useRef(open);
   openRef.current = open;
   useEffect(() => {
@@ -320,6 +327,7 @@ export function usePlatformBridge(
     setFollow,
     open,
     inspectRun,
+    openCircuit,
     compare,
     controls:
       ready && session

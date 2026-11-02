@@ -1,3 +1,7 @@
+import type { ResearchTurn } from "../state/research-record";
+import { QaoaIteration } from "./QaoaIteration";
+import { QaoaOutcome } from "./QaoaOutcome";
+import { experimentTaskStatus } from "../state/experiment-task-status";
 import { comparisonCandidates } from "../state/experiment-comparison";
 import { useEffect, useRef, useState } from "react";
 import { pythonAPI, type PythonRun } from "../api/python-runs";
@@ -10,6 +14,10 @@ export function AgentExperimentTask({
   requested,
   outcome,
   onCompare,
+  onInspect,
+  onCircuit,
+  onPrepare,
+  researchTurns,
 }: {
   actions: PlatformAction[];
   active: boolean;
@@ -17,6 +25,10 @@ export function AgentExperimentTask({
   requested: boolean;
   outcome?: string;
   onCompare: (left: string, right: string) => Promise<void>;
+  onInspect: (run: string) => Promise<void>;
+  onCircuit: (id: string) => Promise<void>;
+  onPrepare: (prompt: string) => void;
+  researchTurns: ResearchTurn[];
 }) {
   const ids = [
     ...new Set(
@@ -27,7 +39,8 @@ export function AgentExperimentTask({
   ].slice(-8);
   const signature = ids.join(",");
   const [runs, setRuns] = useState<Record<string, PythonRun>>({}),
-    [error, setError] = useState("");
+    [runError, setRunError] = useState(""),
+    [actionError, setActionError] = useState("");
   const observedLive = useRef(active),
     autoOpened = useRef(false),
     [opening, setOpening] = useState(false);
@@ -48,7 +61,7 @@ export function AgentExperimentTask({
         ...previous,
         ...Object.fromEntries(found.map((run) => [run.id, run])),
       }));
-      setError(
+      setRunError(
         found.length < ids.length
           ? "Some run progress is unavailable. Last confirmed state is shown."
           : "",
@@ -73,37 +86,31 @@ export function AgentExperimentTask({
   }, [signature, active]);
   const list = ids.flatMap((id) => (runs[id] ? [runs[id]] : []));
   const outputs = comparisonCandidates(list);
-  const failures = list.filter((run) =>
-    ["failed", "cancelled", "timed_out"].includes(run.status),
-  );
-  const collectionIssues = list.some(
-    (run) =>
-      ["partial", "failed"].includes(run.collection_status || "") ||
-      !!run.collection_errors?.length,
-  );
-  const working = list.some((run) =>
-    ["queued", "running"].includes(run.status),
-  );
-  const collecting = list.some(
-    (run) =>
-      ["queued", "running", "completed"].includes(run.status) &&
-      ["pending", "collecting"].includes(run.collection_status || ""),
-  );
-  const incomplete = list.length !== ids.length;
-  const settled =
-    !active &&
-    !working &&
-    !collecting &&
-    !incomplete &&
-    !error &&
-    !collectionIssues;
+  const task = experimentTaskStatus({
+    runs: list,
+    expectedRuns: ids.length,
+    active,
+    outcome,
+    unavailable: !!runError,
+    savedResults: outputs.length,
+  });
+  const { working, collecting, incomplete, settled } = task;
   const compare = async () => {
     if (outputs.length < 2 || opening) return;
     setOpening(true);
+    setActionError("");
     try {
-      await onCompare(outputs[0], outputs[1]);
+      const latest = list.at(-1);
+      const baseline = latest?.experiments?.find(
+        (e) => e.filename === "01-maxcut-baseline.fqx" && e.has_result,
+      );
+      const optimized = latest?.experiments?.find(
+        (e) => e.filename === "02-maxcut-qaoa.fqx" && e.has_result,
+      );
+      if (baseline && optimized) await onCompare(baseline.id, optimized.id);
+      else await onCompare(outputs[0], outputs[1]);
     } catch (problem) {
-      setError(String(problem));
+      setActionError(String(problem));
     } finally {
       setOpening(false);
     }
@@ -117,12 +124,19 @@ export function AgentExperimentTask({
       !settled ||
       outcome !== "completed" ||
       outputs.length !== 2 ||
-      failures.length
+      task.needsAttention
     )
       return;
     autoOpened.current = true;
     void compare();
-  }, [settled, follow, requested, outcome, outputs.join(","), failures.length]);
+  }, [
+    settled,
+    follow,
+    requested,
+    outcome,
+    outputs.join(","),
+    task.needsAttention,
+  ]);
   if (
     !actions.some(
       (action) =>
@@ -130,31 +144,19 @@ export function AgentExperimentTask({
     )
   )
     return null;
-  const phase =
-    failures.length || collectionIssues
-      ? "Run needs attention"
-      : working
-        ? "Running experiment"
-        : collecting
-          ? "Collecting saved results"
-          : incomplete
-            ? "Checking run progress"
-            : active
-              ? "Agent working"
-              : outputs.length
-                ? outcome === "completed"
-                  ? "Experiment ready"
-                  : "Results saved"
-                : "No saved result yet";
   return (
     <section className="fq-experiment-task" aria-label="Experiment progress">
       <div>
         <UIIcon
           name={
-            working || active ? "clock" : failures.length ? "info" : "check"
+            working || collecting || active
+              ? "clock"
+              : task.needsAttention || incomplete
+                ? "info"
+                : "check"
           }
         />
-        <strong>{phase}</strong>
+        <strong>{task.label}</strong>
         <small>
           {ids.length} {ids.length === 1 ? "run" : "runs"} · {outputs.length}{" "}
           saved {outputs.length === 1 ? "result" : "results"}
@@ -177,9 +179,10 @@ export function AgentExperimentTask({
         </li>
         <li
           className={
-            list.length &&
-            list.length === ids.length &&
-            list.every((run) => run.status === "completed")
+            task.recovered ||
+            (list.length &&
+              list.length === ids.length &&
+              list.every((run) => run.status === "completed"))
               ? "done"
               : working
                 ? "current"
@@ -190,19 +193,81 @@ export function AgentExperimentTask({
         </li>
         <li
           className={
-            outputs.length && !collecting ? "done" : collecting ? "current" : ""
+            outputs.length && !collecting && !task.needsAttention && !incomplete
+              ? "done"
+              : collecting
+                ? "current"
+                : ""
           }
         >
           Results
         </li>
       </ol>
-      {error && <p role="status">{error}</p>}
-      {(failures.length > 0 || collectionIssues) && (
+      {(runError || actionError) && (
+        <p role="status">{runError || actionError}</p>
+      )}
+      {task.recovered && (
+        <details className="fq-experiment-run-history">
+          <summary>Earlier run issues · {task.problems.length}</summary>
+          <p>
+            Results are ready. Earlier failures remain in Worked for and run
+            history.
+          </p>
+          <ul>
+            {task.problems.map((run) => (
+              <li key={run.id}>
+                <span title={run.id}>
+                  {run.name || "Python run"} · {run.id.slice(0, 8)} ·{" "}
+                  {run.status === "completed"
+                    ? "collection issues"
+                    : run.status}
+                </span>
+                <button
+                  aria-label={"Inspect earlier run " + run.id}
+                  onClick={async () => {
+                    setActionError("");
+                    try {
+                      await onInspect(run.id);
+                    } catch (problem) {
+                      setActionError(String(problem));
+                    }
+                  }}
+                >
+                  View run
+                </button>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+      {task.needsAttention && (
         <p>
           Open run details for execution or collection errors. Earlier results
           are retained.
         </p>
       )}
+      {list.at(-1)?.source.includes("# FLAGQAI_QAOA_ITERATION=") && (
+        <QaoaIteration
+          active={active}
+          run={list.at(-1)!}
+          onCompare={onCompare}
+          onInspect={onInspect}
+        />
+      )}
+      {settled &&
+        outcome === "completed" &&
+        list
+          .at(-1)
+          ?.experiments?.some((e) => e.filename === "02-maxcut-qaoa.fqx") && (
+          <QaoaOutcome
+            run={list.at(-1)!}
+            onCompare={onCompare}
+            onCircuit={onCircuit}
+            onPrepare={onPrepare}
+            researchTurns={researchTurns}
+            onInspect={onInspect}
+          />
+        )}
       {outputs.length >= 2 && (
         <button
           className="primary"

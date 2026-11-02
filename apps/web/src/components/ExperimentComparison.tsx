@@ -24,7 +24,9 @@ export function CircuitPreview({
   program,
   changed,
   onOpen,
+  compact = false,
 }: {
+  compact?: boolean;
   program: ProgramSnapshot;
   changed: Set<number>;
   onOpen: () => void;
@@ -33,10 +35,11 @@ export function CircuitPreview({
     gates = all.slice(0, 16);
   const wires = Math.min(program.compiled.qubits, 6),
     width = Math.max(300, 100 + gates.length * 66),
-    height = 32 + wires * 76;
-  const y = (wire: number) => 42 + wire * 76;
+    rowGap = compact ? 56 : 76,
+    height = (compact ? 28 : 32) + wires * rowGap;
+  const y = (wire: number) => (compact ? 34 : 42) + wire * rowGap;
   return (
-    <div className="fq-compare-circuit">
+    <div className={"fq-compare-circuit" + (compact ? " is-compact" : "")}>
       <svg
         width={width}
         height={height}
@@ -222,6 +225,25 @@ export function ExperimentComparison({
   const [records, setRecords] = useState<ExperimentImport[]>([]),
     [error, setError] = useState(""),
     [loading, setLoading] = useState(true);
+  const [expandedPreviews, setExpandedPreviews] = useState(() => {
+    try {
+      return localStorage.getItem("fq-comparison-previews-v1") === "expanded";
+    } catch {
+      return false;
+    }
+  });
+  const togglePreviews = () => {
+    const next = !expandedPreviews;
+    setExpandedPreviews(next);
+    try {
+      localStorage.setItem(
+        "fq-comparison-previews-v1",
+        next ? "expanded" : "compact",
+      );
+    } catch {
+      /* Keep the current comparison usable without storage. */
+    }
+  };
   const [retry, setRetry] = useState(0);
   const [leftMeasure, setLeftMeasure] = useState(0),
     [rightMeasure, setRightMeasure] = useState(0);
@@ -313,35 +335,38 @@ export function ExperimentComparison({
       className="fq-jobs fq-comparison"
       aria-label="Experiment comparison"
     >
-      <div className="fq-pane-title">
-        EXPERIMENT COMPARISON{" "}
+      <div className="fq-toolbar fq-comparison-toolbar">
+        <strong>Experiment comparison</strong>
+        <div className="push" />
+        <button
+          aria-label="Swap comparison sides"
+          onClick={() =>
+            dispatch({
+              type: "compare-experiments",
+              left: pair.right,
+              right: pair.left,
+            })
+          }
+        >
+          Swap A / B
+        </button>
+        <button
+          aria-label={
+            expandedPreviews
+              ? "Compact circuit previews"
+              : "Expand circuit previews"
+          }
+          aria-expanded={expandedPreviews}
+          onClick={togglePreviews}
+        >
+          <UIIcon name={expandedPreviews ? "restore" : "expand"} size={14} />
+          {expandedPreviews ? "Compact previews" : "Expand previews"}
+        </button>
         <button onClick={() => dispatch({ type: "compare-experiments" })}>
           Single result
         </button>
       </div>
-      <div className="fq-comparison-body">
-        <header>
-          <div>
-            <small className="eyebrow">SAVED EXPERIMENTS</small>
-            <h2>See what changed.</h2>
-            <p>
-              Compare recorded circuits and measurements. Your editor stays
-              unchanged.
-            </p>
-          </div>
-          <button
-            aria-label="Swap comparison sides"
-            onClick={() =>
-              dispatch({
-                type: "compare-experiments",
-                left: pair.right,
-                right: pair.left,
-              })
-            }
-          >
-            Swap A / B
-          </button>
-        </header>
+      <div className="fq-comparison-body fq-comparison-compact">
         {error && (
           <p role="alert">
             Could not load comparison. {error}{" "}
@@ -354,6 +379,48 @@ export function ExperimentComparison({
           <p role="status">Loading saved experiments…</p>
         ) : (
           <>
+            {left && right && (
+              <section
+                className="fq-comparison-findings"
+                aria-label="Observed differences"
+              >
+                <small className="eyebrow">OBSERVED DIFFERENCES</small>
+                <h3>
+                  {diff.limited
+                    ? "Open full circuits to inspect operation differences"
+                    : `${diff.added.size} added · ${diff.removed.size} removed operations`}
+                </h3>
+                <p>
+                  {diff.limited
+                    ? "Operation matching is limited to circuits with at most 200 operations."
+                    : operationChanges || "No operation changes."}
+                  {" · "}
+                  Dashed outlines mark changed operations.
+                </p>
+                {warning ? (
+                  <p role="status">{warning}</p>
+                ) : comparison ? (
+                  <>
+                    <p>
+                      Observed distribution distance:{" "}
+                      <strong>{(comparison.distance * 100).toFixed(1)}%</strong>{" "}
+                      · A: {comparison.totalA} counts · B: {comparison.totalB}{" "}
+                      counts
+                    </p>
+                    <p className="fq-muted">
+                      This describes these saved samples. It does not establish
+                      fidelity or a causal explanation; equal counts can hide
+                      phase changes.
+                    </p>
+                  </>
+                ) : (
+                  <p>
+                    Save non-empty counts on both sides to compare
+                    distributions.
+                  </p>
+                )}
+              </section>
+            )}
             <div className="fq-comparison-grid">
               {[
                 {
@@ -429,11 +496,6 @@ export function ExperimentComparison({
                         Open circuit <UIIcon name="arrow" size={12} />
                       </button>
                     </div>
-                    <CircuitPreview
-                      program={record.program}
-                      changed={side.changed}
-                      onOpen={() => openCircuit(record)}
-                    />
                     <label>
                       Recorded measurement
                       <select
@@ -497,6 +559,12 @@ export function ExperimentComparison({
                         </small>
                       </>
                     )}
+                    <CircuitPreview
+                      compact={!expandedPreviews}
+                      program={record.program}
+                      changed={side.changed}
+                      onOpen={() => openCircuit(record)}
+                    />
                     <details>
                       <summary>Source and provenance</summary>
                       <p>
@@ -520,54 +588,21 @@ export function ExperimentComparison({
                 );
               })}
             </div>
-            {left && right && (
+            {comparison && (
               <section
-                className="fq-comparison-findings"
-                aria-label="Observed differences"
+                className="fq-comparison-state-details"
+                aria-label="State differences"
               >
-                <small className="eyebrow">OBSERVED DIFFERENCES</small>
-                <h3>
-                  {diff.limited
-                    ? "Open full circuits to inspect operation differences"
-                    : `${diff.added.size} added · ${diff.removed.size} removed operations`}
-                </h3>
-                <p>
-                  {diff.limited
-                    ? "Operation matching is limited to circuits with at most 200 operations."
-                    : operationChanges || "No operation changes."}{" "}
-                  Dashed outlines mark changed operations.
-                </p>
-                {warning ? (
-                  <p role="status">{warning}</p>
-                ) : comparison ? (
-                  <>
-                    <p>
-                      Observed distribution distance:{" "}
-                      <strong>{(comparison.distance * 100).toFixed(1)}%</strong>{" "}
-                      · A: {comparison.totalA} counts · B: {comparison.totalB}{" "}
-                      counts
-                    </p>
-                    <p className="fq-muted">
-                      This describes these saved samples. It does not establish
-                      fidelity or a causal explanation; equal counts can hide
-                      phase changes.
-                    </p>
-                    <ComparisonStates
-                      key={JSON.stringify([
-                        pair.left,
-                        pair.right,
-                        leftMeasure,
-                        rightMeasure,
-                      ])}
-                      rows={comparison.rows}
-                    />
-                  </>
-                ) : (
-                  <p>
-                    Save non-empty counts on both sides to compare
-                    distributions.
-                  </p>
-                )}
+                <h3>State differences</h3>
+                <ComparisonStates
+                  key={JSON.stringify([
+                    pair.left,
+                    pair.right,
+                    leftMeasure,
+                    rightMeasure,
+                  ])}
+                  rows={comparison.rows}
+                />
               </section>
             )}
           </>

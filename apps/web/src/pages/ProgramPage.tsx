@@ -36,10 +36,24 @@ export function ProgramPage({
 }) {
   const stacked = useStackedPanels();
   const [selection, setSelection] = useState<CircuitSelection | null>(null),
-    [info, setInfo] = useState(true),
+    [info, setInfo] = useState(() => {
+      try {
+        return localStorage.getItem("fq-program-info-open-v1") !== "off";
+      } catch {
+        return true;
+      }
+    }),
     [focus, setFocus] = useState(false),
     [reference, setReference] = useState<string | null>(null);
   const [sourceView, setSourceView] = useState<"python" | "qasm" | null>(null);
+  const changeInfo = (open: boolean) => {
+    setInfo(open);
+    try {
+      localStorage.setItem("fq-program-info-open-v1", open ? "on" : "off");
+    } catch {
+      /* Keep the current layout usable without storage. */
+    }
+  };
   const [infoWidth, setInfoWidth] = usePanelSize("programInfo", 300, 230, 500),
     [summaryHeight, setSummaryHeight] = usePanelSize(
       "programSummary",
@@ -70,19 +84,16 @@ export function ProgramPage({
       }}
     >
       <section className="fq-visualizer">
-        <div className="fq-pane-title">
-          VISUALIZATION
-          <button
-            className="fq-control-icon"
-            aria-pressed={focus}
-            aria-label="Focus quantum circuit"
-            onClick={() => setFocus(!focus)}
+        <div
+          className="fq-toolbar fq-circuit-header"
+          aria-label="Circuit actions"
+        >
+          <span
+            className="fq-circuit-name"
+            title={program?.name || "Quantum Program"}
           >
-            <UIIcon name={focus ? "restore" : "expand"} />
-          </button>
-        </div>
-        <div className="fq-toolbar">
-          <span>{program?.name || "Quantum Program"}</span>
+            {program?.name || "Quantum Program"}
+          </span>
           {program?.experiment && (
             <small
               className="fq-experiment-time"
@@ -98,7 +109,15 @@ export function ProgramPage({
             </small>
           )}
           <div className="push" />
-          <button aria-pressed={info} onClick={() => setInfo(!info)}>
+          <button
+            aria-pressed={info}
+            aria-expanded={info && !focus}
+            aria-controls="fq-program-info-panel"
+            title={
+              info ? "Hide program information" : "Show program information"
+            }
+            onClick={() => changeInfo(!info)}
+          >
             <UIIcon name="info" size={14} />
             Info
           </button>
@@ -123,6 +142,15 @@ export function ProgramPage({
             <UIIcon name="download" />
           </button>
           <button
+            className="fq-control-icon"
+            aria-pressed={focus}
+            aria-label="Focus quantum circuit"
+            title={focus ? "Restore circuit layout" : "Focus quantum circuit"}
+            onClick={() => setFocus(!focus)}
+          >
+            <UIIcon name={focus ? "restore" : "expand"} />
+          </button>
+          <button
             className="primary"
             disabled={!program}
             onClick={() => dispatch({ type: "navigate", page: "execution" })}
@@ -140,6 +168,7 @@ export function ProgramPage({
             selection={selection}
             onSelect={(next) => {
               setSelection(next);
+              // Explicit inspection reveals details without replacing the saved layout choice.
               if (next) setInfo(true);
             }}
             svgRef={svg}
@@ -173,6 +202,7 @@ export function ProgramPage({
             initial={300}
           />
           <aside
+            id="fq-program-info-panel"
             className="fq-program-info"
             style={stacked ? { height: infoWidth + 100 } : undefined}
           >
@@ -181,7 +211,7 @@ export function ProgramPage({
               <CloseButton
                 label="Collapse program information"
                 title="Hide program information"
-                onClick={() => setInfo(false)}
+                onClick={() => changeInfo(false)}
               />
             </div>
             <section
@@ -191,9 +221,20 @@ export function ProgramPage({
               {program && c ? (
                 <>
                   <h3>{program.name}</h3>
+                  <div className="fq-metrics">
+                    {[
+                      [c.qubits, "QUBITS"],
+                      [c.depth, "COMPILED DEPTH"],
+                      [c.instructions.length, "COMPILED GATES"],
+                    ].map(([value, label]) => (
+                      <div key={label}>
+                        <b>{value}</b>
+                        <small>{label}</small>
+                      </div>
+                    ))}
+                  </div>
                   {program.experiment && (
                     <>
-                      <ExperimentDetails info={program.experiment} />
                       {program.experiment.has_result && (
                         <button
                           className="secondary"
@@ -207,10 +248,6 @@ export function ProgramPage({
                       )}
                     </>
                   )}
-                  <ProjectProvenance
-                    project={program.origin?.project}
-                    state={state}
-                  />
                   <SourceVersion
                     label={
                       program.origin?.language === "python"
@@ -224,65 +261,63 @@ export function ProgramPage({
                     currentSource={state.source}
                     currentLanguage={state.language || "qasm"}
                   />
-                  <div className="fq-metrics">
-                    {[
-                      [c.qubits, "QUBITS"],
-                      [c.depth, "COMPILED DEPTH"],
-                      [c.instructions.length, "COMPILED GATES"],
-                    ].map(([value, label]) => (
-                      <div key={label}>
-                        <b>{value}</b>
-                        <small>{label}</small>
-                      </div>
-                    ))}
-                  </div>
-                  <p>
-                    {program.experiment ? "Saved with" : "Compiler"}{" "}
-                    <b>FlagQuantum {c.version}</b>
-                  </p>
-                  <p>
-                    Backend{" "}
-                    <b>
-                      {c.backend === "test-only"
-                        ? "Scripted test adapter"
-                        : c.backend === "fqx_archive"
-                          ? "Archived experiment"
-                          : c.backend === "flagquantum_python"
-                            ? "FlagQuantum Python"
-                            : "PyTorch CPU"}
-                    </b>
-                  </p>
-                  <button
-                    onClick={() =>
-                      dispatch({
-                        type: "model",
-                        model: {
-                          name: program.name,
-                          source: program.origin?.source || program.source,
-                          language: program.origin?.language || "qasm",
-                        },
-                        preserveDraft: true,
-                      })
-                    }
-                  >
-                    Open source in Model ↗
-                  </button>
-                  <button
-                    className="link"
-                    onClick={() =>
-                      download(program.name + ".qasm", program.source)
-                    }
-                  >
-                    Download OpenQASM ↓
-                  </button>
-                  <button
-                    className="link"
-                    onClick={() =>
-                      exportNotebook(program, state.shots, state.seed)
-                    }
-                  >
-                    Export notebook ↓
-                  </button>
+                  <details className="fq-program-metadata">
+                    <summary>Source, files and exports</summary>
+                    {program.experiment && (
+                      <ExperimentDetails info={program.experiment} />
+                    )}
+                    <ProjectProvenance
+                      project={program.origin?.project}
+                      state={state}
+                    />
+                    <p>
+                      {program.experiment ? "Saved with" : "Compiler"}{" "}
+                      <b>FlagQuantum {c.version}</b>
+                    </p>
+                    <p>
+                      Backend{" "}
+                      <b>
+                        {c.backend === "test-only"
+                          ? "Scripted test adapter"
+                          : c.backend === "fqx_archive"
+                            ? "Archived experiment"
+                            : c.backend === "flagquantum_python"
+                              ? "FlagQuantum Python"
+                              : "PyTorch CPU"}
+                      </b>
+                    </p>
+                    <button
+                      onClick={() =>
+                        dispatch({
+                          type: "model",
+                          model: {
+                            name: program.name,
+                            source: program.origin?.source || program.source,
+                            language: program.origin?.language || "qasm",
+                          },
+                          preserveDraft: true,
+                        })
+                      }
+                    >
+                      Open source in Model ↗
+                    </button>
+                    <button
+                      className="link"
+                      onClick={() =>
+                        download(program.name + ".qasm", program.source)
+                      }
+                    >
+                      Download OpenQASM ↓
+                    </button>
+                    <button
+                      className="link"
+                      onClick={() =>
+                        exportNotebook(program, state.shots, state.seed)
+                      }
+                    >
+                      Export notebook ↓
+                    </button>
+                  </details>
                 </>
               ) : (
                 <p>

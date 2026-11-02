@@ -34,6 +34,7 @@ export function GateReference({
   const gate = matches.find((g) => g.name === selected) || matches[0];
   return (
     <Modal
+      layout="flush"
       className="fq-gate-reference"
       labelledBy="fq-gate-reference-title"
       initialFocus={search}

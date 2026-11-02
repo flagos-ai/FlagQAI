@@ -14,8 +14,10 @@ export function AgentWorkspaceActions({
   actions,
   jobs,
   onOpen,
+  embedded = false,
 }: {
   actions: PlatformAction[];
+  embedded?: boolean;
   jobs: QuantumJob[];
   onOpen: (action: PlatformAction) => void;
 }) {
@@ -32,7 +34,7 @@ export function AgentWorkspaceActions({
   );
   return (
     <div className="fq-workspace-artifacts" aria-label="Workbench actions">
-      <details className="fq-experiment-activity">
+      <details className="fq-experiment-activity" open={embedded || undefined}>
         <summary>Experiment activity · {actions.length} actions</summary>
         {!!groups.earlier.length && (
           <details className="fq-activity-earlier" open={earlierOpen}>

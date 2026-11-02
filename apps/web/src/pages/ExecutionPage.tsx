@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { UIIcon } from "../components/UIIcon";
 import type {
   WorkspaceAction,
@@ -7,27 +8,41 @@ export function ExecutionPage({
   state,
   dispatch,
   run,
-  backendLabel = "Configured CPU backend",
 }: {
   state: WorkspaceState;
   dispatch: React.Dispatch<WorkspaceAction>;
   run: () => void;
-  backendLabel?: string;
 }) {
+  const validSeed =
+    Number.isInteger(state.seed) && state.seed >= 0 && state.seed <= 2147483647;
   const valid =
     Number.isInteger(state.shots) &&
     state.shots >= 1 &&
     state.shots <= 100000 &&
-    Number.isInteger(state.seed) &&
-    state.seed >= 0 &&
-    state.seed <= 2147483647;
+    validSeed;
+  const [advanced, setAdvanced] = useState(() => {
+    try {
+      return (
+        !validSeed || localStorage.getItem("fq-execution-advanced-v1") === "on"
+      );
+    } catch {
+      return !validSeed;
+    }
+  });
+  useEffect(() => {
+    if (!validSeed) setAdvanced(true);
+  }, [validSeed]);
   return (
-    <section className="fq-execution">
-      <div className="fq-pane-title">EXECUTION CONFIGURATION</div>
-      <div className="fq-toolbar">
-        <span>
-          {state.execution?.name || state.name} ·{" "}
-          {state.execution ? "Compiled program snapshot" : "Model draft"}
+    <section
+      className="fq-execution fq-execution-compact"
+      aria-label="Execution configuration"
+    >
+      <div className="fq-toolbar fq-execution-toolbar">
+        <span className="fq-execution-identity">
+          <strong>{state.execution?.name || state.name}</strong>
+          <small>
+            {state.execution ? "Compiled program snapshot" : "Model draft"}
+          </small>
         </span>
         <div className="push" />
         <button
@@ -43,10 +58,12 @@ export function ExecutionPage({
           {state.busy ? "Submitting…" : "Run"}
         </button>
       </div>
-      <div className="fq-content-pad">
+      <div className="fq-content-pad fq-execution-content">
         {state.execution && (
-          <section className="fq-panel">
-            <b>Executing selected program: {state.execution.name}</b>
+          <section
+            className="fq-execution-source"
+            aria-label="Execution source"
+          >
             <p>
               The task uses this source snapshot. Your Model draft is unchanged.
               {state.execution.experiment &&
@@ -60,9 +77,11 @@ export function ExecutionPage({
             </button>
           </section>
         )}
-        <section className="fq-panel">
-          <small className="eyebrow">CONFIGURATION</small>
-          <div className="fq-form-grid">
+        <section
+          className="fq-panel fq-execution-settings"
+          aria-label="Run settings"
+        >
+          <div className="fq-form-grid fq-execution-common">
             <label>
               Num Shots
               <input
@@ -79,21 +98,6 @@ export function ExecutionPage({
               />
             </label>
             <label>
-              Random Seed
-              <input
-                type="number"
-                min={0}
-                max={2147483647}
-                value={state.seed}
-                onChange={(e) =>
-                  dispatch({
-                    type: "preferences",
-                    seed: Number(e.target.value),
-                  })
-                }
-              />
-            </label>
-            <label>
               Job Name
               <input
                 value={state.jobName}
@@ -104,6 +108,43 @@ export function ExecutionPage({
               />
             </label>
           </div>
+          <details className="fq-execution-advanced" open={advanced}>
+            <summary
+              onClick={(event) => {
+                event.preventDefault();
+                const open = !advanced;
+                setAdvanced(open);
+                try {
+                  localStorage.setItem(
+                    "fq-execution-advanced-v1",
+                    open ? "on" : "off",
+                  );
+                } catch {
+                  /* Keep local controls usable without storage. */
+                }
+              }}
+            >
+              Advanced options <span>Seed {state.seed}</span>
+            </summary>
+            <div className="fq-execution-advanced-fields">
+              <label>
+                Random Seed
+                <input
+                  type="number"
+                  min={0}
+                  max={2147483647}
+                  value={state.seed}
+                  onChange={(e) =>
+                    dispatch({
+                      type: "preferences",
+                      seed: Number(e.target.value),
+                    })
+                  }
+                />
+              </label>
+              <p>Use the same seed and settings to reproduce a sampled run.</p>
+            </div>
+          </details>
           {!valid && (
             <p role="alert">
               Enter whole-number shots (1–100,000) and seed (0–2,147,483,647).
@@ -115,18 +156,6 @@ export function ExecutionPage({
             {state.error.message}
           </p>
         )}
-        <section className="fq-panel">
-          <small className="eyebrow">REAL COMPUTATION</small>
-          <h3>FlagQuantum → {backendLabel} → sampled counts</h3>
-          <p>
-            2 CPU threads per task · 1 active task · up to 3 waiting · 16 qubits
-            · 90-second remote process limit.
-          </p>
-          <p>
-            Actual compiler and simulator results are persisted in the local job
-            store. GPU and quantum hardware are not connected.
-          </p>
-        </section>
       </div>
     </section>
   );

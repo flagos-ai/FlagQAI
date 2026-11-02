@@ -105,3 +105,23 @@ test("nonpersistent UI updates do not repeatedly write an unchanged durable snap
   assert.ok(writes > firstWrites);
   assert.equal(restoreWorkspace(storage, "model").source, "changed code");
 });
+
+test("execution settings round-trip without restoring a live submission", () => {
+  const storage = memory();
+  const state = {
+    ...restoreWorkspace(storage, "execution"),
+    shots: 64,
+    seed: 7,
+    jobName: "Bell repeat · seed 7",
+    busy: true,
+  };
+  assert.deepEqual(persistWorkspace(storage, state), { saved: true });
+  const restored = restoreWorkspace(storage, "execution");
+  assert.equal(restored.shots, 64);
+  assert.equal(restored.seed, 7);
+  assert.equal(restored.jobName, "Bell repeat · seed 7");
+  assert.equal(restored.busy, false);
+  assert.equal(restored.execution, null);
+  storage.setItem("fq-react-workspace-v1", JSON.stringify({ jobName: 123 }));
+  assert.equal(restoreWorkspace(storage, "execution").jobName, "");
+});
