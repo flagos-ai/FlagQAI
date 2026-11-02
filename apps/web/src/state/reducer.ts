@@ -1,4 +1,5 @@
 import { checkpointProject, projectTransition } from "./project-workspace.ts";
+import { mergeBackupDrafts } from "./backup-import.ts";
 import { examples } from "./templates.ts";
 import { pythonExample } from "./python-workspace.ts";
 import type {
@@ -27,6 +28,11 @@ function reduceWorkspace(
   action: WorkspaceAction,
 ): WorkspaceState {
   switch (action.type) {
+    case "import-backup-drafts":
+      return {
+        ...state,
+        models: mergeBackupDrafts(state.models, action.models),
+      };
     case "compare-experiments":
       return {
         ...state,

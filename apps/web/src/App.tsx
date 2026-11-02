@@ -1,4 +1,5 @@
 import { WorkspaceBackupNotice } from "./components/WorkspaceBackupNotice";
+import { WorkspaceBackups } from "./components/WorkspaceBackups";
 import { JobsLibrary } from "./components/JobsLibrary";
 import { UIIcon } from "./components/UIIcon";
 import { QuickOpen } from "./components/QuickOpen";
@@ -333,6 +334,7 @@ export default function App() {
         <button className="fq-header-guide" onClick={() => setGuide(true)}>
           User Guide ↗
         </button>
+        <WorkspaceBackups state={state} dispatch={dispatch} />
         <div className="fq-header-partners" aria-label="BAAI and FlagOS">
           <img
             className="fq-partner-baai"

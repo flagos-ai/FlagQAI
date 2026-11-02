@@ -42,7 +42,8 @@
         "workspace restores file view and folds; keyboard file search and save-and-run preserve source",
         "native decisions, uncertain stops and reconnect preserve one task without resubmission",
         "browser backup failure preserves the last snapshot and exposes recovery without losing the live draft",
-        "interaction craft keeps run feedback honest and preserves the result reading position"
+        "interaction craft keeps run feedback honest and preserves the result reading position",
+        "backup draft recovery previews and merges code without replacing live work"
       ]
     }
   ],
@@ -69,7 +70,7 @@
     },
     {
       "id": "backup-import",
-      "requirement": "Provide and verify a draft-safe workspace JSON backup import before claiming complete workspace backup round trips. Download currently supports manual recovery.",
+      "requirement": "Code-draft JSON preview/merge has automated coverage. Verify remaining workspace-state migration and complete backup round trips before claiming full workspace restoration.",
       "status": "not_verified"
     }
   ]

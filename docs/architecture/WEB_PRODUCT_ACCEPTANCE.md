@@ -74,8 +74,10 @@ snapshot as lost. Transient UI changes with an identical snapshot perform no
 storage writes, reducing synchronous work during navigation and background
 updates. None of this turns browser storage into a server backup.
 
-The download permits manual recovery. A safe import/merge interface for this JSON
-is not implemented; do not claim complete workspace backup round trips yet.
+The Backups control now offers bounded code-draft preview and merge for this JSON.
+It restores detached models while retaining current work and ignoring imported
+file links and runtime records. This is not complete workspace migration; see
+[WEB_BACKUP_DRAFT_RECOVERY.md](WEB_BACKUP_DRAFT_RECOVERY.md) for the limits.
 Corrupt stored payload recovery and all-browser storage denial need separate
 failure-injection acceptance before stronger recovery claims are made.
 
@@ -93,7 +95,8 @@ failure-injection acceptance before stronger recovery claims are made.
   tested sizes and memory/render limits rather than implying unlimited scale.
 - **Actual model capability:** separately authorize and evaluate live-model task
   correctness, tool choice, recovery and cost. Protocol fixtures cannot certify it.
-- **Workspace backup import:** verify draft-safe import, corrupt input handling and
+- **Workspace backup import:** code-draft import and corrupt input handling have
+  automated coverage. Verify the remaining workspace-state migration and full
   round trips before offering one-click workspace restoration.
 
 These are the next acceptance work items. They are deliberately visible in the
