@@ -5350,7 +5350,9 @@ test("QAOA Max-Cut reference: scripted Agent orchestration, real optimization, c
       );
       expect(environmentManifest.installation_performed).toBe(false);
       expect(environmentManifest.current.sdk_version).toBe("0.4.0");
-      expect(environmentManifest.current.packages.torch).toBe("2.13.0");
+      expect(environmentManifest.current.packages.torch).toMatch(
+        /^2\.13\.0(?:\+cpu)?$/,
+      );
       expect(environmentManifest.current.sdk_code_sha256).toMatch(
         /^[a-f0-9]{64}$/,
       );
