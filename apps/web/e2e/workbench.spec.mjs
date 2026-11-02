@@ -1930,7 +1930,7 @@ test("Jobs prioritizes results, filters history and compares only explicitly sel
 
 test("Jobs pages all observed states without renormalizing a truncated chart", async ({
   page,
-}) => {
+}, testInfo) => {
   const run = await runPython(
     page,
     `import flagquantum as fq
@@ -1970,11 +1970,217 @@ fq.save("jobs_many_states.fqx", result.plan, result=result)
   ).toBeDisabled();
   await results.getByRole("button", { name: "Table", exact: true }).click();
   await expect(results.getByRole("table")).toContainText("111111");
+  const tableViewport = results.locator(".fq-job-table-scroll");
+  await tableViewport.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  expect(
+    await tableViewport.evaluate((element) => element.scrollTop),
+  ).toBeGreaterThan(100);
+  await results.getByRole("button", { name: "Counts", exact: true }).click();
+  expect(
+    await tableViewport.evaluate((element) => element.scrollTop),
+  ).toBeGreaterThan(100);
+  await results.getByRole("button", { name: "Previous", exact: true }).click();
+  await expect(
+    results.getByRole("status", {
+      name: "Measurement state range",
+      exact: true,
+    }),
+  ).toContainText("Showing 1–32");
+  await expect
+    .poll(() => tableViewport.evaluate((element) => element.scrollTop))
+    .toBe(0);
+  await expect(
+    results.getByRole("table").locator("tbody tr").first(),
+  ).toContainText("000000");
+  await tableViewport.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  await results.getByRole("button", { name: "Next", exact: true }).click();
+  await expect
+    .poll(() => tableViewport.evaluate((element) => element.scrollTop))
+    .toBe(0);
+  await expect(
+    results.getByRole("table").locator("tbody tr").first(),
+  ).toContainText("100000");
+  const stateSearch = results.getByRole("searchbox", {
+    name: "Find measurement state",
+    exact: true,
+  });
+  await stateSearch.fill("000000");
+  await expect(results).toContainText("1 matching state of 64 observed");
+  const matched = results.getByRole("table").locator("tbody tr");
+  await expect(matched).toHaveCount(1);
+  await expect(
+    results
+      .locator(".fq-job-metrics > div")
+      .filter({ has: page.getByText("Observed states", { exact: true }) })
+      .locator("dd"),
+  ).toHaveText("64");
+  await results
+    .getByRole("button", { name: "Export results", exact: true })
+    .click();
+  await expect(
+    results.getByRole("group", { name: "Export formats", exact: true }),
+  ).toContainText("Search and pagination do not limit exports");
+  const csvDownload = page.waitForEvent("download");
+  await results
+    .getByRole("button", { name: "CSV · selected measurement", exact: true })
+    .click();
+  const csvFile = await csvDownload;
+  const { readFile: readCSV } = await import("node:fs/promises");
+  const csvLines = (await readCSV(await csvFile.path(), "utf8"))
+    .trim()
+    .split("\n");
+  expect(csvLines[0]).toBe("state,count,probability");
+  expect(csvLines).toHaveLength(65);
+  const exportedStates = csvLines.slice(1).map((line) => line.split(","));
+  expect(exportedStates.reduce((sum, row) => sum + Number(row[1]), 0)).toBe(
+    4096,
+  );
+  expect(new Set(exportedStates.map((row) => row[0]))).toEqual(
+    new Set(Object.keys(record.job.result.counts)),
+  );
+  await expect(stateSearch).toHaveValue("000000");
+  await expect(matched).toHaveCount(1);
+  await page.screenshot({
+    path: testInfo.outputPath("state-search.png"),
+    fullPage: true,
+  });
+  await expect(matched).toContainText(`${((count / 4096) * 100).toFixed(2)}%`);
+  await page.reload();
+  await expect(stateSearch).toHaveValue("000000");
+  await expect(matched).toHaveCount(1);
+  await stateSearch.fill("no-such-state");
+  await expect(
+    results
+      .getByRole("status")
+      .filter({ hasText: "No states match your search." }),
+  ).toBeVisible();
+  await expect(results).toContainText("0 matching states of 64 observed");
+  await stateSearch.evaluate((element) =>
+    element.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Escape",
+        isComposing: true,
+        bubbles: true,
+        cancelable: true,
+      }),
+    ),
+  );
+  await expect(stateSearch).toHaveValue("no-such-state");
+  await stateSearch.press("Escape");
+  await expect(stateSearch).toHaveValue("");
+  await expect(stateSearch).toBeFocused();
+  await expect(results).toContainText("Showing 1–32 of 64 observed states");
+  await stateSearch.fill("no-such-state");
+  await results
+    .getByRole("button", { name: "Show all states", exact: true })
+    .click();
+  await expect(stateSearch).toHaveValue("");
+  await expect(stateSearch).toBeFocused();
+  await stateSearch.fill("000000");
+  await results
+    .getByRole("button", { name: "Clear state search", exact: true })
+    .click();
+  await expect(stateSearch).toBeFocused();
+  await expect(stateSearch).toHaveValue("");
+  await expect(matched).toHaveCount(32);
+  await expect(results).toContainText("Showing 1–32 of 64 observed states");
+  await results.getByRole("button", { name: "Next", exact: true }).click();
+  await expect(results.getByRole("table")).toContainText("111111");
   await page.getByLabel("Search jobs").fill("no-such-job");
   await expect(
     page.getByText("No matching jobs. Try another search or status."),
   ).toBeVisible();
   await expect(results.getByRole("table")).toContainText("111111");
+  await page.getByRole("button", { name: "MODEL", exact: true }).click();
+  const variantRun = await runPython(
+    page,
+    run.source
+      .replace("jobs_many_states.fqx", "jobs_many_states_variant.fqx")
+      .replace("seed=42", "seed=43"),
+  );
+  const variant = await savedRecord(page, variantRun);
+  await editor(page).fill(draft);
+  await page.getByRole("button", { name: "JOBS", exact: true }).click();
+  await page.getByLabel("Search jobs").fill("");
+  await page
+    .getByRole("checkbox", { name: `Compare ${record.job.name}`, exact: true })
+    .check();
+  await page
+    .getByRole("checkbox", { name: `Compare ${variant.job.name}`, exact: true })
+    .check();
+  await page
+    .getByRole("button", { name: "Compare 2 / 2", exact: true })
+    .click();
+  const findings = page.getByRole("region", {
+    name: "Observed differences",
+    exact: true,
+  });
+  await expect(findings).toContainText("Showing 1–32 of 64 compared states");
+  const metric = findings
+    .locator("p")
+    .filter({ hasText: "Observed distribution distance:" });
+  const completeMetric = await metric.innerText();
+  const comparedViewport = findings.locator(".fq-job-table-scroll");
+  await comparedViewport.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  expect(
+    await comparedViewport.evaluate((element) => element.scrollTop),
+  ).toBeGreaterThan(100);
+  await findings
+    .getByLabel("Sort compared states", { exact: true })
+    .selectOption("state");
+  await expect
+    .poll(() => comparedViewport.evaluate((element) => element.scrollTop))
+    .toBe(0);
+  const firstStates = await findings
+    .locator("tbody tr td:first-child")
+    .allTextContents();
+  expect(firstStates[0].trim()).toBe("000000");
+  await expect(findings.locator("tbody tr").first()).toContainText(
+    `${((count / 4096) * 100).toFixed(1)}%`,
+  );
+  await comparedViewport.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  await findings.getByRole("button", { name: "Next", exact: true }).click();
+  await expect
+    .poll(() => comparedViewport.evaluate((element) => element.scrollTop))
+    .toBe(0);
+  await expect(
+    findings.getByRole("status", { name: "Compared state range", exact: true }),
+  ).toContainText("Showing 33–64");
+  await expect(findings).toContainText("Showing 33–64 of 64 compared states");
+  const secondStates = await findings
+    .locator("tbody tr td:first-child")
+    .allTextContents();
+  expect(secondStates.at(-1).trim()).toBe("111111");
+  await expect(findings.locator("tbody")).not.toContainText("-0.0 pp");
+  expect(
+    new Set([...firstStates, ...secondStates].map((state) => state.trim()))
+      .size,
+  ).toBe(64);
+  await expect(metric).toHaveText(completeMetric);
+  await expect(
+    findings.getByRole("button", { name: "Next", exact: true }),
+  ).toBeDisabled();
+  await page.screenshot({
+    path: testInfo.outputPath("comparison-pagination.png"),
+    fullPage: true,
+  });
+  await page
+    .getByRole("button", { name: "Swap comparison sides", exact: true })
+    .click();
+  await expect(findings).toContainText("Showing 1–32 of 64 compared states");
+  await expect(
+    findings.getByLabel("Sort compared states", { exact: true }),
+  ).toHaveValue("change");
+  await page.getByRole("button", { name: "MODEL", exact: true }).click();
+  await expect(editor(page)).toHaveValue(draft);
 });
 
 test("browser backup failure preserves the last snapshot and exposes recovery without losing the live draft", async ({
@@ -2359,4 +2565,470 @@ test("model import explains invalid files and preserves the newest draft during 
     path: testInfo.outputPath("import-draft-retained.png"),
     fullPage: true,
   });
+});
+
+test("parameterized Bell keeps angle, source, circuit and changed results linked after refresh", async ({
+  page,
+}, testInfo) => {
+  const records = [];
+  for (const [angle, filename, states] of [
+    ["0", "bell_theta_zero.fqx", ["00", "11"]],
+    ["pi", "bell_theta_pi.fqx", ["01", "10"]],
+  ]) {
+    const source = `from math import pi
+import flagquantum as fq
+
+theta = ${angle}
+circuit = fq.Circuit(2).h(0).cx(0, 1).ry(1, theta)
+result = fq.run(circuit, outputs=fq.counts(), options=fq.ExecutionOptions(shots=256, seed=42))
+fq.save("${filename}", result.plan, result=result)
+`;
+    const run = await runPython(page, source);
+    expect(run.status, JSON.stringify(run)).toBe("completed");
+    const record = await savedRecord(page, run, filename);
+    expect(Object.keys(record.job.result.counts).sort()).toEqual(states);
+    const rotation = record.program.compiled.instructions.find(
+      (g) => g.name.toLowerCase() === "ry",
+    );
+    if (angle === "0") {
+      // The actual compiler removes an identity rotation; do not invent a gate.
+      expect(rotation).toBeUndefined();
+    } else {
+      expect(rotation).toBeTruthy();
+      expect(rotation.wires).toEqual([1]);
+      expect(Number(rotation.params.theta)).toBeCloseTo(Math.PI, 5);
+    }
+    await openCircuit(page, run, filename);
+    await expect(
+      page.getByRole("group", {
+        name: "Interactive hierarchical quantum circuit",
+      }),
+    ).toBeVisible();
+    await page.reload();
+    await expect(page).toHaveURL(/#program$/);
+    await expect(
+      page.getByRole("link", { name: "Download original .fqx ↓" }),
+    ).toHaveAttribute("href", `/api/experiments/${record.id}/file`);
+    await page.getByRole("button", { name: "MODEL", exact: true }).click();
+    await expect(editor(page)).toHaveValue(source);
+    records.push(record);
+  }
+  await editor(page).fill(draft);
+  await page.getByRole("button", { name: "JOBS", exact: true }).click();
+  for (const record of records)
+    await page
+      .getByRole("checkbox", {
+        name: `Compare ${record.job.name}`,
+        exact: true,
+      })
+      .check();
+  await page
+    .getByRole("button", { name: "Compare 2 / 2", exact: true })
+    .click();
+  const comparison = page.getByRole("region", {
+    name: "Experiment comparison",
+    exact: true,
+  });
+  await expect(comparison).toContainText("1 added · 0 removed operations");
+  await expect(comparison).toContainText("100.0%");
+  await page.reload();
+  await expect(comparison).toContainText("1 added · 0 removed operations");
+  await expect(comparison).toContainText("100.0%");
+  await page.screenshot({
+    path: testInfo.outputPath("parameterized-bell-comparison.png"),
+    fullPage: true,
+  });
+  await page.getByRole("button", { name: "MODEL", exact: true }).click();
+  await expect(editor(page)).toHaveValue(draft);
+});
+
+test("circuit fit includes tall wires and zoom keeps the current viewport centered", async ({
+  page,
+}, testInfo) => {
+  const run = await runPython(
+    page,
+    `import flagquantum as fq
+circuit = fq.Circuit(8)
+for q in range(8):
+    circuit.h(q)
+result = fq.run(circuit, outputs=fq.counts(), options=fq.ExecutionOptions(shots=128, seed=42))
+fq.save("viewport.fqx", result.plan, result=result)
+`,
+  );
+  await editor(page).fill(draft);
+  await openCircuit(page, run);
+  const canvas = page.locator(".fq-circuit-canvas");
+  const zoom = page.getByRole("status", { name: "Circuit zoom", exact: true });
+  for (
+    let step = 0;
+    step < 18 && parseInt(await zoom.innerText()) < 150;
+    step++
+  )
+    await page.getByRole("button", { name: "Zoom in", exact: true }).click();
+  await canvas.evaluate((element) => {
+    element.scrollLeft = 250;
+    element.scrollTop = 150;
+  });
+  const center = async () =>
+    canvas.evaluate(
+      (element, zoom) => {
+        const style = getComputedStyle(element);
+        return {
+          x:
+            ((element.scrollLeft +
+              element.clientWidth / 2 -
+              parseFloat(style.paddingLeft)) *
+              90) /
+            zoom,
+          y:
+            ((element.scrollTop +
+              element.clientHeight / 2 -
+              parseFloat(style.paddingTop)) *
+              90) /
+            zoom,
+          left: element.scrollLeft,
+          top: element.scrollTop,
+        };
+      },
+      parseInt(await zoom.innerText()),
+    );
+  const before = await center();
+  expect(before.left).toBeGreaterThan(0);
+  expect(before.top).toBeGreaterThan(0);
+  await page.getByRole("button", { name: "Zoom in", exact: true }).click();
+  const after = await center();
+  expect(Math.abs(after.x - before.x)).toBeLessThan(1);
+  expect(Math.abs(after.y - before.y)).toBeLessThan(1);
+  for (
+    let step = 0;
+    step < 18 && parseInt(await zoom.innerText()) < 180;
+    step++
+  )
+    await page.getByRole("button", { name: "Zoom in", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Zoom in", exact: true }),
+  ).toBeDisabled();
+  // A short viewport makes height, rather than width, constrain the fit.
+  await page.setViewportSize({ width: 1440, height: 560 });
+  expect(
+    await canvas.evaluate((element) => {
+      const view = element.querySelector("svg").viewBox.baseVal;
+      return (
+        element.clientHeight / view.height < element.clientWidth / view.width
+      );
+    }),
+  ).toBe(true);
+  await page.getByRole("button", { name: "Fit", exact: true }).click();
+  await expect
+    .poll(() =>
+      canvas.evaluate(
+        (element) =>
+          element.scrollWidth <= element.clientWidth + 1 &&
+          element.scrollHeight <= element.clientHeight + 1 &&
+          element.scrollLeft === 0 &&
+          element.scrollTop === 0,
+      ),
+    )
+    .toBe(true);
+  const fitted = await zoom.innerText();
+  await page.getByRole("button", { name: "Fit", exact: true }).click();
+  await expect(zoom).toHaveText(fitted);
+  const fitButton = page.getByRole("button", { name: "Fit", exact: true });
+  await expect(fitButton).toHaveAttribute("aria-pressed", "true");
+  const fits = () =>
+    canvas.evaluate(
+      (element) =>
+        element.scrollWidth <= element.clientWidth + 1 &&
+        element.scrollHeight <= element.clientHeight + 1,
+    );
+  await page.setViewportSize({ width: 1200, height: 480 });
+  await expect.poll(fits).toBe(true);
+  await page.getByRole("button", { name: "Tree", exact: true }).click();
+  await expect.poll(fits).toBe(true);
+  await page.getByRole("button", { name: "All gates", exact: true }).click();
+  await expect.poll(fits).toBe(true);
+  await page.getByRole("button", { name: "Zoom in", exact: true }).click();
+  await expect(fitButton).toHaveAttribute("aria-pressed", "false");
+  const manualZoom = await zoom.innerText();
+  await page.setViewportSize({ width: 1440, height: 700 });
+  await expect(zoom).toHaveText(manualZoom);
+  await fitButton.click();
+  await expect.poll(fits).toBe(true);
+  await page.screenshot({
+    path: testInfo.outputPath("circuit-fit.png"),
+    fullPage: true,
+  });
+  await page
+    .getByRole("button", { name: "Collapse program information", exact: true })
+    .click();
+  const gates = canvas.getByRole("button", { name: /^Inspect H gate / });
+  await gates.first().click();
+  await expect(page.locator(".fq-program-info")).toBeVisible();
+  await expect(gates.first()).toHaveAttribute("aria-pressed", "true");
+  await expect(canvas.locator('[data-circuit-selection="gate"]')).toHaveCount(
+    1,
+  );
+  await gates.nth(1).focus();
+  await gates.nth(1).press("Enter");
+  await expect(gates.first()).toHaveAttribute("aria-pressed", "false");
+  await expect(gates.nth(1)).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".fq-node-details")).toContainText("Qubits: 1");
+  await page.screenshot({
+    path: testInfo.outputPath("selected-gate.png"),
+    fullPage: true,
+  });
+  const measurement = canvas.getByRole("button", {
+    name: "Measure q0",
+    exact: true,
+  });
+  await measurement.focus();
+  await measurement.press("Space");
+  await expect(measurement).toHaveAttribute("aria-pressed", "true");
+  await expect(canvas.locator('[data-circuit-selection="gate"]')).toHaveCount(
+    0,
+  );
+  await expect(page.locator(".fq-node-details")).toContainText(
+    "Measurement · q0",
+  );
+  await page.getByRole("button", { name: "Collapse all", exact: true }).click();
+  await expect(measurement).toHaveAttribute("aria-pressed", "false");
+  const module = canvas.getByRole("button", {
+    name: "Select ungrouped",
+    exact: true,
+  });
+  await module.focus();
+  await module.press("Enter");
+  await expect(module).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".fq-node-details h3")).toHaveText("ungrouped");
+  await canvas
+    .getByRole("button", { name: "Expand ungrouped", exact: true })
+    .click();
+  await expect(page.locator(".fq-node-details")).toContainText(
+    "Expand a module",
+  );
+  const pythonSnapshot = page.getByRole("button", {
+    name: "View Python snapshot ↗",
+    exact: true,
+  });
+  await pythonSnapshot.click();
+  const snapshot = page.getByRole("dialog", {
+    name: "Circuit source snapshot",
+    exact: true,
+  });
+  await expect(snapshot).toBeVisible();
+  await expect(snapshot.locator(".fq-code-numbered")).toBeVisible();
+  await expect(snapshot.locator(".fq-syntax-keyword").first()).toHaveText(
+    "import",
+  );
+  await expect(snapshot.locator("[data-highlighted]")).toHaveCount(0);
+  await page.screenshot({
+    path: testInfo.outputPath("python-source-preview.png"),
+    fullPage: true,
+  });
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await snapshot
+    .getByRole("button", { name: "Copy Original Python source", exact: true })
+    .click();
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe(run.source);
+  await page.keyboard.press("Escape");
+  await expect(snapshot).toHaveCount(0);
+  await expect(pythonSnapshot).toBeFocused();
+  const record = await savedRecord(page, run, "viewport.fqx");
+  await page
+    .getByRole("button", { name: "View OpenQASM snapshot ↗", exact: true })
+    .click();
+  await expect(snapshot).toBeVisible();
+  await snapshot
+    .getByRole("button", { name: "Copy OpenQASM circuit export", exact: true })
+    .click();
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe(record.program.source);
+  await page.mouse.click(5, 5);
+  await expect(snapshot).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Gate reference", exact: true })
+    .click();
+  const reference = page.getByRole("dialog", {
+    name: "Gate reference",
+    exact: true,
+  });
+  const gateButtons = reference
+    .getByRole("navigation", { name: "Supported gates", exact: true })
+    .getByRole("button");
+  await gateButtons.first().focus();
+  await gateButtons.first().press("ArrowDown");
+  await expect(gateButtons.nth(1)).toBeFocused();
+  await expect(gateButtons.nth(1)).toHaveAttribute("aria-pressed", "true");
+  await expect(reference.locator("article h2")).toContainText("Identity alias");
+  await gateButtons.nth(1).press("End");
+  await expect(gateButtons.last()).toBeFocused();
+  await expect(gateButtons.last()).toHaveAttribute("aria-pressed", "true");
+  await gateButtons.last().press("ArrowDown");
+  await expect(gateButtons.first()).toBeFocused();
+  await gateButtons.first().press("ArrowUp");
+  await expect(gateButtons.last()).toBeFocused();
+  await gateButtons.last().press("Home");
+  await expect(gateButtons.first()).toHaveAttribute("aria-pressed", "true");
+  const runExample = reference.getByRole("button", {
+    name: "Run example",
+    exact: true,
+  });
+  await runExample.click();
+  const exampleResult = reference.getByRole("region", {
+    name: "Precomputed FlagQuantum example result",
+    exact: true,
+  });
+  await expect(exampleResult).toBeVisible();
+  await expect(runExample).toHaveAttribute("aria-expanded", "true");
+  const hideExample = exampleResult.getByRole("button", {
+    name: "Hide example result",
+    exact: true,
+  });
+  await expect(hideExample.locator("svg")).toHaveCount(1);
+  await hideExample.focus();
+  await hideExample.press("Enter");
+  await expect(exampleResult).toHaveCount(0);
+  await expect(runExample).toHaveAttribute("aria-expanded", "false");
+  await expect(runExample).toBeFocused();
+  expect(
+    await runExample.evaluate((element) => {
+      const article = element.closest("article").getBoundingClientRect();
+      const button = element.getBoundingClientRect();
+      return button.top >= article.top && button.bottom <= article.bottom;
+    }),
+  ).toBe(true);
+  await runExample.press("Enter");
+  await expect(exampleResult).toBeVisible();
+  await hideExample.click();
+  await expect(runExample).toBeFocused();
+  const exampleCopy = reference.getByRole("button", {
+    name: "Copy OpenQASM example",
+    exact: true,
+  });
+  const qasmExample = reference.locator(".fq-code-example").filter({
+    has: page.getByRole("heading", {
+      name: "OpenQASM example",
+      exact: true,
+    }),
+  });
+  await exampleCopy.click();
+  await expect(exampleCopy).toHaveAttribute("title", "Copied to clipboard");
+  await gateButtons.nth(1).click();
+  await expect(exampleCopy).toHaveAttribute("title", "Copy OpenQASM example");
+  const copiedSource = await qasmExample.locator("pre").innerText();
+  await page.evaluate(() => {
+    window.originalExampleCopy = navigator.clipboard.writeText.bind(
+      navigator.clipboard,
+    );
+    window.exampleCopyCalls = 0;
+    const pending = new Promise((resolve) => {
+      window.releaseExampleCopy = resolve;
+    });
+    navigator.clipboard.writeText = async (text) => {
+      window.exampleCopyCalls++;
+      await pending;
+      await window.originalExampleCopy(text);
+    };
+  });
+  try {
+    await exampleCopy.click();
+    await expect(exampleCopy).toBeDisabled();
+    await expect(exampleCopy).toHaveAttribute("title", "Copying…");
+    await exampleCopy.evaluate((element) => element.click());
+    expect(await page.evaluate(() => window.exampleCopyCalls)).toBe(1);
+    await gateButtons.nth(2).click();
+    await page.evaluate(() => window.releaseExampleCopy());
+    await expect(exampleCopy).toBeEnabled();
+    await expect(exampleCopy).toHaveAttribute("title", "Copy OpenQASM example");
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+      .toBe(copiedSource);
+    await page.evaluate(() => {
+      navigator.clipboard.writeText = async () => {
+        throw Error("Clipboard denied");
+      };
+    });
+    await exampleCopy.click();
+    await expect(qasmExample.getByRole("status")).toContainText(
+      "Copy unavailable",
+    );
+    await page.evaluate(() => {
+      navigator.clipboard.writeText = window.originalExampleCopy;
+    });
+    await exampleCopy.click();
+    await expect(exampleCopy).toHaveAttribute("title", "Copied to clipboard");
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+      .toBe(await qasmExample.locator("pre").innerText());
+  } finally {
+    await page.evaluate(() => {
+      window.releaseExampleCopy();
+      navigator.clipboard.writeText = window.originalExampleCopy;
+    });
+  }
+  const gateSearch = reference.getByRole("textbox", {
+    name: "Search gates",
+    exact: true,
+  });
+  const category = reference.getByRole("combobox", {
+    name: "Gate category",
+    exact: true,
+  });
+  await category.selectOption("Rotation");
+  await gateSearch.fill("  RX  ");
+  await expect(
+    reference.getByRole("status", { name: "Gate search results", exact: true }),
+  ).toHaveText("2 results");
+  await gateSearch.press("ArrowDown");
+  await expect(gateButtons.first()).toBeFocused();
+  await expect(reference.locator("article h2")).toContainText("RX");
+  await gateSearch.focus();
+  const gateEscapeAllowed = await gateSearch.evaluate((element) =>
+    element.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Escape",
+        isComposing: true,
+        bubbles: true,
+        cancelable: true,
+      }),
+    ),
+  );
+  expect(gateEscapeAllowed).toBe(false);
+  await expect(gateSearch).toHaveValue("  RX  ");
+  await gateSearch.press("Escape");
+  await expect(gateSearch).toHaveValue("");
+  await expect(category).toHaveValue("Rotation");
+  await expect(reference).toBeVisible();
+  await gateSearch.press("ArrowUp");
+  await expect(gateButtons.last()).toBeFocused();
+  await gateSearch.fill("rz");
+  await page.screenshot({
+    path: testInfo.outputPath("gate-search-controls.png"),
+    fullPage: true,
+  });
+  await reference
+    .getByRole("button", { name: "Clear gate search", exact: true })
+    .click();
+  await expect(gateSearch).toBeFocused();
+  await expect(gateSearch).toHaveValue("");
+  await expect(category).toHaveValue("Rotation");
+  await gateSearch.fill("no-matching-gate");
+  await gateSearch.press("ArrowDown");
+  await expect(gateSearch).toBeFocused();
+  await expect(
+    reference.getByRole("heading", { name: "No matching gates", exact: true }),
+  ).toBeVisible();
+  await reference
+    .getByRole("button", { name: "Clear filters", exact: true })
+    .click();
+  await expect(gateSearch).toHaveValue("");
+  await expect(category).toHaveValue("All");
+  await expect(gateSearch).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(reference).toHaveCount(0);
+  await page.getByRole("button", { name: "MODEL", exact: true }).click();
+  await expect(editor(page)).toHaveValue(draft);
 });

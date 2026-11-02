@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   listExperiments,
   readExperiment,
@@ -15,6 +15,7 @@ import {
   comparisonMeasurements,
   measurementCompatibility,
   circuitDifference,
+  formatComparisonDelta,
 } from "../state/experiment-comparison";
 import { GateSymbol, MeasurementSymbol } from "./CircuitSymbols";
 import { UIIcon } from "./UIIcon";
@@ -114,6 +115,102 @@ export function CircuitPreview({
     </div>
   );
 }
+function ComparisonStates({
+  rows,
+}: {
+  rows: NonNullable<ReturnType<typeof compareDistributions>>["rows"];
+}) {
+  const [page, setPage] = useState(0);
+  const [sort, setSort] = useState<"change" | "state">("change");
+  const ordered =
+    sort === "state"
+      ? [...rows].sort(
+          (a, b) =>
+            a.state.localeCompare(b.state, undefined, { numeric: true }) ||
+            a.keyType.localeCompare(b.keyType),
+        )
+      : rows;
+  const lastPage = Math.max(0, Math.ceil(ordered.length / 32) - 1);
+  const currentPage = Math.min(page, lastPage);
+  const tableViewport = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (tableViewport.current) tableViewport.current.scrollTop = 0;
+  }, [currentPage, sort]);
+  const entries = ordered.slice(currentPage * 32, (currentPage + 1) * 32);
+  return (
+    <>
+      {rows.length > 8 && (
+        <div className="fq-job-chart-controls">
+          <label>
+            Sort{" "}
+            <select
+              aria-label="Sort compared states"
+              value={sort}
+              onChange={(event) => {
+                setSort(event.target.value as typeof sort);
+                setPage(0);
+              }}
+            >
+              <option value="change">Largest change</option>
+              <option value="state">State</option>
+            </select>
+          </label>
+        </div>
+      )}
+      <div className="fq-job-table-scroll" ref={tableViewport}>
+        <table>
+          <caption className="fq-sr-only">Compared state probabilities</caption>
+          <thead>
+            <tr>
+              <th>State</th>
+              <th>A</th>
+              <th>B</th>
+              <th>Change</th>
+            </tr>
+          </thead>
+          <tbody>
+            {entries.map((row) => (
+              <tr key={row.keyType + row.state}>
+                <td>
+                  {row.state}
+                  {row.keyType === "integer" ? " (int)" : ""}
+                </td>
+                <td>{(row.pa * 100).toFixed(1)}%</td>
+                <td>{(row.pb * 100).toFixed(1)}%</td>
+                <td>{formatComparisonDelta(row.delta)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="fq-job-chart-footer">
+        <span role="status" aria-label="Compared state range">
+          {rows.length > 32
+            ? `Showing ${currentPage * 32 + 1}–${Math.min((currentPage + 1) * 32, rows.length)} of ${rows.length} compared states`
+            : `${rows.length} compared ${rows.length === 1 ? "state" : "states"}`}{" "}
+          · {sort === "change" ? "largest change first" : "state order"}
+        </span>
+        {rows.length > 32 && (
+          <div>
+            <button
+              disabled={currentPage === 0}
+              onClick={() => setPage(currentPage - 1)}
+            >
+              Previous
+            </button>
+            <button
+              disabled={currentPage === lastPage}
+              onClick={() => setPage(currentPage + 1)}
+            >
+              Next
+            </button>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
 export function ExperimentComparison({
   state,
   dispatch,
@@ -130,16 +227,21 @@ export function ExperimentComparison({
     [rightMeasure, setRightMeasure] = useState(0);
   useEffect(() => {
     let live = true;
+    let request: AbortController | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     setLoading(true);
     setError("");
     setLeftMeasure(0);
     setRightMeasure(0);
-    void Promise.all([
-      listExperiments(),
-      readExperiment(pair.left),
-      readExperiment(pair.right),
-    ])
-      .then(([list, left, right]) => {
+    const load = async (attempt = 0) => {
+      if (!live) return;
+      request = new AbortController();
+      try {
+        const [list, left, right] = await Promise.all([
+          listExperiments(request.signal),
+          readExperiment(pair.left, request.signal),
+          readExperiment(pair.right, request.signal),
+        ]);
         if (!live) return;
         setRecords([
           ...new Map(
@@ -149,15 +251,23 @@ export function ExperimentComparison({
         dispatch({ type: "import-experiment", record: left });
         dispatch({ type: "import-experiment", record: right });
         setLoading(false);
-      })
-      .catch((problem) => {
-        if (live) {
-          setError(String(problem));
-          setLoading(false);
+      } catch (problem) {
+        request.abort();
+        if (!live) return;
+        // Retry only a transient fetch failure, once, and only read saved data.
+        if (attempt === 0 && problem instanceof TypeError) {
+          timer = setTimeout(() => void load(1), 250);
+          return;
         }
-      });
+        setError(String(problem));
+        setLoading(false);
+      }
+    };
+    void load();
     return () => {
       live = false;
+      clearTimeout(timer);
+      request?.abort();
     };
   }, [pair.left, pair.right, dispatch, retry]);
   const left = records.find((record) => record.id === pair.left),
@@ -442,35 +552,15 @@ export function ExperimentComparison({
                       fidelity or a causal explanation; equal counts can hide
                       phase changes.
                     </p>
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>State</th>
-                          <th>A</th>
-                          <th>B</th>
-                          <th>Change</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {comparison.rows.slice(0, 32).map((row) => (
-                          <tr key={row.keyType + row.state}>
-                            <td>
-                              {row.state}
-                              {row.keyType === "integer" ? " (int)" : ""}
-                            </td>
-                            <td>{(row.pa * 100).toFixed(1)}%</td>
-                            <td>{(row.pb * 100).toFixed(1)}%</td>
-                            <td>
-                              {row.delta > 0 ? "+" : ""}
-                              {(row.delta * 100).toFixed(1)} pp
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    {comparison.rows.length > 32 && (
-                      <small>Showing 32 states with the largest changes.</small>
-                    )}
+                    <ComparisonStates
+                      key={JSON.stringify([
+                        pair.left,
+                        pair.right,
+                        leftMeasure,
+                        rightMeasure,
+                      ])}
+                      rows={comparison.rows}
+                    />
                   </>
                 ) : (
                   <p>

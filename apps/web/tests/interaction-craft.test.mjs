@@ -80,6 +80,7 @@ test("Jobs view preferences survive remounts, stay scoped by result and clamp st
     page: 2,
     measurement: 0,
     batch: 0,
+    query: "010",
   };
   writeJobView(storage, job, view);
   assert.deepEqual(readJobView(storage, job), view);
@@ -130,4 +131,14 @@ test("corrupt or unavailable view storage cannot affect the result or editor dat
   assert.deepEqual(readJobView(bad, job), defaultJobView);
   assert.doesNotThrow(() => writeJobView(bad, job, defaultJobView));
   assert.equal(job.result.counts["00"], 3);
+});
+
+test("state searches migrate from old preferences and reject invalid saved values", () => {
+  const job = { id: "a", result: { counts: { "00": 2 } } };
+  assert.equal(normalizeJobView({}, job).query, "");
+  assert.equal(normalizeJobView({ query: { bad: true } }, job).query, "");
+  assert.equal(
+    normalizeJobView({ query: "x".repeat(1000) }, job).query.length,
+    128,
+  );
 });

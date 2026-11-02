@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   comparisonCandidates,
   compareDistributions,
+  formatComparisonDelta,
   measurementCompatibility,
   circuitDifference,
   comparisonMeasurements,
@@ -14,6 +15,17 @@ import {
 } from "../src/state/persistence.ts";
 const rows = (counts, key_type = "string") =>
   Object.entries(counts).map(([state, count]) => ({ state, count, key_type }));
+test("small recorded changes retain their sign and do not round to false zero", () => {
+  assert.equal(formatComparisonDelta(0), "0.0 pp");
+  assert.equal(formatComparisonDelta(-0), "0.0 pp");
+  assert.equal(formatComparisonDelta(0.5), "+50.0 pp");
+  for (const delta of [1e-10, -1e-10, 1 / 4096, -1 / 4096]) {
+    const rendered = parseFloat(formatComparisonDelta(delta));
+    assert.equal(Math.sign(rendered), Math.sign(delta));
+    assert.ok(Math.abs(rendered - delta * 100) / Math.abs(delta * 100) < 0.05);
+  }
+  assert.equal(formatComparisonDelta(NaN), "—");
+});
 test("distributions normalize independent shots and retain missing states and typed keys", () => {
   const compared = compareDistributions(
     rows({ "00": 64, 11: 64 }),

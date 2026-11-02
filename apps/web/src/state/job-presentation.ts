@@ -29,12 +29,16 @@ export function jobCounts(job: QuantumJob, measurement = 0, batch = 0) {
 export function distributionRows(
   counts: Record<string, number>,
   sort: "probability" | "state",
+  query = "",
 ) {
-  return Object.entries(counts).sort((a, b) =>
-    sort === "probability"
-      ? b[1] - a[1] || a[0].localeCompare(b[0])
-      : a[0].localeCompare(b[0], undefined, { numeric: true }),
-  );
+  const search = query.trim().toLowerCase();
+  return Object.entries(counts)
+    .filter(([state]) => state.toLowerCase().includes(search))
+    .sort((a, b) =>
+      sort === "probability"
+        ? b[1] - a[1] || a[0].localeCompare(b[0])
+        : a[0].localeCompare(b[0], undefined, { numeric: true }),
+    );
 }
 
 export function jobGroups(

@@ -1,5 +1,6 @@
 import { Modal } from "./Modal";
 import { CloseButton } from "./CloseButton";
+import { UIIcon } from "./UIIcon";
 import { useRef, useState } from "react";
 import { FlagQuantumExample } from "./FlagQuantumExample";
 import { CodeExample } from "./CodeExample";
@@ -15,6 +16,11 @@ export function GateReference({
   onClose: () => void;
 }) {
   const search = useRef<HTMLInputElement>(null);
+  const gateList = useRef<HTMLElement>(null);
+  const clearSearch = () => {
+    setQuery("");
+    search.current?.focus({ preventScroll: true });
+  };
   const [query, setQuery] = useState(""),
     [family, setFamily] = useState("All"),
     [selected, setSelected] = useState(initialGate || "h");
@@ -43,13 +49,58 @@ export function GateReference({
         <CloseButton onClick={onClose} label="Close gate reference" />
       </header>
       <div className="fq-reference-search">
-        <input
-          ref={search}
-          aria-label="Search gates"
-          placeholder="Search name or operation…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
+        <div className="fq-reference-query">
+          <input
+            ref={search}
+            aria-label="Search gates"
+            placeholder="Search name or operation…"
+            value={query}
+            maxLength={256}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Escape" && query) {
+                event.preventDefault();
+                event.stopPropagation();
+                if (!event.nativeEvent.isComposing) clearSearch();
+                return;
+              }
+              if (
+                event.nativeEvent.isComposing ||
+                event.altKey ||
+                event.ctrlKey ||
+                event.metaKey ||
+                event.shiftKey
+              )
+                return;
+              if (
+                !["ArrowDown", "ArrowUp"].includes(event.key) ||
+                !matches.length
+              )
+                return;
+              const index = event.key === "ArrowDown" ? 0 : matches.length - 1;
+              const button =
+                gateList.current?.querySelectorAll<HTMLButtonElement>("button")[
+                  index
+                ];
+              if (!button) return;
+              event.preventDefault();
+              setSelected(matches[index].name);
+              button.focus({ preventScroll: true });
+              button.scrollIntoView({ block: "nearest" });
+            }}
+          />
+          {!!query && (
+            <button
+              type="button"
+              className="fq-control-icon"
+              aria-label="Clear gate search"
+              title="Clear search (Esc)"
+              onClick={clearSearch}
+            >
+              <UIIcon name="close" size={14} />
+            </button>
+          )}
+        </div>
         <select
           aria-label="Gate category"
           value={family}
@@ -61,8 +112,45 @@ export function GateReference({
         </select>
       </div>
       <div className="fq-reference-body">
-        <nav aria-label="Supported gates">
-          <small>{matches.length} results</small>
+        <nav
+          ref={gateList}
+          aria-label="Supported gates"
+          onKeyDown={(event) => {
+            if (
+              event.nativeEvent.isComposing ||
+              event.altKey ||
+              event.ctrlKey ||
+              event.metaKey ||
+              event.shiftKey
+            )
+              return;
+            if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key))
+              return;
+            const buttons = [
+              ...event.currentTarget.querySelectorAll<HTMLButtonElement>(
+                "button",
+              ),
+            ];
+            const current = buttons.indexOf(event.target as HTMLButtonElement);
+            if (current < 0 || !buttons.length) return;
+            event.preventDefault();
+            const next =
+              event.key === "Home"
+                ? 0
+                : event.key === "End"
+                  ? buttons.length - 1
+                  : (current +
+                      (event.key === "ArrowDown" ? 1 : -1) +
+                      buttons.length) %
+                    buttons.length;
+            setSelected(matches[next].name);
+            buttons[next].focus({ preventScroll: true });
+            buttons[next].scrollIntoView({ block: "nearest" });
+          }}
+        >
+          <small role="status" aria-label="Gate search results">
+            {matches.length} {matches.length === 1 ? "result" : "results"}
+          </small>
           {matches.map((g) => (
             <button
               key={g.name}
@@ -212,6 +300,7 @@ export function GateReference({
               onClick={() => {
                 setQuery("");
                 setFamily("All");
+                search.current?.focus({ preventScroll: true });
               }}
             >
               Clear filters

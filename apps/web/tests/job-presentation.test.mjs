@@ -87,3 +87,28 @@ test("distribution sorting retains all states and full totals beyond the first c
   assert.equal(distributionRows(counts, "state")[0][0], "0000000");
   assert.equal(JSON.stringify(counts), before);
 });
+test("state search matches saved keys literally without changing original counts or totals", () => {
+  const counts = { "000": 20, "010": 30, 101: 50, "3 (integer)": 10 };
+  const before = JSON.stringify(counts);
+  assert.deepEqual(distributionRows(counts, "state", "  01 "), [
+    ["010", 30],
+    ["101", 50],
+  ]);
+  assert.deepEqual(distributionRows(counts, "probability", "01"), [
+    ["101", 50],
+    ["010", 30],
+  ]);
+  assert.deepEqual(distributionRows(counts, "state", ".*"), []);
+  assert.deepEqual(distributionRows(counts, "state", "INTEGER"), [
+    ["3 (integer)", 10],
+  ]);
+  assert.deepEqual(
+    distributionRows(counts, "state", " "),
+    distributionRows(counts, "state"),
+  );
+  assert.equal(
+    Object.values(counts).reduce((a, b) => a + b, 0),
+    110,
+  );
+  assert.equal(JSON.stringify(counts), before);
+});

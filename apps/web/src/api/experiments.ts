@@ -20,8 +20,13 @@ export async function importExperiment(file: File): Promise<ExperimentImport> {
   if (!response.ok) throw Error(body.error || "Cannot import experiment.");
   return body;
 }
-export async function listExperiments(): Promise<ExperimentImport[]> {
-  const response = await fetch("/api/experiments", { cache: "no-store" });
+export async function listExperiments(
+  signal?: AbortSignal,
+): Promise<ExperimentImport[]> {
+  const response = await fetch("/api/experiments", {
+    cache: "no-store",
+    signal,
+  });
   if (!response.ok) throw Error("Cannot read imported experiments.");
   return response.json();
 }

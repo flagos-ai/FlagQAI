@@ -1,7 +1,7 @@
 import { UIIcon } from "../components/UIIcon";
 import { useJobView } from "../hooks/useJobView";
 import { ExportMenu } from "../components/ExportMenu";
-import { useId, useState } from "react";
+import { useId, useLayoutEffect, useRef, useState } from "react";
 import {
   CircuitPreview,
   ExperimentComparison,
@@ -19,7 +19,7 @@ import type {
   WorkspaceState,
   ProgramSnapshot,
 } from "../contracts/quantum-workspace";
-import { download, jobCSV } from "../state/exports";
+import { download, jobMeasurementCSV } from "../state/exports";
 import {
   distributionRows,
   jobCounts,
@@ -63,6 +63,7 @@ function JobResults({ job, state, dispatch }: Props & { job: QuantumJob }) {
     page,
     measurement: measurementIndex,
     batch: batchIndex,
+    query,
   } = preferences;
   const setCounts = (value: boolean) => update("counts", value);
   const setView = (value: "chart" | "table") => update("view", value);
@@ -75,11 +76,23 @@ function JobResults({ job, state, dispatch }: Props & { job: QuantumJob }) {
   const total = Object.values(recorded).reduce((sum, count) => sum + count, 0);
   const result =
     job.result && job.experiment
-      ? { ...job.result, counts: recorded, shots: total }
+      ? { ...job.result, counts: recorded, shots: total, decoded: undefined }
       : job.result;
-  const rows = distributionRows(recorded, sort);
+  const observedStates = Object.keys(recorded).length;
+  const rows = distributionRows(recorded, sort, query);
+  const filtering = !!query.trim();
+  const stateSearch = useRef<HTMLInputElement>(null);
+  const clearQuery = () => {
+    update("query", "");
+    setPage(0);
+    stateSearch.current?.focus({ preventScroll: true });
+  };
   const lastPage = Math.max(0, Math.ceil(rows.length / 32) - 1);
   const currentPage = Math.min(page, lastPage);
+  const tableViewport = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (tableViewport.current) tableViewport.current.scrollTop = 0;
+  }, [currentPage, sort, query, measurementIndex, batchIndex, view]);
   const entries = rows.slice(currentPage * 32, (currentPage + 1) * 32);
   const source = job.origin?.source || job.request.source;
   const language = job.origin?.language || "qasm";
@@ -132,7 +145,7 @@ function JobResults({ job, state, dispatch }: Props & { job: QuantumJob }) {
             )}
           </div>
           <ExportMenu
-            hasResult={!!result}
+            hasCounts={!!result && observedStates > 0 && total > 0}
             onJSON={() =>
               download(
                 job.name + ".json",
@@ -144,7 +157,7 @@ function JobResults({ job, state, dispatch }: Props & { job: QuantumJob }) {
               if (result)
                 download(
                   job.name + ".csv",
-                  jobCSV({ ...job, result }),
+                  jobMeasurementCSV(job, measurementIndex, batchIndex),
                   "text/csv",
                 );
             }}
@@ -169,7 +182,7 @@ function JobResults({ job, state, dispatch }: Props & { job: QuantumJob }) {
               <dd>
                 {job.experiment && !measurement?.batches
                   ? "—"
-                  : rows.length.toLocaleString()}
+                  : observedStates.toLocaleString()}
               </dd>
             </div>
             {elapsed != null && (
@@ -266,7 +279,7 @@ function JobResults({ job, state, dispatch }: Props & { job: QuantumJob }) {
                         )}
                     </div>
                   )}
-                  {rows.length > 0 && total > 0 ? (
+                  {observedStates > 0 && total > 0 ? (
                     <section
                       className="fq-job-distribution"
                       aria-label="Measurement distribution"
@@ -306,6 +319,50 @@ function JobResults({ job, state, dispatch }: Props & { job: QuantumJob }) {
                             Counts
                           </button>
                         </div>
+                        {(observedStates > 8 || query) && (
+                          <div className="fq-job-state-search">
+                            <input
+                              ref={stateSearch}
+                              type="search"
+                              aria-label="Find measurement state"
+                              placeholder="Find state, e.g. 010"
+                              value={query}
+                              maxLength={128}
+                              title="Filter recorded states · Esc to clear"
+                              onKeyDown={(event) => {
+                                if (
+                                  event.key === "Escape" &&
+                                  event.nativeEvent.isComposing
+                                ) {
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  return;
+                                }
+                                if (
+                                  event.key === "Escape" &&
+                                  query &&
+                                  !event.nativeEvent.isComposing
+                                ) {
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  clearQuery();
+                                }
+                              }}
+                              onChange={(event) => {
+                                update("query", event.target.value);
+                                setPage(0);
+                              }}
+                            />
+                            {query && (
+                              <button
+                                onClick={clearQuery}
+                                aria-label="Clear state search"
+                              >
+                                Clear
+                              </button>
+                            )}
+                          </div>
+                        )}
                         <label>
                           Sort{" "}
                           <select
@@ -321,7 +378,12 @@ function JobResults({ job, state, dispatch }: Props & { job: QuantumJob }) {
                           </select>
                         </label>
                       </div>
-                      {view === "chart" ? (
+                      {!rows.length ? (
+                        <div className="fq-job-no-states" role="status">
+                          <p>No states match your search.</p>
+                          <button onClick={clearQuery}>Show all states</button>
+                        </div>
+                      ) : view === "chart" ? (
                         <div className="fq-job-chart-scroll">
                           <div
                             className="fq-job-chart"
@@ -371,7 +433,10 @@ function JobResults({ job, state, dispatch }: Props & { job: QuantumJob }) {
                           </div>
                         </div>
                       ) : (
-                        <div className="fq-job-table-scroll">
+                        <div
+                          ref={tableViewport}
+                          className="fq-job-table-scroll"
+                        >
                           <table>
                             <caption className="fq-sr-only">
                               Measurement results table
@@ -398,11 +463,15 @@ function JobResults({ job, state, dispatch }: Props & { job: QuantumJob }) {
                         </div>
                       )}
                       <div className="fq-job-chart-footer">
-                        <span>
+                        <span
+                          role="status"
+                          aria-label="Measurement state range"
+                        >
                           {rows.length > 32
-                            ? `Showing ${currentPage * 32 + 1}–${Math.min((currentPage + 1) * 32, rows.length)} of ${rows.length} observed states`
-                            : `${rows.length} observed ${rows.length === 1 ? "state" : "states"}`}{" "}
-                          · {total.toLocaleString()} recorded counts
+                            ? `Showing ${currentPage * 32 + 1}–${Math.min((currentPage + 1) * 32, rows.length)} of ${rows.length} ${filtering ? "matching" : "observed"} states`
+                            : `${rows.length} ${filtering ? "matching" : "observed"} ${rows.length === 1 ? "state" : "states"}`}
+                          {filtering ? ` of ${observedStates} observed` : ""} ·{" "}
+                          {total.toLocaleString()} recorded counts
                         </span>
                         {rows.length > 32 && (
                           <div>

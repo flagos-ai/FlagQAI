@@ -69,6 +69,16 @@ export function compareDistributions(
     distance: rows.reduce((sum, row) => sum + Math.abs(row.delta), 0) / 2,
   };
 }
+// Keep a real small change visible instead of rounding it to a misleading -0.0.
+export function formatComparisonDelta(delta: number) {
+  if (!Number.isFinite(delta)) return "—";
+  const points = delta * 100;
+  const value =
+    points !== 0 && Math.abs(points) < 0.05
+      ? String(Number(points.toPrecision(2)))
+      : points.toFixed(1);
+  return `${points > 0 ? "+" : ""}${value} pp`;
+}
 const gateKey = (gate: Instruction) =>
   JSON.stringify([
     gate.name.toLowerCase(),

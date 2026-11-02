@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import saved from "../data/gate-example-results.json";
 import { CodeExample } from "./CodeExample";
+import { CloseButton } from "./CloseButton";
 type Amplitude = {
   state: string;
   real: number;
@@ -37,6 +38,7 @@ export function FlagQuantumExample({
   const [shown, setShown] = useState(false),
     id = useId(),
     panel = useRef<HTMLDivElement>(null);
+  const runButton = useRef<HTMLButtonElement>(null);
   const result = examples[name],
     available = result?.source === code;
   useEffect(() => {
@@ -52,6 +54,7 @@ export function FlagQuantumExample({
           <>
             <span className="fq-precomputed-label">Precomputed</span>
             <button
+              ref={runButton}
               disabled={!available}
               aria-expanded={shown}
               aria-controls={id}
@@ -82,12 +85,15 @@ export function FlagQuantumExample({
         >
           <header>
             <h3>Before / after {name.toUpperCase()}</h3>
-            <button
-              onClick={() => setShown(false)}
-              aria-label="Hide example result"
-            >
-              ×
-            </button>
+            <CloseButton
+              onClick={() => {
+                setShown(false);
+                runButton.current?.focus({ preventScroll: true });
+                runButton.current?.scrollIntoView({ block: "nearest" });
+              }}
+              label="Hide example result"
+              title="Hide result"
+            />
           </header>
           <p className="fq-result-note">
             Precomputed from the exact example above. Before is the prepared

@@ -3,6 +3,8 @@ import { CloseButton } from "../components/CloseButton";
 import { ProjectProvenance } from "../components/ProjectProvenance";
 import { ExperimentDetails } from "../components/ExperimentDetails";
 import { SourceVersion } from "../components/SourceVersion";
+import { CodeExample } from "../components/CodeExample";
+import { Modal } from "../components/Modal";
 import { useEffect, useRef, useState } from "react";
 import type {
   WorkspaceAction,
@@ -37,6 +39,7 @@ export function ProgramPage({
     [info, setInfo] = useState(true),
     [focus, setFocus] = useState(false),
     [reference, setReference] = useState<string | null>(null);
+  const [sourceView, setSourceView] = useState<"python" | "qasm" | null>(null);
   const [infoWidth, setInfoWidth] = usePanelSize("programInfo", 300, 230, 500),
     [summaryHeight, setSummaryHeight] = usePanelSize(
       "programSummary",
@@ -47,6 +50,10 @@ export function ProgramPage({
   const svg = useRef<SVGSVGElement>(null),
     program = state.programs.find((p) => p.id === state.selectedProgramId),
     c = program?.compiled;
+  useEffect(() => {
+    setSelection(null);
+    setSourceView(null);
+  }, [program?.id]);
   useEffect(() => {
     const escape = (event: KeyboardEvent) => {
       if (event.key === "Escape") setFocus(false);
@@ -130,7 +137,11 @@ export function ProgramPage({
             compiled={c}
             zoom={state.zoom}
             onZoom={(zoom) => dispatch({ type: "preferences", zoom })}
-            onSelect={setSelection}
+            selection={selection}
+            onSelect={(next) => {
+              setSelection(next);
+              if (next) setInfo(true);
+            }}
             svgRef={svg}
           />
         ) : (
@@ -328,7 +339,7 @@ export function ProgramPage({
                     <p>Qubits: {selection.gate.wires.join(", ")}</p>
                     <p>
                       Source line:{" "}
-                      {selection.gate.line || "Unavailable after optimization"}
+                      {selection.gate.line || "Not included in this circuit"}
                     </p>
                     {Object.keys(selection.gate.params || {}).length > 0 && (
                       <div className="fq-parameter-details">
@@ -370,15 +381,18 @@ export function ProgramPage({
                   operands and source.
                 </p>
               )}
-              <details>
-                <summary>OpenQASM snapshot</summary>
-                <pre>{program?.source || "No program selected."}</pre>
-              </details>
-              {program?.origin && (
-                <details>
-                  <summary>Original Python source</summary>
-                  <pre>{program.origin.source}</pre>
-                </details>
+              {program && (
+                <button className="link" onClick={() => setSourceView("qasm")}>
+                  View OpenQASM snapshot ↗
+                </button>
+              )}
+              {program?.origin?.language === "python" && (
+                <button
+                  className="link"
+                  onClick={() => setSourceView("python")}
+                >
+                  View Python snapshot ↗
+                </button>
               )}
             </section>
           </aside>
@@ -389,6 +403,38 @@ export function ProgramPage({
           initialGate={reference}
           onClose={() => setReference(null)}
         />
+      )}
+      {sourceView && program && (
+        <Modal
+          className="fq-attachment-preview"
+          label="Circuit source snapshot"
+          onClose={() => setSourceView(null)}
+        >
+          <header>
+            <h2>{sourceView === "python" ? "Python" : "OpenQASM"} snapshot</h2>
+            <CloseButton
+              label="Close source snapshot"
+              onClick={() => setSourceView(null)}
+            />
+          </header>
+          <p>
+            {program.name} · Read-only snapshot. Your editor draft is unchanged.
+          </p>
+          <CodeExample
+            title={
+              sourceView === "python"
+                ? "Original Python source"
+                : "OpenQASM circuit export"
+            }
+            code={
+              sourceView === "python"
+                ? program.origin?.source || ""
+                : program.source
+            }
+            language={sourceView}
+            lineNumbers
+          />
+        </Modal>
       )}
     </div>
   );

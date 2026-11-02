@@ -1,5 +1,6 @@
 import { UIIcon } from "./UIIcon";
-import { useMemo, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { fitCircuitZoom, circuitZoomScroll } from "../state/circuit-viewport";
 import { circuitHierarchy } from "../../../../packages/quantum-workspace/domain/circuit-tree.mjs";
 import type {
   CircuitNode,
@@ -20,12 +21,14 @@ export function CircuitCanvas({
   zoom,
   onZoom,
   onSelect,
+  selection,
   svgRef,
 }: {
   compiled: CompiledProgram;
   zoom: number;
   onZoom: (n: number) => void;
   onSelect: (s: CircuitSelection | null) => void;
+  selection?: CircuitSelection | null;
   svgRef: React.RefObject<SVGSVGElement | null>;
 }) {
   const [mode, setMode] = useState<"logical" | "compiled">("logical"),
@@ -42,7 +45,45 @@ export function CircuitCanvas({
         ]),
     );
   const [detailLevel, setDetailLevel] = useState<number | null>(null);
+  const [fitting, setFitting] = useState(false);
+  const zoomCallback = useRef(onZoom);
+  zoomCallback.current = onZoom;
+  const currentZoom = useRef(zoom);
+  currentZoom.current = zoom;
   const canvas = useRef<HTMLDivElement>(null);
+  const pendingScroll = useRef<{
+    zoom: number;
+    left: number;
+    top: number;
+  } | null>(null);
+  useLayoutEffect(() => {
+    const target = pendingScroll.current;
+    if (!target || target.zoom !== zoom || !canvas.current) return;
+    canvas.current.scrollLeft = target.left;
+    canvas.current.scrollTop = target.top;
+    pendingScroll.current = null;
+  }, [zoom]);
+  const changeZoom = (next: number) => {
+    const element = canvas.current;
+    if (element) {
+      const style = getComputedStyle(element);
+      const position = circuitZoomScroll(
+        {
+          left: element.scrollLeft,
+          top: element.scrollTop,
+          width: element.clientWidth,
+          height: element.clientHeight,
+          paddingLeft: parseFloat(style.paddingLeft) || 0,
+          paddingTop: parseFloat(style.paddingTop) || 0,
+        },
+        zoom,
+        next,
+      );
+      pendingScroll.current =
+        next === zoom ? null : { zoom: next, ...position };
+    }
+    onZoom(next);
+  };
   const c =
     mode === "logical"
       ? compiled
@@ -72,7 +113,44 @@ export function CircuitCanvas({
     registers,
   );
   const { layout, wireY: y, baseY, rowGap, height, width } = scene;
+  const fit = () => {
+    const element = canvas.current;
+    if (!element) return;
+    const style = getComputedStyle(element);
+    const box = element.getBoundingClientRect();
+    // Measure the space after scrollbars disappear, keeping repeated Fit stable.
+    const availableWidth =
+      box.width -
+      parseFloat(style.borderLeftWidth) -
+      parseFloat(style.borderRightWidth) -
+      parseFloat(style.paddingLeft) -
+      parseFloat(style.paddingRight);
+    const availableHeight =
+      box.height -
+      parseFloat(style.borderTopWidth) -
+      parseFloat(style.borderBottomWidth) -
+      parseFloat(style.paddingTop) -
+      parseFloat(style.paddingBottom);
+    if (availableWidth <= 0 || availableHeight <= 0) return;
+    element.scrollLeft = 0;
+    element.scrollTop = 0;
+    pendingScroll.current = null;
+    const next = fitCircuitZoom(width, height, availableWidth, availableHeight);
+    if (next !== currentZoom.current) {
+      currentZoom.current = next;
+      zoomCallback.current(next);
+    }
+  };
+  useLayoutEffect(() => {
+    if (!fitting || !canvas.current) return;
+    fit();
+    // Border-box observation ignores scrollbar changes caused by fitting itself.
+    const observer = new ResizeObserver(fit);
+    observer.observe(canvas.current, { box: "border-box" });
+    return () => observer.disconnect();
+  }, [fitting, width, height]);
   const toggle = (id: string) => {
+    onSelect(null);
     setDetailLevel(null);
     setOpen((previous) => {
       const next = new Set(previous);
@@ -101,7 +179,12 @@ export function CircuitCanvas({
         >
           <UIIcon name={open.has(n.id) ? "minus" : "plus"} size={12} />
         </button>
-        <button onClick={() => onSelect({ module: n })}>
+        <button
+          aria-pressed={
+            !!selection && "module" in selection && selection.module.id === n.id
+          }
+          onClick={() => onSelect({ module: n })}
+        >
           {n.label}
           <small>{n.gate_count} gates</small>
         </button>
@@ -143,33 +226,36 @@ export function CircuitCanvas({
           className="fq-control-icon"
           title="Zoom out"
           aria-label="Zoom out"
-          onClick={() => onZoom(Math.max(10, zoom - 10))}
+          disabled={zoom <= 10}
+          onClick={() => {
+            setFitting(false);
+            changeZoom(Math.max(10, zoom - 10));
+          }}
         >
           <UIIcon name="minus" />
         </button>
-        <span>{zoom}%</span>
+        <span role="status" aria-label="Circuit zoom">
+          {zoom}%
+        </span>
         <button
           className="fq-control-icon"
           title="Zoom in"
           aria-label="Zoom in"
-          onClick={() => onZoom(Math.min(180, zoom + 10))}
+          disabled={zoom >= 180}
+          onClick={() => {
+            setFitting(false);
+            changeZoom(Math.min(180, zoom + 10));
+          }}
         >
           <UIIcon name="plus" />
         </button>
         <button
-          onClick={() =>
-            onZoom(
-              Math.max(
-                10,
-                Math.min(
-                  180,
-                  Math.floor(
-                    (90 * (canvas.current?.clientWidth || 800)) / width,
-                  ),
-                ),
-              ),
-            )
-          }
+          title="Fit the circuit and keep it fitted as the canvas changes"
+          aria-pressed={fitting}
+          onClick={() => {
+            setFitting(true);
+            fit();
+          }}
         >
           Fit
         </button>
@@ -273,6 +359,7 @@ export function CircuitCanvas({
               bus={registers}
               toggle={toggle}
               onSelect={onSelect}
+              selection={selection}
             />
             {Array.from(
               { length: registers ? buses.length : compiled.qubits },
@@ -287,6 +374,13 @@ export function CircuitCanvas({
                     y={baseY + i * rowGap}
                     label={registers ? buses[i].name : "q" + i}
                     wires={registers ? buses[i].wires : [i]}
+                    selected={
+                      !!selection &&
+                      "measurement" in selection &&
+                      (registers ? buses[i].wires : [i]).includes(
+                        selection.measurement,
+                      )
+                    }
                     onSelect={() =>
                       onSelect({
                         measurement: registers ? buses[i].wires[0] : i,

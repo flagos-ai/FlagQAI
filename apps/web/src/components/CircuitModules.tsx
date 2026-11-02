@@ -11,6 +11,7 @@ export function CircuitModules({
   bus,
   toggle,
   onSelect,
+  selection,
 }: {
   item: SceneItem;
   level?: number;
@@ -19,6 +20,7 @@ export function CircuitModules({
   bus: boolean;
   toggle: (id: string) => void;
   onSelect: (selection: CircuitSelection) => void;
+  selection?: CircuitSelection | null;
 }) {
   if (item.gate !== undefined)
     return (
@@ -31,6 +33,11 @@ export function CircuitModules({
         bus={bus}
         onSelect={() =>
           onSelect({ gate: gates[item.gate!], index: item.gate! })
+        }
+        selected={
+          !!selection &&
+          "gate" in selection &&
+          selection.gate === gates[item.gate]
         }
       />
     );
@@ -68,7 +75,21 @@ export function CircuitModules({
             fill={color}
             fillOpacity={item.collapsed ? 0.09 : 0.015}
             stroke={color}
-            strokeOpacity={0.45}
+            strokeOpacity={
+              selection &&
+              "module" in selection &&
+              selection.module.id === node.id
+                ? 1
+                : 0.45
+            }
+            strokeWidth={
+              selection &&
+              "module" in selection &&
+              selection.module.id === node.id
+                ? 2
+                : 1
+            }
+            vectorEffect="non-scaling-stroke"
             onDoubleClick={change}
           />
           <title>
@@ -110,6 +131,11 @@ export function CircuitModules({
             role="button"
             tabIndex={0}
             aria-label={"Select " + node.label}
+            aria-pressed={
+              !!selection &&
+              "module" in selection &&
+              selection.module.id === node.id
+            }
             onClick={select}
             onKeyDown={(e) => keyboard(e, select)}
             data-module-label={node.id}
@@ -166,6 +192,7 @@ export function CircuitModules({
           bus={bus}
           toggle={toggle}
           onSelect={onSelect}
+          selection={selection}
         />
       ))}
     </g>
