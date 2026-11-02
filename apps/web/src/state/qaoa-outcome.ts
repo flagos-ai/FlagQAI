@@ -12,21 +12,42 @@ export const qaoaFiles = [
 
 // Only literal graph data is supported. Never execute or evaluate Python source.
 export function graphFromSource(source: string) {
-  const literals = [
-    ...source.matchAll(/^EDGES\s*=\s*([\[(][^\n]+[\])])\s*$/gm),
-  ];
-  const literal =
-    literals.length === 1 && [...source.matchAll(/^EDGES\s*=/gm)].length === 1
-      ? literals[0][1]
-      : "";
   const invalid = () =>
     Error(
-      "Use one literal Max-Cut graph with distinct integer vertex pairs and optional finite positive weights.",
+      "Use one literal Max-Cut graph with 2–12 vertices, distinct integer vertex pairs and optional finite positive weights.",
     );
+  const assignments = [
+    ...source.matchAll(/^EDGES[ \t]*(?::[^=\r\n]+)?[ \t]*=/gm),
+  ];
+  if (assignments.length !== 1) throw invalid();
+  let cursor = assignments[0].index! + assignments[0][0].length;
+  while (/\s/.test(source[cursor] || "") && cursor < source.length) cursor++;
+  if (!"[(".includes(source[cursor] || " ")) throw invalid();
+  const closing: Record<string, string> = { "[": "]", "(": ")" };
+  const stack: string[] = [];
+  let literal = "";
+  for (; cursor < source.length; cursor++) {
+    const char = source[cursor];
+    // Numeric literals contain no strings: comments can be skipped without
+    // interpreting Python or letting brackets inside comments end the graph.
+    if (char === "#") {
+      while (cursor < source.length && source[cursor] !== "\n") cursor++;
+      literal += "\n";
+      continue;
+    }
+    if (char === "[" || char === "(") stack.push(closing[char]);
+    else if (char === "]" || char === ")") {
+      if (stack.pop() !== char) throw invalid();
+    }
+    literal += char;
+    if (!stack.length) {
+      cursor++;
+      break;
+    }
+  }
   if (
-    !literal ||
-    ({ "[": "]", "(": ")" } as Record<string, string>)[literal[0]] !==
-      literal.at(-1)
+    stack.length ||
+    !/^[ \t\r]*(?:#.*)?$/.test(source.slice(cursor).split("\n")[0])
   )
     throw invalid();
   const body = literal.slice(1, -1);

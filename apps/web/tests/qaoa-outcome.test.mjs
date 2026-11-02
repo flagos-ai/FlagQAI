@@ -221,3 +221,40 @@ test("literal weighted graph parser rejects ambiguous, invalid and executable gr
     ],
   );
 });
+
+test("real Agent multiline graph formatting and type annotations retain weighted semantics", () => {
+  const source = `EDGES: list[tuple[int, int, float]] = [
+    (0, 1, 0.5), # a closing bracket ] here is only a comment
+    (1, 2, 1.5),
+    (2, 3, 2.0),
+    (3, 4, 0.75),
+    (4, 0, 1.25),
+    (0, 2, 1.0),
+] # actual autonomous task format
+CODE_VERSION = "weighted-maxcut-qaoa-p1-grid9-v2"
+`;
+  const graph = graphFromSource(source);
+  assert.equal(graph.n, 5);
+  assert.equal(graph.weighted, true);
+  assert.deepEqual(graph.edges, [
+    [0, 1, 0.5],
+    [1, 2, 1.5],
+    [2, 3, 2],
+    [3, 4, 0.75],
+    [4, 0, 1.25],
+    [0, 2, 1],
+  ]);
+  assert.deepEqual(
+    graphFromSource(source.replace(": list[tuple[int, int, float]]", "")),
+    graph,
+  );
+  for (const malformed of [
+    "EDGES = [(0,1)] + [(1,2)]",
+    "EDGES = [(0,1)] if True else []",
+    "EDGES = [\n(0,1)\n",
+    "EDGES = [\n(0,1)] )",
+    "EDGES = [\n(0,1,run())\n]",
+    "EDGES = [(0,1)]\nEDGES: list = [(1,2)]",
+  ])
+    assert.throws(() => graphFromSource(malformed), undefined, malformed);
+});

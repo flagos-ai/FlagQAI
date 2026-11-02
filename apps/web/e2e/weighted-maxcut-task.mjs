@@ -7,7 +7,7 @@ export const weightedMaxcutSource =
   qaoaSource
     .replace(
       /^EDGES = .*$/m,
-      "EDGES = [(0, 1, 0.5), (1, 2, 1.5), (2, 3, 2), (3, 4, 0.75), (4, 0, 1.25), (0, 2, 1)]",
+      "EDGES = [\n    (0, 1, 0.5), # A comment may contain ]\n    (1, 2, 1.5),\n    (2, 3, 2),\n    (3, 4, 0.75),\n    (4, 0, 1.25),\n    (0, 2, 1),\n]",
     )
     .replace(
       "N, SHOTS, SEED, GRID = 6, 4096, 42, 9",
