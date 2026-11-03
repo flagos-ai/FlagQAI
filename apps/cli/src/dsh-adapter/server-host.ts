@@ -19,6 +19,7 @@ import { createWebModelManager } from './web-model-manager.js'
 import { createWebContextManager } from './web-context-manager.js'
 import { createProviderManager } from './provider-manager.js'
 import type { SubprocessRuntime } from '@deepseek-ai/dsh-subprocess'
+import { withMacOSReadIsolation } from './macos-read-isolation.js'
 import { withMacOSSearchIsolation } from './macos-search-isolation.js'
 import { withTaskProgressPolicy } from './task-progress-policy.js'
 
@@ -56,6 +57,12 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     withTaskProgressPolicy(await next()))
   if (process.env.FLAGQAI_MACOS_SHELL_ISOLATION === '1') {
     ctx.on('tools/execute', async (exec, next) => {
+      if (exec.name === 'read' || exec.name === 'read_image') {
+        const workspace = exec.agent?.session.header.cwd
+        const fs = exec.agent?.ctx.get('fs') as Context['fs'] | undefined
+        if (!workspace || !fs) throw new Error('File read isolation requires a local session workspace and filesystem provider.')
+        return withMacOSReadIsolation(fs, workspace, next)
+      }
       if (exec.name !== 'grep' && exec.name !== 'glob') return next()
       const workspace = exec.agent?.session.header.cwd
       const provider = exec.agent?.ctx.get('subprocess') as SubprocessRuntime | undefined

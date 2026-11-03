@@ -36,6 +36,10 @@ import { dirname, join, delimiter, isAbsolute } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 if (process.platform === 'win32') throw new Error('This process-group acceptance probe requires a POSIX host')
+const verifyFileIsolation = process.argv.includes('--macos-read-isolation')
+if (verifyFileIsolation && (process.platform !== 'darwin' || process.argv.includes('--live') || process.argv.includes('--gateway'))) {
+  throw new Error('--macos-read-isolation requires macOS and the isolated catalog model')
+}
 const verifySearchIsolation = process.argv.includes('--macos-search-isolation')
 if (verifySearchIsolation && (process.platform !== 'darwin' || process.argv.includes('--live'))) {
   throw new Error('--macos-search-isolation requires macOS and the isolated scripted model')
@@ -92,6 +96,7 @@ if (vqe && (!realMcp || live)) throw new Error('--vqe requires --real-mcp and th
 const researchVqe = process.argv.includes('--research-vqe')
 if (researchVqe && (!realMcp || live)) throw new Error('--research-vqe requires --real-mcp and the isolated scripted model')
 const gateway = process.argv.includes('--gateway')
+const fixtureModel = gateway ? 'claude-acceptance' : verifyFileIsolation ? 'deepseek-flash' : 'deepseek-chat'
 const disconnect = process.argv.includes('--disconnect')
 let serverProcess
 let base
@@ -176,7 +181,7 @@ const model = createServer(async (request, response) => {
         response.end(JSON.stringify({ error: { message: `Rejected fixture key ${request.headers.authorization ?? request.headers['x-api-key'] ?? ''}` } }))
       } else {
         response.writeHead(200, { 'content-type': 'application/json' })
-        response.end(JSON.stringify({ data: [{ id: gateway ? 'claude-acceptance' : 'deepseek-chat', object: 'model' }] }))
+        response.end(JSON.stringify({ data: [{ id: fixtureModel, object: 'model' }] }))
       }
       return
     }
@@ -271,6 +276,27 @@ const model = createServer(async (request, response) => {
       })
       if (response.destroyed) return
       delta = { role: 'assistant', content: 'Cancellation failed: fixture completed.' }
+    } else if (verifyFileIsolation && JSON.stringify(latest).includes('macos-read-check')) {
+      const reads = [
+        ['read', 'normal-read.txt'],
+        ['read', 'large-read.txt'],
+        ['read_image', 'normal-image.png'],
+        ['read', 'race-parent/target.txt'],
+        ['read_image', 'race-image.png'],
+      ]
+      if (results.length < reads.length) {
+        const [name, file] = reads[results.length]
+        delta = call(name, { file_path: file, ...(name === 'read' ? { limit: 2 } : {}) })
+      } else {
+        assert.match(JSON.stringify(results[0]), /allowed-small-text/)
+        assert.match(JSON.stringify(results[1]), /allowed-stream-text/)
+        assert.match(JSON.stringify(results[2]), /<type>image<\/type>|image\/png/)
+        for (const denied of results.slice(3)) {
+          assert.match(JSON.stringify(denied), /Confined file read failed/)
+          assert.doesNotMatch(JSON.stringify(denied), /outside-read-fixture|image\/png/)
+        }
+        delta = { role: 'assistant', content: 'File read isolation verified.' }
+      }
     } else if (verifySearchIsolation && JSON.stringify(latest).includes('macos-search-check')) {
       const searches = [
         ['grep', { pattern: 'search-fixture', path: 'ordinary-search' }],
@@ -495,6 +521,42 @@ createInterface({input:process.stdin}).on('line', line => {
     ...acceptanceInstallEnvironment(process.env) }
   const env = { ...inherited, HOME: home, USERPROFILE: home, ...(cleanInstall ? { FLAGQAI_CLI_RUNTIME_ROOT: integration } : { DSH_HOME: join(sandbox, 'dsh') }),
     PATH: `${bin}${delimiter}${process.env.PATH}`, FLAGQAI_LANG: 'en', FLAGQAI_PRESET: 'flagquantum', DSH_TELEMETRY_DISABLED: '1' }
+  if (verifyFileIsolation) {
+    env.FLAGQAI_MACOS_SHELL_ISOLATION = '1'
+    env.FLAGQAI_WORKSPACE_READ_GUARD = '1'
+    const parent = join(workspace, 'race-parent')
+    const outside = join(sandbox, 'outside-read-dir')
+    const imageTarget = join(workspace, 'race-image.png')
+    const outsideImage = join(outside, 'external.png')
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP4z8CAFWEXHbQSACj/P8Fu7N9hAAAAAElFTkSuQmCC', 'base64')
+    await Promise.all([mkdir(parent), mkdir(outside)])
+    await Promise.all([
+      writeFile(join(workspace, 'normal-read.txt'), 'allowed-small-text'),
+      writeFile(join(workspace, 'large-read.txt'), 'allowed-stream-text\n' + 'text line\n'.repeat(1100000)),
+      writeFile(join(workspace, 'normal-image.png'), png),
+      writeFile(join(parent, 'target.txt'), 'original-safe-text'),
+      writeFile(join(outside, 'target.txt'), 'outside-read-fixture'),
+      writeFile(imageTarget, png),
+      writeFile(outsideImage, png),
+    ])
+    // Change the actual target after the native tool stat, just before open.
+    const helper = join(packed, 'lib/types/dsh-adapter/macos-read-isolation.js')
+    const compiled = await readFile(helper, 'utf8')
+    const marker = "const child = spawn("
+    assert.ok(compiled.includes(marker))
+    const swap = `
+      if (path === ${JSON.stringify(await realpath(join(parent, 'target.txt')))}) {
+        renameSync(${JSON.stringify(parent)}, ${JSON.stringify(parent + '-before')});
+        symlinkSync(${JSON.stringify(outside)}, ${JSON.stringify(parent)});
+      }
+      if (path === ${JSON.stringify(await realpath(imageTarget))}) {
+        renameSync(path, path + '-before');
+        symlinkSync(${JSON.stringify(outsideImage)}, path);
+      }
+    `
+    await writeFile(helper, "import { renameSync, symlinkSync } from 'node:fs';\n"
+      + compiled.replace(marker, swap + marker))
+  }
   if (verifySearchIsolation) {
     env.FLAGQAI_MACOS_SHELL_ISOLATION = '1'
     env.FLAGQAI_WORKSPACE_READ_GUARD = '1'
@@ -663,7 +725,7 @@ createInterface({input:process.stdin}).on('line', line => {
     })
     failDiscovery = false
     const discovered = await client.discoverProviderModels(discoveryInput)
-    assert.ok(discovered.some(item => item.id === (gateway ? 'claude-acceptance' : 'deepseek-chat')))
+    assert.ok(discovered.some(item => item.id === fixtureModel))
     assert.ok(discoveryRequests >= 2, 'failed discovery must retry against the live fixture')
     assert.equal(logs.includes(discoveryInput.apiKey), false, 'server logs must not expose the API key')
     console.log('PASS offline provider discovery: rejected key is masked, retry succeeds')
@@ -671,7 +733,7 @@ createInterface({input:process.stdin}).on('line', line => {
   const provider = await client.configureProvider(live ? { kind: 'custom', route: liveRoute.route, baseURL: liveRoute.baseURL, api: liveRoute.api, apiKey: liveRoute.apiKey,
     models: [process.env.FLAGQAI_ACCEPTANCE_LIVE_MODEL] } : { kind: gateway ? 'custom' : 'catalog', route: gateway ? 'acceptance-gateway' : 'deepseek', apiKey: 'acceptance-fixture-key',
     ...(gateway ? { api: 'anthropic-messages' } : {}),
-    baseURL: `http://127.0.0.1:${modelPort}/v1`, models: [gateway ? 'claude-acceptance' : 'deepseek-chat', ...(modelSwitch ? ['acceptance-second-model'] : [])] })
+    baseURL: `http://127.0.0.1:${modelPort}/v1`, models: [fixtureModel, ...(modelSwitch ? ['acceptance-second-model'] : [])] })
   assert.equal(provider.keyConfigured, true)
   assert.equal((await client.listProviders()).ready, true)
   await stop()
@@ -712,6 +774,19 @@ createInterface({input:process.stdin}).on('line', line => {
     assert.equal(await readlink(join(workspace, 'race-directory')), outside)
     assert.equal(await readlink(join(workspace, 'race-link')), outside)
     console.log('PASS native grep/glob: ordinary search and post-validation directory and symlink replacement')
+  }
+  if (verifyFileIsolation) {
+    const result = await attach(['--cwd', workspace, '--prompt', 'macos-read-check'])
+    assert.equal(result.code, 0, result.errors)
+    assert.match(JSON.stringify(result.records), /File read isolation verified/)
+    const events = result.records.filter(record => record.event?.type === 'tool.result')
+    assert.equal(events.length, 5)
+    assert.ok(events[2].event.images?.length, 'native image read must return an attachment')
+    assert.ok(events.slice(3).every(record => record.event.isError && !record.event.images?.length))
+    const outside = join(sandbox, 'outside-read-dir')
+    assert.equal(await readlink(join(workspace, 'race-parent')), outside)
+    assert.equal(await readlink(join(workspace, 'race-image.png')), join(outside, 'external.png'))
+    console.log('PASS native read/read_image: text, streaming, image attachment, parent and leaf replacement')
   }
   console.log('Provider persisted; running Bell task')
   const taskArgs = ['--cwd', workspace, '--prompt', live ? 'Use FlagQuantum MCP to build the two-qubit Bell state H(0), CX(0,1), obtain exact probabilities on wires [0,1], and export OpenQASM 3. Save bell-evidence.json with simulation (the actual simulation result as a JSON string) and exported (the actual OpenQASM as a string). Do not invent results. Explain that this is local classical simulation.' : 'Create a Bell state with H and CX, simulate it and export OpenQASM.']
