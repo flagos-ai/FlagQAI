@@ -184,7 +184,10 @@ with tempfile.TemporaryDirectory(prefix='fq-sdk-preflight-') as directory:
             with self.lock: self.recollecting.discard(run_id)
 
     def command(self, worker=None):
-        worker = worker or ('RUNTIME_MANIFEST_CODE = ' + repr((Path(__file__).parent/'runtime_facts.py').read_text()) + '\n' + (Path(__file__).parent/'python_worker.py').read_text())
+        if self.settings.macos_python_isolation and self.settings.compute_transport != 'local':
+            raise RuntimeError('macOS Python isolation requires the local compute runner.')
+        worker = worker or ('ISOLATE_PYTHON = ' + repr(self.settings.macos_python_isolation) + '\n'
+            + 'RUNTIME_MANIFEST_CODE = ' + repr((Path(__file__).parent/'runtime_facts.py').read_text()) + '\n' + (Path(__file__).parent/'python_worker.py').read_text())
         if self.settings.compute_transport == 'local':
             return [self.settings.local_python or sys.executable, '-u', '-c', worker]
         if not self.settings.ssh_target: raise RuntimeError('Configure the SSH CPU target before running Python.')

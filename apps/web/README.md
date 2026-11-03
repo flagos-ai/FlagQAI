@@ -49,6 +49,16 @@ local or SSH Python runner to execute a small circuit and reload its saved
 counts. The check has a 30-second timeout. If it fails, the message stays in
 the composer so it can be retried after the runtime is repaired.
 
+Set `FQ_MACOS_PYTHON_ISOLATION=1` to confine local Python jobs and their
+descendants with macOS Seatbelt. The script can write inside its temporary
+task directory and read the configured Python installation, its virtual
+environment, and required system paths. Use a dedicated interpreter and
+virtual environment containing only trusted runtime dependencies. The child
+starts with a restricted environment and network access is denied. If the
+runner fails to launch, the task records a failure. This setting applies to
+Python jobs, including archived reproduction. Native Harness tools and
+SDK preflight have separate execution paths.
+
 The launcher does not install the SDK or alter a shared remote environment.
 Machine identities, SSH keys, provider credentials and databases stay outside Git.
 Ignored `.flagqai/quantum-workspace/settings.json` may contain `ssh_target`,

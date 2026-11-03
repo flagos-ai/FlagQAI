@@ -1,5 +1,5 @@
 """Fixed supervisor for explicitly requested Python scripts, locally or over SSH.
-This is process isolation and cancellation, not a security sandbox.
+The local macOS runner can additionally confine the user script with Seatbelt.
 """
 import json
 import base64
@@ -68,6 +68,34 @@ def collect_experiments(root, emit):
                     emit({'type': 'artifact-error', 'name': name, 'message': str(error)[:500]})
 
 
+def confined_command(command, root):
+    runner = '/usr/bin/sandbox-exec'
+    if sys.platform != 'darwin' or not os.access(runner, os.X_OK):
+        raise RuntimeError('macOS Python isolation requires an available Seatbelt runner.')
+    root = root.resolve()
+    runtime_roots = {Path(sys.prefix).resolve(), Path(sys.base_prefix).resolve()}
+    if any(path in (Path('/'), Path.home().resolve()) for path in runtime_roots):
+        raise RuntimeError('Configure a dedicated Python installation for macOS isolation.')
+    readable = runtime_roots | {
+        root, Path('/System'), Path('/usr/lib'), Path('/usr/bin'),
+        Path('/bin'), Path('/dev/null'), Path('/dev/urandom'),
+    }
+    reads = ' '.join('(subpath ' + json.dumps(str(path), ensure_ascii=False) + ')' for path in sorted(readable))
+    parents = {parent for path in readable for parent in path.parents}
+    metadata = ' '.join('(literal ' + json.dumps(str(path), ensure_ascii=False) + ')' for path in sorted(parents))
+    profile = ('(version 1)(deny default)(import "system.sb")(deny network*)'
+               '(allow process-exec process-fork sysctl-read)'
+               '(allow file-read* ' + reads + ')'
+               '(allow file-read-metadata ' + metadata + ')'
+               '(allow file-write* (subpath ' + json.dumps(str(root), ensure_ascii=False) + '))')
+    env = {'PATH': '/usr/bin:/bin', 'HOME': str(root), 'TMPDIR': str(root)}
+    # Seatbelt requires the canonical executable. CPython uses this macOS
+    # launcher value to locate the original virtual environment.
+    env['__PYVENV_LAUNCHER__'] = command[0]
+    executable = str(Path(command[0]).resolve())
+    return [runner, '-p', profile, executable, *command[1:]], env
+
+
 def supervise():
     request = json.loads(sys.stdin.readline())
     lock = threading.Lock()
@@ -115,9 +143,13 @@ finally:
             json.dump(runtime_manifest(fq), stream)
     except Exception: pass
 """
-        process = subprocess.Popen([sys.executable, '-u', '-c', driver, entry], cwd=root,
+        command = [sys.executable, '-u', '-c', driver, entry]
+        env = os.environ
+        if globals().get('ISOLATE_PYTHON', False):
+            command, env = confined_command(command, root)
+        process = subprocess.Popen(command, cwd=root,
             stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            start_new_session=True, env={**os.environ, 'FQ_WEB_ARTIFACT':str(root/'artifact.json'),
+            start_new_session=True, env={**env, 'FQ_WEB_ARTIFACT':str(root/'artifact.json'),
                 'OMP_NUM_THREADS':'2', 'MKL_NUM_THREADS':'2', 'OPENBLAS_NUM_THREADS':'2'})
         def drain(pipe, stream):
             decoder = codecs.getincrementaldecoder('utf-8')(errors='replace')
