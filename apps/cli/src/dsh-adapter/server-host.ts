@@ -18,6 +18,8 @@ import { createSettingsHosts } from './channel/settings-host.js'
 import { createWebModelManager } from './web-model-manager.js'
 import { createWebContextManager } from './web-context-manager.js'
 import { createProviderManager } from './provider-manager.js'
+import type { SubprocessRuntime } from '@deepseek-ai/dsh-subprocess'
+import { withMacOSSearchIsolation } from './macos-search-isolation.js'
 import { withTaskProgressPolicy } from './task-progress-policy.js'
 
 export const name = 'flagqai-server-host'
@@ -53,6 +55,13 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
   ctx.on('system-prompt/assemble', async (_assembly, _context, next) =>
     withTaskProgressPolicy(await next()))
   if (process.env.FLAGQAI_MACOS_SHELL_ISOLATION === '1') {
+    ctx.on('tools/execute', async (exec, next) => {
+      if (exec.name !== 'grep' && exec.name !== 'glob') return next()
+      const workspace = exec.agent?.session.header.cwd
+      const provider = exec.agent?.ctx.get('subprocess') as SubprocessRuntime | undefined
+      if (!workspace || !provider) throw new Error('Search isolation requires a local session workspace and subprocess provider.')
+      return withMacOSSearchIsolation(provider, workspace, next)
+    })
     ctx.on('tools/pre-execute', async (exec, next) => {
       if (exec.name !== 'bash') return next()
       const policy = exec.agent?.ctx.get('sandboxPolicy') as {
