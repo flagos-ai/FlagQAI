@@ -52,6 +52,20 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
   // reconciles duplicates and removes guidance when a preset hides todo_write.
   ctx.on('system-prompt/assemble', async (_assembly, _context, next) =>
     withTaskProgressPolicy(await next()))
+  if (process.env.FLAGQAI_MACOS_SHELL_ISOLATION === '1') {
+    ctx.on('tools/pre-execute', async (exec, next) => {
+      if (exec.name !== 'bash') return next()
+      const policy = exec.agent?.ctx.get('sandboxPolicy') as {
+        resolve(input: { session: NonNullable<typeof exec.agent>['session'] }): { mode: string }
+      } | undefined
+      const requested = (exec.arguments as { sandbox_permissions?: unknown } | null)?.sandbox_permissions
+      if (!exec.agent || !policy || policy.resolve({ session: exec.agent.session }).mode !== 'workspace-write'
+        || (requested !== undefined && requested !== 'workspace-write')) {
+        return { kind: 'deny', reason: 'macOS shell isolation requires workspace-write mode without escalation.' }
+      }
+      return next()
+    })
+  }
   if (process.env.FLAGQAI_WORKSPACE_READ_GUARD === '1') {
     ctx.on('tools/pre-execute', async (exec, next) => {
       if (exec.name !== 'read' && exec.name !== 'read_image') return next()

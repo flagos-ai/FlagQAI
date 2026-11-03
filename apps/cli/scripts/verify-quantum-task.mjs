@@ -27,7 +27,7 @@ import { packFlagqai } from './pack-flagqai.mjs'
 import { parseDocument } from 'yaml'
 import { spawn, spawnSync, execFileSync } from 'node:child_process'
 import { once } from 'node:events'
-import { mkdtemp, mkdir, readdir, readFile, writeFile, symlink, rm, realpath } from 'node:fs/promises'
+import { access, mkdtemp, mkdir, readdir, readFile, writeFile, symlink, rm, realpath } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import { createConnection } from 'node:net'
 import { createRequire } from 'node:module'
@@ -36,6 +36,10 @@ import { dirname, join, delimiter, isAbsolute } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 if (process.platform === 'win32') throw new Error('This process-group acceptance probe requires a POSIX host')
+const verifyShellIsolation = process.argv.includes('--macos-shell-isolation')
+if (verifyShellIsolation && (process.platform !== 'darwin' || process.argv.includes('--live'))) {
+  throw new Error('--macos-shell-isolation requires macOS and the isolated scripted model')
+}
 const verifyReadGuard = process.argv.includes('--workspace-read-guard')
 if (verifyReadGuard && process.argv.includes('--live')) throw new Error('--workspace-read-guard requires the isolated scripted model')
 const modelSwitch = process.argv.includes('--model-switch')
@@ -263,6 +267,27 @@ const model = createServer(async (request, response) => {
       })
       if (response.destroyed) return
       delta = { role: 'assistant', content: 'Cancellation failed: fixture completed.' }
+    } else if (verifyShellIsolation && JSON.stringify(latest).includes('macos-shell-check')) {
+      const broken = JSON.stringify(latest).includes('macos-shell-check-broken')
+      const commands = broken ? ['printf escaped > unexpected-launch.txt'] : [
+        'printf shell-ok > shell-ok.txt && /bin/cat shell-ok.txt',
+        "/bin/sh -c '/bin/cat ../shell-outside.txt'",
+        '/bin/cat shell-outside-link.txt',
+      ]
+      if (results.length < commands.length) {
+        delta = call('bash', { description: 'Check the isolated shell workspace boundary', command: commands[results.length] })
+      } else {
+        if (broken) {
+          assert.match(JSON.stringify(results[0]), /FlagQAI sandbox startup failed/)
+        } else {
+          assert.match(JSON.stringify(results[0]), /shell-ok/)
+          for (const result of results.slice(1)) {
+            assert.match(JSON.stringify(result), /Operation not permitted|Permission denied/i)
+            assert.doesNotMatch(JSON.stringify(result), /shell-external-fixture/)
+          }
+        }
+        delta = { role: 'assistant', content: 'Shell isolation verified.' }
+      }
     } else if (verifyReadGuard && JSON.stringify(latest).includes('workspace-read-guard-check')) {
       const paths = ['inside-read.txt', '../outside-read.txt', 'outside-link.txt']
       if (results.length < paths.length) {
@@ -436,6 +461,11 @@ createInterface({input:process.stdin}).on('line', line => {
     ...acceptanceInstallEnvironment(process.env) }
   const env = { ...inherited, HOME: home, USERPROFILE: home, ...(cleanInstall ? { FLAGQAI_CLI_RUNTIME_ROOT: integration } : { DSH_HOME: join(sandbox, 'dsh') }),
     PATH: `${bin}${delimiter}${process.env.PATH}`, FLAGQAI_LANG: 'en', FLAGQAI_PRESET: 'flagquantum', DSH_TELEMETRY_DISABLED: '1' }
+  if (verifyShellIsolation) {
+    env.FLAGQAI_MACOS_SHELL_ISOLATION = '1'
+    await writeFile(join(sandbox, 'shell-outside.txt'), 'shell-external-fixture')
+    await symlink('../shell-outside.txt', join(workspace, 'shell-outside-link.txt'))
+  }
   if (verifyReadGuard) {
     env.FLAGQAI_WORKSPACE_READ_GUARD = '1'
     await writeFile(join(workspace, 'inside-read.txt'), 'inside-read-fixture')
@@ -587,6 +617,26 @@ createInterface({input:process.stdin}).on('line', line => {
     const result = await attach(['--cwd', workspace, '--prompt', 'workspace-read-guard-check'])
     assert.equal(result.code, 0, result.errors)
     assert.match(JSON.stringify(result.records), /Workspace read guard verified/)
+  }
+  if (verifyShellIsolation) {
+    const result = await attach(['--cwd', workspace, '--prompt', 'macos-shell-check'])
+    assert.equal(result.code, 0, result.errors)
+    assert.match(JSON.stringify(result.records), /Shell isolation verified/)
+    assert.equal(await readFile(join(workspace, 'shell-ok.txt'), 'utf8'), 'shell-ok')
+    const runner = join(packed, 'bin/macos-workspace-runner.js')
+    const original = await readFile(runner, 'utf8')
+    const broken = original.replace("'/usr/bin/sandbox-exec'", JSON.stringify(join(sandbox, 'missing-sandbox-exec')))
+    assert.notEqual(broken, original)
+    try {
+      await writeFile(runner, broken)
+      const denied = await attach(['--cwd', workspace, '--prompt', 'macos-shell-check-broken'])
+      assert.equal(denied.code, 0, denied.errors)
+      assert.match(JSON.stringify(denied.records), /Shell isolation verified/)
+      await assert.rejects(access(join(workspace, 'unexpected-launch.txt')), { code: 'ENOENT' })
+    } finally {
+      await writeFile(runner, original)
+    }
+    console.log('PASS native bash: workspace command, child and symlink denial, fail-closed runner startup')
   }
   console.log('Provider persisted; running Bell task')
   const taskArgs = ['--cwd', workspace, '--prompt', live ? 'Use FlagQuantum MCP to build the two-qubit Bell state H(0), CX(0,1), obtain exact probabilities on wires [0,1], and export OpenQASM 3. Save bell-evidence.json with simulation (the actual simulation result as a JSON string) and exported (the actual OpenQASM as a string). Do not invent results. Explain that this is local classical simulation.' : 'Create a Bell state with H and CX, simulate it and export OpenQASM.']
