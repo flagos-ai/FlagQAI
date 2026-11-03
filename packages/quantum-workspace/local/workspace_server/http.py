@@ -93,6 +93,11 @@ def create_server(settings, service):
                         return self.reply(json.loads(raw), check.status)
                     if json.loads(raw).get('session', {}).get('cwd') != cwd:
                         return self.reply({'error': {'code': 'workspace_mismatch', 'message': 'This session belongs to another workspace.'}}, 403)
+                if method == 'POST' and suffix == 'messages' and settings.agent_sdk_preflight:
+                    failure = python_runs.check_agent_runtime()
+                    if failure:
+                        return self.reply({'error': {'code': 'sdk_preflight_failed',
+                                                     'message': failure}}, 422)
                 headers = {'Content-Type': 'application/json'}
                 cursor = self.headers.get('Last-Event-ID')
                 if cursor is not None:

@@ -19,6 +19,7 @@ class WorkspaceSettings:
     local_python: Optional[str] = None
     experiment_python: Optional[str] = None
     remote_python: Optional[str] = None
+    agent_sdk_preflight: bool = False
 
     @classmethod
     def from_root(cls, root):
@@ -35,5 +36,6 @@ class WorkspaceSettings:
             local_python=os.environ.get("FQ_LOCAL_PYTHON"),
             experiment_python=os.environ.get("FQ_EXPERIMENT_PYTHON") or settings.get("experiment_python"),
             remote_python=os.environ.get("FQ_REMOTE_PYTHON") or settings.get("remote_python"),
+            agent_sdk_preflight=os.environ.get("FQ_AGENT_SDK_PREFLIGHT") == "1",
             ssh_port=int(os.environ.get('FQ_SSH_PORT', settings.get('ssh_port', 2222))),
         )
