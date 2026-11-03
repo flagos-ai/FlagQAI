@@ -36,6 +36,8 @@ import { dirname, join, delimiter, isAbsolute } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 if (process.platform === 'win32') throw new Error('This process-group acceptance probe requires a POSIX host')
+const verifyReadGuard = process.argv.includes('--workspace-read-guard')
+if (verifyReadGuard && process.argv.includes('--live')) throw new Error('--workspace-read-guard requires the isolated scripted model')
 const modelSwitch = process.argv.includes('--model-switch')
 if (modelSwitch && process.argv.includes('--live')) throw new Error('--model-switch requires the isolated scripted model')
 const interactions = process.argv.includes('--interactions')
@@ -261,6 +263,18 @@ const model = createServer(async (request, response) => {
       })
       if (response.destroyed) return
       delta = { role: 'assistant', content: 'Cancellation failed: fixture completed.' }
+    } else if (verifyReadGuard && JSON.stringify(latest).includes('workspace-read-guard-check')) {
+      const paths = ['inside-read.txt', '../outside-read.txt', 'outside-link.txt']
+      if (results.length < paths.length) {
+        delta = call('read', { file_path: paths[results.length] })
+      } else {
+        assert.match(JSON.stringify(results[0]), /inside-read-fixture/)
+        for (const denied of results.slice(1)) {
+          assert.match(JSON.stringify(denied), /Workspace read guard denied/)
+          assert.doesNotMatch(JSON.stringify(denied), /outside-read-fixture/)
+        }
+        delta = { role: 'assistant', content: 'Workspace read guard verified.' }
+      }
     } else if (approving) {
       if (results.length === 0) {
         approvalCalls++
@@ -422,6 +436,12 @@ createInterface({input:process.stdin}).on('line', line => {
     ...acceptanceInstallEnvironment(process.env) }
   const env = { ...inherited, HOME: home, USERPROFILE: home, ...(cleanInstall ? { FLAGQAI_CLI_RUNTIME_ROOT: integration } : { DSH_HOME: join(sandbox, 'dsh') }),
     PATH: `${bin}${delimiter}${process.env.PATH}`, FLAGQAI_LANG: 'en', FLAGQAI_PRESET: 'flagquantum', DSH_TELEMETRY_DISABLED: '1' }
+  if (verifyReadGuard) {
+    env.FLAGQAI_WORKSPACE_READ_GUARD = '1'
+    await writeFile(join(workspace, 'inside-read.txt'), 'inside-read-fixture')
+    await writeFile(join(sandbox, 'outside-read.txt'), 'outside-read-fixture')
+    await symlink('../outside-read.txt', join(workspace, 'outside-link.txt'))
+  }
   // Keep the existing uv cache outside the isolated preferences home; an
   // empty HOME must not trigger repeated Python/package downloads per restart.
   // A cache may be reused while HOME, installation target and every runtime
@@ -563,6 +583,11 @@ createInterface({input:process.stdin}).on('line', line => {
   const restartedProviderState = await client.listProviders()
   assert.equal(restartedProviderState.ready, true, 'saved credential survives restart')
   if (!live) assert.equal(JSON.stringify(restartedProviderState).includes('acceptance-fixture-key'), false, 'provider status must not expose the API key')
+  if (verifyReadGuard) {
+    const result = await attach(['--cwd', workspace, '--prompt', 'workspace-read-guard-check'])
+    assert.equal(result.code, 0, result.errors)
+    assert.match(JSON.stringify(result.records), /Workspace read guard verified/)
+  }
   console.log('Provider persisted; running Bell task')
   const taskArgs = ['--cwd', workspace, '--prompt', live ? 'Use FlagQuantum MCP to build the two-qubit Bell state H(0), CX(0,1), obtain exact probabilities on wires [0,1], and export OpenQASM 3. Save bell-evidence.json with simulation (the actual simulation result as a JSON string) and exported (the actual OpenQASM as a string). Do not invent results. Explain that this is local classical simulation.' : 'Create a Bell state with H and CX, simulate it and export OpenQASM.']
   let first

@@ -1,7 +1,8 @@
 /** Headless FlagQAI API host mounted inside the real Harness composition. */
 import type { Context } from '@deepseek-ai/cordis'
 import Schema from '@deepseek-ai/schemastery'
-import { join } from 'node:path'
+import { realpath } from 'node:fs/promises'
+import { isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { DATA_DIR } from '../utils/paths.js'
 import { createSessionBackend } from './session-backend.js'
 import { closeBackendResources, createBackendHost, createRuntimeBackendRegistry } from './backends.js'
@@ -51,6 +52,31 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
   // reconciles duplicates and removes guidance when a preset hides todo_write.
   ctx.on('system-prompt/assemble', async (_assembly, _context, next) =>
     withTaskProgressPolicy(await next()))
+  if (process.env.FLAGQAI_WORKSPACE_READ_GUARD === '1') {
+    ctx.on('tools/pre-execute', async (exec, next) => {
+      if (exec.name !== 'read' && exec.name !== 'read_image') return next()
+      const file = (exec.arguments as { file_path?: unknown } | null)?.file_path
+      if (typeof file !== 'string' || !file.trim()) return next()
+      const root = exec.agent?.session.header.cwd
+      const deny = { kind: 'deny' as const, reason: 'Workspace read guard denied this file. Use a file inside the session workspace.' }
+      if (!root || !exec.agent) return deny
+      try {
+        const workingDirectory = exec.agent.ctx.get('workingDirectory') as {
+          ensure(agent: NonNullable<typeof exec.agent>, signal: AbortSignal): Promise<string | undefined>
+        } | undefined
+        const fs = exec.agent.ctx.get('fs') as Context['fs'] | undefined
+        if (!workingDirectory || !fs) return deny
+        const cwd = await workingDirectory.ensure(exec.agent, exec.signal)
+        const target = await fs.resolve(file, { cwd, signal: exec.signal })
+        const path = await realpath(fs.processPath(target))
+        const inside = relative(await realpath(resolve(root)), path)
+        if (inside === '..' || inside.startsWith(`..${sep}`) || isAbsolute(inside)) return deny
+      } catch {
+        return exec.signal.aborted ? { kind: 'cancel' as const } : deny
+      }
+      return next()
+    })
+  }
   const cwd = process.cwd()
   const configuredRoute = { provider: config.provider, model: config.model }
   const bindings = {

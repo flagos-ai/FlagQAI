@@ -59,6 +59,13 @@ runner fails to launch, the task records a failure. This setting applies to
 Python jobs, including archived reproduction. Native Harness tools and
 SDK preflight have separate execution paths.
 
+Set `FLAGQAI_WORKSPACE_READ_GUARD=1` in the environment that starts the
+native headless Harness to check `read` and `read_image` against the session
+workspace. The guard resolves the requested target before dispatch and
+rejects targets outside the canonical root, including symlinks. It is a
+pre-dispatch check. A concurrent path change after the check is still
+possible. Shell, search, and other tool paths require separate enforcement.
+
 The launcher does not install the SDK or alter a shared remote environment.
 Machine identities, SSH keys, provider credentials and databases stay outside Git.
 Ignored `.flagqai/quantum-workspace/settings.json` may contain `ssh_target`,
