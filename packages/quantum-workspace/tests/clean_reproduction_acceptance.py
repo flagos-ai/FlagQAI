@@ -14,6 +14,7 @@ import time
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--package', required=True)
+    parser.add_argument('--macos-python-isolation', action='store_true')
     parser.add_argument('--adopted', action='store_true', help='Explicitly reproduce the adopted version instead of the research root.')
     parser.add_argument('--workspace', required=True)
     parser.add_argument('--runtime-code', required=True)
@@ -36,7 +37,8 @@ def main():
     from workspace_server.python_runs import PythonRuns
     from workspace_server.research_packages import ResearchPackages
     from workspace_server.reproduction import Reproductions
-    settings = WorkspaceSettings(root, root / 'jobs.sqlite3', compute_transport='local', local_python=sys.executable, experiment_python=sys.executable)
+    settings = WorkspaceSettings(root, root / 'jobs.sqlite3', compute_transport='local', local_python=sys.executable, experiment_python=sys.executable,
+                                 macos_python_isolation=args.macos_python_isolation)
     experiments = ExperimentImports(settings); runs = PythonRuns(settings, None, experiments)
     packages = ResearchPackages(settings, experiments, runs)
     raw = Path(args.package).read_bytes()
