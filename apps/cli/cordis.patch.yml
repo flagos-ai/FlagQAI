@@ -216,6 +216,19 @@
 - id: tool-workflow
   disabled: true
 
+- id: sandbox
+  config: !!js >-
+    (() => {
+      if (process.env.FLAGQAI_SERVER_MODE !== '1' || process.env.FLAGQAI_MACOS_SHELL_ISOLATION !== '1') return {}
+      const require = process.getBuiltinModule('node:module').createRequire(ctx.baseUrl)
+      const { dirname, join } = process.getBuiltinModule('node:path')
+      const root = dirname(require.resolve('@flagqai/cli/package.json'))
+      return {
+        runnerCommand: [process.execPath, join(root, 'bin/macos-workspace-runner.js')],
+        runnerFailureSignatures: ['FlagQAI sandbox startup failed:', 'sandbox-exec:'],
+      }
+    })()
+
 # Windows has no sandbox confinement backend yet (sandbox-local's win32
 # chain is empty); use danger-full-access on Windows so bash commands can
 # run. Other platforms keep the base workspace-write default.

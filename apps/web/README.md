@@ -66,6 +66,14 @@ rejects targets outside the canonical root, including symlinks. It is a
 pre-dispatch check. A concurrent path change after the check is still
 possible. Shell, search, and other tool paths require separate enforcement.
 
+Set `FLAGQAI_MACOS_SHELL_ISOLATION=1` when starting a macOS headless
+Harness to run native `bash` commands and descendants with Seatbelt. The
+runner allows session workspace reads and writes, plus the system paths
+required for standard commands. It supplies a restricted environment,
+uses the workspace for temporary files, and denies network access.
+The tool requires workspace-write mode and rejects privilege escalation.
+Use the separate Python runner for FlagQuantum SDK jobs.
+
 The launcher does not install the SDK or alter a shared remote environment.
 Machine identities, SSH keys, provider credentials and databases stay outside Git.
 Ignored `.flagqai/quantum-workspace/settings.json` may contain `ssh_target`,

@@ -28,6 +28,7 @@
     "agent-loop",
     "session-telemetry-otel",
     "plugin-package-inventory-deepseek",
+    "sandbox",
     "sandbox-policy",
     "approval",
     "session-persistence-jsonl"
