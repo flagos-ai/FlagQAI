@@ -8,7 +8,7 @@ import json
 import tempfile
 import threading
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 from workspace_server.config import WorkspaceSettings
 from workspace_server.http import create_server
 
@@ -38,7 +38,10 @@ class AgentProxyTests(unittest.TestCase):
             def log_message(self,*args): pass
         self.upstream=ThreadingHTTPServer(('127.0.0.1',0),Upstream)
         threading.Thread(target=self.upstream.serve_forever,daemon=True).start()
-        settings=WorkspaceSettings(Path(self.temp.name),Path(self.temp.name)/'jobs',port=0,harness_port=self.upstream.server_port,agent_cwd=Path(self.cwd))
+        settings=WorkspaceSettings(Path(self.temp.name),Path(self.temp.name)/'jobs',port=0,harness_port=self.upstream.server_port,agent_cwd=Path(self.cwd),agent_sdk_preflight=True)
+        preflight = patch("workspace_server.python_runs.PythonRuns.check_agent_runtime", return_value=None)
+        self.preflight = preflight.start()
+        self.addCleanup(preflight.stop)
         self.server=create_server(settings,Mock())
         threading.Thread(target=self.server.serve_forever,daemon=True).start()
     def tearDown(self):
@@ -65,6 +68,19 @@ class AgentProxyTests(unittest.TestCase):
         body={'clientMessageId':'same-id','text':'test','placement':'turn'}
         self.assertEqual(self.request('/v1/sessions/local/messages',body)[0],202)
         self.assertEqual(self.calls[-1],('POST','/v1/sessions/local/messages',body))
+    def test_failed_preflight_blocks_submission_and_allows_retry(self):
+        path = '/v1/sessions/local/messages'
+        body = {'clientMessageId': 'retry-id', 'text': 'test', 'placement': 'turn'}
+        self.preflight.return_value = 'SDK unavailable.'
+        status, response = self.request(path, body)
+        self.assertEqual(status, 422)
+        self.assertEqual(response['error']['code'], 'sdk_preflight_failed')
+        self.assertFalse(any(call[0] == 'POST' for call in self.calls))
+
+        self.preflight.return_value = None
+        self.assertEqual(self.request(path, body)[0], 202)
+        self.assertEqual(self.calls[-1], ('POST', path, body))
+
     def test_sse_flushes_before_upstream_finishes_and_forwards_cursor(self):
         conn=HTTPConnection('127.0.0.1',self.server.server_port,timeout=1)
         conn.request('GET','/v1/sessions/local/events',headers={'Last-Event-ID':'7'})

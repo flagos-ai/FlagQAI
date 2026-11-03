@@ -49,6 +49,7 @@ class PythonRuns:
         self.lock = threading.RLock()
         self.active = {}
         self.recollecting = set()
+        self.preflight_lock = threading.Lock()
         self.projects = Projects(settings)
 
     @staticmethod
@@ -64,6 +65,37 @@ class PythonRuns:
         return {'transport':self.settings.compute_transport, 'timeout_seconds':90,
             'python':self.settings.local_python or sys.executable if self.settings.compute_transport == 'local' else self.settings.remote_python or 'Remote python3',
             'scope':'Single-file task in a temporary working directory'}
+
+    def check_agent_runtime(self):
+        """Exercise the configured interpreter without creating a user run."""
+        probe = """
+import tempfile
+from pathlib import Path
+import flagquantum as fq
+
+options = fq.ExecutionOptions(shots=8, seed=42)
+result = fq.run(fq.Circuit(1).x(0), outputs=fq.counts(), options=options)
+with tempfile.TemporaryDirectory(prefix='fq-sdk-preflight-') as directory:
+    archive = Path(directory) / 'probe.fqx'
+    fq.save(str(archive), result.plan, result=result)
+    loaded = fq.load(str(archive))
+    if loaded.result.counts != result.counts:
+        raise RuntimeError('Archive counts did not round trip.')
+"""
+        if not self.preflight_lock.acquire(blocking=False):
+            return 'An SDK preflight is already running. Retry when it finishes.'
+        try:
+            subprocess.run(self.command(probe), timeout=30, check=True,
+                           stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL)
+        except subprocess.TimeoutExpired:
+            return 'The configured FlagQuantum runtime did not pass preflight within 30 seconds.'
+        except (OSError, RuntimeError, subprocess.CalledProcessError):
+            return ('The configured FlagQuantum runtime could not run and reload a test circuit. '
+                    'Check the configured interpreter and its SDK dependencies, then retry.')
+        finally:
+            self.preflight_lock.release()
+        return None
 
     def submit_project(self, data):
         bundle = self.projects.snapshot(data.get('project_id'), data.get('entry'),

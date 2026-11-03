@@ -375,7 +375,8 @@ export function useAgentConversation() {
       if (observedDeliveries.current.delete(input.clientMessageId)) return true;
       if (
         problem instanceof FlagQaiApiError &&
-        [400, 403, 404].includes(problem.status)
+        ([400, 403, 404].includes(problem.status) ||
+          (problem.status === 422 && problem.code === "sdk_preflight_failed"))
       )
         delivery(null);
       setError(

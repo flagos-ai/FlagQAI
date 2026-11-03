@@ -43,6 +43,12 @@ explicit local runtime:
 - `.fqx` reading: `FQ_EXPERIMENT_PYTHON=/path/to/python` with official SDK
   `fq.save`/`fq.load` support. The Web host itself requires only Python's stdlib.
 
+Set `FQ_AGENT_SDK_PREFLIGHT=1` for a quantum workbench that requires a
+working SDK before each Agent submission. The server uses the configured
+local or SSH Python runner to execute a small circuit and reload its saved
+counts. The check has a 30-second timeout. If it fails, the message stays in
+the composer so it can be retried after the runtime is repaired.
+
 The launcher does not install the SDK or alter a shared remote environment.
 Machine identities, SSH keys, provider credentials and databases stay outside Git.
 Ignored `.flagqai/quantum-workspace/settings.json` may contain `ssh_target`,
