@@ -27,7 +27,7 @@ import { packFlagqai } from './pack-flagqai.mjs'
 import { parseDocument } from 'yaml'
 import { spawn, spawnSync, execFileSync } from 'node:child_process'
 import { once } from 'node:events'
-import { access, mkdtemp, mkdir, readdir, readFile, writeFile, symlink, rm, realpath } from 'node:fs/promises'
+import { access, mkdtemp, mkdir, readlink, readdir, readFile, writeFile, symlink, rm, realpath } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import { createConnection } from 'node:net'
 import { createRequire } from 'node:module'
@@ -36,6 +36,10 @@ import { dirname, join, delimiter, isAbsolute } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 if (process.platform === 'win32') throw new Error('This process-group acceptance probe requires a POSIX host')
+const verifySearchIsolation = process.argv.includes('--macos-search-isolation')
+if (verifySearchIsolation && (process.platform !== 'darwin' || process.argv.includes('--live'))) {
+  throw new Error('--macos-search-isolation requires macOS and the isolated scripted model')
+}
 const verifyShellIsolation = process.argv.includes('--macos-shell-isolation')
 if (verifyShellIsolation && (process.platform !== 'darwin' || process.argv.includes('--live'))) {
   throw new Error('--macos-shell-isolation requires macOS and the isolated scripted model')
@@ -267,6 +271,26 @@ const model = createServer(async (request, response) => {
       })
       if (response.destroyed) return
       delta = { role: 'assistant', content: 'Cancellation failed: fixture completed.' }
+    } else if (verifySearchIsolation && JSON.stringify(latest).includes('macos-search-check')) {
+      const searches = [
+        ['grep', { pattern: 'search-fixture', path: 'ordinary-search' }],
+        ['glob', { pattern: '*.txt', path: 'ordinary-search' }],
+        ['grep', { pattern: 'search-fixture', path: 'race-directory' }],
+        ['glob', { pattern: '*.txt', path: 'race-link' }],
+      ]
+      if (results.length < searches.length) {
+        const [name, args] = searches[results.length]
+        delta = call(name, args)
+      } else {
+        assert.match(JSON.stringify(results[0]), /inside-search-fixture/)
+        assert.match(JSON.stringify(results[1]), /inside-search.txt/)
+        for (const denied of results.slice(2)) {
+          const output = JSON.stringify(denied)
+          assert.match(output, /Operation not permitted|Permission denied/i)
+          assert.doesNotMatch(output, /external-search/)
+        }
+        delta = { role: 'assistant', content: 'Search isolation verified.' }
+      }
     } else if (verifyShellIsolation && JSON.stringify(latest).includes('macos-shell-check')) {
       const broken = JSON.stringify(latest).includes('macos-shell-check-broken')
       const commands = broken ? ['printf escaped > unexpected-launch.txt'] : [
@@ -471,6 +495,38 @@ createInterface({input:process.stdin}).on('line', line => {
     ...acceptanceInstallEnvironment(process.env) }
   const env = { ...inherited, HOME: home, USERPROFILE: home, ...(cleanInstall ? { FLAGQAI_CLI_RUNTIME_ROOT: integration } : { DSH_HOME: join(sandbox, 'dsh') }),
     PATH: `${bin}${delimiter}${process.env.PATH}`, FLAGQAI_LANG: 'en', FLAGQAI_PRESET: 'flagquantum', DSH_TELEMETRY_DISABLED: '1' }
+  if (verifySearchIsolation) {
+    env.FLAGQAI_MACOS_SHELL_ISOLATION = '1'
+    env.FLAGQAI_WORKSPACE_READ_GUARD = '1'
+    const ordinary = join(workspace, 'ordinary-search')
+    const racing = join(workspace, 'race-directory')
+    const outside = join(sandbox, 'external-search')
+    await Promise.all([mkdir(ordinary), mkdir(racing), mkdir(outside)])
+    await writeFile(join(ordinary, 'inside-search.txt'), 'inside-search-fixture')
+    await writeFile(join(outside, 'external-search.txt'), 'external-search-fixture')
+    await symlink(ordinary, join(workspace, 'race-link'))
+
+    // Inject a deterministic filesystem race into the disposable package,
+    // after pre-dispatch validation and immediately before the real spawn.
+    const helper = join(packed, 'lib/types/dsh-adapter/macos-search-isolation.js')
+    const compiled = await readFile(helper, 'utf8')
+    const marker = 'return spawn({'
+    assert.ok(compiled.includes(marker))
+    const swap = `
+      if (args.includes('race-directory')) {
+        const target = ${JSON.stringify(racing)};
+        renameSync(target, target + '-before');
+        symlinkSync(${JSON.stringify(outside)}, target);
+      }
+      if (args.includes('race-link')) {
+        const target = ${JSON.stringify(join(workspace, 'race-link'))};
+        unlinkSync(target);
+        symlinkSync(${JSON.stringify(outside)}, target);
+      }
+    `
+    await writeFile(helper, "import { renameSync, symlinkSync, unlinkSync } from 'node:fs';\n"
+      + compiled.replace(marker, swap + marker))
+  }
   if (verifyShellIsolation) {
     env.FLAGQAI_MACOS_SHELL_ISOLATION = '1'
     await writeFile(join(sandbox, 'shell-outside.txt'), 'shell-external-fixture')
@@ -647,6 +703,15 @@ createInterface({input:process.stdin}).on('line', line => {
       await writeFile(runner, original)
     }
     console.log('PASS native bash: workspace command, child and symlink denial, fail-closed runner startup')
+  }
+  if (verifySearchIsolation) {
+    const result = await attach(['--cwd', workspace, '--prompt', 'macos-search-check'])
+    assert.equal(result.code, 0, result.errors)
+    assert.match(JSON.stringify(result.records), /Search isolation verified/)
+    const outside = join(sandbox, 'external-search')
+    assert.equal(await readlink(join(workspace, 'race-directory')), outside)
+    assert.equal(await readlink(join(workspace, 'race-link')), outside)
+    console.log('PASS native grep/glob: ordinary search and post-validation directory and symlink replacement')
   }
   console.log('Provider persisted; running Bell task')
   const taskArgs = ['--cwd', workspace, '--prompt', live ? 'Use FlagQuantum MCP to build the two-qubit Bell state H(0), CX(0,1), obtain exact probabilities on wires [0,1], and export OpenQASM 3. Save bell-evidence.json with simulation (the actual simulation result as a JSON string) and exported (the actual OpenQASM as a string). Do not invent results. Explain that this is local classical simulation.' : 'Create a Bell state with H and CX, simulate it and export OpenQASM.']
