@@ -68,9 +68,11 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
   }
   if (process.env.FLAGQAI_WORKSPACE_READ_GUARD === '1') {
     ctx.on('tools/pre-execute', async (exec, next) => {
-      if (exec.name !== 'read' && exec.name !== 'read_image') return next()
-      const file = (exec.arguments as { file_path?: unknown } | null)?.file_path
-      if (typeof file !== 'string' || !file.trim()) return next()
+      const search = exec.name === 'grep' || exec.name === 'glob'
+      if (!search && exec.name !== 'read' && exec.name !== 'read_image') return next()
+      const args = exec.arguments as { file_path?: unknown; path?: unknown } | null
+      const input = search ? args?.path ?? '.' : args?.file_path
+      if (typeof input !== 'string' || !input.trim()) return next()
       const root = exec.agent?.session.header.cwd
       const deny = { kind: 'deny' as const, reason: 'Workspace read guard denied this file. Use a file inside the session workspace.' }
       if (!root || !exec.agent) return deny
@@ -81,8 +83,13 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
         const fs = exec.agent.ctx.get('fs') as Context['fs'] | undefined
         if (!workingDirectory || !fs) return deny
         const cwd = await workingDirectory.ensure(exec.agent, exec.signal)
-        const target = await fs.resolve(file, { cwd, signal: exec.signal })
-        const path = await realpath(fs.processPath(target))
+        // ripgrep passes its path straight to the OS. Preserve dot segments
+        // until realpath, so a symlink followed by '..' resolves as it does
+        // in the subprocess.
+        const requestedPath = search
+          ? (isAbsolute(input) ? input : `${cwd ?? process.cwd()}${sep}${input}`)
+          : fs.processPath(await fs.resolve(input, { cwd, signal: exec.signal }))
+        const path = await realpath(requestedPath)
         const inside = relative(await realpath(resolve(root)), path)
         if (inside === '..' || inside.startsWith(`..${sep}`) || isAbsolute(inside)) return deny
       } catch {

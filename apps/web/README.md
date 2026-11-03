@@ -60,11 +60,11 @@ Python jobs, including archived reproduction. Native Harness tools and
 SDK preflight have separate execution paths.
 
 Set `FLAGQAI_WORKSPACE_READ_GUARD=1` in the environment that starts the
-native headless Harness to check `read` and `read_image` against the session
+native headless Harness to check `read`, `read_image`, `grep`, and `glob` against the session
 workspace. The guard resolves the requested target before dispatch and
 rejects targets outside the canonical root, including symlinks. It is a
 pre-dispatch check. A concurrent path change after the check is still
-possible. Shell, search, and other tool paths require separate enforcement.
+possible. Shell and other tool paths require separate enforcement.
 
 Set `FLAGQAI_MACOS_SHELL_ISOLATION=1` when starting a macOS headless
 Harness to run native `bash` commands and descendants with Seatbelt. The
