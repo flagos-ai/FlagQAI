@@ -289,14 +289,24 @@ const model = createServer(async (request, response) => {
         delta = { role: 'assistant', content: 'Shell isolation verified.' }
       }
     } else if (verifyReadGuard && JSON.stringify(latest).includes('workspace-read-guard-check')) {
-      const paths = ['inside-read.txt', '../outside-read.txt', 'outside-link.txt']
-      if (results.length < paths.length) {
-        delta = call('read', { file_path: paths[results.length] })
+      const calls = [
+        ['read', { file_path: 'inside-read.txt' }, true],
+        ['read', { file_path: '../outside-read.txt' }, false],
+        ['read', { file_path: 'outside-link.txt' }, false],
+        ['grep', { pattern: 'inside-read-fixture' }, true],
+        ['grep', { pattern: 'outside-read-fixture', path: 'outside-link.txt' }, false],
+        ['glob', { pattern: '*.txt' }, true],
+        ['glob', { pattern: '*.txt', path: '..' }, false],
+      ]
+      if (results.length < calls.length) {
+        const [name, args] = calls[results.length]
+        delta = call(name, args)
       } else {
-        assert.match(JSON.stringify(results[0]), /inside-read-fixture/)
-        for (const denied of results.slice(1)) {
-          assert.match(JSON.stringify(denied), /Workspace read guard denied/)
-          assert.doesNotMatch(JSON.stringify(denied), /outside-read-fixture/)
+        for (const [index, result] of results.entries()) {
+          const output = JSON.stringify(result)
+          if (calls[index][2]) assert.match(output, /inside-read/)
+          else assert.match(output, /Workspace read guard denied/)
+          assert.doesNotMatch(output, /outside-read-fixture/)
         }
         delta = { role: 'assistant', content: 'Workspace read guard verified.' }
       }
