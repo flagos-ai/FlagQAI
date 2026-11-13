@@ -343,6 +343,8 @@
     "verify:backend-atomic-file": "node --import tsx/esm scripts/verify-backend-atomic-file.ts",
     "verify:projection-parsers": "node --import tsx/esm scripts/verify-projection-parsers.ts",
     "verify:workspace-paths": "node --import tsx/esm scripts/verify-workspace-paths.ts && node scripts/verify-session-cwd.mjs && node scripts/verify-file-completion.mjs",
+    "verify:message-delivery": "node --test scripts/message-delivery.test.mjs",
+    "verify:installed-message-delivery": "node scripts/verify-installed-message-delivery.mjs",
     "verify:local-server-bundle": "node scripts/verify-local-server-bundle.mjs",
     "verify:scientific-evidence": "node --test ../../packages/scientific-core/flagquantum-call-evidence.test.mjs ../../packages/scientific-core/research-vqe-numerical-evidence.test.mjs ../../packages/scientific-core/permission-decisions.test.mjs ../../packages/scientific-core/session-telemetry.test.mjs ../../packages/scientific-core/session-telemetry-api.test.mjs",
     "verify:scientific-run-sdk": "node scripts/verify-scientific-run-sdk.mjs",

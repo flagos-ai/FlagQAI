@@ -242,6 +242,13 @@ export function createFlagQaiClient(options = {}) {
     async previewContext(id, text, options = {}) {
       return jsonRequest(`${API_PREFIX}/sessions/${encodeURIComponent(id)}/context/preview`, 200, jsonBody({ text }, options.signal));
     },
+    async messageDelivery(id, clientMessageId, options = {}) {
+      return jsonRequest(
+        `${API_PREFIX}/sessions/${encodeURIComponent(id)}/messages/${encodeURIComponent(clientMessageId)}`,
+        200,
+        { signal: options.signal, cache: "no-store" },
+      );
+    },
     async submitMessage(id, input, options = {}) {
       return (await jsonRequest(
         `${API_PREFIX}/sessions/${encodeURIComponent(id)}/messages`,

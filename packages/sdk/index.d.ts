@@ -292,6 +292,7 @@ export interface FlagQaiClient {
   sessionContext(id: string, options?: RequestOptions): Promise<{ files: boolean; images: 'supported' | 'unsupported' | 'unknown'; maxImageBytes?: number; maxImages?: number }>;
   workspaceFiles(id: string, query?: string, options?: RequestOptions): Promise<Array<{ path: string; kind: 'file' | 'directory' }>>;
   previewContext(id: string, text: string, options?: RequestOptions): Promise<{ references: Array<{ start: number; end: number; path: string; available: boolean }>; blocks: string[]; missing: string[] }>;
+  messageDelivery(id: string, clientMessageId: string, options?: RequestOptions): Promise<{ status: "accepted" | "refused" | "unconfirmed" | "not_received"; reason?: string }>;
   submitMessage(id: string, input: { clientMessageId: string; text: string; placement?: MessagePlacement; images?: Array<{ name: string; mediaType: string; data: string }> }, options?: RequestOptions): Promise<SubmitReceipt>;
   listSessionSubagents(id: string, options?: RequestOptions): Promise<{ supported: boolean; history: boolean; subagents: SessionSubagentView[] }>;
   subagentHistory(id: string, childId: string, before?: number, options?: RequestOptions): Promise<SubagentTranscriptPage>;

@@ -1,3 +1,4 @@
+import { messageDeliveryStore } from "./message-delivery-store.mjs";
 import { createHash, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { createServer as createNodeServer } from "node:http";
@@ -584,8 +585,13 @@ export function createFlagQaiServer(options = {}) {
         }
         const resourceId = randomUUID();
         const binding = createSessionBinding(resourceId, session, options.onError, reservation?.release, options.createSessionView);
+        // An untracked resumed session cannot prove that a missing ID was never
+        // submitted before this resource existed.
+        binding.tracksMessageAbsence = parsed.target.kind === "create";
         sessions.set(resourceId, binding);
         try {
+          if (options.messageDeliveryDirectory && parsed.target.kind === "create")
+            await messageDeliveryStore(options.messageDeliveryDirectory, session).initialize();
           await binding.seed();
           reservation?.settle();
         } catch (error) {
@@ -857,6 +863,19 @@ export function createFlagQaiServer(options = {}) {
           request.once("close", cleanup);
           return;
         }
+        if (method === "GET" && segments.length === 4 && segments[2] === "messages") {
+          if (!segments[3].trim() || segments[3].length > 512) throw new HttpError(400, 'invalid_message_id', 'Message IDs must contain 1 through 512 characters');
+          const store = options.messageDeliveryDirectory &&
+            messageDeliveryStore(options.messageDeliveryDirectory, binding.session);
+          const submission = store ? await store.get(segments[3]) : binding.submissions.get(segments[3]);
+          const receipt = submission?.receipt;
+          const status = receipt
+            ? receipt.accepted ? "accepted" : "refused"
+            : submission || binding.preparingInput || (store ? !await store.tracksAbsence() : !binding.tracksMessageAbsence)
+              ? "unconfirmed" : "not_received";
+          json(response, 200, { status, ...(receipt?.reason ? { reason: receipt.reason } : {}) });
+          return;
+        }
         if (method === "POST" && segments.length === 3 && segments[2] === "messages") {
           binding.preparingInput = true;
           try {
@@ -864,14 +883,16 @@ export function createFlagQaiServer(options = {}) {
             const key = parsed.input.clientMessageId;
             if (key.length > 512) throw new HttpError(400, 'invalid_message_id', 'Message IDs must not exceed 512 characters');
             const fingerprint = createHash('sha256').update(JSON.stringify(parsed)).digest('hex');
-            const previous = binding.submissions.get(key);
+            const store = options.messageDeliveryDirectory &&
+              messageDeliveryStore(options.messageDeliveryDirectory, binding.session);
+            const previous = store ? await store.get(key) : binding.submissions.get(key);
             if (previous !== undefined) {
               if (previous.fingerprint !== fingerprint) throw new HttpError(409, 'message_id_conflict', 'This message ID already belongs to different input');
               if (previous.receipt === undefined) throw new HttpError(409, 'message_outcome_unknown', 'The backend outcome is unknown. Check the transcript before sending new input.');
               json(response, 202, { receipt: previous.receipt });
               return;
             }
-            if (binding.submissions.size >= 4096) throw new HttpError(409, 'message_retry_limit', 'Reconnect to a new server resource before sending more messages');
+            if (!store && binding.submissions.size >= 4096) throw new HttpError(409, 'message_retry_limit', 'Reconnect to a new server resource before sending more messages');
             if (binding.changingModel || !sessions.has(binding.resourceId)) throw new HttpError(409, "session_changed", "Reconnect before sending a message");
             if (parsed.images.length && !options.contextManager) throw new HttpError(409, "images_unavailable", "This server does not support image attachments");
             let input = parsed.input;
@@ -880,9 +901,13 @@ export function createFlagQaiServer(options = {}) {
             // Admit once even if the HTTP response is lost. A throwing backend
             // may already have accepted input; never silently resubmit it.
             const admitted = { fingerprint };
-            binding.submissions.set(key, admitted);
+            if (store) {
+              if (!await store.admit(key, admitted))
+                throw new HttpError(409, "message_outcome_unknown", "Check the existing submission before retrying");
+            } else binding.submissions.set(key, admitted);
             const receipt = await binding.session.submit(input, parsed.placement);
             admitted.receipt = receipt;
+            if (store) await store.settle(key, admitted);
             json(response, 202, { receipt });
           } finally { binding.preparingInput = false; }
           return;
