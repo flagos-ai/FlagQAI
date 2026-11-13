@@ -70,7 +70,56 @@ export type SavedMeasurement = {
   metadata: Record<string, unknown>;
   statistics: Record<string, unknown>;
 };
+export type ResearchResult = {
+  schema: "flagqai.research-result.v1";
+  method: string;
+  sha256: string;
+  binding: {
+    run_id: string;
+    source_sha256: string;
+    archive_sha256: string;
+    program_hash: string;
+  };
+  problem: {
+    kind: string;
+    nodes: number;
+    edges: number[][];
+    sha256: string;
+    classical_optimum: number;
+    objective_unit: string;
+    basis_order: string;
+  };
+  metrics: {
+    key: string;
+    label: string;
+    value: number;
+    unit: string;
+    direction: "maximize" | "minimize";
+    method: string;
+  }[];
+  parameters: {
+    execution: Record<string, unknown>;
+    source_constants?: Record<string, number>;
+    rotations: {
+      operation: number;
+      gate: string;
+      qubits: number[];
+      values: Record<string, unknown>;
+      unit: string;
+    }[];
+  };
+  resources: {
+    key: string;
+    label: string;
+    value: number;
+    unit: string;
+    scope: string;
+  }[];
+  execution_status: string;
+  limitations: string;
+};
 export type ExperimentInfo = {
+  research_result?: ResearchResult;
   python_run?: {
     project?: ProjectRun;
     id: string;
