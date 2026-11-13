@@ -7543,3 +7543,82 @@ body,
   overflow-wrap: anywhere;
   min-width: 0;
 }
+
+/* Scientific evidence stays compact; full parameter and version data is disclosed. */
+.fq-research-metric-comparison {
+  padding: 14px 16px;
+  border: 1px solid var(--border, #414348);
+  border-radius: 8px;
+  background: var(--panel, #28292c);
+}
+.fq-research-metric-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.fq-research-metric-comparison small {
+  color: var(--muted, #aeb5c0);
+}
+.fq-research-metric-table {
+  overflow-x: auto;
+}
+.fq-research-metric-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.fq-research-metric-table th,
+.fq-research-metric-table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border, #414348);
+  vertical-align: top;
+}
+.fq-research-metric-table th:first-child {
+  padding-left: 0;
+}
+.fq-research-metric-table small {
+  display: block;
+  font-weight: normal;
+  margin-top: 3px;
+}
+.fq-research-resources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 24px;
+  padding: 12px 0;
+}
+.fq-research-resources > div {
+  display: grid;
+  gap: 3px;
+  font-variant-numeric: tabular-nums;
+}
+.fq-research-metric-comparison summary {
+  cursor: pointer;
+  padding: 6px 0;
+}
+.fq-research-evidence-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  padding: 10px 0;
+}
+.fq-research-evidence-grid dd {
+  margin: 4px 0 10px;
+  overflow-wrap: anywhere;
+}
+.fq-research-evidence-grid pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  max-height: 180px;
+  overflow: auto;
+}
+@media (max-width: 800px) {
+  .fq-research-evidence-grid {
+    grid-template-columns: 1fr;
+  }
+}

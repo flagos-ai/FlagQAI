@@ -19,6 +19,7 @@ import {
 } from "../state/experiment-comparison";
 import { GateSymbol, MeasurementSymbol } from "./CircuitSymbols";
 import { UIIcon } from "./UIIcon";
+import { ResearchMetricComparison } from "./ResearchMetricComparison";
 
 export function CircuitPreview({
   program,
@@ -379,6 +380,9 @@ export function ExperimentComparison({
           <p role="status">Loading saved experiments…</p>
         ) : (
           <>
+            {left && right && (
+              <ResearchMetricComparison left={left} right={right} />
+            )}
             {left && right && (
               <section
                 className="fq-comparison-findings"
