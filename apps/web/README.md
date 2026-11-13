@@ -64,8 +64,8 @@ native headless Harness to check `read`, `read_image`, `grep`, and `glob` agains
 workspace. The guard resolves the requested target before dispatch and
 rejects targets outside the canonical root, including symlinks. It is a
 pre-dispatch check. A concurrent path change after the check is still
-possible for direct file reads. The macOS process policy below adds
-execution-time enforcement for search and shell.
+possible at this layer. The macOS policy below adds execution-time
+enforcement for file reads, search, and shell.
 
 Set `FLAGQAI_MACOS_SHELL_ISOLATION=1` when starting a macOS headless
 Harness to run native `bash` commands and descendants with Seatbelt. The
@@ -76,8 +76,12 @@ The tool requires workspace-write mode and rejects privilege escalation.
 The same setting confines native `grep` and `glob` ripgrep subprocesses.
 Search can read the workspace, required system paths, and the packaged
 ripgrep executable. The process is started under Seatbelt even if the
-search target changes after the dispatch check. Use the separate Python
-runner for FlagQuantum SDK jobs.
+search target changes after the dispatch check. Native `read` and
+`read_image` also open file content in a Seatbelt subprocess using
+the macOS system Perl. It reads regular files through an open descriptor
+and rejects a final symlink or a multiply linked file. The native tools
+still handle text pagination, image validation, and attachment storage.
+Use the separate Python runner for FlagQuantum SDK jobs.
 
 The launcher does not install the SDK or alter a shared remote environment.
 Machine identities, SSH keys, provider credentials and databases stay outside Git.
