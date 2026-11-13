@@ -22,6 +22,7 @@ export type Instruction = {
   group?: string;
 };
 export type CircuitNode = {
+  kind?: "sequence" | "semantic";
   id: string;
   label: string;
   children: CircuitNode[];
