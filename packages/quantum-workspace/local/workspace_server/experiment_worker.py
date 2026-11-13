@@ -34,6 +34,10 @@ def project(path):
     compiled = {'version': producer, 'qubits': ir.n_wires, 'depth': max(depths, default=0),
                 'instructions': instructions, 'gate_counts': dict(Counter(g.name for g in ir.instructions)),
                 'backend': 'fqx_archive', 'transport': 'archive', 'registers': [], 'groups': {}}
+    # Share the pure compiler-attribution projection with the Python publisher.
+    import runpy
+    projection = runpy.run_path(str(Path(__file__).with_name('synthesis_projection.py')))
+    compiled.update(projection['project_synthesis'](ir, instructions))
     result = experiment.result
     measurements = []
     if result is not None:

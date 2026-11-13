@@ -22,6 +22,7 @@ def publish(circuit, result=None, name='Python circuit'):
     metadata = {'version':fq.__version__, 'qubits':compiled.n_wires, 'depth':max(depths,default=0),
         'instructions':instructions, 'gate_counts':dict(collections.Counter(g.name for g in compiled.instructions)),
         'backend':'flagquantum_python', 'registers':[], 'groups':{}}
+    metadata.update(project_synthesis(compiled, instructions))
     artifact = {'name':str(name)[:100], 'source':source, 'compiled':metadata}
     if result is not None:
         metadata['runtime'] = dict(result.runtime)

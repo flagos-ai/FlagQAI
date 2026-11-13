@@ -208,7 +208,7 @@ with tempfile.TemporaryDirectory(prefix='fq-sdk-preflight-') as directory:
             run['status'] = 'running'; self.store.put(run)
             process = subprocess.Popen(self.command(), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE, text=True, start_new_session=True)
-            request = {'source':run['source'], 'helper':(Path(__file__).parent/'python_publish.py').read_text()}
+            request = {'source':run['source'], 'helper':(Path(__file__).parent/'synthesis_projection.py').read_text() + '\n' + (Path(__file__).parent/'python_publish.py').read_text()}
             if run.get('project'):
                 saved = self.settings.database_path.parent / 'python-inputs' / (run['id'] + '.json')
                 bundle = json.loads(saved.read_text())
