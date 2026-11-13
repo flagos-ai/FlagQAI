@@ -1,5 +1,6 @@
 /** Headless FlagQAI API host mounted inside the real Harness composition. */
 import type { Context } from '@deepseek-ai/cordis'
+import type {} from '@deepseek-ai/dsh-fs'
 import Schema from '@deepseek-ai/schemastery'
 import { realpath } from 'node:fs/promises'
 import { isAbsolute, join, relative, resolve, sep } from 'node:path'
@@ -22,6 +23,7 @@ import type { SubprocessRuntime } from '@deepseek-ai/dsh-subprocess'
 import { withMacOSReadIsolation } from './macos-read-isolation.js'
 import { withMacOSSearchIsolation } from './macos-search-isolation.js'
 import { withTaskProgressPolicy } from './task-progress-policy.js'
+import { deepSeekReplayStream } from './compat/deepseekStream.js'
 
 export const name = 'flagqai-server-host'
 export const inject = ['agents', 'agentPresets', 'llm', 'settings', 'credentials']
@@ -50,6 +52,10 @@ type ServerModule = {
 }
 
 export async function apply(ctx: Context, config: Config): Promise<void> {
+  ctx.on('llm/stream', (options, next) => deepSeekReplayStream(
+    options, createSettingsHosts(ctx).providerSetup()?.listConfiguredProviders({ effective: true }),
+    request => ctx.llm.stream(request), next,
+  ))
   // The headless host resolves the same Harness Agent as the terminal client.
   // Keep model-facing Todo guidance on both transports; the policy helper
   // reconciles duplicates and removes guidance when a preset hides todo_write.

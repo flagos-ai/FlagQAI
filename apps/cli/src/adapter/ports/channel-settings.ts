@@ -102,6 +102,8 @@ export interface ConfiguredProvider {
   /** Explicit `api` override in the stored profile; catalog routes can
    *  carry one too, so this alone does not classify the route. */
   readonly api?: string
+  /** Route-level wire compatibility defaults, preserved during model repair. */
+  readonly compat?: Record<string, unknown>
   /** Effective profile needs custom request headers that the anonymous
    *  discovery request cannot inherit from the named route. */
   readonly hasCustomHeaders?: boolean

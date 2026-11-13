@@ -6,6 +6,19 @@ function publicModel(model) {
         ...(model.maxTokens === undefined ? {} : { maxTokens: model.maxTokens }),
     };
 }
+/** DeepSeek's Anthropic bridge replays unsigned thinking as thinking, not text. */
+export function withProviderProtocolDefaults(api, models, providerCompat) {
+    if (api !== 'anthropic-messages') return models;
+    if (providerCompat?.allowEmptySignature !== undefined) return models;
+    return models.map(model => {
+        if (typeof model.id !== 'string' || !/^deepseek[-/]/i.test(model.id)) return model;
+        const compat = model.compat;
+        if (compat !== undefined && (compat === null || typeof compat !== 'object' || Array.isArray(compat))) return model;
+        if (compat?.allowEmptySignature !== undefined) return model;
+        return { ...model, compat: { ...compat, allowEmptySignature: true } };
+    });
+}
+
 async function credentialConfigured(host, ref) {
     if (ref === '')
         return false;
@@ -86,7 +99,7 @@ export function createProviderManager(host, selectModel, deriveKeyRef) {
                     apiKeyEnv: ref,
                     ...(input.baseURL === undefined ? {} : { baseURL: input.baseURL }),
                     ...(input.api === undefined ? {} : { api: input.api }),
-                    models: input.models.map(id => existing?.modelEntries?.find(entry => entry.id === id) ?? { id }),
+                    models: withProviderProtocolDefaults(input.api ?? existing?.api, input.models.map(id => existing?.modelEntries?.find(entry => entry.id === id) ?? { id }), existing?.compat),
                 };
                 if (host.routeExists(input.route)) {
                     await host.mutateProfile(input.route, Object.entries(profile).map(([key, value]) => ({ op: 'set', path: [key], value })));

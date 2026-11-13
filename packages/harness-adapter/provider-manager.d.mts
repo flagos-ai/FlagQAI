@@ -42,6 +42,7 @@ export interface ProviderSetupHost {
   listConfiguredProviders(options?: { effective?: boolean }): readonly {
     route: string; ref: string; isCatalog: boolean; baseURL?: string; api?: string;
     models?: readonly string[]; modelEntries?: readonly Record<string, unknown>[];
+    compat?: Record<string, unknown>;
   }[];
   routeExists(route: string): boolean;
   discoverModels(request: { provider?: string; baseURL?: string; api?: string; apiKey?: string }): Promise<readonly {
@@ -55,3 +56,4 @@ export interface ProviderSetupHost {
   mutateProfile(route: string, ops: readonly { op: 'set'; path: readonly string[]; value: unknown }[]): Promise<void>;
 }
 export function createProviderManager(host: ProviderSetupHost, selectModel: (provider: string, model: string) => boolean, deriveKeyRef: (route: string) => string): ProviderManager;
+export function withProviderProtocolDefaults(api: string | undefined, models: readonly Record<string, unknown>[], providerCompat?: Record<string, unknown>): readonly Record<string, unknown>[];

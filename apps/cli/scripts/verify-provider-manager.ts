@@ -120,7 +120,7 @@ assert.deepEqual(profiles.get('gateway')!.models, [{ id: 'gateway-model', maxTok
 assert.equal((await manager.discover({ kind: 'custom', route: 'gateway', baseURL: 'https://gateway.example/v1', api: 'openai-completions' })).length, 1)
 
 const namespace = 'custom-llm-mount'
-const effective = { providers: { inherited: { apiKeyEnv: 'INHERITED_KEY', models: [{ id: 'model' }] } } }
+const effective = { providers: { inherited: { apiKeyEnv: 'INHERITED_KEY', compat: { allowEmptySignature: false }, models: [{ id: 'model' }] } } }
 const services: Record<string, unknown> = {
   settings: { describe: () => [{ ns: namespace, value: effective, user: {}, revision: 1 }] },
   credentials: { resolve: async () => undefined },
@@ -133,5 +133,6 @@ const mounted = createSettingsHosts({ get: (id: string) => services[id] } as unk
 assert.ok(mounted)
 assert.deepEqual(mounted.listConfiguredProviders(), [])
 assert.equal(mounted.listConfiguredProviders({ effective: true })[0]!.route, 'inherited')
+assert.deepEqual(mounted.listConfiguredProviders({ effective: true })[0]!.compat, { allowEmptySignature: false })
 await mounted.discoverModels({ provider: 'inherited' })
 console.log('PASS Provider Manager shares Harness settings, stores secrets write-only, and rolls back failed profiles')
