@@ -32,16 +32,17 @@ export function createAgentResolver(bindings) {
         const persisted = await bindings.persistedPreset(resumeId)
         const composed = await bindings.composePreset(persisted)
         const recorded = await bindings.persistedRoute(resumeId)
-        const resumeOptions = {
-          provider: resumeRoute?.provider ?? recorded?.provider,
-          model: resumeRoute?.model ?? recorded?.model,
-        }
+        // A session interrupted before its first model request has no recorded
+        // route. Still supply a complete pair: persona assembly and child
+        // agents read agent.options.model before the first LLM request.
+        const resumeOptions = resumeRoute ?? recorded
+          ?? (await bindings.validateRoute(startupRoute)).route
         resumed = await bindings.resume(resumeId, resumeOptions, composed.setup)
         return {
           agent: resumed.agent,
           handle: resumed,
           agentPreset: composed.agentPreset,
-          route: resumeRoute ?? bindings.recordedRoute(resumed.agent),
+          route: resumeOptions,
         }
       } catch (error) {
         if (resumed !== undefined) {
