@@ -12,8 +12,10 @@ import { harnessClient, workspaceAgentConfig } from "../api/harness";
 import { applyAgentRecord, emptyAgentView } from "../state/agent-view";
 import {
   DELIVERY_KEY,
+  canRetryDelivery,
   deliveryWasObserved,
   readPendingDelivery,
+  rebindPendingDelivery,
   recoverNativeSession,
   type PendingDelivery,
 } from "../state/agent-recovery";
@@ -101,6 +103,8 @@ export function useAgentConversation() {
     stream.current?.abort();
     const controller = new AbortController();
     stream.current = controller;
+    const pending = rebindPendingDelivery(outbound.current, stored(), resource);
+    if (pending !== outbound.current) delivery(pending);
     active.current = resource;
     cursor.current = 0;
     setView(emptyAgentView());
@@ -266,6 +270,63 @@ export function useAgentConversation() {
       clearTimeout(timer);
     };
   }, [phase, connect]);
+  useEffect(() => {
+    if (
+      !pendingDelivery ||
+      pendingDelivery.status === "refused" ||
+      sending ||
+      phase !== "connected" ||
+      !view.projected ||
+      session?.id !== pendingDelivery.session
+    )
+      return;
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout>;
+    const check = async () => {
+      const attempt = new AbortController();
+      const abort = () => attempt.abort();
+      controller.signal.addEventListener("abort", abort, { once: true });
+      const deadline = setTimeout(abort, 10000);
+      try {
+        const result = await harnessClient.messageDelivery(
+          pendingDelivery.session,
+          pendingDelivery.clientMessageId,
+          { signal: attempt.signal },
+        );
+        if (controller.signal.aborted || outbound.current !== pendingDelivery)
+          return;
+        if (result.status === "accepted") {
+          setConfirmedDraft(pendingDelivery.draft);
+          delivery(null);
+          return;
+        }
+        if (result.status === "not_received" || result.status === "refused") {
+          if (
+            pendingDelivery.status !== result.status ||
+            pendingDelivery.reason !== result.reason
+          )
+            delivery({
+              ...pendingDelivery,
+              status: result.status,
+              reason: result.reason,
+            });
+          if (result.status === "refused") return;
+        }
+      } catch {
+        // HTTP errors, lost responses and timeouts cannot establish absence.
+        // Continue read-only reconciliation; never resubmit on a timer.
+      } finally {
+        clearTimeout(deadline);
+        controller.signal.removeEventListener("abort", abort);
+      }
+      if (!controller.signal.aborted) timer = setTimeout(check, 3000);
+    };
+    void check();
+    return () => {
+      controller.abort();
+      clearTimeout(timer);
+    };
+  }, [pendingDelivery, sending, phase, view.projected, session?.id]);
   const choose = async (item?: SessionCatalogResource) => {
     if (
       operation.current ||
@@ -279,6 +340,17 @@ export function useAgentConversation() {
       return false;
     if (!cwd) {
       setError("Connect to FlagQAI before creating or resuming a session.");
+      return false;
+    }
+    if (
+      outbound.current &&
+      (!item ||
+        item.sessionId !== active.current?.sessionId ||
+        item.backendId !== active.current?.backendId)
+    ) {
+      setError(
+        "Resolve the pending message in this conversation before switching sessions.",
+      );
       return false;
     }
     if (item?.availability === "occupied") {
@@ -339,18 +411,28 @@ export function useAgentConversation() {
     if (
       outbound.current &&
       (outbound.current.session !== current.id ||
-        outbound.current.text !== text)
+        outbound.current.text !== text ||
+        !canRetryDelivery(outbound.current))
     ) {
       setError(
         "An earlier message delivery is unresolved. Inspect its native transcript before sending different input.",
       );
       return false;
     }
-    const input = outbound.current || {
-      session: current.id,
-      clientMessageId: crypto.randomUUID(),
-      text,
-      draft,
+    const input: PendingDelivery = {
+      ...(outbound.current?.status === "refused"
+        ? {
+            ...outbound.current,
+            clientMessageId: crypto.randomUUID(),
+          }
+        : outbound.current || {
+            session: current.id,
+            clientMessageId: crypto.randomUUID(),
+            text,
+            draft,
+          }),
+      status: "unconfirmed",
+      reason: undefined,
     };
     submitRequest.current = true;
     delivery(input);
@@ -364,27 +446,28 @@ export function useAgentConversation() {
         text: input.text,
         placement: "turn",
       });
-      delivery(null);
       observedDeliveries.current.delete(input.clientMessageId);
-      if (!receipt.accepted)
-        throw new Error(
-          receipt.reason || "The Agent did not accept this message.",
-        );
+      if (!receipt.accepted) {
+        if (outbound.current?.clientMessageId === input.clientMessageId)
+          delivery({
+            ...outbound.current,
+            status: "refused",
+            reason: receipt.reason,
+          });
+        return false;
+      }
+      setConfirmedDraft(input.draft);
+      if (outbound.current?.clientMessageId === input.clientMessageId)
+        delivery(null);
       return true;
     } catch (problem) {
       if (observedDeliveries.current.delete(input.clientMessageId)) return true;
-      if (
-        problem instanceof FlagQaiApiError &&
-        ([400, 403, 404].includes(problem.status) ||
-          (problem.status === 422 && problem.code === "sdk_preflight_failed"))
-      )
-        delivery(null);
-      setError(
-        message(problem) +
-          (outbound.current
-            ? " Your draft is retained. Retry original message uses the same delivery ID."
-            : " Your draft is retained."),
-      );
+      if (outbound.current?.clientMessageId === input.clientMessageId)
+        delivery({
+          ...outbound.current,
+          status: "unconfirmed",
+          reason: message(problem),
+        });
       return false;
     } finally {
       submitRequest.current = false;
@@ -533,6 +616,10 @@ export function useAgentConversation() {
     provider?: string;
     model: string;
   }) => {
+    if (outbound.current) {
+      setError("Resolve the pending message before switching models.");
+      return false;
+    }
     const current = active.current;
     if (
       !current ||
@@ -586,6 +673,10 @@ export function useAgentConversation() {
     stopping,
     pendingDelivery,
     confirmedDraft,
+    dismissDelivery: () => {
+      if (canRetryDelivery(outbound.current) && !submitRequest.current)
+        delivery(null);
+    },
     retryDelivery: () =>
       outbound.current
         ? send(outbound.current.text, outbound.current.draft)

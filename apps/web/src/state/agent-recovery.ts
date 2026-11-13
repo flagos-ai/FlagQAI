@@ -13,8 +13,34 @@ export type PendingDelivery = {
   clientMessageId: string;
   text: string;
   draft: string;
+  status?: "unconfirmed" | "not_received" | "refused";
+  reason?: string;
 };
 export const DELIVERY_KEY = "fq-agent-pending-delivery-v1";
+export function canRetryDelivery(pending: PendingDelivery | null) {
+  return pending?.status === "not_received" || pending?.status === "refused";
+}
+
+export function rebindPendingDelivery(
+  pending: PendingDelivery | null,
+  previous: SessionReference | null,
+  current: SessionReference,
+): PendingDelivery | null {
+  if (!pending || pending.session === current.id) return pending;
+  if (
+    previous?.id !== pending.session ||
+    previous.backendId !== current.backendId ||
+    previous.sessionId !== current.sessionId ||
+    previous.cwd !== current.cwd
+  )
+    return pending;
+  return {
+    ...pending,
+    session: current.id,
+    status: "unconfirmed",
+    reason: undefined,
+  };
+}
 export function deliveryWasObserved(
   pending: PendingDelivery | null,
   resourceId: string,
@@ -37,7 +63,14 @@ export function readPendingDelivery(
       ["session", "clientMessageId", "text", "draft"].every(
         (key) => typeof value[key] === "string" && value[key].length > 0,
       )
-      ? value
+      ? // A saved negative lookup is only a point-in-time observation. Refresh
+        // must recheck the original ID before offering another send.
+        {
+          session: value.session,
+          clientMessageId: value.clientMessageId,
+          text: value.text,
+          draft: value.draft,
+        }
       : null;
   } catch {
     return null;

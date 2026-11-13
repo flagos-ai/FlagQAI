@@ -129,6 +129,24 @@ class AgentProxyTests(unittest.TestCase):
         self.assertEqual(self.request('/v1/sessions/foreign/compaction-policy', body)[0], 403)
         self.assertEqual(self.request('/v1/sessions/local/compaction-policy', body, 'https://other.example')[0], 403)
 
+    def test_message_delivery_lookup_is_read_only_and_workspace_scoped(self):
+        for path in ['/v1/sessions/local/messages/original-id',
+                     '/v1/sessions/local/messages/qaoa%2Freceipt%3F1',
+                     '/v1/sessions/local/messages/!test%F0%9F%94%AC']:
+            self.assertEqual(self.request(path)[0], 200)
+            self.assertEqual(self.calls[-1][:2], ('GET', path))
+        before = len(self.calls)
+        self.assertEqual(self.request('/v1/sessions/foreign/messages/id')[0], 403)
+        self.assertEqual(self.calls[before:][0][:2], ('GET', '/v1/sessions/foreign'))
+        self.assertEqual(len(self.calls), before + 1)
+        for path in ['/v1/sessions/local/messages/id/extra',
+                     '/v1/sessions/local/messages/id?url=evil',
+                     '/v1/sessions/local/messages/']:
+            self.assertEqual(self.request(path)[0], 404)
+        self.assertEqual(self.request('/v1/sessions/local/messages/id', {})[0], 404)
+        self.assertEqual(self.request('/v1/sessions/local/messages/id', origin='https://evil.example')[0], 403)
+        self.assertFalse(any(call[0] == 'POST' for call in self.calls))
+
     def test_subagent_catalog_and_read_only_history_preserve_workspace_guards(self):
         for path in ['/v1/sessions/local/subagents', '/v1/sessions/local/subagents/child-1/history', '/v1/sessions/local/subagents/child-1/history?before=12']:
             self.assertEqual(self.request(path)[0], 200)

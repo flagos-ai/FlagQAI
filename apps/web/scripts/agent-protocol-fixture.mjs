@@ -211,6 +211,11 @@ const backend = {
             accepted: false,
             reason: "Scripted rejection for receipt recovery",
           };
+        if (
+          process.env.FQ_TEST_RECOVERY === "1" &&
+          requestText === "delivery acceptance: receipt-only"
+        )
+          return { accepted: true };
         cancelled = false;
         controlCancelCount = 0;
         controlCase =
@@ -240,6 +245,34 @@ const backend = {
           { type: "turn.start", turn, origin: "user", time: Date.now() },
           { type: "session.status", status },
         );
+        if (
+          process.env.FQ_TEST_RECOVERY === "1" &&
+          requestText.startsWith("delivery acceptance:")
+        ) {
+          status = "idle";
+          emit(
+            {
+              type: "assistant.message",
+              seq: ++seq,
+              turn,
+              step: 1,
+              blocks: [
+                {
+                  type: "text",
+                  text: "QAOA delivery fixture acknowledged. No model or quantum computation was called.",
+                },
+              ],
+            },
+            {
+              type: "turn.end",
+              turn,
+              reason: { kind: "completed" },
+              time: Date.now(),
+            },
+            { type: "session.status", status },
+          );
+          return { accepted: true };
+        }
         void (async () => {
           if (controlCase) {
             const callId = "read-" + turn;
@@ -1400,7 +1433,8 @@ This is a saved test response; no model was called.`
     return session;
   },
 };
-const server = createFlagQaiServer({
+const serverOptions = {
+  messageDeliveryDirectory: join(testWorkspace, ".test-deliveries"),
   port: testAgentPort,
   registry: { ids: ["ui-fixture"], load: async () => backend },
   createSessionView: createWebSessionView,
@@ -1458,7 +1492,8 @@ const server = createFlagQaiServer({
     },
   },
   eventHeartbeatMs: 500,
-});
+};
+let server = createFlagQaiServer(serverOptions);
 await server.listen();
 const proxy =
   process.env.FQ_TEST_RECOVERY === "1"
@@ -1475,6 +1510,11 @@ const proxy =
             status: session.status,
           })),
         }),
+        async () => {
+          await server.close();
+          server = createFlagQaiServer(serverOptions);
+          await server.listen();
+        },
       )
     : null;
 const python = spawn(

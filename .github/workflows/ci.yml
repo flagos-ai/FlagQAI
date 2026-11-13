@@ -247,6 +247,8 @@ jobs:
       - run: pnpm web:install
       - run: pnpm web:check
       - run: pnpm web:build
+      - name: Verify workspace-scoped Agent proxy routes
+        run: python -m unittest discover -s packages/quantum-workspace/tests -p test_agent_proxy.py -v
       - name: Required real SDK workspace acceptance (zero skipped tests)
         run: python packages/quantum-workspace/tests/sdk_acceptance.py --report apps/web/sdk-results/acceptance.json
       - name: Compile scripted native Agent fixture
