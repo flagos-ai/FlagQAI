@@ -7628,3 +7628,35 @@ body,
   font-size: 11px;
   white-space: nowrap;
 }
+
+.fq-state-result {
+  margin-top: 14px;
+}
+.fq-state-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.fq-state-heading h2 {
+  margin: 0;
+  font-size: 14px;
+}
+.fq-state-heading > span,
+.fq-state-note {
+  color: #aab2be;
+  font-size: 12px;
+}
+.fq-state-bar {
+  width: 40%;
+}
+.fq-state-bar span {
+  display: block;
+  min-width: 2px;
+  height: 6px;
+  background: #76bce8;
+  border-radius: 2px;
+}
+.fq-state-result .fq-job-table-scroll {
+  max-height: 460px;
+}

@@ -440,7 +440,8 @@ fq.save("statevector_only.fqx", result.plan, result=result)
     name: "Job results",
     exact: true,
   });
-  await expect(vectorResults).toContainText("No counts distribution");
+  await expect(vectorResults).toContainText("Statevector probabilities");
+  await expect(vectorResults).not.toContainText("No counts distribution");
   await vectorResults
     .getByRole("button", { name: "Export results", exact: true })
     .click();
