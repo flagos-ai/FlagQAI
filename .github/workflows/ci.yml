@@ -53,6 +53,8 @@ jobs:
       - run: node --test docs/releases/verify-clean-initial-import.test.mjs
       - run: pnpm --dir apps/cli install --frozen-lockfile --ignore-scripts
       - run: pnpm --dir apps/cli run compile
+      - run: pnpm --dir apps/cli run verify:message-delivery
+      - run: pnpm --dir apps/cli run verify:installed-message-delivery
       - run: pnpm --dir apps/cli run verify:thinking-replay
       - run: pnpm --dir apps/cli run verify:deepseek-history
       - run: pnpm --dir apps/cli run verify:provider-manager

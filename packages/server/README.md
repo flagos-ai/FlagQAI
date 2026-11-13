@@ -100,14 +100,33 @@ running. Fork anchors must match an existing user-message history entry.
 a catalog that explicitly declares `deleteAction: 'archive'`; the host's mount
 reservation covers the offline mutation. Deletion-only backends are rejected.
 
-Message admission retains up to 4,096 request IDs per live resource (512
-characters per ID). Repeating identical input returns its original receipt;
-changing input under that ID returns `message_id_conflict`. If a backend throws
-after admission, retries return `message_outcome_unknown` rather than execute
-the task again. Check the transcript before sending new input. Receipts live
-in memory and are released with the resource; this is not a durable delivery
-guarantee across server restart. Reaching the bound rejects further admissions
-until the durable session is resumed into a new server resource.
+Message admission accepts request IDs up to 512 characters. Repeating identical
+input returns its original receipt; changing text, placement or attachments
+under that ID returns `message_id_conflict`. The native host sets
+`messageDeliveryDirectory` to its local data directory. Admission is flushed
+before calling Harness, and receipts are atomically replaced on disk. Records
+are scoped by backend ID, native session ID and working directory, so resuming
+the same session into a new resource after a process restart retains deduplication.
+Only input fingerprints and receipts are stored here; Harness owns task execution
+and durable conversation history. Delivery records contain no prompt or image bodies.
+
+`GET /v1/sessions/{id}/messages/{clientMessageId}` (SDK `messageDelivery`) returns
+`accepted`, `refused` (with an optional reason), `unconfirmed`, or `not_received`.
+A receipt confirms admission, not successful completion of the research task.
+Fresh tracked sessions can prove absence at query time. Legacy sessions without
+a tracking marker cannot; missing records and in-progress preparation remain
+`unconfirmed`. Clients must retry with the original ID and unchanged input even
+after `not_received`, since an earlier in-flight request may still arrive.
+
+If Harness throws, or the process stops between durable admission and receipt
+storage, retries return `message_outcome_unknown` rather than execute again.
+Check the transcript before explicitly starting new work. This deliberately
+provides at-most-once dispatch for tracked IDs, not transactional exactly-once
+execution. Corrupt/unavailable storage fails closed. Keep the delivery directory
+with the native session data; deleting it removes this evidence. Records are not
+automatically expired. Without a delivery directory, the server retains up to
+4,096 IDs per live resource in memory only, and resumed resources cannot prove
+absence. Reaching that memory bound rejects further admissions until reconnect.
 
 Cancellation publishes `session.control` to all attached clients. States are
 `stopping`, `stopped`, `unknown`, `failed` and `none` (the prior control is no

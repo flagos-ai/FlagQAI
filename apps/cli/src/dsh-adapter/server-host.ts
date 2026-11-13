@@ -201,6 +201,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
       hostname: config.host ?? '127.0.0.1',
       port: config.port ?? 4096,
       onError: bindings.onError,
+      messageDeliveryDirectory: join(DATA_DIR, 'message-delivery'),
       permissionDecisionStore: createPermissionDecisionStore({ directory: join(DATA_DIR, 'permission-evidence') }),
     },
     startHeartbeat: () => startSessionMountHeartbeat(ctx),
