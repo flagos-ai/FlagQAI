@@ -48,7 +48,7 @@ const manager = createProviderManager({
   ...host, listCatalogProviders: () => [], routeExists: () => true,
   envShadows: () => true,
 }, () => true, () => 'FIXTURE_KEY')
-await manager.configure({ kind: 'custom', route: 'fixture', api, models: [id, 'claude-opus-5-5'] })
+await manager.configure({ kind: 'custom', route: 'fixture', models: [id, 'claude-opus-5-5'] })
 assert.equal(entries[0].compat.allowEmptySignature, true, 'provider edits must retain replay compatibility')
 await createProviderManager({
   ...host,

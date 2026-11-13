@@ -99,7 +99,7 @@ export function createProviderManager(host, selectModel, deriveKeyRef) {
                     apiKeyEnv: ref,
                     ...(input.baseURL === undefined ? {} : { baseURL: input.baseURL }),
                     ...(input.api === undefined ? {} : { api: input.api }),
-                    models: withProviderProtocolDefaults(input.api, input.models.map(id => existing?.modelEntries?.find(entry => entry.id === id) ?? { id }), existing?.compat),
+                    models: withProviderProtocolDefaults(input.api ?? existing?.api, input.models.map(id => existing?.modelEntries?.find(entry => entry.id === id) ?? { id }), existing?.compat),
                 };
                 if (host.routeExists(input.route)) {
                     await host.mutateProfile(input.route, Object.entries(profile).map(([key, value]) => ({ op: 'set', path: [key], value })));
