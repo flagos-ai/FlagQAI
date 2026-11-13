@@ -16,6 +16,7 @@ import zlib
 
 from .experiments import ExperimentImports, MAX_UPLOAD_BYTES
 from .job_store import SQLiteJobStore
+from .research_results import attach_result
 from .verification_archive import history_entries, validate_history, project_history
 
 MAX_PACKAGE = 64 * 1024 * 1024
@@ -75,6 +76,20 @@ def validate_run(run):
         raise ValueError('Wait for running tasks to settle before exporting.')
     if run.get('collection_status') in ('pending', 'collecting'):
         raise ValueError('Wait for artifact collection to settle before exporting.')
+    summaries = run.get('research_results', {})
+    if not isinstance(summaries, dict) or len(summaries) > 32:
+        raise ValueError('Invalid saved research results.')
+    refs_by_id = {r.get('id'): r for r in run.get('experiments', []) if isinstance(r, dict)}
+    for identity, result in summaries.items():
+        ref = refs_by_id.get(identity)
+        if not ref or not isinstance(result, dict) or result.get('schema') != 'flagqai.research-result.v1':
+            raise ValueError('Research result refers to an unavailable experiment.')
+        binding = result.get('binding', {})
+        from .research_results import digest
+        if (not isinstance(binding, dict) or binding.get('run_id') != run['id']
+                or binding.get('source_sha256') != run['source_hash'] or binding.get('archive_sha256') != ref.get('sha256')
+                or digest({k: v for k, v in result.items() if k != 'sha256'}) != result.get('sha256')):
+            raise ValueError('Research result does not match its code or artifact version.')
     if not isinstance(run.get('name', ''), str) or not isinstance(run.get('environment', {}), dict) or not isinstance(run.get('runtime', {}), dict):
         raise ValueError('Invalid archived runtime metadata.')
     if run.get('elapsed_seconds') is not None and (type(run['elapsed_seconds']) not in (int, float) or not math.isfinite(run['elapsed_seconds']) or run['elapsed_seconds'] < 0):
@@ -255,6 +270,14 @@ class ResearchPackages:
                                 files[ref['id']] = path.read_bytes()
         # Snapshot digests deduplicate retained history without rewriting its original scope.
         reports = list({sha256(encoded(report)).hexdigest(): report for report in reports}.values())
+        runs = copy.deepcopy(runs)
+        for run in runs.values():
+            run['research_results'] = {}
+            for ref in run.get('experiments', []):
+                record = saved['experiments'].get(ref['id']) if request.get('package_id') else self.experiments.get(ref['id'])
+                if record: attach_result(record)
+                result = (record or {}).get('program', {}).get('experiment', {}).get('research_result')
+                if result: run['research_results'][ref['id']] = result
         return make_package(research, runs, files, reports, verification_runs)
 
     def import_package(self, raw, filename):
@@ -271,16 +294,17 @@ class ResearchPackages:
                         raise ValueError('An artifact is attributed to multiple runs.')
                     refs[ref['id']] = (run, ref)
             for original_id, (run, ref) in refs.items():
-                record = stage.import_file(entries['artifacts/' + original_id + '.fqx'], ref['filename'])
+                record = stage.import_file(entries['artifacts/' + original_id + '.fqx'], ref['filename'], python_run={**run, 'execution_status': run.get('execution_status', run['status']), 'environment': {'transport': 'archive', **run.get('environment', {})}})
                 local_ids[original_id] = record['id']
                 copy_record = copy.deepcopy(record)
                 info = copy_record['program']['experiment']
-                info.update(id=original_id, python_run={'id': run['id'], 'source_hash': run['source_hash'], 'execution_status': run['status'], 'transport': run.get('environment', {}).get('transport', 'archive')})
+                info.update(id=original_id, python_run={**info.get('python_run', {}), 'id': run['id'], 'source_hash': run['source_hash'], 'execution_status': run['status'], 'transport': run.get('environment', {}).get('transport', 'archive')})
                 origin = {'language': 'python', 'source': run['source'], 'run_id': run['id'], 'source_hash': run['source_hash'], 'execution_status': run['status']}
                 copy_record.update(id=original_id)
                 copy_record['program'].update(id=original_id, origin=origin)
                 if copy_record.get('job'):
                     copy_record['job'].update(id=original_id, origin=origin, experiment=info)
+                attach_result(copy_record)
                 canonical[original_id] = copy_record
             archived = project_history(snapshots, runs, canonical)
             saved = {'id': identity, 'status': 'imported', 'name': Path(filename).name[:160], 'imported_at': int(time.time() * 1000), 'run_count': len(runs),

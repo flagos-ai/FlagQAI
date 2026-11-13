@@ -12,6 +12,7 @@ import uuid
 
 from quantum_workspace_protocol import source_hash
 from .job_store import SQLiteJobStore
+from .research_results import attach_result
 
 MAX_UPLOAD_BYTES = 16 * 1024 * 1024
 
@@ -25,12 +26,20 @@ class ExperimentImports:
         self.store.initialize()
 
     def records(self):
-        return self.store.list()
+        return [self._research(record) for record in self.store.list()]
 
     def get(self, identity):
         if not isinstance(identity, str) or not re.fullmatch(r'fqx-[a-f0-9]{32}', identity):
             return None
-        return self.store.get(identity)
+        record = self.store.get(identity)
+        return self._research(record) if record else None
+
+    def _research(self, record):
+        previous = json.dumps(record, sort_keys=True)
+        attach_result(record)
+        if json.dumps(record, sort_keys=True) != previous:
+            self.store.put(record)
+        return record
 
     def file(self, identity):
         if not self.get(identity):
@@ -98,6 +107,7 @@ class ExperimentImports:
                                             'elapsed_seconds': None}}
             if record.get('job') and program.get('origin'):
                 record['job']['origin'] = program['origin']
+            attach_result(record)
             destination = self.root / (identity + '.fqx')
             path.replace(destination)
             try:

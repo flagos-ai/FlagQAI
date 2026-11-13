@@ -12,6 +12,7 @@ import threading
 import time
 import uuid
 from .job_store import SQLiteJobStore
+from .research_results import build_result
 from .research_packages import validate_run
 from .environment_plan import environment_plan, source_imports
 
@@ -83,7 +84,12 @@ def comparable(record):
         circuit['saved_ir'] = ir
     elif any(g.get('name') in ('unitary', 'matrix', 'hamiltonian') for g in circuit['instructions']):
         raise ValueError('Full gate definitions are unavailable; circuit verification is incomplete.')
-    return {'circuit': circuit, 'measurements': measurements}
+    result = {'circuit': circuit, 'measurements': measurements}
+    research = build_result(program)
+    if research:
+        result['research'] = {key: research[key] for key in ('method', 'problem', 'metrics')}
+        result['research']['rotations'] = research['parameters']['rotations']
+    return result
 
 
 def qaoa_metrics(source, record):
