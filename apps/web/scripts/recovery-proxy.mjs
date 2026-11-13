@@ -1,9 +1,10 @@
 // Opt-in loopback fault injection for the scripted development fixture only.
 // Never imported by the Web bundle, production host or Agent runtime.
 import { createServer, request as forward } from "node:http";
-export async function recoveryProxy(port, upstream, statistics) {
+export async function recoveryProxy(port, upstream, statistics, restartAgent) {
   let offline = false,
-    dropNextReceipt = false;
+    dropNextReceipt = false,
+    disconnectNextMessage = false;
   const sockets = new Set();
   const server = createServer(async (req, res) => {
     if (req.url === "/__fixture/network") {
@@ -20,6 +21,8 @@ export async function recoveryProxy(port, upstream, statistics) {
           const input = JSON.parse(body);
           offline = input.offline === true;
           dropNextReceipt = input.dropNextReceipt === true;
+          disconnectNextMessage = input.disconnectNextMessage === true;
+          if (input.restartAgent === true) await restartAgent();
         } catch {
           res.writeHead(400).end();
           return;
@@ -42,6 +45,16 @@ export async function recoveryProxy(port, upstream, statistics) {
           },
         }),
       );
+      return;
+    }
+    if (
+      disconnectNextMessage &&
+      req.method === "POST" &&
+      req.url.endsWith("/messages")
+    ) {
+      disconnectNextMessage = false;
+      offline = true;
+      for (const socket of sockets) socket.destroy();
       return;
     }
     if (

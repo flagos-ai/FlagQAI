@@ -53,9 +53,9 @@ def create_server(settings, service):
             general = {'GET': {'/v1/health', '/v1/backends', '/v1/sessions', '/v1/providers'},
                        'POST': {'/v1/sessions', '/v1/providers', '/v1/providers/discover'}}
             catalog_match = re.fullmatch(r'/v1/catalog/([a-zA-Z0-9._:%-]+)/([a-zA-Z0-9._:%-]+)/rename', self.path)
-            match = re.fullmatch(r'/v1/sessions/([a-zA-Z0-9-]+)(?:/(events|messages|cancel|compact|compaction-policy|models|model|subagents(?:/[a-zA-Z0-9._:%-]+/history(?:\?before=[0-9]{1,16})?)?|permissions/[a-zA-Z0-9._:%-]+|questions/[a-zA-Z0-9._:%-]+(?:/cancel)?))?', self.path)
+            match = re.fullmatch(r'/v1/sessions/([a-zA-Z0-9-]+)(?:/(events|messages(?:/[a-zA-Z0-9._~!$&\x27()*+,;=:@%+-]{1,4608})?|cancel|compact|compaction-policy|models|model|subagents(?:/[a-zA-Z0-9._:%-]+/history(?:\?before=[0-9]{1,16})?)?|permissions/[a-zA-Z0-9._:%-]+|questions/[a-zA-Z0-9._:%-]+(?:/cancel)?))?', self.path)
             suffix = match.group(2) if match else None
-            valid_session = match and ((method == 'GET' and (suffix in (None, 'events', 'models', 'compaction-policy', 'subagents') or (suffix and suffix.startswith('subagents/')))) or
+            valid_session = match and ((method == 'GET' and (suffix in (None, 'events', 'models', 'compaction-policy', 'subagents') or (suffix and suffix.startswith(('subagents/', 'messages/'))))) or
                 (method == 'POST' and suffix and (suffix in ('messages', 'cancel', 'model', 'compact', 'compaction-policy') or suffix.startswith(('permissions/', 'questions/')))))
             if self.path not in general.get(method, set()) and not valid_session and not (method == 'POST' and catalog_match):
                 return self.reply({'error': {'code': 'route_not_found', 'message': 'Agent route is not exposed by this workspace.'}}, 404)

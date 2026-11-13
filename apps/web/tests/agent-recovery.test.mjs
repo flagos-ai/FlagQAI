@@ -3,8 +3,10 @@ import assert from "node:assert/strict";
 import { FlagQaiApiError } from "../../../packages/sdk/index.mjs";
 import {
   DELIVERY_KEY,
+  canRetryDelivery,
   deliveryWasObserved,
   readPendingDelivery,
+  rebindPendingDelivery,
   recoverNativeSession,
 } from "../src/state/agent-recovery.ts";
 const reference = {
@@ -150,4 +152,62 @@ test("only a matching native user-message ID confirms a delivery; similar text a
     }),
     false,
   );
+});
+
+test("a restarted resource rebinds the original ID and immutable payload only within the same native conversation", () => {
+  const pending = {
+    session: reference.id,
+    clientMessageId: "original-send",
+    text: "QAOA question\n\n<workspace_controls>saved code</workspace_controls>",
+    draft: "QAOA question",
+    status: "not_received",
+  };
+  const current = { ...reference, id: "resource-after-restart" };
+  const rebound = rebindPendingDelivery(pending, reference, current);
+  assert.equal(rebound.session, current.id);
+  assert.equal(rebound.clientMessageId, pending.clientMessageId);
+  assert.equal(rebound.text, pending.text);
+  assert.equal(rebound.draft, pending.draft);
+  assert.equal(canRetryDelivery(rebound), false);
+  assert.equal(pending.session, reference.id);
+  for (const foreign of [
+    { ...current, backendId: "other" },
+    { ...current, sessionId: "other" },
+    { ...current, cwd: "/other" },
+  ])
+    assert.equal(rebindPendingDelivery(pending, reference, foreign), pending);
+  assert.equal(rebindPendingDelivery(pending, null, current), pending);
+  assert.equal(
+    rebindPendingDelivery(
+      pending,
+      { ...reference, id: "not-the-original" },
+      current,
+    ),
+    pending,
+  );
+});
+
+test("refresh rechecks negative delivery evidence and never trusts a saved retry flag", () => {
+  const input = {
+    session: reference.id,
+    clientMessageId: "same-id",
+    text: "original payload",
+    draft: "original draft",
+  };
+  for (const status of ["not_received", "refused", "unconfirmed", "accepted"]) {
+    const restored = readPendingDelivery({
+      getItem: () =>
+        JSON.stringify({
+          ...input,
+          status,
+          reason: "old lookup",
+          refused: "legacy flag",
+          needsNewId: true,
+        }),
+    });
+    assert.deepEqual(restored, input);
+    assert.equal(canRetryDelivery(restored), false);
+  }
+  assert.equal(canRetryDelivery({ ...input, status: "not_received" }), true);
+  assert.equal(canRetryDelivery({ ...input, status: "refused" }), true);
 });

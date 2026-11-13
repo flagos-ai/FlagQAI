@@ -19,6 +19,7 @@ import { splitWorkspaceContext } from "../state/agent-view";
 import { AgentTool, AgentThinking } from "./AgentActivity";
 import { AgentReplyActions } from "./AgentReplyActions";
 import { AgentMarkdown } from "./AgentMarkdown";
+import { canRetryDelivery } from "../state/agent-recovery";
 function Row({
   row,
   thinking,
@@ -207,12 +208,14 @@ export function AgentTranscript({
   roster,
   bridge,
   jobs,
+  deliveryReady,
   onPrepare,
 }: {
   agent: AgentConversation;
   roster: SessionSubagentView[];
   bridge: PlatformBridge;
   jobs: QuantumJob[];
+  deliveryReady: boolean;
   onPrepare: (prompt: string) => void;
 }) {
   const turns = progressTurns(agent.view, roster);
@@ -250,7 +253,7 @@ export function AgentTranscript({
     const node = viewport.current;
     if (follow.current && node) node.scrollTop = node.scrollHeight;
     measure();
-  }, [agent.view, measure]);
+  }, [agent.view, agent.pendingDelivery, agent.sending, measure]);
   useLayoutEffect(() => {
     const observer = new ResizeObserver(() => {
       const node = viewport.current;
@@ -432,6 +435,43 @@ export function AgentTranscript({
               </div>
             );
           })}
+          {agent.pendingDelivery && (
+            <article
+              className="fq-agent-message user"
+              aria-label="Pending message"
+            >
+              <AgentMarkdown text={agent.pendingDelivery.draft} />
+              <div className="fq-agent-delivery" role="status">
+                <span>
+                  {agent.sending
+                    ? "Sending…"
+                    : canRetryDelivery(agent.pendingDelivery)
+                      ? "Not delivered"
+                      : "Delivery unconfirmed"}
+                </span>
+                <p>
+                  {agent.pendingDelivery.reason ||
+                    (canRetryDelivery(agent.pendingDelivery)
+                      ? "The Agent service did not accept this message. Your draft is retained."
+                      : "Checking the original send ID. This message will not be resent automatically.")}
+                </p>
+                {!agent.sending && canRetryDelivery(agent.pendingDelivery) && (
+                  <div className="fq-agent-delivery-actions">
+                    <button
+                      disabled={
+                        !deliveryReady ||
+                        agent.pendingDelivery.session !== agent.session?.id
+                      }
+                      onClick={() => void agent.retryDelivery()}
+                    >
+                      Retry original message
+                    </button>
+                    <button onClick={agent.dismissDelivery}>Dismiss</button>
+                  </div>
+                )}
+              </div>
+            </article>
+          )}
           {Object.values(agent.view.permissions).map((request) => (
             <section className="fq-agent-interaction" key={request.requestId}>
               <h3>

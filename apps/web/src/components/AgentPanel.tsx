@@ -384,7 +384,10 @@ export function AgentPanel({
     }
   };
   const hasThread =
-    agent.view.order.length > 0 || pending > 0 || agent.view.working;
+    agent.view.order.length > 0 ||
+    pending > 0 ||
+    agent.view.working ||
+    !!agent.pendingDelivery;
   const running =
     agent.view.working ||
     agent.sending ||
@@ -563,33 +566,6 @@ export function AgentPanel({
       {!["Connected", "Working"].includes(runStatus) && (
         <div className="fq-agent-state-note">{runStatus}</div>
       )}
-      {agent.pendingDelivery && !agent.sending && (
-        <div className="fq-agent-error" role="status">
-          <span>
-            {ready && agent.pendingDelivery.session !== agent.session?.id
-              ? "The native session resource changed. Check its history before starting a new chat; this message will not be resent."
-              : "Message delivery is unconfirmed. Check the conversation before retrying; refresh will not resend it."}
-          </span>
-          <button
-            disabled={
-              !ready ||
-              running ||
-              !!pending ||
-              agent.busy ||
-              agent.pendingDelivery.session !== agent.session?.id
-            }
-            onClick={async () => {
-              const original = agent.pendingDelivery;
-              if (original && (await agent.retryDelivery()))
-                setDraft((current) =>
-                  current === original.draft ? "" : current,
-                );
-            }}
-          >
-            Retry original message
-          </button>
-        </div>
-      )}
       {agent.error && (
         <div className="fq-agent-error" role="alert">
           <span>{agent.error}</span>
@@ -604,6 +580,9 @@ export function AgentPanel({
           roster={roster}
           bridge={bridge}
           jobs={jobs}
+          deliveryReady={
+            ready && !running && !agent.busy && !agent.view.context?.compaction
+          }
           onPrepare={(prompt) => {
             const next = draft.trim() ? draft + "\n\n" + prompt : prompt;
             if (next.length > 6000)
