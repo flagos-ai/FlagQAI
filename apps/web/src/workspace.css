@@ -7622,3 +7622,9 @@ body,
     grid-template-columns: 1fr;
   }
 }
+
+.fq-circuit-hierarchy-note {
+  color: var(--text-muted, #a0a0a0);
+  font-size: 11px;
+  white-space: nowrap;
+}

@@ -1,7 +1,10 @@
 import { UIIcon } from "./UIIcon";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { fitCircuitZoom, circuitZoomScroll } from "../state/circuit-viewport";
-import { circuitHierarchy } from "../../../../packages/quantum-workspace/domain/circuit-tree.mjs";
+import {
+  circuitHierarchy,
+  hierarchyOpenAtLevel,
+} from "../../../../packages/quantum-workspace/domain/circuit-tree.mjs";
 import type {
   CircuitNode,
   CompiledProgram,
@@ -18,6 +21,7 @@ import { CircuitModules } from "./CircuitModules";
 import { MeasurementSymbol } from "./CircuitSymbols";
 export function CircuitCanvas({
   compiled,
+  initialDetail = 1,
   zoom,
   onZoom,
   onSelect,
@@ -25,6 +29,7 @@ export function CircuitCanvas({
   svgRef,
 }: {
   compiled: CompiledProgram;
+  initialDetail?: number;
   zoom: number;
   onZoom: (n: number) => void;
   onSelect: (s: CircuitSelection | null) => void;
@@ -44,7 +49,7 @@ export function CircuitCanvas({
           "ungrouped_0",
         ]),
     );
-  const [detailLevel, setDetailLevel] = useState<number | null>(null);
+  const [detailLevel, setDetailLevel] = useState<number | null>(initialDetail);
   const [fitting, setFitting] = useState(false);
   const zoomCallback = useRef(onZoom);
   zoomCallback.current = onZoom;
@@ -93,8 +98,26 @@ export function CircuitCanvas({
           logical_instructions: compiled.instructions,
           groups: {},
         };
-  const root = circuitHierarchy(c) as CircuitNode,
+  const hierarchy = circuitHierarchy(c) as CircuitNode,
     gates = c.logical_instructions || c.instructions;
+  // Small anonymous circuits show gates directly, but Collapse all still offers
+  // a single selectable range that can be expanded with mouse or keyboard.
+  const root =
+    hierarchy.kind === "sequence" &&
+    detailLevel === 0 &&
+    !hierarchy.children.length &&
+    hierarchy.gate_indices.length
+      ? {
+          ...hierarchy,
+          children: [
+            {
+              ...hierarchy,
+              id: "__sequence__0_" + (gates.length - 1),
+              label: gates.length === 1 ? "Gate 1" : "Gates 1–" + gates.length,
+            },
+          ],
+        }
+      : hierarchy;
   const buses = useMemo(() => {
     const list = (compiled.registers || []).map((r) => ({ ...r })),
       used = new Set(list.flatMap((r) => r.wires));
@@ -104,10 +127,14 @@ export function CircuitCanvas({
   }, [compiled]);
   const row = (wire: number) =>
     registers ? buses.findIndex((r) => r.wires.includes(wire)) : wire;
+  const visibleOpen =
+    detailLevel === null ? open : hierarchyOpenAtLevel(root, detailLevel);
   const scene = buildCircuitScene(
-    root,
+    root.kind === "sequence" && detailLevel === 100
+      ? { ...root, children: [] }
+      : root,
     gates,
-    open,
+    visibleOpen,
     row,
     registers ? buses.length : compiled.qubits,
     registers,
@@ -152,8 +179,8 @@ export function CircuitCanvas({
   const toggle = (id: string) => {
     onSelect(null);
     setDetailLevel(null);
-    setOpen((previous) => {
-      const next = new Set(previous);
+    setOpen(() => {
+      const next = new Set(visibleOpen);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
@@ -161,23 +188,19 @@ export function CircuitCanvas({
   };
   const setLevel = (limit: number) => {
     setDetailLevel(limit);
-    const next = new Set(["__root__"]);
-    const visit = (n: CircuitNode, level: number) => {
-      if (level < limit) next.add(n.id);
-      n.children.forEach((ch) => visit(ch, level + 1));
-    };
-    visit(root, 0);
-    setOpen(next);
+    setOpen(hierarchyOpenAtLevel(root, limit));
     onSelect(null);
   };
   const treeRow = (n: CircuitNode, level: number): React.ReactNode => (
     <div key={n.id}>
       <div className="fq-tree-row" style={{ paddingLeft: level * 12 }}>
         <button
-          aria-label={(open.has(n.id) ? "Collapse " : "Expand ") + n.label}
+          aria-label={
+            (visibleOpen.has(n.id) ? "Collapse " : "Expand ") + n.label
+          }
           onClick={() => toggle(n.id)}
         >
-          <UIIcon name={open.has(n.id) ? "minus" : "plus"} size={12} />
+          <UIIcon name={visibleOpen.has(n.id) ? "minus" : "plus"} size={12} />
         </button>
         <button
           aria-pressed={
@@ -189,7 +212,7 @@ export function CircuitCanvas({
           <small>{n.gate_count} gates</small>
         </button>
       </div>
-      {open.has(n.id) && n.children.map((ch) => treeRow(ch, level + 1))}
+      {visibleOpen.has(n.id) && n.children.map((ch) => treeRow(ch, level + 1))}
     </div>
   );
   return (
@@ -220,6 +243,22 @@ export function CircuitCanvas({
         >
           Compiled
         </button>
+        {root.kind === "semantic" && (
+          <span
+            className="fq-circuit-hierarchy-note"
+            title="Semantic groups supplied by the compiler and preserved in this archive. Repeated groups preserve execution order."
+          >
+            Synthesis structure
+          </span>
+        )}
+        {root.kind === "sequence" && (
+          <span
+            className="fq-circuit-hierarchy-note"
+            title="This artifact has no source-module mapping. Gate ranges preserve execution order; expand a range to inspect its gates."
+          >
+            Gate sequence
+          </span>
+        )}
         <button aria-pressed={tree} onClick={() => setTree(!tree)}>
           <UIIcon name="tree" size={14} />
           Tree
@@ -234,7 +273,11 @@ export function CircuitCanvas({
             Detail · Custom
           </option>
           <option value="1">Detail · Overview</option>
-          <option value="3">Detail · Modules</option>
+          <option value="3">
+            {root.kind === "sequence"
+              ? "Detail · Gate ranges"
+              : "Detail · Modules"}
+          </option>
           <option value="100">Detail · All gates</option>
           <option value="0">Detail · Collapse all</option>
         </select>

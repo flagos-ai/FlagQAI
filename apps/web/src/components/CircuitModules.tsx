@@ -43,6 +43,14 @@ export function CircuitModules({
     );
   const node = item.node!,
     color = palette[Math.max(0, level - 1) % palette.length];
+  // Anonymous gate ranges use a compact summary with a wire connector rather
+  // than a solid box spanning every participating qubit.
+  const rangeWires =
+    item.collapsed && node.kind === "sequence" ? node.wires.map(wireY) : null;
+  if (rangeWires) {
+    const height = Math.max(104, 70 + item.labelLines.length * 18);
+    item = { ...item, y: item.y + (item.height - height) / 2, height };
+  }
   const select = () => onSelect({ module: node }),
     change = () => toggle(node.id);
   const keyboard = (event: React.KeyboardEvent, action: () => void) => {
@@ -53,6 +61,30 @@ export function CircuitModules({
   };
   return (
     <g data-circuit-module={node.id}>
+      {rangeWires && rangeWires.length > 0 && (
+        <g
+          aria-hidden="true"
+          pointerEvents="none"
+          stroke={color}
+          strokeOpacity={0.5}
+        >
+          <path
+            d={`M${item.x + item.width / 2} ${Math.min(...rangeWires)}V${Math.max(...rangeWires)}`}
+            fill="none"
+            vectorEffect="non-scaling-stroke"
+          />
+          {rangeWires.map((y, index) => (
+            <circle
+              key={index}
+              cx={item.x + item.width / 2}
+              cy={y}
+              r={3}
+              fill="#232323"
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
+        </g>
+      )}
       {node.id !== "__root__" && (
         <>
           {item.collapsed && (
@@ -170,7 +202,8 @@ export function CircuitModules({
                 >
                   {node.gate_count} gates ·{" "}
                   {node.children.length
-                    ? node.children.length + " modules"
+                    ? node.children.length +
+                      (node.kind === "sequence" ? " ranges" : " modules")
                     : node.wires.length + " qubits"}
                 </text>
               </>

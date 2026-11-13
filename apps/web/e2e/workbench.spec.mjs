@@ -3640,15 +3640,17 @@ fq.save("viewport.fqx", result.plan, result=result)
     page.getByRole("button", { name: "Zoom in", exact: true }),
   ).toBeDisabled();
   // A short viewport makes height, rather than width, constrain the fit.
-  await page.setViewportSize({ width: 1440, height: 560 });
-  expect(
-    await canvas.evaluate((element) => {
-      const view = element.querySelector("svg").viewBox.baseVal;
-      return (
-        element.clientHeight / view.height < element.clientWidth / view.width
-      );
-    }),
-  ).toBe(true);
+  await page.setViewportSize({ width: 1920, height: 560 });
+  await expect
+    .poll(() =>
+      canvas.evaluate((element) => {
+        const view = element.querySelector("svg").viewBox.baseVal;
+        return (
+          element.clientHeight / view.height < element.clientWidth / view.width
+        );
+      }),
+    )
+    .toBe(true);
   await page.getByRole("button", { name: "Fit", exact: true }).click();
   await expect
     .poll(() =>
@@ -3742,15 +3744,15 @@ fq.save("viewport.fqx", result.plan, result=result)
     .selectOption("0");
   await expect(measurement).toHaveAttribute("aria-pressed", "false");
   const module = canvas.getByRole("button", {
-    name: "Select ungrouped",
+    name: "Select Gates 1–8",
     exact: true,
   });
   await module.focus();
   await module.press("Enter");
   await expect(module).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator(".fq-node-details h3")).toHaveText("ungrouped");
+  await expect(page.locator(".fq-node-details h3")).toHaveText("Gates 1–8");
   await canvas
-    .getByRole("button", { name: "Expand ungrouped", exact: true })
+    .getByRole("button", { name: "Expand Gates 1–8", exact: true })
     .click();
   await expect(page.locator(".fq-node-details")).toContainText(
     "Expand a module",
