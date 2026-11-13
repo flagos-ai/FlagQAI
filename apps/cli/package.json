@@ -343,6 +343,8 @@
     "verify:backend-atomic-file": "node --import tsx/esm scripts/verify-backend-atomic-file.ts",
     "verify:projection-parsers": "node --import tsx/esm scripts/verify-projection-parsers.ts",
     "verify:workspace-paths": "node --import tsx/esm scripts/verify-workspace-paths.ts && node scripts/verify-session-cwd.mjs && node scripts/verify-file-completion.mjs",
+    "verify:agent-resolution": "node --test scripts/agent-resolution.test.mjs",
+    "verify:installed-agent-resolution": "node scripts/verify-installed-agent-resolution.mjs",
     "verify:message-delivery": "node --test scripts/message-delivery.test.mjs",
     "verify:installed-message-delivery": "node scripts/verify-installed-message-delivery.mjs",
     "verify:local-server-bundle": "node scripts/verify-local-server-bundle.mjs",
