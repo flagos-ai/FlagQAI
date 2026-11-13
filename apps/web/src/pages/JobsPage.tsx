@@ -1,3 +1,4 @@
+import { SavedStateResult } from "../components/SavedStateResult";
 import { UIIcon } from "../components/UIIcon";
 import { useJobView } from "../hooks/useJobView";
 import { ExportMenu } from "../components/ExportMenu";
@@ -522,7 +523,7 @@ function JobResults({ job, state, dispatch }: Props & { job: QuantumJob }) {
                         </details>
                       </div>
                     </section>
-                  ) : (
+                  ) : job.experiment?.state != null ? null : (
                     <div className="fq-job-notice">
                       <h2>No counts distribution</h2>
                       <p>
@@ -537,6 +538,13 @@ function JobResults({ job, state, dispatch }: Props & { job: QuantumJob }) {
                       <summary>Measurement value</summary>
                       <pre>{JSON.stringify(measurement.value, null, 2)}</pre>
                     </details>
+                  )}
+                  {job.experiment?.state != null && total === 0 && (
+                    <SavedStateResult
+                      key={job.experiment.id}
+                      info={job.experiment}
+                      qubits={result.qubits}
+                    />
                   )}
                   {job.experiment && <RecordedValues info={job.experiment} />}
                   {Boolean(

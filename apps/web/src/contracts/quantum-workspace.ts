@@ -146,6 +146,7 @@ export type ExperimentInfo = {
   metrics?: unknown;
   value?: unknown;
   state?: unknown;
+  state_distribution?: import("../state/saved-state").StateDistribution | null;
   samples?: unknown;
 };
 export type ExperimentImport = {

@@ -6,6 +6,34 @@ import sys
 import zipfile
 
 
+def state_distribution(result, n_qubits):
+    """Read probabilities from a complete saved pure state; never execute a plan."""
+    import torch
+    try:
+        vector = result.statevector()
+    except (ValueError, RuntimeError, AttributeError):
+        return None
+    if not isinstance(vector, torch.Tensor) or vector.numel() != 2 ** n_qubits or vector.numel() > 1048576:
+        return None
+    if not vector.ndim or vector.shape[-1] != 2 ** n_qubits:
+        return None
+    vector = vector.detach().cpu().reshape(-1).to(torch.complex128 if vector.is_complex() else torch.float64)
+    probabilities = vector.abs().double().square()
+    if not bool(torch.isfinite(probabilities).all()):
+        return None
+    threshold = 1e-14
+    support = torch.nonzero(probabilities > threshold).reshape(-1)
+    ordered = support[torch.argsort(probabilities[support], descending=True, stable=True)][:256]
+    total = float(probabilities.sum())
+    import math
+    if not math.isfinite(total):
+        return None
+    entries = [{'state': format(int(index), f'0{n_qubits}b'), 'probability': float(probabilities[index])} for index in ordered]
+    return {'kind': 'statevector', 'qubits': n_qubits, 'total_probability': total,
+            'support_size': len(support), 'threshold': threshold, 'entries': entries,
+            'omitted_probability': max(0.0, total - sum(row['probability'] for row in entries))}
+
+
 def project(path):
     try:
         import flagquantum as fq
@@ -69,7 +97,7 @@ def project(path):
               'program_hash': ir.content_hash, 'measurements': measurements,
               'execution_plan': plain(experiment.execution_plan)}
     if result is not None:
-        record.update(accuracy=plain(result.accuracy.to_dict()), runtime=plain(result.runtime),
+        record.update(state_distribution=state_distribution(result, ir.n_wires), accuracy=plain(result.accuracy.to_dict()), runtime=plain(result.runtime),
                       provenance=plain(result.provenance), metrics=plain(result.metrics),
                       value=plain(result.value), state=plain(result.state), samples=plain(result.samples))
     payload = {'source': source, 'compiled': compiled, 'experiment': record}

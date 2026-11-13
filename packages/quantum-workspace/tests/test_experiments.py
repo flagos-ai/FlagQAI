@@ -121,6 +121,78 @@ class ExperimentTests(unittest.TestCase):
         self.assertEqual(len(preview['values']), 1024)
         self.assertEqual(self.imports.file(record['id']).read_bytes(), path.read_bytes())
 
+    def test_full_state_distribution_and_legacy_upgrade_never_rerun(self):
+        program = fq.compile(fq.Circuit(16).x(0).h(15))
+        result = fq.run(program)
+        path = self.root / 'large-state.fqx'
+        fq.save(path, result.plan, result=result)
+        record = self.imports.import_file(path.read_bytes(), 'large-state.fqx')
+        info = record['program']['experiment']
+        self.assertTrue(info['state']['truncated'])
+        distribution = info['state_distribution']
+        self.assertEqual(distribution['support_size'], 2)
+        self.assertEqual({row['state'] for row in distribution['entries']}, {'1' + '0'*15, '1' + '0'*14 + '1'})
+        self.assertAlmostEqual(distribution['total_probability'], 1)
+        for row in distribution['entries']:
+            self.assertAlmostEqual(row['probability'], .5)
+        self.assertEqual(record['job']['result']['counts'], {})
+        # Simulate a previously stored record containing only the amplitude prefix.
+        del info['state_distribution']
+        if 'state_distribution' in record['job']['experiment']:
+            del record['job']['experiment']['state_distribution']
+        self.imports.store.put(record)
+        with patch.object(self.imports, '_project', wraps=self.imports._project) as project:
+            restored = self.imports.get(record['id'])
+            self.assertEqual(restored['program']['experiment']['state_distribution'], distribution)
+            self.imports.get(record['id'])
+            self.assertEqual(project.call_count, 1)
+        self.assertEqual(self.imports.file(record['id']).read_bytes(), path.read_bytes())
+        self.assertEqual(self.compute.calls, [])
+
+    def test_legacy_state_upgrade_preserves_record_when_archive_is_unavailable_or_changed(self):
+        result = fq.run(self.program)
+        path = self.root / 'legacy.fqx'
+        fq.save(path, result.plan, result=result)
+        record = self.imports.import_file(path.read_bytes(), 'legacy.fqx')
+        for target in (record['program']['experiment'], record['job']['experiment']):
+            target.pop('state_distribution', None)
+        self.imports.store.put(record)
+        archive = self.imports.root / (record['id'] + '.fqx')
+        archive.write_bytes(b'changed')
+        with patch.object(self.imports, '_project', side_effect=AssertionError('must not read changed archive')):
+            restored = self.imports.get(record['id'])
+        self.assertNotIn('state_distribution', restored['program']['experiment'])
+        self.assertEqual(restored['program']['experiment']['state'], record['program']['experiment']['state'])
+        archive.unlink()
+        self.assertEqual(self.imports.get(record['id']), restored)
+        self.assertEqual(self.compute.calls, [])
+
+    def test_state_distribution_reads_complete_saved_amplitudes_without_execution(self):
+        import torch
+        from types import SimpleNamespace
+        spec = importlib.util.spec_from_file_location('state_projection', Path(__file__).parents[1] / 'local/workspace_server/experiment_worker.py')
+        worker = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(worker)
+        def distribution(state, qubits):
+            return worker.state_distribution(SimpleNamespace(statevector=lambda: state), qubits)
+        with patch.object(fq, 'run', side_effect=AssertionError('must not run')), patch.object(torch, 'multinomial', side_effect=AssertionError('must not sample')):
+            state = torch.zeros(65536, dtype=torch.complex128); state[-1] = 1j
+            projected = distribution(state, 16)
+            self.assertEqual(projected['entries'], [{'state': '1'*16, 'probability': 1}])
+            self.assertIsNone(distribution(torch.zeros(1024), 16))
+            self.assertIsNone(distribution(torch.zeros(2, 4), 2))
+            self.assertIsNone(distribution(torch.zeros(2, 2), 2))
+            self.assertIsNone(distribution(torch.tensor([float('inf'), 0]), 1))
+            self.assertIsNone(distribution(torch.tensor([float('nan'), 0]), 1))
+            self.assertIsNone(distribution(torch.full((2,), 1e154, dtype=torch.float64), 1))
+            bounded = distribution(torch.full((1, 512), .1, dtype=torch.float64), 9)
+            self.assertEqual(bounded['support_size'], 512)
+            self.assertEqual(len(bounded['entries']), 256)
+            self.assertEqual([row['state'] for row in bounded['entries']], [format(i, '09b') for i in range(256)])
+            self.assertAlmostEqual(bounded['total_probability'], 5.12)
+            self.assertAlmostEqual(bounded['omitted_probability'], 2.56)
+            self.assertEqual(distribution(torch.zeros(2), 1)['entries'], [])
+
     def test_invalid_archive_leaves_no_persisted_record_or_file(self):
         for data, name in [(b'not an archive', 'bad.fqx'), (self.content, 'bad.py'),
                            (b'x' * (MAX_UPLOAD_BYTES + 1), 'large.fqx')]:

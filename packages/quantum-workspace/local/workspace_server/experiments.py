@@ -32,6 +32,23 @@ class ExperimentImports:
         if not isinstance(identity, str) or not re.fullmatch(r'fqx-[a-f0-9]{32}', identity):
             return None
         record = self.store.get(identity)
+        if record:
+            info = record['program'].get('experiment', {})
+            # Upgrade only the selected legacy record, from its saved archive.
+            # A bounded amplitude prefix must never masquerade as a full state.
+            if info.get('state') is not None and 'state_distribution' not in info:
+                try:
+                    path = self.root / (identity + '.fqx')
+                    if sha256(path.read_bytes()).hexdigest() != info.get('sha256'):
+                        raise ValueError('Saved archive no longer matches the imported result.')
+                    projected = self._project(path)
+                    distribution = projected['experiment'].get('state_distribution')
+                    info['state_distribution'] = distribution
+                    if record.get('job'):
+                        record['job']['experiment']['state_distribution'] = distribution
+                    self.store.put(record)
+                except (OSError, ValueError, subprocess.SubprocessError):
+                    pass  # Keep the original recorded values and failure trace.
         return self._research(record) if record else None
 
     def _research(self, record):
@@ -46,6 +63,27 @@ class ExperimentImports:
             raise FileNotFoundError('Experiment not found.')
         return self.root / (identity + '.fqx')
 
+    def _project(self, path):
+        worker = Path(__file__).with_name('experiment_worker.py')
+        python = self.settings.experiment_python or self.settings.local_python or sys.executable
+        try:
+            with tempfile.TemporaryFile() as output, tempfile.TemporaryFile() as errors:
+                process = subprocess.run([python, str(worker), str(path)], stdout=output, stderr=errors,
+                                         timeout=45, env={**os.environ, 'OMP_NUM_THREADS': '1'})
+                output.seek(0)
+                raw = output.read(2 * 1024 * 1024 + 4096)
+                if len(raw) > 2 * 1024 * 1024:
+                    raise ValueError('Experiment preview exceeds 2 MiB.')
+                try:
+                    payload = json.loads(raw)
+                except ValueError:
+                    raise ValueError('Cannot read this experiment. Configure FQ_EXPERIMENT_PYTHON with FlagQuantum fq.load support.')
+        except subprocess.TimeoutExpired:
+            raise ValueError('Experiment import timed out; no computation was submitted.')
+        if process.returncode or not payload.get('ok'):
+            raise ValueError(payload.get('error', 'The SDK could not load this experiment.'))
+        return payload['data']
+
     def import_file(self, data, filename, python_run=None, task_path=None):
         if not data or len(data) > MAX_UPLOAD_BYTES:
             raise ValueError('Upload an .fqx experiment no larger than 16 MiB.')
@@ -56,25 +94,7 @@ class ExperimentImports:
         with tempfile.TemporaryDirectory(prefix='.fqx-import-', dir=self.root) as folder:
             path = Path(folder) / 'input.fqx'
             path.write_bytes(data)
-            worker = Path(__file__).with_name('experiment_worker.py')
-            python = self.settings.experiment_python or self.settings.local_python or sys.executable
-            try:
-                with tempfile.TemporaryFile() as output, tempfile.TemporaryFile() as errors:
-                    process = subprocess.run([python, str(worker), str(path)], stdout=output, stderr=errors,
-                                             timeout=45, env={**os.environ, 'OMP_NUM_THREADS': '1'})
-                    output.seek(0)
-                    raw = output.read(2 * 1024 * 1024 + 4096)
-                    if len(raw) > 2 * 1024 * 1024:
-                        raise ValueError('Experiment preview exceeds 2 MiB.')
-                    try:
-                        payload = json.loads(raw)
-                    except ValueError:
-                        raise ValueError('Cannot read this experiment. Configure FQ_EXPERIMENT_PYTHON with FlagQuantum fq.load support.')
-            except subprocess.TimeoutExpired:
-                raise ValueError('Experiment import timed out; no computation was submitted.')
-            if process.returncode or not payload.get('ok'):
-                raise ValueError(payload.get('error', 'The SDK could not load this experiment.'))
-            projected = payload['data']
+            projected = self._project(path)
             imported = int(time.time() * 1000)
             source = projected['source']
             info = {**projected['experiment'], 'id': identity, 'filename': filename,
