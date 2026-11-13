@@ -255,6 +255,8 @@ export function createSettingsHosts(ctx: Context, assertActive: () => void = () 
               shadowed: ref !== '' && process.env[ref] !== undefined,
               ...(baseURL !== undefined ? { baseURL } : {}),
               ...(api !== undefined ? { api } : {}),
+              ...(typeof stored.compat === 'object' && stored.compat !== null && !Array.isArray(stored.compat)
+                ? { compat: stored.compat as Record<string, unknown> } : {}),
               ...(hasCustomHeaders ? { hasCustomHeaders: true } : {}),
               ...(models !== undefined ? { models } : {}),
               ...(modelEntries !== undefined && modelEntries.length > 0
