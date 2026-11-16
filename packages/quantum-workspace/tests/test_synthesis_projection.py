@@ -80,7 +80,8 @@ class SynthesisProjectionIntegrationTests(unittest.TestCase):
             fq.save(archive, ir)
             before = sha256(archive.read_bytes()).hexdigest()
             worker = runpy.run_path(str(server / 'experiment_worker.py'))
-            helper = (server / 'synthesis_projection.py').read_text() + '\n' + (server / 'python_publish.py').read_text()
+            helper = '\n'.join((server / filename).read_text()
+                               for filename in ('preview_limits.py', 'synthesis_projection.py', 'python_publish.py'))
             namespace = {}
             exec(compile(helper, '<trusted-test-publisher>', 'exec'), namespace)
             with patch.object(fq, 'run', side_effect=AssertionError('Projection must never execute a circuit')):

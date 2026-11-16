@@ -1,6 +1,7 @@
 """Read an FQX experiment with the installed SDK; never compile or execute it."""
 from collections import Counter
 import json
+import runpy
 from pathlib import Path
 import sys
 import zipfile
@@ -44,8 +45,9 @@ def project(path):
         raise ValueError('Install FlagQuantum with fq.load support in FQ_EXPERIMENT_PYTHON.')
     experiment = fq.load(path)
     ir = experiment.program
-    if not 1 <= ir.n_wires <= 16 or len(ir.instructions) > 2000:
-        raise ValueError('Web import supports 1–16 qubits and at most 2000 gates.')
+    helpers = Path(__file__).parent
+    limits = runpy.run_path(str(helpers / 'preview_limits.py'))
+    limits['validate_preview_size'](ir.n_wires, len(ir.instructions))
     source = emit_openqasm(ir, version=2.0)
     if len(source.encode()) > 32768:
         raise ValueError('The exported circuit exceeds the Web source limit of 32 KiB.')
@@ -63,8 +65,7 @@ def project(path):
                 'instructions': instructions, 'gate_counts': dict(Counter(g.name for g in ir.instructions)),
                 'backend': 'fqx_archive', 'transport': 'archive', 'registers': [], 'groups': {}}
     # Share the pure compiler-attribution projection with the Python publisher.
-    import runpy
-    projection = runpy.run_path(str(Path(__file__).with_name('synthesis_projection.py')))
+    projection = runpy.run_path(str(helpers / 'synthesis_projection.py'))
     compiled.update(projection['project_synthesis'](ir, instructions))
     result = experiment.result
     measurements = []

@@ -9,8 +9,7 @@ def publish(circuit, result=None, name='Python circuit'):
     import flagquantum as fq
     from flagquantum.compiler.openqasm import emit_openqasm
     compiled = fq.compile(circuit)
-    if not 1 <= compiled.n_wires <= 16 or len(compiled.instructions) > 2000:
-        raise ValueError('Web visualization supports 1–16 qubits and at most 2000 gates.')
+    validate_preview_size(compiled.n_wires, len(compiled.instructions))
     source = emit_openqasm(compiled, version=2.0)
     depths = [0]*compiled.n_wires
     instructions = []
