@@ -8,10 +8,12 @@ export function ExecutionPage({
   state,
   dispatch,
   run,
+  runBlockedReason,
 }: {
   state: WorkspaceState;
   dispatch: React.Dispatch<WorkspaceAction>;
   run: () => void;
+  runBlockedReason?: string;
 }) {
   const validSeed =
     Number.isInteger(state.seed) && state.seed >= 0 && state.seed <= 2147483647;
@@ -47,7 +49,7 @@ export function ExecutionPage({
         <div className="push" />
         <button
           className="primary"
-          disabled={state.busy || !valid}
+          disabled={state.busy || !valid || !!runBlockedReason}
           onClick={run}
         >
           <UIIcon
@@ -59,6 +61,7 @@ export function ExecutionPage({
         </button>
       </div>
       <div className="fq-content-pad fq-execution-content">
+        {runBlockedReason && <p role="status">{runBlockedReason}</p>}
         {state.execution && (
           <section
             className="fq-execution-source"

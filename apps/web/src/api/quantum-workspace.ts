@@ -1,3 +1,7 @@
+import type {
+  ExecutionProfile,
+  ExecutionSelection,
+} from "../state/execution-profile";
 import type { ComputeHealth } from "../state/compute-backend";
 import type {
   CompiledProgram,
@@ -34,6 +38,15 @@ export type ComputeConfig = {
 };
 export type ComputeSelection = { config: ComputeConfig; revision: number };
 export const quantumAPI = {
+  executionProfile: () => request<ExecutionSelection>("/api/execution-profile"),
+  checkExecutionCapabilities: () =>
+    request<ExecutionSelection>("/api/execution-profile/check", {}),
+  activateExecutionProfile: (data: {
+    profile: ExecutionProfile;
+    expected_revision: number;
+    environment_revision: number;
+  }) => request<ExecutionSelection>("/api/execution-profile/activate", data),
+
   computeEnvironment: () =>
     request<ComputeSelection>("/api/compute-environment"),
   checkComputeEnvironment: (config: ComputeConfig) =>

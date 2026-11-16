@@ -190,6 +190,27 @@ function JobResults({
             }}
           />
         </header>
+        {result?.execution_requested && (
+          <div
+            className="fq-execution-evidence"
+            aria-label="Recorded execution configuration"
+          >
+            <p>
+              <strong>Requested</strong> · {result.execution_requested.target} ·{" "}
+              {result.execution_requested.method} ·{" "}
+              {result.execution_requested.device} ·{" "}
+              {result.execution_requested.scale}
+            </p>
+            {result.execution_actual && (
+              <p>
+                <strong>Actual</strong> · {result.execution_actual.target} ·{" "}
+                {result.execution_actual.method} ·{" "}
+                {result.execution_actual.device || "device not reported by SDK"}{" "}
+                · {result.execution_actual.scale}
+              </p>
+            )}
+          </div>
+        )}
         {result && (
           <dl className="fq-job-metrics">
             <div>

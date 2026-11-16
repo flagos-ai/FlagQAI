@@ -34,7 +34,17 @@ export type CircuitNode = {
   source_start?: number | null;
   source_end?: number | null;
 };
+export type CircuitExecutionEvidence = {
+  target: string;
+  backend: string;
+  method: string;
+  device: string | null;
+  scale: string;
+  sdk_version?: string;
+};
 export type CompiledProgram = {
+  execution_requested?: CircuitExecutionEvidence;
+  execution_actual?: CircuitExecutionEvidence;
   measurement_qubits?: number[];
   backend?: string;
   transport?: string;

@@ -10,6 +10,7 @@ export function useComputeBackend() {
   const [info, setInfo] = useState<ComputeHealth | null>(null);
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState("");
+  const [targetPreview, setTargetPreview] = useState("simulator");
   const [revision, setRevision] = useState(0);
   useEffect(() => {
     let live = true;
@@ -40,6 +41,14 @@ export function useComputeBackend() {
   }, [revision]);
   return {
     info,
+    targetPreview,
+    setTargetPreview,
+    runBlockedReason:
+      targetPreview === "hardware"
+        ? "No QPU is connected. Select Simulator to run locally or over SSH."
+        : info?.execution?.stale
+          ? "Compute environment changed. Check capabilities and apply an execution profile before running."
+          : "",
     checking,
     error,
     label: info

@@ -16,6 +16,7 @@ class QuantumWorkspaceService:
         self.store = store
         self.adapter = adapter
         self.environments = None
+        self.execution_profiles = None
         self.pool = ThreadPoolExecutor(max_workers=1)
         self.slots = threading.BoundedSemaphore(4)
 
@@ -23,17 +24,21 @@ class QuantumWorkspaceService:
         return self.environments.adapter() if self.environments else self.adapter
 
     def binding(self):
+        if self.execution_profiles:
+            return self.execution_profiles.binding()
         if self.environments:
             return self.environments.binding()
         adapter = self.adapter
         return adapter, {'transport':getattr(adapter, 'transport', 'SSH')}
 
     def health(self):
-        adapter, environment = self.binding()
+        adapter, environment = self.environments.binding() if self.environments else self.binding()
+        execution = self.execution_profiles.describe() if self.execution_profiles else None
         return {
-            'mode': 'real', 'backend': 'flagquantum_pytorch_cpu', 'transport': getattr(adapter, 'transport', 'SSH') if isinstance(getattr(adapter, 'transport', 'SSH'), str) else 'SSH',
+            'mode': 'real', 'backend': 'flagquantum_pytorch' if execution and execution['profile']['device'] != 'cpu' else 'flagquantum_pytorch_cpu', 'transport': getattr(adapter, 'transport', 'SSH') if isinstance(getattr(adapter, 'transport', 'SSH'), str) else 'SSH',
             'max_qubits': LIMITS['qubits'], 'max_shots': LIMITS['shots'],
             'protocol_version': PROTOCOL_VERSION,
+            **({'execution':execution} if execution else {}),
             'note': 'Connection checked when compiling or running.',
             **({'environment': environment, 'configured': bool(environment['config']['transport'] == 'local' or environment['config']['ssh_target'])} if self.environments else {}),
         }
