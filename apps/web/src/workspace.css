@@ -2547,6 +2547,12 @@ body,
   font-size: 10px;
   color: #97a4b5;
 }
+.fq-agent-live-activity {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 @keyframes fq-activity-spin {
   to {
     transform: rotate(360deg);

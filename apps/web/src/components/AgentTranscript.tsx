@@ -6,7 +6,11 @@ import { AgentWorkspaceActions } from "./AgentWorkspaceActions";
 import type { PlatformBridge } from "../hooks/usePlatformBridge";
 import type { QuantumJob } from "../contracts/quantum-workspace";
 import { AgentProgress } from "./AgentProgress";
-import { progressTurns, childRunning } from "../state/agent-progress";
+import {
+  progressTurns,
+  childRunning,
+  currentTurnActivity,
+} from "../state/agent-progress";
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import type {
   SessionViewRow,
@@ -238,6 +242,9 @@ export function AgentTranscript({
   onPrepare: (prompt: string) => void;
 }) {
   const turns = progressTurns(agent.view, roster);
+  const runStatus = agentRunStatus(agent);
+  const activity =
+    runStatus === "Working" ? currentTurnActivity(turns.at(-1)) : "";
   const researchTurns = researchTurnsFromProgress(turns, bridge.actions);
   const stopNotice = stopFeedback(agent.view.stop, agent.view.stopQueued);
   const viewport = useRef<HTMLDivElement>(null);
@@ -564,7 +571,12 @@ export function AgentTranscript({
               <span aria-hidden="true" className="fq-activity-marker active">
                 ◌
               </span>{" "}
-              {agentRunStatus(agent)}
+              <span>{runStatus}</span>
+              {activity && (
+                <span className="fq-agent-live-activity" title={activity}>
+                  · {activity}
+                </span>
+              )}
             </div>
           )}
           {stopNotice && (

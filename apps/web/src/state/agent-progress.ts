@@ -139,6 +139,28 @@ export function progressTurns(view: AgentView, roster: SessionSubagentView[]) {
     };
   });
 }
+export function currentTurnActivity(
+  turn:
+    | {
+        active: boolean;
+        rows: SessionViewRow[];
+        progress?: TurnProgress;
+      }
+    | undefined,
+) {
+  if (!turn?.active) return "";
+  for (let index = turn.rows.length - 1; index >= 0; index--) {
+    const row = turn.rows[index];
+    if (row.kind !== "tool" || !row.tool?.name) continue;
+    if (row.tool.status === "running" || row.tool.status === "pending")
+      return row.tool.name;
+  }
+  return (
+    turn.progress?.todos?.find((item) => item.status === "in_progress")
+      ?.content || ""
+  );
+}
+
 export function dockChildren(view: AgentView, roster: SessionSubagentView[]) {
   const children = new Map<string, ChildActivity>();
   for (const turn of progressTurns(view, roster))

@@ -1955,11 +1955,21 @@ test("native decisions, uncertain stops and reconnect preserve one task without 
     await expect(
       page.getByRole("status", { name: "Working", exact: true }),
     ).toBeVisible();
+    const live = page
+      .getByRole("log", { name: "Agent conversation" })
+      .getByRole("status")
+      .filter({ hasText: "Working" });
+    await expect(live).toHaveText(/Working.*Read/);
     const beforeStop = await get(page, network);
     await page.getByRole("button", { name: "Stop Agent", exact: true }).click();
     await expect(
       page.getByRole("status", { name: "Stopping…", exact: true }),
     ).toBeVisible();
+    const stopStatus = page
+      .getByRole("log", { name: "Agent conversation" })
+      .getByRole("status")
+      .filter({ hasText: "Stopping…" });
+    await expect(stopStatus).toHaveText(/◌\s*Stopping…$/);
     await expect(page.locator(".fq-agent-stop-state")).toContainText(
       "Waiting for the native Agent to finish",
     );
