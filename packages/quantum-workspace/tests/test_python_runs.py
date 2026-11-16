@@ -11,6 +11,7 @@ import unittest
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 from test_bridge import SOURCE, ScriptedCPU
+from unittest.mock import patch
 from workspace_server.config import WorkspaceSettings
 from workspace_server.python_runs import PythonRuns
 from workspace_server.job_store import SQLiteJobStore
@@ -131,6 +132,27 @@ result = fq.run(circuit, outputs=fq.counts(), options=fq.ExecutionOptions(shots=
 fq.save('bell.fqx', result.plan, result=result)
 print('saved', result.counts, flush=True)
 """
+
+    def test_sdk_inspection_uses_bound_runtime_without_creating_runs(self):
+        bridge = WorkspaceBridge(self.settings, self.quantum, self.runs)
+        identity = {'client': 'sdk-client', 'session': 'sdk-session'}
+        bridge.publish({**identity, 'source': 'draft = 42', 'page': 'model', 'name': 'Draft'})
+        status = bridge.act({**identity, 'operation': 'status'})
+        self.assertEqual(status['python_environment']['python'], sys.executable)
+        self.assertNotIn('source', status)
+        with patch.object(self.runs, 'submit', side_effect=AssertionError('must not submit')):
+            report = bridge.act({**identity, 'operation': 'sdk.inspect', 'source': 'raise AssertionError()'})
+        self.assertEqual(report['sdk_version'], fq.__version__)
+        self.assertEqual(report['environment']['python'], sys.executable)
+        self.assertIn('fq.run', report['apis'])
+        self.assertEqual(self.runs.store.list(), [])
+        self.assertEqual(bridge.events(identity['client'], identity['session'], 0), [])
+        with self.assertRaises(BridgeConflict):
+            bridge.act({**identity, 'session': 'other', 'operation': 'sdk.inspect'})
+        for output in ('not JSON', 'x' * 65537):
+            with patch.object(self.runs, 'command', return_value=[sys.executable, '-c', 'print(' + repr(output) + ')']):
+                with self.assertRaisesRegex(ValueError, 'no experiment was submitted'):
+                    self.runs.inspect_sdk()
 
     def test_native_http_python_fqx_workflow_keeps_each_execution_identity(self):
         """Run the real command/HTTP/SDK chain twice, reusing one filename."""

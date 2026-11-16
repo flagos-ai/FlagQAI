@@ -93,7 +93,14 @@ class WorkspaceBridge:
             raise BridgeConflict('The active native session changed. Refresh status before acting.')
         operation = data.get('operation')
         if operation == 'status':
-            return {key: value for key, value in context.items() if key != 'source'} | {'backend': self.service.health()}
+            result = {key: value for key, value in context.items() if key != 'source'} | {'backend': self.service.health()}
+            if self.python_runs:
+                result['python_environment'] = self.python_runs.environment()
+            return result
+        if operation == 'sdk.inspect':
+            if not self.python_runs:
+                raise ValueError('Python runtime unavailable.')
+            return self.python_runs.inspect_sdk()
         if operation == 'draft.read':
             return {'name': context['name'], 'source': context['source'], 'source_hash': context['source_hash']}
         if operation == 'project.inspect':

@@ -143,3 +143,11 @@ test('new code and comparison go through scoped actions without overwriting the 
   assert.equal(bodies[0].model_id, undefined)
   assert.equal(bodies[1].operation, 'experiment.compare')
 })
+
+test('SDK inspection uses only the read-only workbench operation for the bound session', async () => {
+  const apis = { 'fq.run': { signature: '(program)' } }
+  const f = fixture(() => response({ apis }))
+  assert.deepEqual(await f.run('workbench_inspect', { resource: 'sdk' }), { apis })
+  const requests = f.calls.filter(call => call.url.endsWith('/actions'))
+  assert.deepEqual(requests.map(call => JSON.parse(call.init.body)), [{ ...binding, operation: 'sdk.inspect' }])
+})
