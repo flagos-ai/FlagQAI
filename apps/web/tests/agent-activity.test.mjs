@@ -256,6 +256,29 @@ test("CLI tool header prefers native presentation and extracts paths without pai
     /Failed/,
   );
 });
+test("settled terminal exit codes and explicit errors cannot display as successful", () => {
+  const base = { callId: "exit", name: "bash", status: "ok" };
+  const resultView = {
+    card: "terminal",
+    exitCode: 1,
+    output: "Calculation failed",
+  };
+  const terminal = render(AgentTool, { tool: { ...base, resultView } });
+  assert.match(terminal, /Failed/);
+  assert.match(terminal, /Exit code 1/);
+  assert.match(terminal, /Calculation failed/);
+  const adapter = render(AgentTool, {
+    tool: { ...base, errorText: "Runtime error" },
+  });
+  assert.match(adapter, /Failed/);
+  assert.match(adapter, /Runtime error/);
+  assert.doesNotMatch(terminal, />Done</);
+  const running = render(AgentTool, {
+    tool: { ...base, resultView, status: "running" },
+  });
+  assert.match(running, /Running/);
+  assert.doesNotMatch(running, /class="fq-cli-tool [^"]*failed/);
+});
 test("running cards show five latest clean output lines, and previews cannot execute process controls", () => {
   const text = "\x1b[31mold\x1b[0m\n1\n2\n3\n4\n5\nprogress\rnew";
   assert.equal(cleanToolOutput(text), "old\n1\n2\n3\n4\n5\nnew");
