@@ -1,3 +1,4 @@
+import { SynthesisComparison } from "./SynthesisEvidence";
 import { ComparisonFindings } from "./ComparisonFindings";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
@@ -393,6 +394,7 @@ export function ExperimentComparison({
                 warning={warning}
               />
             )}
+            {left && right && <SynthesisComparison left={left} right={right} />}
             <div className="fq-comparison-grid">
               {[
                 {
