@@ -216,13 +216,17 @@ jobs:
 
   web:
     name: Optional Web source and local workspace
-    runs-on: ubuntu-latest
+    # Enable only after the organization restricts the runner group to this
+    # workflow on protected main. Pull request code stays on hosted runners.
+    runs-on: ${{ fromJSON(github.event_name == 'push' && github.ref == 'refs/heads/main' && github.ref_protected && vars.FLAGQAI_WEB_RUNNER == 'enabled' && '["self-hosted","Linux","X64","flagqai-web-linux"]' || '"ubuntu-latest"') }}
     timeout-minutes: 30
     env:
       PYTHONPATH: ${{ github.workspace }}/.ci-flagquantum-sdk
       FQ_LOCAL_PYTHON: python3
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: pnpm/action-setup@v4
         with:
           version: 11.26.0
@@ -258,7 +262,14 @@ jobs:
       - name: Verify session-scoped workbench tools
         run: node --test apps/cli/scripts/workbench-tools.test.mjs apps/cli/scripts/source-server-overlay.test.mjs
       - name: Install pinned Chromium test browser
-        run: pnpm --dir apps/web exec playwright install --with-deps chromium
+        env:
+          RUNNER_ENVIRONMENT: ${{ runner.environment }}
+        run: |
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            pnpm --dir apps/web exec playwright install chromium
+          else
+            pnpm --dir apps/web exec playwright install --with-deps chromium
+          fi
       - name: Browser workbench acceptance (real SDK, scripted Agent, no model calls)
         run: pnpm --dir apps/web test:e2e
       - name: Verify complete product journeys
