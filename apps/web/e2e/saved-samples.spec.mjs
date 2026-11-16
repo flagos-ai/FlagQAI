@@ -10,6 +10,9 @@ test("Jobs reads the full saved sample tensor with its recorded wire order", asy
   });
   const draft = "# Keep this draft\nprint(42)\n";
   await editor.fill(draft);
+  // Browser tests share an isolated server; earlier cases may already have runs.
+  const initialRuns = await (await page.request.get("/api/python/runs")).json();
+  const initialIds = new Set(initialRuns.map((run) => run.id));
   const submit = await page.request.post("/api/python/runs", {
     data: {
       name: "Saved samples acceptance",
@@ -62,7 +65,9 @@ fq.save("ordered-shots.fqx", result.plan, result=result)
   await page.reload();
   await expect(results).toContainText("Qubit order: [2, 0]");
   const runs = await (await page.request.get("/api/python/runs")).json();
-  expect(runs.map((run) => run.id)).toEqual([id]);
+  expect(
+    runs.map((run) => run.id).filter((runId) => !initialIds.has(runId)),
+  ).toEqual([id]);
   await page.getByRole("button", { name: "MODEL", exact: true }).click();
   await expect(editor).toHaveValue(draft);
 });
