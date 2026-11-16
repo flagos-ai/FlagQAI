@@ -273,6 +273,22 @@ const backend = {
           );
           return { accepted: true };
         }
+        if (requestText.startsWith("failure acceptance: ")) {
+          const reason =
+            requestText === "failure acceptance: output limit"
+              ? { kind: "other", label: "max-tokens" }
+              : {
+                  kind: "error",
+                  message:
+                    "400: The reasoning_content in thinking mode must be passed back to the API.",
+                };
+          status = "idle";
+          emit(
+            { type: "turn.end", turn, reason, time: Date.now() },
+            { type: "session.status", status },
+          );
+          return { accepted: true };
+        }
         void (async () => {
           if (controlCase) {
             const callId = "read-" + turn;
