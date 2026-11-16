@@ -6,6 +6,7 @@ import {
   formatComparisonDelta,
   measurementCompatibility,
   circuitDifference,
+  groupedOperationChanges,
   comparisonMeasurements,
 } from "../src/state/experiment-comparison.ts";
 import { workspaceReducer as reduce } from "../src/state/reducer.ts";
@@ -137,5 +138,17 @@ test("task comparison order survives reversed collection responses and retains r
       },
     ]),
     ["a", "b", "c", "d"],
+  );
+});
+
+test("gate changes group identical operations without merging different parameters or positions", () => {
+  const a = { name: "rx", wires: [0], params: { theta: 0.5 } };
+  const b = { ...a, params: { theta: 1 } };
+  const c = { ...a, wires: [1] };
+  const circuit = [a, a, b, c, a];
+  const changes = groupedOperationChanges(circuit, new Set([0, 2, 3, 4]));
+  assert.deepEqual(
+    changes.map(({ indices }) => indices),
+    [[0, 4], [2], [3]],
   );
 });

@@ -85,6 +85,21 @@ const gateKey = (gate: Instruction) =>
     gate.wires,
     Object.entries(gate.params || {}).sort(),
   ]);
+export function groupedOperationChanges(
+  instructions: Instruction[],
+  indices: Set<number>,
+) {
+  const groups = new Map<string, { gate: Instruction; indices: number[] }>();
+  for (const index of indices) {
+    const gate = instructions[index];
+    if (!gate) continue;
+    const key = gateKey(gate);
+    const group = groups.get(key) || { gate, indices: [] };
+    group.indices.push(index);
+    groups.set(key, group);
+  }
+  return [...groups.values()];
+}
 export function circuitDifference(a: Instruction[], b: Instruction[]) {
   if (a.length > 200 || b.length > 200)
     return {

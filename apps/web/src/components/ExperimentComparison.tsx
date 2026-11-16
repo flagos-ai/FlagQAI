@@ -1,3 +1,4 @@
+import { ComparisonFindings } from "./ComparisonFindings";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   listExperiments,
@@ -313,16 +314,6 @@ export function ExperimentComparison({
     left?.program.compiled.instructions || [],
     right?.program.compiled.instructions || [],
   );
-  const operationChanges = [
-    ...[...diff.added].slice(0, 8).map((index) => {
-      const gate = right!.program.compiled.instructions[index];
-      return `+ ${gate.name.toUpperCase()} on ${gate.wires.map((wire) => "q" + wire).join(", ")}`;
-    }),
-    ...[...diff.removed].slice(0, 8).map((index) => {
-      const gate = left!.program.compiled.instructions[index];
-      return `− ${gate.name.toUpperCase()} on ${gate.wires.map((wire) => "q" + wire).join(", ")}`;
-    }),
-  ].join(" · ");
   const choices = records.filter(
     (record) => record.job && record.program.experiment?.has_result,
   );
@@ -384,46 +375,13 @@ export function ExperimentComparison({
               <ResearchMetricComparison left={left} right={right} />
             )}
             {left && right && (
-              <section
-                className="fq-comparison-findings"
-                aria-label="Observed differences"
-              >
-                <small className="eyebrow">OBSERVED DIFFERENCES</small>
-                <h3>
-                  {diff.limited
-                    ? "Open full circuits to inspect operation differences"
-                    : `${diff.added.size} added · ${diff.removed.size} removed operations`}
-                </h3>
-                <p>
-                  {diff.limited
-                    ? "Operation matching is limited to circuits with at most 200 operations."
-                    : operationChanges || "No operation changes."}
-                  {" · "}
-                  Dashed outlines mark changed operations.
-                </p>
-                {warning ? (
-                  <p role="status">{warning}</p>
-                ) : comparison ? (
-                  <>
-                    <p>
-                      Observed distribution distance:{" "}
-                      <strong>{(comparison.distance * 100).toFixed(1)}%</strong>{" "}
-                      · A: {comparison.totalA} counts · B: {comparison.totalB}{" "}
-                      counts
-                    </p>
-                    <p className="fq-muted">
-                      This describes these saved samples. It does not establish
-                      fidelity or a causal explanation; equal counts can hide
-                      phase changes.
-                    </p>
-                  </>
-                ) : (
-                  <p>
-                    Save non-empty counts on both sides to compare
-                    distributions.
-                  </p>
-                )}
-              </section>
+              <ComparisonFindings
+                left={left}
+                right={right}
+                diff={diff}
+                comparison={comparison}
+                warning={warning}
+              />
             )}
             <div className="fq-comparison-grid">
               {[
