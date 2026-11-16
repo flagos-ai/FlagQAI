@@ -34,6 +34,7 @@ export type CircuitNode = {
   depth?: number;
   source_start?: number | null;
   source_end?: number | null;
+  source_ids?: string[];
 };
 export type CircuitExecutionEvidence = {
   target: string;
@@ -63,6 +64,7 @@ export type CompiledProgram = {
     label: string;
     operation?: string;
     action?: string;
+    line?: number | null;
   }[];
   source_hash?: string;
   protocol_version?: string;

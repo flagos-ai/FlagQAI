@@ -1451,3 +1451,17 @@
 .fq-research-next-step small {
   color: var(--ui-muted);
 }
+
+.fq-circuit-sources {
+  margin: 8px 0;
+  padding: 6px 0;
+  border-top: 1px solid var(--ui-line);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.fq-circuit-sources ul {
+  margin: 4px 0 0;
+  padding-inline-start: 18px;
+  color: var(--ui-muted);
+}
