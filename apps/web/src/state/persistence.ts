@@ -153,6 +153,7 @@ export function restoreWorkspace(
     models: Array.isArray(saved.models)
       ? saved.models
       : readJSON<Model[]>(storage, "fq-documents", []),
+    pythonStyles: saved.pythonStyles,
     modelFolders: Array.isArray(saved.modelFolders)
       ? [...new Set(saved.modelFolders.map(normalizeModelFolder))]
           .filter((folder): folder is string => folder !== null)
@@ -184,6 +185,7 @@ export function workspaceBackup(state: WorkspaceState) {
     programs,
     models,
     modelFolders,
+    pythonStyles,
     selectedProgramId,
     selectedJobId,
     shots,
@@ -215,6 +217,7 @@ export function workspaceBackup(state: WorkspaceState) {
     programs: programs.filter((program) => !program.experiment),
     models,
     modelFolders,
+    pythonStyles,
     selectedProgramId,
     selectedJobId,
     shots,

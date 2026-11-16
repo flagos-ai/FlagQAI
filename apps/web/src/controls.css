@@ -1323,3 +1323,10 @@
   .fq-model-folder-toggle:not([aria-disabled="true"]):hover {
   background: #ffffff08;
 }
+
+.fq-workspace.fq-ui-controls .fq-python-style {
+  min-width: 0;
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

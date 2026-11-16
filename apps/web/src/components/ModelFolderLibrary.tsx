@@ -1,3 +1,4 @@
+import { pythonStyleLabels, validPythonStyle } from "../state/python-style";
 import { useState } from "react";
 import type { Model, WorkspaceAction } from "../contracts/quantum-workspace";
 import {
@@ -93,35 +94,41 @@ export function ModelFolderLibrary({
           {expanded && (
             <div className="fq-model-folder-contents">
               {render(node.children)}
-              {node.models.map((model) => (
-                <div className="fq-model-folder-file" key={modelKey(model)}>
-                  <button
-                    className="fq-library-card"
-                    onClick={() => onSelect(model)}
-                    title={model.name}
-                  >
-                    <span className="fq-library-title">
-                      <UIIcon name="file" size={14} />
-                      <span>{model.name}</span>
-                    </span>
-                    <small
-                      title={`${model.language === "python" ? "Python" : "OpenQASM"}${model.reviewOrigin ? " · Reviewed snapshot" : ""}`}
+              {node.models.map((model) => {
+                const style =
+                  model.language === "python" &&
+                  validPythonStyle(model.pythonStyle);
+                return (
+                  <div className="fq-model-folder-file" key={modelKey(model)}>
+                    <button
+                      className="fq-library-card"
+                      onClick={() => onSelect(model)}
+                      title={model.name}
                     >
-                      {model.language === "python" ? "Python" : "OpenQASM"}
-                      {model.reviewOrigin ? " · Reviewed snapshot" : ""}
-                    </small>
-                  </button>
-                  <button
-                    className="fq-control-icon fq-model-folder-move"
-                    aria-label="Move to folder"
-                    aria-description={model.name}
-                    title="Move to folder"
-                    onClick={() => edit(model)}
-                  >
-                    <UIIcon name="tree" size={14} />
-                  </button>
-                </div>
-              ))}
+                      <span className="fq-library-title">
+                        <UIIcon name="file" size={14} />
+                        <span>{model.name}</span>
+                      </span>
+                      <small
+                        title={`${model.language === "python" ? "Python" : "OpenQASM"}${model.reviewOrigin ? " · Reviewed snapshot" : ""}`}
+                      >
+                        {model.language === "python" ? "Python" : "OpenQASM"}
+                        {style ? ` · ${pythonStyleLabels[style]}` : ""}
+                        {model.reviewOrigin ? " · Reviewed snapshot" : ""}
+                      </small>
+                    </button>
+                    <button
+                      className="fq-control-icon fq-model-folder-move"
+                      aria-label="Move to folder"
+                      aria-description={model.name}
+                      title="Move to folder"
+                      onClick={() => edit(model)}
+                    >
+                      <UIIcon name="tree" size={14} />
+                    </button>
+                  </div>
+                );
+              })}
               {!node.count && !node.children.length && (
                 <small className="fq-model-folder-empty">No models</small>
               )}

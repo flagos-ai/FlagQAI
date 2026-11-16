@@ -1,3 +1,4 @@
+import { validPythonStyle } from "./python-style.ts";
 import { normalizeModelFolder } from "./model-folders.ts";
 import type { Model } from "../contracts/quantum-workspace";
 
@@ -36,6 +37,7 @@ export function backupDrafts(text: string): Model[] {
     )
       throw Error("A backup draft has invalid code, name or language.");
     const folder = normalizeModelFolder(item.folder);
+    const pythonStyle = kind === "python" && validPythonStyle(item.pythonStyle);
     const duplicate = models.find(
       (model) => model.source === item.source && model.language === kind,
     );
@@ -45,9 +47,13 @@ export function backupDrafts(text: string): Model[] {
         source: item.source,
         language: kind as "python" | "qasm",
         ...(folder ? { folder } : {}),
+        ...(pythonStyle ? { pythonStyle } : {}),
       });
-    else if (folder && duplicate.name === item.name && !duplicate.folder)
-      duplicate.folder = folder;
+    else if (duplicate.name === item.name) {
+      if (folder && !duplicate.folder) duplicate.folder = folder;
+      if (pythonStyle && !duplicate.pythonStyle)
+        duplicate.pythonStyle = pythonStyle;
+    }
     if (models.length > 128)
       throw Error("Backups support up to 128 distinct code drafts.");
     // Preserve both sides of an unresolved Agent edit as separate detached drafts.
@@ -100,11 +106,14 @@ export function mergeBackupDrafts(
     while (merged.some((m) => m.name === name))
       name = `${model.name.slice(0, 230)} · Restored ${suffix++}`;
     const folder = normalizeModelFolder(model.folder);
+    const pythonStyle =
+      model.language === "python" && validPythonStyle(model.pythonStyle);
     merged.push({
       name,
       source: model.source,
       language: model.language,
       ...(folder ? { folder } : {}),
+      ...(pythonStyle ? { pythonStyle } : {}),
     });
   }
   return merged;

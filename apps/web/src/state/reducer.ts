@@ -1,3 +1,9 @@
+import {
+  modelWithPythonStyle,
+  pythonStyleOverride,
+  updatePythonStyles,
+  validPythonStyle,
+} from "./python-style.ts";
 import { modelKey, normalizeModelFolder } from "./model-folders.ts";
 import { reviewMatches } from "./agent-review.ts";
 import { checkpointProject, projectTransition } from "./project-workspace.ts";
@@ -109,6 +115,13 @@ function reduceWorkspace(
     }
     case "python-run":
       return { ...state, pythonRunId: action.id };
+    case "python-style": {
+      if (state.language !== "python") return state;
+      return {
+        ...state,
+        pythonStyles: updatePythonStyles(state, state, action.style),
+      };
+    }
     case "model-folder-create":
     case "model-folder-move": {
       const path = normalizeModelFolder(action.path);
@@ -169,11 +182,14 @@ function reduceWorkspace(
         state.source === action.model.source
           ? []
           : [
-              {
-                name: `Draft · ${state.name} · ${action.file.id.slice(0, 8)}`,
-                source: state.source,
-                language: state.language || "qasm",
-              },
+              modelWithPythonStyle(
+                {
+                  name: `Draft · ${state.name} · ${action.file.id.slice(0, 8)}`,
+                  source: state.source,
+                  language: state.language || "qasm",
+                },
+                state,
+              ),
             ];
       const next = workspaceReducer(state, {
         type: "model",
@@ -398,13 +414,31 @@ function reduceWorkspace(
           suffix = 1;
         while (models.some((model) => model.name === name))
           name = `Draft · ${state.name} · ${suffix++}`;
-        models.unshift({ name, source: state.source, language: previous });
+        models.unshift(
+          modelWithPythonStyle(
+            { name, source: state.source, language: previous },
+            state,
+          ),
+        );
       }
       return {
         ...state,
         editorLink: undefined,
         name: action.model.name,
         source: action.model.source,
+        pythonStyles:
+          language === "python"
+            ? updatePythonStyles(
+                state,
+                action.model,
+                validPythonStyle(action.model.pythonStyle) ??
+                  (previous === language &&
+                  state.name === action.model.name &&
+                  state.source === action.model.source
+                    ? pythonStyleOverride(state)
+                    : undefined),
+              )
+            : state.pythonStyles,
         models,
         language,
         languageDrafts: {
@@ -528,12 +562,15 @@ function reduceWorkspace(
       return {
         ...state,
         models: [
-          {
-            name: state.name,
-            source: state.source,
-            language: state.language || "qasm",
-            ...(folder ? { folder } : {}),
-          },
+          modelWithPythonStyle(
+            {
+              name: state.name,
+              source: state.source,
+              language: state.language || "qasm",
+              ...(folder ? { folder } : {}),
+            },
+            state,
+          ),
           ...state.models.filter((model) => modelKey(model) !== currentKey),
         ].slice(0, 40),
       };
