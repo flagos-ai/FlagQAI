@@ -126,6 +126,46 @@ except ImportError:
 
 @unittest.skipUnless(HAS_FQX, 'Requires FlagQuantum save/load')
 class PythonFQXTests(PythonRunCase):
+    def test_wide_previews_use_saved_wires_without_running_a_simulator(self):
+        source = """import flagquantum as fq
+import flagquantum_web as web
+
+circuit = fq.Circuit(256).h(255)
+fq.save("wide.fqx", fq.compile(circuit))
+web.publish(circuit, name="Wide preview")
+"""
+        run = self.wait(self.runs.submit({'source': source})['id'])
+        self.assertEqual(run['status'], 'completed', run)
+        self.assertEqual(run['collection_status'], 'completed', run)
+        self.assertEqual(len(run['experiments']), 1)
+        archived = self.runs.experiments.get(run['experiments'][0]['id'])['program']
+        preview = run['artifact']['program']
+        for record in (archived, preview):
+            self.assertEqual(record['compiled']['qubits'], 256)
+            self.assertEqual(record['compiled']['instructions'][0]['wires'], [255])
+        self.assertFalse(archived['experiment']['has_result'])
+        self.assertNotIn('job', run['artifact'])
+        self.assertEqual(self.quantum.adapter.calls, [])
+        with self.assertRaisesRegex(ValueError, '256 qubits'):
+            self.runs.publish(run, {'source': preview['source'],
+                                    'compiled': {**preview['compiled'], 'qubits': 257}})
+
+    def test_wider_previews_still_reject_out_of_bounds_archives_and_publication(self):
+        source = """import flagquantum as fq
+import flagquantum_web as web
+
+circuit = fq.Circuit(257).h(256)
+fq.save("too-wide.fqx", fq.compile(circuit))
+web.publish(circuit, name="Too wide")
+"""
+        run = self.wait(self.runs.submit({'source': source})['id'])
+        self.assertEqual(run['status'], 'failed', run)
+        self.assertEqual(run['experiments'], [])
+        self.assertIn('256 qubits', ''.join(row['text'] for row in run['logs']))
+        self.assertIn('256 qubits', str(run['collection_errors']))
+        self.assertNotIn('artifact', run)
+        self.assertEqual(self.quantum.adapter.calls, [])
+
     SOURCE = """import flagquantum as fq
 circuit = fq.Circuit(2).h(0).cx(0, 1)
 result = fq.run(circuit, outputs=fq.counts(), options=fq.ExecutionOptions(shots=128, seed=42))

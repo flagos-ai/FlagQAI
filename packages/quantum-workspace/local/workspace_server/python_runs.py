@@ -19,6 +19,7 @@ import uuid
 from .job_store import SQLiteJobStore
 from .experiments import ExperimentImports
 from .python_artifacts import ExperimentTransfer
+from .preview_limits import validate_preview_size
 from .projects import Projects, manifest_hash
 from quantum_workspace_protocol import source_hash
 
@@ -250,7 +251,9 @@ with tempfile.TemporaryDirectory(prefix='fq-sdk-preflight-') as directory:
             run['status'] = 'running'; self.store.put(run)
             process = subprocess.Popen(self.command(settings=selected), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE, text=True, start_new_session=True)
-            request = {'source':run['source'], 'helper':(Path(__file__).parent/'synthesis_projection.py').read_text() + '\n' + (Path(__file__).parent/'python_publish.py').read_text()}
+            helper_files = ('preview_limits.py', 'synthesis_projection.py', 'python_publish.py')
+            helper = '\n'.join(Path(__file__).with_name(filename).read_text() for filename in helper_files)
+            request = {'source':run['source'], 'helper':helper}
             if run.get('project'):
                 saved = self.settings.database_path.parent / 'python-inputs' / (run['id'] + '.json')
                 bundle = json.loads(saved.read_text())
@@ -359,10 +362,11 @@ with tempfile.TemporaryDirectory(prefix='fq-sdk-preflight-') as directory:
         source = artifact.get('source')
         CircuitRequest.parse({'source':source})
         compiled = artifact['compiled']
-        if not isinstance(compiled, dict) or not 1 <= compiled.get('qubits',0) <= 16 or len(compiled.get('instructions',[])) > 2000:
+        if not isinstance(compiled, dict) or not isinstance(compiled.get('instructions'), list):
             raise ValueError('Invalid published circuit.')
-        qubits = compiled['qubits']
-        if type(qubits) is not int or not isinstance(compiled.get('version'),str) or type(compiled.get('depth')) is not int or compiled['depth'] < 0:
+        qubits = compiled.get('qubits')
+        validate_preview_size(qubits, len(compiled['instructions']))
+        if not isinstance(compiled.get('version'),str) or type(compiled.get('depth')) is not int or compiled['depth'] < 0:
             raise ValueError('Invalid circuit metadata.')
         for gate in compiled.get('instructions',[]):
             if not isinstance(gate,dict) or not isinstance(gate.get('name'),str) or not isinstance(gate.get('wires'),list) or not gate['wires'] or any(type(wire) is not int or not 0 <= wire < qubits for wire in gate['wires']) or not isinstance(gate.get('params',{}),dict):
