@@ -281,6 +281,24 @@ test("settled terminal exit codes and explicit errors cannot display as successf
   assert.match(running, /Running/);
   assert.doesNotMatch(running, /class="fq-cli-tool [^"]*failed/);
 });
+test("earlier failed calls in completed turns retain their failed label and fold the diagnostic", () => {
+  const tool = {
+    callId: "earlier",
+    name: "Bash",
+    status: "ok",
+    resultView: {
+      card: "terminal",
+      exitCode: 1,
+      output: "Transient read failure",
+    },
+  };
+  const current = render(AgentTool, { tool });
+  assert.match(current, /Transient read failure/);
+  assert.match(current, /Exit code 1/);
+  const earlier = render(AgentTool, { tool, completedTurn: true });
+  assert.match(earlier, /Failed · Earlier call/);
+  assert.doesNotMatch(earlier, /Transient read failure|Exit code 1|Recovered/);
+});
 test("running cards show five latest clean output lines, and previews cannot execute process controls", () => {
   const text = "\x1b[31mold\x1b[0m\n1\n2\n3\n4\n5\nprogress\rnew";
   assert.equal(cleanToolOutput(text), "old\n1\n2\n3\n4\n5\nnew");

@@ -28,14 +28,22 @@ import { canRetryDelivery } from "../state/agent-recovery";
 function Row({
   row,
   thinking,
+  completedTurn,
   onOpenRun,
 }: {
   row: SessionViewRow;
   thinking: boolean;
+  completedTurn: boolean;
   onOpenRun: (id: string) => Promise<void>;
 }) {
   if (row.kind === "tool" && row.tool)
-    return <AgentTool tool={row.tool} onOpenRun={onOpenRun} />;
+    return (
+      <AgentTool
+        tool={row.tool}
+        onOpenRun={onOpenRun}
+        completedTurn={completedTurn}
+      />
+    );
   if (row.kind === "reasoning")
     return <AgentThinking row={row} active={thinking} />;
   if (row.kind === "user" || row.kind === "assistant") {
@@ -366,6 +374,7 @@ export function AgentTranscript({
                 <Row
                   row={row}
                   onOpenRun={bridge.inspectRun}
+                  completedTurn={!live && turn.outcome === "completed"}
                   thinking={
                     turn.active &&
                     row.durationMs === undefined &&

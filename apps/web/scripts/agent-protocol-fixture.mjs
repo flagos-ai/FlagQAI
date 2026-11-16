@@ -310,8 +310,10 @@ const backend = {
                 turn,
                 step: 1,
                 time: Date.now(),
-                isError: false,
-                text: "Fixture record read.",
+                isError: index === 1,
+                text:
+                  index === 1 ? "Fixture read failed." : "Fixture record read.",
+                errorText: index === 1 ? "Fixture read failed." : undefined,
               },
             );
           }

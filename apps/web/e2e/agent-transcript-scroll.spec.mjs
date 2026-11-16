@@ -74,6 +74,13 @@ test("latest output hides at the bottom and opening Worked for reveals its first
   await worked.click({ position: { x: 12, y: 8 } });
   await expect(first).toBeInViewport({ ratio: 0.8 });
   await expect(worked).toBeInViewport();
+  await expect(first).toContainText("Failed · Earlier call");
+  await expect(first.getByText("Fixture read failed.")).toHaveCount(0);
+  await first.getByRole("button", { name: /Earlier call/ }).click();
+  await expect(first.getByLabel("Tool result preview")).toContainText(
+    "Fixture read failed.",
+  );
+  await expect(transcript.getByText("Recorded finding 32.")).toBeVisible();
   await expect(editor).toHaveValue(draft);
   expect(sent).toHaveLength(1);
 });
