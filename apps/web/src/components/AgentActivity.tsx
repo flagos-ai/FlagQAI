@@ -49,10 +49,14 @@ export function AgentTool({
   const [opening, setOpening] = useState(false);
   const [openError, setOpenError] = useState("");
   const [expanded, setExpanded] = useState(false),
-    running = tool.status === "running" || tool.status === "pending",
-    failed = tool.status === "error";
+    running = tool.status === "running" || tool.status === "pending";
   const elapsed = useElapsed(tool.startedAt, running),
     presentation = toolPresentation(tool);
+  const failed =
+    !running &&
+    (tool.status === "error" ||
+      !!tool.errorText ||
+      (presentation.exit !== undefined && presentation.exit !== 0));
   const outcomeFailed = !running && presentation.tone === "error";
   const live = running && !!tool.liveOutput;
   const output = live
