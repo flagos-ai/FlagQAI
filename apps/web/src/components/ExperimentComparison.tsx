@@ -35,86 +35,96 @@ export function CircuitPreview({
 }) {
   const all = program.compiled.instructions,
     gates = all.slice(0, 16);
-  const wires = Math.min(program.compiled.qubits, 6),
+  const wires = program.compiled.qubits,
     width = Math.max(300, 100 + gates.length * 66),
     rowGap = compact ? 56 : 76,
     height = (compact ? 28 : 32) + wires * rowGap;
   const y = (wire: number) => (compact ? 34 : 42) + wire * rowGap;
   return (
     <div className={"fq-compare-circuit" + (compact ? " is-compact" : "")}>
-      <svg
-        width={width}
-        height={height}
-        role="group"
-        aria-label={program.name + " circuit preview"}
+      <div
+        className="fq-preview-viewport"
+        role="region"
+        tabIndex={0}
+        aria-label={program.name + " circuit preview viewport"}
       >
-        {Array.from({ length: wires }, (_, wire) => (
-          <g key={wire}>
-            <text x={12} y={y(wire) + 4} fill="#aeb5c0" fontSize={11}>
-              q{wire}
-            </text>
-            <line
-              x1={40}
-              x2={width - 12}
-              y1={y(wire)}
-              y2={y(wire)}
-              stroke="#737985"
-              strokeWidth={1}
-            />
-          </g>
-        ))}
-        {gates.map((gate, index) => {
-          if (!gate.wires.length || gate.wires.some((wire) => wire >= wires))
-            return null;
-          const x = 70 + index * 66;
-          return (
-            <g key={index}>
-              {changed.has(index) && (
-                <rect
-                  x={x - 25}
-                  y={Math.min(...gate.wires.map(y)) - 27}
-                  width={50}
-                  height={
-                    Math.max(...gate.wires.map(y)) -
-                    Math.min(...gate.wires.map(y)) +
-                    54
-                  }
-                  rx={8}
-                  fill="none"
-                  stroke="#7cc9ff"
-                  strokeDasharray="3 3"
-                />
-              )}
-              {gate.name.toLowerCase() === "measure" ? (
-                gate.wires.map((wire) => (
-                  <MeasurementSymbol
-                    key={wire}
+        <svg
+          width={width}
+          height={height}
+          viewBox={`0 0 ${width} ${height}`}
+          role="group"
+          aria-label={program.name + " circuit preview"}
+        >
+          {Array.from({ length: wires }, (_, wire) => (
+            <g key={wire}>
+              <text x={12} y={y(wire) + 4} fill="#aeb5c0" fontSize={11}>
+                q{wire}
+              </text>
+              <line
+                x1={40}
+                x2={width - 12}
+                y1={y(wire)}
+                y2={y(wire)}
+                stroke="#737985"
+                strokeWidth={1}
+              />
+            </g>
+          ))}
+          {gates.map((gate, index) => {
+            if (!gate.wires.length || gate.wires.some((wire) => wire >= wires))
+              return null;
+            const x = 70 + index * 66;
+            return (
+              <g key={index}>
+                {changed.has(index) && (
+                  <rect
+                    x={x - 25}
+                    y={Math.min(...gate.wires.map(y)) - 27}
+                    width={50}
+                    height={
+                      Math.max(...gate.wires.map(y)) -
+                      Math.min(...gate.wires.map(y)) +
+                      54
+                    }
+                    rx={8}
+                    fill="none"
+                    stroke="#7cc9ff"
+                    strokeDasharray="3 3"
+                  />
+                )}
+                {gate.name.toLowerCase() === "measure" ? (
+                  gate.wires.map((wire) => (
+                    <MeasurementSymbol
+                      key={wire}
+                      x={x}
+                      y={y(wire)}
+                      label={"q" + wire}
+                      wires={[wire]}
+                      onSelect={onOpen}
+                    />
+                  ))
+                ) : (
+                  <GateSymbol
+                    gate={gate}
+                    index={index}
                     x={x}
-                    y={y(wire)}
-                    label={"q" + wire}
-                    wires={[wire]}
+                    width={54}
+                    y={y}
+                    bus={false}
                     onSelect={onOpen}
                   />
-                ))
-              ) : (
-                <GateSymbol
-                  gate={gate}
-                  index={index}
-                  x={x}
-                  width={54}
-                  y={y}
-                  bus={false}
-                  onSelect={onOpen}
-                />
-              )}
-            </g>
-          );
-        })}
-      </svg>
-      {(all.length > 16 || program.compiled.qubits > 6) && (
-        <small>
-          Preview: first 16 operations and 6 qubits. Open the full circuit for
-          all operations.
+                )}
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+      {(all.length > 16 || wires > 6) && (
+        <small className="fq-preview-caption">
+          {all.length > 16
+            ? `First ${gates.length} of ${all.length} operations`
+            : `${all.length} operations`}
+          {" · "}all {wires} qubits. Scroll to inspect the preview.
         </small>
       )}
     </div>
