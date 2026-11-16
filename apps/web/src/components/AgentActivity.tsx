@@ -58,6 +58,13 @@ export function AgentTool({
       !!tool.errorText ||
       (presentation.exit !== undefined && presentation.exit !== 0));
   const outcomeFailed = !running && presentation.tone === "error";
+  const needsAttention = !running && presentation.tone === "attention";
+  const showPreview =
+    running ||
+    failed ||
+    outcomeFailed ||
+    needsAttention ||
+    presentation.tone === "pending";
   const live = running && !!tool.liveOutput;
   const output = live
     ? cleanToolOutput(tool.liveOutput || "")
@@ -79,7 +86,7 @@ export function AgentTool({
         (presentation.workbench ? " workbench" : "") +
         (failed || outcomeFailed
           ? " failed"
-          : !running && presentation.tone === "attention"
+          : needsAttention
             ? " attention"
             : "")
       }
@@ -106,7 +113,7 @@ export function AgentTool({
           ›
         </span>
       </button>
-      {output && (
+      {output && (expanded || showPreview) && (
         <div
           className={"fq-activity-output " + (presentation.diff ? "diff" : "")}
           aria-label={live ? "Live tool output" : "Tool result preview"}
@@ -140,7 +147,7 @@ export function AgentTool({
           </pre>
         </div>
       )}
-      {!expanded && preview.omitted > 0 && (
+      {!expanded && showPreview && preview.omitted > 0 && (
         <button className="fq-activity-more" onClick={() => setExpanded(true)}>
           Show {preview.omitted} more {preview.omitted === 1 ? "line" : "lines"}
         </button>
@@ -150,7 +157,7 @@ export function AgentTool({
           Showing {live ? "latest" : "first"} 16,000 characters.
         </small>
       )}
-      {tool.liveOutputDropped ? (
+      {tool.liveOutputDropped && (expanded || showPreview) ? (
         <small className="fq-activity-footnote">
           {tool.liveOutputDropped} earlier live lines omitted by runtime
         </small>

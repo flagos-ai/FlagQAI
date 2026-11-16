@@ -2217,7 +2217,9 @@ test("comparison task opens a durable side-by-side experiment with real gate and
   await expect(waitCard.locator(".fq-activity-meta")).toContainText(
     "Results ready",
   );
+  await expect(waitCard.locator(".fq-activity-output")).toHaveCount(0);
   await waitCard.locator(".fq-activity-header").click();
+  await expect(waitCard.locator(".fq-activity-output")).toBeVisible();
   const raw = waitCard.locator(".fq-activity-details details").filter({
     has: page.locator("summary").filter({ hasText: /^Raw result$/ }),
   });
