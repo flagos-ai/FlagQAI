@@ -611,7 +611,14 @@ export function createFlagQaiServer(options = {}) {
         if (binding.compacting && method !== "GET" && !['messages', 'cancel'].includes(segments[2])) throw new HttpError(409, "compaction_in_progress", "Wait for native compaction to finish");
         if (method !== "GET" && binding.acting) throw new HttpError(409, "session_action_in_progress", "Wait for the session action to finish");
         if (method !== "GET" && binding.changingModel) throw new HttpError(409, "model_switch_in_progress", "Wait for the model switch to finish");
-        if (method !== "GET" && binding.preparingInput) throw new HttpError(409, "input_preparation_in_progress", "Wait for the message attachments to finish");
+        // The native turn may ask for a decision before submit returns or the
+        // durable receipt finishes writing. Keep other mutations fenced.
+        const activeTurnControl = method === "POST" && binding.preparingInput === "dispatched"
+          && ((segments[2] === "cancel" && segments.length === 3
+              && (binding.session.status === "running" || binding.pendingQuestions.size || binding.pendingPermissions.size))
+            || (segments[2] === "permissions" && binding.pendingPermissions.has(segments[3]))
+            || (segments[2] === "questions" && binding.pendingQuestions.has(segments[3])));
+        if (method !== "GET" && binding.preparingInput && !activeTurnControl) throw new HttpError(409, "input_preparation_in_progress", "Wait for the message attachments to finish");
         if (method === 'POST' && segments.length === 3 && segments[2] === 'plan') {
           const input = await readJson(request);
           if (typeof input?.active !== 'boolean' || Object.keys(input).some(key => key !== 'active')) throw new HttpError(400, 'invalid_plan', 'Choose whether plan mode is active');
@@ -877,7 +884,7 @@ export function createFlagQaiServer(options = {}) {
           return;
         }
         if (method === "POST" && segments.length === 3 && segments[2] === "messages") {
-          binding.preparingInput = true;
+          binding.preparingInput = "preparing";
           try {
             const parsed = parseMessageRequest(await readJson(request, 6 * 1024 * 1024));
             const key = parsed.input.clientMessageId;
@@ -905,7 +912,9 @@ export function createFlagQaiServer(options = {}) {
               if (!await store.admit(key, admitted))
                 throw new HttpError(409, "message_outcome_unknown", "Check the existing submission before retrying");
             } else binding.submissions.set(key, admitted);
-            const receipt = await binding.session.submit(input, parsed.placement);
+            const submission = binding.session.submit(input, parsed.placement);
+            binding.preparingInput = "dispatched";
+            const receipt = await submission;
             admitted.receipt = receipt;
             if (store) await store.settle(key, admitted);
             json(response, 202, { receipt });

@@ -177,6 +177,46 @@ if (process.argv[2] === '--delivery-fixture') {
     await rejectsCode(client.messageDelivery(resumed.id, 'x'.repeat(513)), 'invalid_message_id')
   })
 
+  test('active turn can stop before the send receipt settles while duplicate submits stay fenced', { timeout: 15000 }, async t => {
+    const root = await temporary(t)
+    const dispatched = Promise.withResolvers()
+    const release = Promise.withResolvers()
+    let stops = 0
+    let submits = 0
+    const native = backend(join(root, 'submissions.jsonl'))
+    const openNative = native.open
+    native.open = async target => {
+      const session = await openNative(target)
+      session.submit = async () => {
+        submits++
+        session.status = 'running'
+        dispatched.resolve()
+        await release.promise
+        return { accepted: true }
+      }
+      session.cancel = async cause => {
+        stops++
+        session.status = 'idle'
+        return { outcome: 'confirmed', cause }
+      }
+      return session
+    }
+    const { server, client } = await serve(root, { backend: native })
+    t.after(() => { release.resolve(); return server.close() })
+    const session = await open(client, root)
+    const input = { clientMessageId: 'stop-before-receipt', text: 'Start local work' }
+    const inflight = client.submitMessage(session.id, input)
+    await dispatched.promise
+    assert.deepEqual(await client.messageDelivery(session.id, input.clientMessageId), { status: 'unconfirmed' })
+    await rejectsCode(client.submitMessage(session.id, input), 'input_preparation_in_progress')
+    assert.equal((await client.cancelSession(session.id, { cause: 'user' })).outcome, 'confirmed')
+    assert.equal(stops, 1)
+    release.resolve()
+    assert.deepEqual(await inflight, { accepted: true })
+    assert.deepEqual(await client.submitMessage(session.id, input), { accepted: true })
+    assert.equal(submits, 1)
+  })
+
   test('untracked legacy sessions and memory-only resumed sessions never assert absence', { timeout: 15000 }, async t => {
     const root = await temporary(t)
     for (const durable of [true, false]) {
