@@ -19,6 +19,7 @@ import { splitWorkspaceContext } from "../state/agent-view";
 import { AgentTool, AgentThinking } from "./AgentActivity";
 import { AgentReplyActions } from "./AgentReplyActions";
 import { AgentMarkdown } from "./AgentMarkdown";
+import { agentFailureGuidance } from "../state/agent-failure";
 import { canRetryDelivery } from "../state/agent-recovery";
 function Row({
   row,
@@ -85,6 +86,24 @@ function Row({
           </details>
         )}
       </article>
+    );
+  }
+  const guidance = agentFailureGuidance(row);
+  if (guidance) {
+    return (
+      <div className="fq-agent-notice fq-agent-failure">
+        <strong>{guidance.title}</strong>
+        <p>
+          {guidance.summary} {guidance.nextStep}
+        </p>
+        <details className="fq-agent-attachment">
+          <summary>Technical details</summary>
+          <pre>
+            {row.label ? row.label + ": " : ""}
+            {row.text}
+          </pre>
+        </details>
+      </div>
     );
   }
   return row.text ? (

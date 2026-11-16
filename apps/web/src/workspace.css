@@ -1979,6 +1979,17 @@ body,
   border-left: 2px solid #78899e;
   padding-left: 8px;
 }
+.fq-agent-failure {
+  border-left-color: var(--warning, #bba06a);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.fq-agent-failure p {
+  margin: 3px 0 0;
+}
+.fq-agent-failure .fq-agent-attachment {
+  margin-top: 4px;
+}
 .fq-agent-notice .fq-agent-text {
   font-size: 10px;
   color: #a8b2c0;
