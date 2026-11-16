@@ -1,0 +1,221 @@
+{
+  "revision": "b3fa4a78935777bb8e3853752192e9cd47972b2f",
+  "sdkVersion": "0.4.0",
+  "python": "3.12.14 (main, Sep  1 2026, 14:09:38) [Clang 22.1.3 ]",
+  "sdkCodeSha256": "70c086a1efb9a0588e8dd510ac7a0dd45ea8a0209e2abdc862b0cc2944678df6",
+  "recordedAt": "2026-11-16",
+  "scope": "Recorded local acceptance; does not certify the current execution environment.",
+  "results": [
+    {
+      "id": "algorithms/foundational/bernstein_vazirani",
+      "sourceSha256": "351627620c300030e3641b02de36af933b4035652380da51b1863510af89b92c",
+      "checks": {
+        "run": {
+          "passed": true,
+          "exitCode": 0
+        },
+        "comparison": {
+          "passed": true,
+          "exitCode": 0
+        },
+        "savedReplay": {
+          "passed": true,
+          "exitCode": 0
+        }
+      },
+      "elapsedSeconds": 5.737,
+      "passed": true,
+      "artifactSha256": "5030f394d353975b7b365671947b69064912709a84f14d85af543832121ef34b"
+    },
+    {
+      "id": "algorithms/search_and_optimization/qaoa/qaoa_max_cut",
+      "sourceSha256": "5b7ad4060dfc366a45745761eb3eeed2832a5b430e13b9bda0e5a2fd9c022fdd",
+      "checks": {
+        "run": {
+          "passed": true,
+          "exitCode": 0
+        },
+        "comparison": {
+          "passed": true,
+          "exitCode": 0
+        },
+        "savedReplay": {
+          "passed": true,
+          "exitCode": 0
+        }
+      },
+      "elapsedSeconds": 5.575,
+      "passed": true,
+      "artifactSha256": "8826fa39233adbba9d776c7852647ab68e99fab5ce9e507615b7c35f8e12d93d"
+    },
+    {
+      "id": "applications/chemistry/molecule_eigensolver",
+      "sourceSha256": "58d6d3306b5447f7e2305ec35cea8caf1aa87eb543d8e08eab240d4b88a27aee",
+      "checks": {
+        "run": {
+          "passed": true,
+          "exitCode": 0
+        },
+        "comparison": {
+          "passed": true,
+          "exitCode": 0
+        },
+        "savedReplay": {
+          "passed": true,
+          "exitCode": 0
+        }
+      },
+      "elapsedSeconds": 4.906,
+      "passed": true,
+      "artifactSha256": "bf16cafc671e302ae347933c475f745c1c6ce02fa6fca00a2b970c775d1f1b18"
+    },
+    {
+      "id": "applications/physical_systems/ising_model",
+      "sourceSha256": "dfe9b72bf2c1f458cf934bb5531e2033c47e15d94cb4573e871f0c883e483d91",
+      "checks": {
+        "run": {
+          "passed": true,
+          "exitCode": 0
+        },
+        "comparison": {
+          "passed": true,
+          "exitCode": 0
+        },
+        "savedReplay": {
+          "passed": true,
+          "exitCode": 0
+        }
+      },
+      "elapsedSeconds": 5.125,
+      "passed": true,
+      "artifactSha256": "c5922cd98c0db1a3ef26f1dcd80fcddb49ae7a0b75cf02b8a9833d683d4fd453"
+    },
+    {
+      "id": "community/paper_implementation_project/bb84/bb84_implementation",
+      "sourceSha256": "9f1ffb09319e74aac9d3229697f30e97a2a0477bbca4f0f35473e1b302c0c762",
+      "checks": {
+        "run": {
+          "passed": true,
+          "exitCode": 0
+        },
+        "comparison": {
+          "passed": true,
+          "exitCode": 0
+        },
+        "savedReplay": {
+          "passed": true,
+          "exitCode": 0
+        }
+      },
+      "elapsedSeconds": 6.17,
+      "passed": true,
+      "artifactSha256": "f8b4ce8df28df7bed10acc34a680537138825d0d914f2f92325230669279c7a5"
+    },
+    {
+      "id": "functions/qft",
+      "sourceSha256": "f78f8c8b8858d14b14e69bb7379ea6e9056bcaa0e7c2361ced559a4708caf16a",
+      "checks": {
+        "run": {
+          "passed": true,
+          "exitCode": 0
+        },
+        "comparison": {
+          "passed": true,
+          "exitCode": 0
+        },
+        "savedReplay": {
+          "passed": true,
+          "exitCode": 0
+        }
+      },
+      "elapsedSeconds": 6.094,
+      "passed": true,
+      "artifactSha256": "0271d18c63ce3b1c1bebb323526bc71a07d2631f62aa00a42f4655e27c6c1cb0"
+    },
+    {
+      "id": "functions/qsvt",
+      "sourceSha256": "cd7f7a0d310ce65b39467fe5ac549a251025ca29bb10abcf732b9676104d534b",
+      "checks": {
+        "run": {
+          "passed": true,
+          "exitCode": 0
+        },
+        "comparison": {
+          "passed": true,
+          "exitCode": 0
+        },
+        "savedReplay": {
+          "passed": true,
+          "exitCode": 0
+        }
+      },
+      "elapsedSeconds": 14.431,
+      "passed": true,
+      "artifactSha256": "c351505548d131272984b060854d3f6694b468cb40f2125eac8829162bd30d65"
+    },
+    {
+      "id": "functions/state_preparation/prepare_ghz_state",
+      "sourceSha256": "9557e9d86513a32f4afa177178d55dd238512e79d3468a46ae60ba1d9ce44cf9",
+      "checks": {
+        "run": {
+          "passed": true,
+          "exitCode": 0
+        },
+        "comparison": {
+          "passed": true,
+          "exitCode": 0
+        },
+        "savedReplay": {
+          "passed": true,
+          "exitCode": 0
+        }
+      },
+      "elapsedSeconds": 4.245,
+      "passed": true,
+      "artifactSha256": "da5e57177642f08d35a1ce7945d801fdb4384da45fdd8c3d1b19c11b605c804d"
+    },
+    {
+      "id": "functions/hamiltonian_evolution/suzuki_trotter",
+      "sourceSha256": "d90c0b537971bb46d2002390776d6a4d209862530b240c0329fe83499da88bf7",
+      "checks": {
+        "run": {
+          "passed": true,
+          "exitCode": 0
+        },
+        "comparison": {
+          "passed": true,
+          "exitCode": 0
+        },
+        "savedReplay": {
+          "passed": true,
+          "exitCode": 0
+        }
+      },
+      "elapsedSeconds": 4.568,
+      "passed": true,
+      "artifactSha256": "94efbe8d42cf338d69458b46f537a5e572735bb08960ba6097b8946da733b61b"
+    },
+    {
+      "id": "tutorials/basics/quantum_programming/synthesis_tutorial",
+      "sourceSha256": "0a31054c2e78d789b5780789ad5d1d8a9545268b96f76510e52126064a4a7c81",
+      "checks": {
+        "run": {
+          "passed": true,
+          "exitCode": 0
+        },
+        "comparison": {
+          "passed": true,
+          "exitCode": 0
+        },
+        "savedReplay": {
+          "passed": true,
+          "exitCode": 0
+        }
+      },
+      "elapsedSeconds": 6.128,
+      "passed": true,
+      "artifactSha256": "4d100f06e872ce1adabcb322eb1405f3ebda01d932ad70352804469940703505"
+    }
+  ],
+  "passed": true
+}

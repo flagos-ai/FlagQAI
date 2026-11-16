@@ -1,0 +1,4 @@
+Native examples from flagos-ai/FlagQuantum at b3fa4a78935777bb8e3853752192e9cd47972b2f.
+Adapted script entry points save FQX artifacts; definitions retain their source identity.
+Upstream migration derives examples from the Classiq library; retain both included licenses.
+See each pinned README for provenance and independent comparison commands.
