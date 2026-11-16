@@ -890,3 +890,77 @@
   flex-shrink: 0;
   font-size: 11px;
 }
+
+.fq-compute-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.fq-compute-dialog {
+  width: min(540px, calc(100vw - 32px));
+}
+.fq-compute-dialog header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.fq-compute-dialog h2 {
+  margin: 0;
+  font-size: 17px;
+}
+.fq-compute-dialog p {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #aeb8c6;
+}
+.fq-compute-dialog fieldset {
+  margin: 16px 0;
+  padding: 0;
+  border: 0;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.fq-compute-dialog label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+}
+.fq-compute-dialog input,
+.fq-compute-dialog select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.fq-compute-dialog details label {
+  margin-top: 12px;
+}
+.fq-compute-dialog [role="alert"] {
+  color: #f1b4a9;
+  overflow-wrap: anywhere;
+}
+.fq-compute-dialog footer {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+.fq-compute-dialog footer span {
+  flex: 1 1 100%;
+  color: #aeb8c6;
+  font-size: 11px;
+}
+.fq-compute-checked {
+  padding: 10px 12px;
+  background: #1b2935;
+  border-radius: 6px;
+  font-size: 12px;
+}
+.fq-compute-checked p {
+  margin: 5px 0 0;
+}

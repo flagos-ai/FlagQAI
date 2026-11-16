@@ -62,14 +62,26 @@ export function usePythonWorkspace(
   const lock = useRef(false),
     seen = useRef(new Set<string>());
   useEffect(() => {
-    void pythonAPI
-      .environment()
-      .then(setEnvironment)
-      .catch(() => {});
+    let current = 0;
+    const refresh = () => {
+      const request = ++current;
+      void pythonAPI
+        .environment()
+        .then((value) => {
+          if (request === current) setEnvironment(value);
+        })
+        .catch(() => {});
+    };
+    refresh();
+    window.addEventListener("fq-compute-environment-changed", refresh);
     void pythonAPI
       .list()
       .then(setRuns)
       .catch(() => {});
+    return () => {
+      current++;
+      window.removeEventListener("fq-compute-environment-changed", refresh);
+    };
   }, []);
   useEffect(() => {
     setRun(undefined);

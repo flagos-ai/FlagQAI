@@ -26,8 +26,9 @@ def _first_counts(info):
 
 
 class ExperimentImports:
-    def __init__(self, settings):
+    def __init__(self, settings, runtime_settings=None):
         self.settings = settings
+        self.runtime_settings = runtime_settings or (lambda: settings)
         self.root = settings.database_path.parent / 'experiments'
         self.root.mkdir(parents=True, exist_ok=True)
         self.store = SQLiteJobStore(settings.database_path.with_suffix('.experiments.sqlite3'))
@@ -87,9 +88,12 @@ class ExperimentImports:
             raise FileNotFoundError('Experiment not found.')
         return self.root / (identity + '.fqx')
 
-    def _project(self, path):
+    def _project(self, path, local_archive_python=None):
         worker = Path(__file__).with_name('experiment_worker.py')
-        python = self.settings.experiment_python or self.settings.local_python or sys.executable
+        current = self.runtime_settings()
+        # Imported run provenance can contain arbitrary strings. Only configured
+        # interpreters and the current server's captured execution settings qualify.
+        python = current.experiment_python or local_archive_python or current.local_python or sys.executable
         try:
             with tempfile.TemporaryFile() as output, tempfile.TemporaryFile() as errors:
                 process = subprocess.run([python, str(worker), str(path)], stdout=output, stderr=errors,
@@ -108,7 +112,7 @@ class ExperimentImports:
             raise ValueError(payload.get('error', 'The SDK could not load this experiment.'))
         return payload['data']
 
-    def import_file(self, data, filename, python_run=None, task_path=None):
+    def import_file(self, data, filename, python_run=None, task_path=None, *, local_archive_python=None):
         if not data or len(data) > MAX_UPLOAD_BYTES:
             raise ValueError('Upload an .fqx experiment no larger than 16 MiB.')
         filename = Path(filename).name[:160]
@@ -118,7 +122,7 @@ class ExperimentImports:
         with tempfile.TemporaryDirectory(prefix='.fqx-import-', dir=self.root) as folder:
             path = Path(folder) / 'input.fqx'
             path.write_bytes(data)
-            projected = self._project(path)
+            projected = self._project(path, local_archive_python) if local_archive_python else self._project(path)
             imported = int(time.time() * 1000)
             source = projected['source']
             info = {**projected['experiment'], 'id': identity, 'filename': filename,

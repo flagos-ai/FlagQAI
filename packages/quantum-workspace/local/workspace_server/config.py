@@ -19,6 +19,7 @@ class WorkspaceSettings:
     local_python: Optional[str] = None
     experiment_python: Optional[str] = None
     remote_python: Optional[str] = None
+    ssh_identity: str = ""
     agent_sdk_preflight: bool = False
     macos_python_isolation: bool = False
 

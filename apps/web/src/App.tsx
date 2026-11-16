@@ -1,3 +1,4 @@
+import { ComputeEnvironment } from "./components/ComputeEnvironment";
 import { ResearchPackages } from "./components/ResearchPackages";
 import { ExecutionBackend } from "./components/ExecutionBackend";
 import { WorkspaceBackupNotice } from "./components/WorkspaceBackupNotice";
@@ -363,6 +364,7 @@ export default function App() {
         </button>
         <WorkspaceBackups state={state} dispatch={dispatch} />
         <ResearchPackages dispatch={dispatch} />
+        <ComputeEnvironment backend={backend} />
         <div className="fq-header-partners" aria-label="BAAI and FlagOS">
           <img
             className="fq-partner-baai"
