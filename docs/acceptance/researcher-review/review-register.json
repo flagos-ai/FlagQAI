@@ -1,0 +1,118 @@
+{
+  "schema": "flagqai.researcher-workflow-review.v1",
+  "status": "completed_internal_walkthrough",
+  "evidence_mode": "internal_expert_walkthrough",
+  "recruitment_required": false,
+  "product_owner_execution_tasks": [],
+  "new_product_features_allowed": false,
+  "paid_model_calls_allowed": false,
+  "real_participants_observed": 0,
+  "behavioral_demand": "not_evaluated",
+  "scenarios": [
+    {
+      "id": "QI-01",
+      "domain": "quantum_information",
+      "status": "executed",
+      "reference_first": true,
+      "scientific_outcome": "pass",
+      "workflow_outcome": "partial",
+      "record_path": "QI-01-2026-11-05.md",
+      "observations": [
+        "Both Bell variants and their corresponding mixtures have equal Z probabilities and I/2 one-qubit marginals.",
+        "Purities 1 and 0.5, XX expectations 1 and 0, and negativities 0.5 and 0 passed 1e-10 checks.",
+        "Bell preparation used actual SDK circuits. Mixtures and density diagnostics used explicit Torch matrices, not SDK mixed-state simulation.",
+        "Two pure-state .fqx files were collected and replayed independently. Jobs rendered probability/state arrays as raw values and No counts distribution, not matrix/coherence or entanglement comparisons.",
+        "Purity, negativity, mixture data and the pure-versus-mixed comparison remained in console JSON. The generated report.json was not separately retained by single-file execution.",
+        "Circuit provenance is useful, but the essential research distinction is not a first-class inspectable/comparable result. No complete quantum-information workflow is established."
+      ],
+      "web_run_id": "c630b094-6c9e-4d4a-967d-faea77036fc5",
+      "source_hash": "d6ad43f4f9595ac14d15ad3aaf3059e829aea347fc647fd8a258d0e347bc2e89",
+      "assistance": "A2_setup_and_evidence_export_A0_browser_execution"
+    },
+    {
+      "id": "QC-01",
+      "domain": "quantum_computing",
+      "status": "executed",
+      "reference_first": false,
+      "scientific_outcome": "pass",
+      "workflow_outcome": "partial",
+      "record_path": "QC-01-2026-11-05.md",
+      "observations": [
+        "Two preregistered 25-evaluation grids returned expected cuts 4.636271242968679 and 4.717730213821801, delta +0.081458970853122; exact optimum 6.",
+        "All 100 SDK search distributions matched the independent dense formulation within 2.34e-15; probabilities normalized within 1e-10.",
+        "Eight sampled archives were automatically collected with source linkage; four same-runtime seeded replays matched counts. All eight exported files also replayed in a fresh process.",
+        "Jobs compared circuit operations and sampled distributions (observed total-variation distance 2.8%). Expected cut, graph weights, search budget and exact optimum were not rendered as a generic task-level comparison.",
+        "Web provides useful artifact collection and code/result provenance; scientific objective comparison still requires reading reviewer-authored JSON in the console.",
+        "Entering new source in the existing example retained the old Python Bell pair run name; explicit model naming is necessary to avoid ambiguous histories.",
+        "After a comparison was active, View result for another artifact left the previous comparison visible until Single result was chosen. This is navigation friction, not a scientific mismatch in stored data."
+      ],
+      "web_run_id": "e5ede5c5-d565-43d2-ba9c-e9033a16eb43",
+      "source_hash": "a1a37e0d6f3bc523a0ba0c377c086ae3aff8e8ad8eed3c36adf0e9343234071b",
+      "assistance": "A2_setup_and_evidence_export_A0_browser_execution"
+    },
+    {
+      "id": "QEC-01",
+      "domain": "quantum_error_correction",
+      "status": "executed",
+      "reference_first": true,
+      "scientific_outcome": "pass",
+      "workflow_outcome": "partial",
+      "record_path": "QEC-01-2026-11-05.md",
+      "observations": [
+        "All eight independent X-error patterns were enumerated at p=0.05 and p=0.10. Logical rates 0.00725 and 0.028 matched 3*p^2*(1-p)+p^3 within 1e-12.",
+        "This is a classical error-pattern calculation with ideal majority decoding, not a full quantum-noise or fault-tolerance benchmark.",
+        "The same Python calculation ran successfully in Web, with source/log history. There were no .fqx outputs and no QEC result in Jobs.",
+        "Noise assumptions, logical-versus-physical rates and the comparison remained JSON console text; report.json was not separately collected.",
+        "No specialized advantage over executing this script locally was observed beyond source/run logging. Decoder sweeps, syndrome data and threshold analysis were not evaluated."
+      ],
+      "web_run_id": "7b6ec78d-0e0e-48f7-9051-96724166341f",
+      "source_hash": "681b07911fa9dbc00dd93c260de66260da0433bf423f12925db4b2f895a02498",
+      "assistance": "A2_setup_and_evidence_export_A0_browser_execution"
+    },
+    {
+      "id": "QD-01",
+      "domain": "quantum_dynamics",
+      "status": "executed",
+      "reference_first": false,
+      "scientific_outcome": "pass",
+      "workflow_outcome": "partial",
+      "record_path": "QD-01-2026-11-05.md",
+      "observations": [
+        "Exact Hermitian diagonalization and first-order Trotter evolution were evaluated on t=0..5 in 0.1 increments; J=1 and h=0.7/0.9, hbar=1, |00> initial state.",
+        "At h=0.7, max Z0 error was 0.006074443546003644 (dt=0.1) versus 0.0015150576067610722 (dt=0.05); gate costs at t=5 were 250 versus 500.",
+        "At h=0.9, max Z0 error was 0.010188313383036884 versus 0.0025440143912631996. The coarse variant misses a 1e-2 target; this is a real approximation result, not a software failure.",
+        "Norm, observable range and t=0 checks passed. SDK circuits at the four final points matched dense Trotter states to 1e-10 fidelity tolerance. Intermediate trajectories were computed with Torch, not 204 separate SDK simulations.",
+        "Four final-state .fqx files were collected and replayed independently. Jobs offered raw probabilities/state arrays, not observable-versus-time plots or error/cost comparison.",
+        "The trajectory and approximation evidence remained console JSON. report.json was not a collected result file. Existing final-circuit inspection is useful but does not complete the dynamics research task."
+      ],
+      "web_run_id": "1564b3b2-19b7-4d56-bf7a-25dd96e8bf2e",
+      "source_hash": "a5a6410c8a29c2c66119a58467a6be5cea37e45d1f0be2cd898f1dd799052577",
+      "assistance": "A2_setup_and_evidence_export_A0_browser_execution"
+    },
+    {
+      "id": "QCH-01",
+      "domain": "quantum_chemistry",
+      "status": "executed",
+      "reference_first": true,
+      "scientific_outcome": "not_evaluated",
+      "workflow_outcome": "blocked",
+      "record_path": "QCH-01-2026-11-05.md",
+      "observations": [
+        "The selected existing Python 3.12.14 / FlagQuantum 0.4.0 environment does not include PySCF or the inspected chemistry reference stack.",
+        "Both reference execution and Web failed at from pyscf import gto, scf, fci with ModuleNotFoundError. No Hamiltonian, FCI energy or VQE comparison was generated.",
+        "Web retained the failed source, traceback and failed run, while allowing continued editing. Refresh retained the failure and unsaved editor/chat sentinels.",
+        "This establishes an environment blocker only, not that FlagQuantum or Web can never support chemistry. Mapping, nuclear repulsion and two geometries remain untested.",
+        "No dependencies or fabricated textbook energies were introduced to rescue the scenario."
+      ],
+      "web_run_id": "ac01daa0-8a7b-4ef7-807c-8c5968583a2a",
+      "source_hash": "d88ca74d356ab1db767f1996a4abcccd11c6000cfcc1d97a07a03e1a98926b54",
+      "assistance": "A2_setup_and_evidence_export_A0_browser_execution"
+    }
+  ],
+  "review_date": "2026-11-05",
+  "evidence_root": "five-domain-review-20261105",
+  "summary_path": "FINDINGS_2026-11-05.md",
+  "product_changes": 0,
+  "agent_reasoning": "not_evaluated",
+  "recruited_participants": 0
+}
