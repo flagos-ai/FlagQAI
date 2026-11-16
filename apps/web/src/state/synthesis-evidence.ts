@@ -5,6 +5,13 @@ import type {
 } from "../contracts/quantum-workspace";
 
 export type SynthesisEvidence = {
+  iteration?: {
+    role: "baseline" | "candidate";
+    baseline_program_hash: string;
+    method: "flagquantum.compiler.optimize";
+    optimization_level: number;
+    prepared_state_max_error: number;
+  };
   schema: "flagqai.synthesis-evidence.v1";
   label: string;
   problem: string;
@@ -142,6 +149,20 @@ export function synthesisEvidence(
     typeof c.saved_circuit_replay !== "boolean"
   )
     return null;
+  const iteration = e.iteration;
+  if (
+    iteration !== undefined &&
+    (!object(iteration) ||
+      !["baseline", "candidate"].includes(iteration.role) ||
+      !hash(iteration.baseline_program_hash) ||
+      iteration.method !== "flagquantum.compiler.optimize" ||
+      ![0, 1, 2].includes(iteration.optimization_level) ||
+      !Number.isFinite(iteration.prepared_state_max_error) ||
+      iteration.prepared_state_max_error < 0 ||
+      (iteration.role === "baseline" &&
+        iteration.baseline_program_hash !== e.program_hash))
+  )
+    return null;
   return e as SynthesisEvidence;
 }
 
@@ -194,6 +215,72 @@ export function compareSynthesis(a: SynthesisEvidence, b: SynthesisEvidence) {
     depth: b.report.resources.depth - a.report.resources.depth,
     qubits: b.report.resources.n_qubits - a.report.resources.n_qubits,
   };
+}
+
+const canonical = (value: unknown): string =>
+  JSON.stringify(value, (_name, item) =>
+    object(item)
+      ? Object.fromEntries(
+          Object.entries(item).sort(([left], [right]) =>
+            left.localeCompare(right),
+          ),
+        )
+      : item,
+  );
+
+export function synthesisIteration(a: SynthesisEvidence, b: SynthesisEvidence) {
+  const compared = compareSynthesis(a, b);
+  if (
+    !compared ||
+    a.iteration?.role !== "baseline" ||
+    b.iteration?.role !== "candidate" ||
+    b.iteration.baseline_program_hash !== a.program_hash ||
+    a.source_sha256 !== b.source_sha256 ||
+    canonical(a.constraints) !== canonical(b.constraints) ||
+    a.report.resources.basis !== b.report.resources.basis ||
+    a.iteration.optimization_level !== b.iteration.optimization_level
+  )
+    return null;
+  const tolerance = Math.min(a.checks.tolerance, b.checks.tolerance);
+  const passed =
+    [a, b].every(
+      (e) =>
+        e.checks.saved_circuit_replay &&
+        e.checks.max_probability_error <= e.checks.tolerance &&
+        e.iteration!.prepared_state_max_error <= tolerance,
+    ) && compared.max_probability_difference <= tolerance;
+  const deltas = [compared.qubits, compared.operations, compared.depth];
+  const verdict = !passed
+    ? "Verification failed"
+    : deltas.every((d) => d === 0)
+      ? "No resource improvement"
+      : deltas.every((d) => d <= 0)
+        ? "Resources reduced"
+        : deltas.every((d) => d >= 0)
+          ? "Resource cost increased"
+          : "Resource tradeoff";
+  return { ...compared, passed, verdict };
+}
+
+export function savedOptimizationPair(programs: ProgramSnapshot[]) {
+  const records = programs.flatMap((program) => {
+    const evidence = programSynthesis(program);
+    const run = program.experiment?.python_run;
+    return evidence?.iteration && run
+      ? [{ id: program.id, run: run.id, evidence }]
+      : [];
+  });
+  for (const candidate of records) {
+    if (candidate.evidence.iteration?.role !== "candidate") continue;
+    const baseline = records.find(
+      (item) =>
+        item.run === candidate.run &&
+        item.id !== candidate.id &&
+        synthesisIteration(item.evidence, candidate.evidence),
+    );
+    if (baseline) return { left: baseline.id, right: candidate.id };
+  }
+  return null;
 }
 
 const operationLabels: Record<string, string> = {

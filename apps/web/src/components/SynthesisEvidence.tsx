@@ -5,6 +5,7 @@ import type {
 import {
   compareSynthesis,
   programSynthesis,
+  synthesisIteration,
   synthesisModules,
 } from "../state/synthesis-evidence";
 
@@ -130,12 +131,32 @@ export function SynthesisComparison({
     b = programSynthesis(right.program);
   if (!a && !b) return null;
   const compared = a && b ? compareSynthesis(a, b) : null;
+  const iteration =
+    a && b
+      ? a.iteration?.role === "candidate"
+        ? synthesisIteration(b, a)
+        : synthesisIteration(a, b)
+      : null;
+  const optimization = !!(a?.iteration || b?.iteration);
   return (
     <section
       className="fq-synth-evidence"
       aria-label="Synthesis report comparison"
     >
-      <strong>Synthesis report comparison</strong>
+      <strong>
+        {optimization
+          ? "Synthesis optimization comparison"
+          : "Synthesis report comparison"}
+      </strong>
+      {optimization && (
+        <p>
+          <strong>
+            {iteration?.verdict ?? "Baseline binding unavailable"}
+          </strong>
+          {iteration?.passed &&
+            " · Script verified the prepared state and replay"}
+        </p>
+      )}
       {compared ? (
         <>
           <p>
@@ -158,10 +179,12 @@ export function SynthesisComparison({
               )}
             </pre>
           </details>
-          <p>
-            Different constraints can increase resource cost. Compare the target
-            requirements before judging an improvement.
-          </p>
+          {optimization && (
+            <p>
+              The prepared-state check covers the inputs defined in the saved
+              script.
+            </p>
+          )}
         </>
       ) : (
         <p>

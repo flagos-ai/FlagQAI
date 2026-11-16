@@ -1,3 +1,8 @@
+import { savedOptimizationPair } from "../state/synthesis-evidence";
+import {
+  synthOptimizationSource,
+  synthOptimizationTaskName,
+} from "../tasks/synth-optimization.mjs";
 import { SynthesisEvidenceCard } from "../components/SynthesisEvidence";
 import {
   synthValidationSource,
@@ -35,6 +40,7 @@ export function SynthesisPage({
         )
       : undefined;
   const result = current || previous;
+  const optimized = savedOptimizationPair(state.programs);
   const error = state.error?.source === state.source ? state.error : null;
   const compiling = compilingSource !== null;
   const status = compiling
@@ -211,6 +217,40 @@ export function SynthesisPage({
           >
             Open constraint verification model
           </button>
+        </details>
+        <details className="fq-synth-evidence">
+          <summary>Verify a compiler optimization</summary>
+          <p>
+            Run the saved baseline and candidate checks, then compare their
+            recorded resources.
+          </p>
+          <button
+            onClick={() =>
+              dispatch({
+                type: "model",
+                model: {
+                  name: synthOptimizationTaskName,
+                  source: synthOptimizationSource,
+                  language: "python",
+                },
+                preserveDraft: true,
+              })
+            }
+          >
+            Open optimization model
+          </button>
+          {optimized && (
+            <button
+              onClick={() =>
+                dispatch({
+                  type: "compare-experiments",
+                  ...optimized,
+                })
+              }
+            >
+              Compare saved optimization pair
+            </button>
+          )}
         </details>
         <ScientificSynthesis programs={state.programs} dispatch={dispatch} />
       </div>
