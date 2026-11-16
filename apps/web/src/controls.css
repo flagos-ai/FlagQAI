@@ -1422,3 +1422,32 @@
   flex: 1;
   text-overflow: ellipsis;
 }
+
+.fq-research-next-step {
+  flex-shrink: 0;
+  margin: 6px 12px;
+  padding: 6px 0;
+  border-top: 1px solid var(--ui-line);
+  color: var(--ui-text);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.fq-research-next-step summary {
+  cursor: pointer;
+}
+.fq-research-next-step dl {
+  margin: 0;
+}
+.fq-research-next-step dl > div {
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1fr);
+  gap: 8px;
+  padding: 4px 0;
+}
+.fq-research-next-step dd {
+  margin: 0;
+}
+.fq-research-next-step dt,
+.fq-research-next-step small {
+  color: var(--ui-muted);
+}
