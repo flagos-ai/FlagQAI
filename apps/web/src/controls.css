@@ -1465,3 +1465,14 @@
   padding-inline-start: 18px;
   color: var(--ui-muted);
 }
+
+.fq-preview-gate-details {
+  overflow-wrap: anywhere;
+  margin: 8px 0;
+  padding: 4px 8px;
+  border-inline-start: 2px solid var(--ui-line);
+  font-size: 12px;
+}
+.fq-preview-gate-details > p {
+  margin: 4px 0;
+}
