@@ -1952,6 +1952,9 @@ test("native decisions, uncertain stops and reconnect preserve one task without 
   );
   try {
     await send("stop-delayed");
+    await expect(
+      page.getByRole("status", { name: "Working", exact: true }),
+    ).toBeVisible();
     const beforeStop = await get(page, network);
     await page.getByRole("button", { name: "Stop Agent", exact: true }).click();
     await expect(
@@ -4252,9 +4255,11 @@ test("Execution separates common settings from advanced options without losing s
   await expect(advanced).not.toHaveAttribute("open");
   await expect(runtime).not.toHaveAttribute("open");
   await expect(seed).toBeHidden();
-  await expect(
-    execution.getByRole("region", { name: "Execution source", exact: true }),
-  ).toContainText("Your Model draft is unchanged");
+  const circuit = execution.getByRole("combobox", {
+    name: "Execution circuit",
+    exact: true,
+  });
+  await expect(circuit).toHaveValue(record.id);
   expect((await settings.boundingBox()).height).toBeLessThan(170);
   await shots.fill("64");
   await name.fill("compact-execution-validation");
@@ -4307,10 +4312,11 @@ test("Execution separates common settings from advanced options without losing s
     fullPage: true,
   });
   await page.setViewportSize({ width: 1440, height: 1000 });
-  // Execution targets are intentionally transient; explicitly choose the archived
-  // circuit again after refresh before checking submission of that snapshot.
-  await page.getByRole("button", { name: "QUANTUM", exact: true }).click();
-  await page.getByRole("button", { name: "Run again", exact: true }).click();
+  // After refresh, choose the archived circuit directly from Execution.
+  await expect(circuit).toHaveValue("");
+  await expect(submit).toBeDisabled();
+  await circuit.selectOption(record.id);
+  await expect(submit).toBeEnabled();
   const request = page.waitForRequest(
     (request) =>
       request.method() === "POST" &&
@@ -4345,19 +4351,14 @@ test("Execution separates common settings from advanced options without losing s
   expect(Object.keys(job.result.counts).sort()).toEqual(["00", "11"]);
   await page.getByRole("button", { name: "QUANTUM", exact: true }).click();
   await page.getByRole("button", { name: "Run again", exact: true }).click();
-  await execution
-    .getByRole("button", {
-      name: "Use current Model draft instead",
-      exact: true,
-    })
-    .click();
-  await expect(
-    execution.getByRole("region", { name: "Execution source", exact: true }),
-  ).toHaveCount(0);
-  await expect(execution.locator(".fq-execution-identity")).toContainText(
-    "Model draft",
+  await circuit.selectOption("");
+  await expect(submit).toBeDisabled();
+  await expect(execution.getByRole("status")).toContainText(
+    "Run Python in Model",
   );
-  await page.getByRole("button", { name: "MODEL", exact: true }).click();
+  await execution
+    .getByRole("button", { name: "Open Model", exact: true })
+    .click();
   await expect(editor(page)).toHaveValue(draft);
 });
 
@@ -4666,6 +4667,7 @@ test("Quantum compact list preserves explicit information-panel choices and manu
 test("Execution backend uses service metadata and preserves folded limits and manual width", async ({
   page,
 }, testInfo) => {
+  await page.getByRole("button", { name: "OpenQASM", exact: true }).click();
   const original = await editor(page).inputValue();
   const actual = await get(page, "/api/health");
   await page.getByRole("button", { name: "EXECUTION", exact: true }).click();

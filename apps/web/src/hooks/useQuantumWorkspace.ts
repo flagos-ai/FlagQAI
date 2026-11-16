@@ -1,3 +1,4 @@
+import { executionSourceBlockedReason } from "../state/execution-source";
 import { useComputeBackend } from "./useComputeBackend";
 import { listExperiments } from "../api/experiments";
 import { platformAPI } from "../api/platform";
@@ -135,7 +136,8 @@ export function useQuantumWorkspace() {
     [state.busy, state.source, state.name, state.language],
   );
   const run = useCallback(async () => {
-    if (state.busy || operation.current) return;
+    if (state.busy || operation.current || executionSourceBlockedReason(state))
+      return;
     operation.current = true;
     dispatch({ type: "busy", value: true });
     const source = state.execution?.source || state.source;

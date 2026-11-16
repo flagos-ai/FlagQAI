@@ -345,4 +345,5 @@ export type WorkspaceAction =
     }
   | { type: "save" }
   | { type: "undo" }
+  | { type: "execution-circuit"; id: string | null }
   | { type: "use-draft" };
