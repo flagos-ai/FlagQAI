@@ -1,3 +1,4 @@
+import { ResearchNextStep } from "./ResearchNextStep";
 import { useEffect, useRef, useState } from "react";
 import type { PythonWorkspace } from "../hooks/usePythonWorkspace";
 import { ResearchRecord } from "./ResearchRecord";
@@ -413,6 +414,7 @@ export function PythonConsole({
           ))}
         </section>
       )}
+      {!compact && run && <ResearchNextStep run={run} />}
       <div className="fq-python-result-toolbar" hidden={!run}>
         {compact && researchAction}
         {run?.collection_errors?.some((item) => item.file_id) && (
