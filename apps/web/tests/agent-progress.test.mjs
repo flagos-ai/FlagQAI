@@ -6,7 +6,11 @@ import { build } from "esbuild";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { emptyAgentView, applyAgentRecord } from "../src/state/agent-view.ts";
-import { mergeChildren, childTranscript } from "../src/state/agent-progress.ts";
+import {
+  mergeChildren,
+  childTranscript,
+  currentTurnActivity,
+} from "../src/state/agent-progress.ts";
 import { transcriptTurns } from "../src/state/agent-turns.ts";
 const record = (id, event) => ({
   id,
@@ -288,4 +292,30 @@ test("the footer always shows a gray idle dot or a colored parallel count", () =
   assert.match(active, /fq-subagent-indicator active/);
   assert.match(active, /2 subagents running/);
   assert.match(active, /<span aria-hidden="true">2<\/span>/);
+});
+
+test("live activity uses the latest current tool or in-progress task", () => {
+  const read = { kind: "tool", tool: { name: "Read", status: "running" } };
+  const run = { kind: "tool", tool: { name: "Bash", status: "running" } };
+  const settled = { kind: "tool", tool: { name: "Write", status: "ok" } };
+  const progress = {
+    todos: [
+      { content: "Collect input", status: "completed" },
+      { content: "Check outputs", status: "in_progress" },
+    ],
+  };
+  assert.equal(
+    currentTurnActivity({ active: true, rows: [read, run, settled], progress }),
+    "Bash",
+  );
+  assert.equal(
+    currentTurnActivity({ active: true, rows: [settled], progress }),
+    "Check outputs",
+  );
+  assert.equal(
+    currentTurnActivity({ active: false, rows: [read], progress }),
+    "",
+  );
+  assert.equal(currentTurnActivity({ active: true, rows: [] }), "");
+  assert.equal(currentTurnActivity(undefined), "");
 });
