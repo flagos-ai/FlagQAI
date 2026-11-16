@@ -200,7 +200,9 @@ export type Diagnostic = {
   severity: "error" | "warning";
 };
 export type SourceLanguage = "qasm" | "python";
+export type PythonStyle = "gates" | "synthesis";
 export type Model = {
+  pythonStyle?: PythonStyle;
   folder?: string;
   reviewOrigin?: { fileId: string; revision: string };
   name: string;
@@ -250,6 +252,7 @@ export type WorkspaceState = {
   selectedProgramId: string | null;
   models: Model[];
   modelFolders?: string[];
+  pythonStyles?: Record<string, PythonStyle>;
   jobs: QuantumJob[];
   selectedJobId: string | null;
   execution: ProgramSnapshot | null;
@@ -276,6 +279,7 @@ export type WorkspaceAction =
       decision: "accept" | "keep" | "undo";
     }
   | { type: "language"; language: SourceLanguage }
+  | { type: "python-style"; style?: PythonStyle }
   | { type: "model-folder-create"; path: string }
   | { type: "model-folder-move"; key: string; path: string }
   | { type: "python-run"; id: string }

@@ -1,3 +1,9 @@
+import {
+  detectedPythonStyle,
+  pythonStyleLabels,
+  pythonStyleOverride,
+  validPythonStyle,
+} from "../state/python-style";
 import { reviewActionValid, type ReviewAction } from "../state/agent-review";
 import { workspaceReducer } from "../state/reducer";
 import { UIIcon } from "../components/UIIcon";
@@ -191,6 +197,10 @@ export function ModelPage({
     setScroll({ top: textarea.scrollTop, left: textarea.scrollLeft });
   }, [state.source]);
   const isPython = state.language === "python";
+  const detectedStyle = useMemo(
+    () => (isPython ? detectedPythonStyle(state.source) : undefined),
+    [isPython, state.source],
+  );
   const needsProjectSave =
     !!state.editorLink?.project &&
     state.projectTabs?.some(
@@ -361,6 +371,28 @@ export function ModelPage({
               OpenQASM
             </button>
           </div>
+          {isPython && (
+            <select
+              className="fq-python-style"
+              aria-label="Python authoring style"
+              title="Code classification"
+              value={pythonStyleOverride(state) || "auto"}
+              onChange={(event) =>
+                dispatch({
+                  type: "python-style",
+                  style: validPythonStyle(event.target.value),
+                })
+              }
+            >
+              <option value="auto">
+                {detectedStyle
+                  ? `Auto · ${pythonStyleLabels[detectedStyle]}`
+                  : "Auto · Python"}
+              </option>
+              <option value="gates">{pythonStyleLabels.gates}</option>
+              <option value="synthesis">{pythonStyleLabels.synthesis}</option>
+            </select>
+          )}
           {selection.end > selection.start && (
             <button
               className="fq-selection-action"
