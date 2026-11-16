@@ -81,6 +81,74 @@ test("latest output hides at the bottom and opening Worked for reveals its first
     "Fixture read failed.",
   );
   await expect(transcript.getByText("Recorded finding 32.")).toBeVisible();
+  await first.getByRole("button", { name: /Earlier call/ }).click();
+  await transcript.evaluate((node) => {
+    const header = node.querySelector(".fq-agent-work > summary");
+    node.scrollTop +=
+      header.getBoundingClientRect().top -
+      node.getBoundingClientRect().top -
+      84;
+  });
+  const headingOffset = () =>
+    worked.evaluate(
+      (node) =>
+        node.getBoundingClientRect().top -
+        node.closest(".fq-agent-thread").getBoundingClientRect().top,
+    );
+  await expect.poll(headingOffset).toBeCloseTo(84, 0);
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        Object.keys(sessionStorage).some((key) =>
+          key.startsWith("fq-agent-reading:"),
+        ),
+      ),
+    )
+    .toBe(true);
+
+  const chatDraft = "Follow up on the saved results";
+  await composer.fill(chatDraft);
+  await page.reload();
+  const connected = page.getByRole("status", {
+    name: "Connected",
+    exact: true,
+  });
+  await expect(connected).toBeVisible();
+  await expect(transcript.locator("details.fq-agent-work[open]")).toHaveCount(
+    1,
+  );
+  await expect.poll(headingOffset).toBeCloseTo(84, 0);
+
+  const network = `http://127.0.0.1:${process.env.FQ_TEST_PROXY_PORT}/__fixture/network`;
+  try {
+    expect(
+      (await page.request.post(network, { data: { offline: true } })).ok(),
+    ).toBeTruthy();
+    await expect(
+      page.getByRole("status", { name: "Reconnecting…", exact: true }),
+    ).toBeVisible();
+  } finally {
+    expect(
+      (await page.request.post(network, { data: { offline: false } })).ok(),
+    ).toBeTruthy();
+  }
+  await expect(connected).toBeVisible();
+  await expect(transcript.locator("details.fq-agent-work[open]")).toHaveCount(
+    1,
+  );
+  await expect.poll(headingOffset).toBeCloseTo(84, 0);
   await expect(editor).toHaveValue(draft);
+  await expect(composer).toHaveValue(chatDraft);
+  await latest.click();
+  await expect(latest).toHaveCount(0);
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        Object.keys(sessionStorage).some((key) =>
+          key.startsWith("fq-agent-reading:"),
+        ),
+      ),
+    )
+    .toBe(false);
   expect(sent).toHaveLength(1);
 });
