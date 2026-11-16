@@ -214,15 +214,17 @@ jobs:
       - run: pnpm --dir apps/cli run verify:jobs-detach-cleanup
       - run: pnpm --dir apps/cli run verify:session-reset-hygiene
 
+  web-acceptance:
+    uses: flagos-ai/FlagQAI/.github/workflows/web-ci.yml@main
+
   web:
     name: Optional Web source and local workspace
+    needs: web-acceptance
+    if: always()
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    env:
-      PYTHONPATH: ${{ github.workspace }}/.ci-flagquantum-sdk
-      FQ_LOCAL_PYTHON: python3
+    timeout-minutes: 2
     steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: ./.github/actions/web-acceptance
+      - name: Require successful Web acceptance
+        env:
+          ACCEPTANCE_RESULT: ${{ needs.web-acceptance.result }}
+        run: test "$ACCEPTANCE_RESULT" = success
