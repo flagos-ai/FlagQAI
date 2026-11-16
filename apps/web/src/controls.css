@@ -1144,3 +1144,75 @@
 .fq-execution-evidence p {
   margin: 2px 0;
 }
+
+/* The official catalog sits below the existing model controls. */
+.fq-synthesis-library {
+  margin-top: 10px;
+}
+.fq-synthesis-library details {
+  margin: 4px 0;
+}
+.fq-synthesis-library summary {
+  display: flex;
+  align-items: baseline;
+  cursor: pointer;
+  gap: 6px;
+  padding: 5px 2px;
+  overflow-wrap: anywhere;
+}
+.fq-synthesis-library summary::before {
+  content: "›";
+  color: #9eabb9;
+  flex-shrink: 0;
+}
+.fq-synthesis-library details[open] > summary::before {
+  transform: rotate(90deg);
+}
+.fq-synthesis-library summary::-webkit-details-marker {
+  display: none;
+}
+.fq-synthesis-library summary small {
+  margin-left: auto;
+  color: #9ea9bb;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.fq-synthesis-folder-contents {
+  border-left: 1px solid #ffffff17;
+  margin-left: 6px;
+  padding-left: 6px;
+  min-width: 0;
+}
+.fq-synthesis-reference {
+  display: flex;
+  gap: 6px;
+  justify-content: space-between;
+  padding: 5px 2px;
+  overflow-wrap: anywhere;
+}
+.fq-synthesis-reference small {
+  white-space: nowrap;
+}
+.fq-synthesis-example .fq-library-card {
+  width: 100%;
+}
+.fq-synthesis-example .fq-library-title,
+.fq-synthesis-example-info {
+  overflow-wrap: anywhere;
+}
+.fq-synthesis-example .fq-example-open {
+  display: block;
+  color: #a4d8ff;
+  margin-top: 4px;
+  font-size: 10px;
+}
+.fq-synthesis-catalog-note,
+.fq-synthesis-example-info p {
+  font-size: 11px;
+  line-height: 1.5;
+  color: #aeb8c6;
+  margin: 4px 0 8px;
+}
+.fq-synthesis-catalog-license {
+  font-size: 11px;
+}

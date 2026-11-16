@@ -1,3 +1,5 @@
+import { SynthesisExampleLibrary } from "./SynthesisExampleLibrary";
+import { matchingSynthesisExamples } from "../state/synthesis-catalog";
 import { qaoaTaskName, qaoaSource } from "../tasks/qaoa-maxcut.mjs";
 import { UIIcon } from "./UIIcon";
 import { CodeExample } from "./CodeExample";
@@ -47,6 +49,7 @@ export function ModelLibrary({
   const upload = useRef<HTMLInputElement>(null);
   const search = useRef<HTMLInputElement>(null);
   const term = query.trim().toLowerCase();
+  const synthesisMatches = matchingSynthesisExamples(query);
   const visibleExamples = examples.filter((model) =>
     model.name.toLowerCase().includes(term),
   );
@@ -150,6 +153,7 @@ export function ModelLibrary({
           </div>
           {!visibleExamples.length &&
             !visibleModels.length &&
+            !synthesisMatches.length &&
             !showReferenceTask && (
               <p role="status">
                 No models match your search. Try another name or clear the
@@ -245,6 +249,12 @@ export function ModelLibrary({
             <UIIcon name="plus" size={14} />
             New Model
           </button>
+          <SynthesisExampleLibrary
+            query={query}
+            matches={synthesisMatches}
+            models={models}
+            onSelect={onSelect}
+          />
         </div>
       ) : (
         <div className="fq-library-body fq-template-library">
