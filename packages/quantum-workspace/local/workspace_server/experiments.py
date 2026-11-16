@@ -136,11 +136,14 @@ class ExperimentImports:
                           'execution_status': python_run['execution_status']}
                 if python_run.get('project'): origin['project'] = python_run['project']
                 program['origin'] = origin
+                runtime = python_run.get('runtime', {})
+                manifest = runtime.get('environment_manifest')
                 info['python_run'] = {'id': python_run['id'], 'source_hash': origin['source_hash'],
                                       'execution_status': origin['execution_status'],
                                       'transport': python_run['environment']['transport'], 'task_path': task_path,
                                       'elapsed_seconds': python_run.get('elapsed_seconds'),
-                                      'sdk_version': python_run.get('runtime', {}).get('sdk_version')}
+                                      'sdk_version': runtime.get('sdk_version'),
+                                      'sdk_code_sha256': manifest.get('sdk_code_sha256') if isinstance(manifest, dict) else None}
             if python_run is not None and python_run.get('project'): info['python_run']['project'] = python_run['project']
             record = {'id': identity, 'status': 'imported', 'program': program}
             if info['has_result']:

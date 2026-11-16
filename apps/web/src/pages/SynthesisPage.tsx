@@ -1,3 +1,8 @@
+import { SynthesisEvidenceCard } from "../components/SynthesisEvidence";
+import {
+  synthValidationSource,
+  synthValidationTaskName,
+} from "../tasks/synth-constraints.mjs";
 import { ScientificSynthesis } from "../components/ScientificSynthesis";
 import type {
   WorkspaceAction,
@@ -184,6 +189,29 @@ export function SynthesisPage({
             <small>FlagQuantum {result.compiled.version}</small>
           </section>
         )}
+        {current && <SynthesisEvidenceCard program={current} />}
+        <details className="fq-synth-evidence">
+          <summary>Verify synthesis across constraints</summary>
+          <p>
+            Generate and compare two circuits for the same arithmetic model with
+            different topology and objective settings.
+          </p>
+          <button
+            onClick={() =>
+              dispatch({
+                type: "model",
+                model: {
+                  name: synthValidationTaskName,
+                  source: synthValidationSource,
+                  language: "python",
+                },
+                preserveDraft: true,
+              })
+            }
+          >
+            Open constraint verification model
+          </button>
+        </details>
         <ScientificSynthesis programs={state.programs} dispatch={dispatch} />
       </div>
     </section>

@@ -20,6 +20,7 @@ export type Instruction = {
   params?: Record<string, unknown>;
   line?: number | null;
   group?: string;
+  source_ids?: string[];
 };
 export type CircuitNode = {
   kind?: "sequence" | "semantic";
@@ -57,6 +58,12 @@ export type CompiledProgram = {
   groups?: Record<string, string>;
   logical_instructions?: Instruction[];
   hierarchy?: CircuitNode;
+  synthesis_sources?: {
+    id: string;
+    label: string;
+    operation?: string;
+    action?: string;
+  }[];
   source_hash?: string;
   protocol_version?: string;
 };
@@ -140,6 +147,7 @@ export type ExperimentInfo = {
     task_path: string;
     elapsed_seconds?: number;
     sdk_version?: string;
+    sdk_code_sha256?: string | null;
   };
   id: string;
   filename: string;

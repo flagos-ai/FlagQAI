@@ -1,3 +1,4 @@
+import { SynthesisEvidenceCard } from "../components/SynthesisEvidence";
 import { readExperiment } from "../api/experiments";
 import { SavedStateResult } from "../components/SavedStateResult";
 import { UIIcon } from "../components/UIIcon";
@@ -594,6 +595,7 @@ function JobResults({
                       qubits={result.qubits}
                     />
                   )}
+                  {program && <SynthesisEvidenceCard program={program} />}
                   {job.experiment && <RecordedValues info={job.experiment} />}
                   {Boolean(
                     result.decoded?.length && result.registers?.length,

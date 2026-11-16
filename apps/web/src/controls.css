@@ -1375,3 +1375,35 @@
   margin-top: 10px;
   color: var(--ui-muted);
 }
+
+.fq-synth-evidence {
+  border-top: 1px solid var(--ui-line);
+  margin: 12px 0;
+  padding: 10px 0;
+  font-size: 12px;
+}
+.fq-synth-evidence header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+}
+.fq-synth-evidence summary {
+  cursor: pointer;
+}
+.fq-synth-evidence p,
+.fq-synth-evidence header span {
+  color: var(--ui-muted);
+}
+.fq-synth-evidence details {
+  overflow-x: auto;
+}
+.fq-synth-evidence th,
+.fq-synth-evidence td {
+  padding: 4px 8px;
+  text-align: left;
+}
+.fq-synth-evidence pre {
+  max-height: 14rem;
+  overflow: auto;
+}
