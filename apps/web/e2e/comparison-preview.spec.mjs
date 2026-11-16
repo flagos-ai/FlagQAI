@@ -9,6 +9,9 @@ test("comparison previews retain high-index wires without expanding the whole pa
   });
   const draft = "# Keep the current draft\nprint(42)\n";
   await editor.fill(draft);
+  // Browser tests share an isolated server; earlier cases may already have runs.
+  const initialRuns = await (await page.request.get("/api/python/runs")).json();
+  const initialIds = new Set(initialRuns.map((run) => run.id));
   const submitted = await page.request.post("/api/python/runs", {
     data: {
       name: "Wide circuit preview acceptance",
@@ -87,7 +90,9 @@ for name, wire in (("wide-A", 10), ("wide-B", 11)):
     }),
   ).toBeVisible();
   const runs = await (await page.request.get("/api/python/runs")).json();
-  expect(runs.map((run) => run.id)).toEqual([id]);
+  expect(
+    runs.map((run) => run.id).filter((runId) => !initialIds.has(runId)),
+  ).toEqual([id]);
   await page.getByRole("button", { name: "MODEL", exact: true }).click();
   await expect(editor).toHaveValue(draft);
 });
