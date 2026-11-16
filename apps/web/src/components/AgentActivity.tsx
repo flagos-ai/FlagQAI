@@ -42,9 +42,11 @@ function useElapsed(start: number | undefined, active: boolean) {
 export function AgentTool({
   tool,
   onOpenRun,
+  completedTurn = false,
 }: {
   tool: Tool;
   onOpenRun?: (id: string) => Promise<void>;
+  completedTurn?: boolean;
 }) {
   const [opening, setOpening] = useState(false);
   const [openError, setOpenError] = useState("");
@@ -58,13 +60,15 @@ export function AgentTool({
       !!tool.errorText ||
       (presentation.exit !== undefined && presentation.exit !== 0));
   const outcomeFailed = !running && presentation.tone === "error";
+  const earlierFailure = completedTurn && (failed || outcomeFailed);
   const needsAttention = !running && presentation.tone === "attention";
   const showPreview =
     running ||
-    failed ||
-    outcomeFailed ||
-    needsAttention ||
-    presentation.tone === "pending";
+    (!earlierFailure &&
+      (failed ||
+        outcomeFailed ||
+        needsAttention ||
+        presentation.tone === "pending"));
   const live = running && !!tool.liveOutput;
   const output = live
     ? cleanToolOutput(tool.liveOutput || "")
@@ -77,7 +81,10 @@ export function AgentTool({
     : failed
       ? "Failed"
       : presentation.status || "Done";
-  const statusText = status + (duration ? " · " + duration : "");
+  const statusText =
+    status +
+    (earlierFailure ? " · Earlier call" : "") +
+    (duration ? " · " + duration : "");
   return (
     <section
       className={
@@ -190,11 +197,13 @@ export function AgentTool({
           )}
         </div>
       )}
-      {presentation.exit !== undefined && presentation.exit !== 0 && (
-        <small className="fq-activity-footnote error">
-          Exit code {presentation.exit}
-        </small>
-      )}
+      {presentation.exit !== undefined &&
+        presentation.exit !== 0 &&
+        (!earlierFailure || expanded) && (
+          <small className="fq-activity-footnote error">
+            Exit code {presentation.exit}
+          </small>
+        )}
       {expanded && (
         <div id={id} className="fq-activity-details">
           <details>
