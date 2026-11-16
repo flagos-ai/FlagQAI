@@ -139,6 +139,7 @@ export type ExperimentInfo = {
   program_hash: string;
   has_result: boolean;
   measurements: SavedMeasurement[];
+  sample_histogram_version?: number;
   execution_plan: Record<string, unknown> | null;
   accuracy?: unknown;
   runtime?: unknown;
