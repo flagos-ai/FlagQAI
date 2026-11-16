@@ -5299,13 +5299,27 @@ body,
   font-size: 11px;
 }
 .fq-compare-circuit {
-  overflow: auto;
+  min-width: 0;
   background: #222326;
   border-radius: 7px;
   padding: 6px;
 }
+.fq-preview-viewport {
+  max-height: min(55vh, 480px);
+  overflow: auto;
+}
+.fq-preview-viewport:focus-visible {
+  outline: 1px solid #8fc5ed;
+  outline-offset: -1px;
+}
 .fq-compare-circuit svg {
   display: block;
+}
+.fq-preview-caption {
+  display: block;
+  padding: 4px 2px 0;
+  color: #aab2be;
+  font-size: 11px;
 }
 .fq-comparison-card small {
   color: #8e98a7;
@@ -7451,8 +7465,8 @@ body,
   gap: 6px;
   padding: 3px 0;
 }
-.fq-comparison-compact .fq-compare-circuit.is-compact {
-  max-height: 180px;
+.fq-comparison-compact .fq-compare-circuit.is-compact .fq-preview-viewport {
+  max-height: 140px;
 }
 .fq-comparison-compact .fq-comparison-findings {
   padding: 10px 12px;
