@@ -16,6 +16,52 @@ import threading
 import time
 
 
+# Execute capability checks inside the same confined interpreter as the script.
+SYNTHESIS_PREFLIGHT_CODE = '''"""Check explicit synth imports in the interpreter that will execute the task."""
+
+
+def check_synthesis_environment(entry):
+    import ast
+    import importlib
+    from pathlib import Path
+
+    tree = ast.parse(Path(entry).read_text(encoding='utf-8'), filename=entry)
+    required = set()
+    aliases = set()
+    for node in tree.body:
+        if isinstance(node, ast.ImportFrom) and node.module == 'flagquantum.synth':
+            required.update(alias.name for alias in node.names if alias.name != '*')
+        if isinstance(node, ast.ImportFrom) and node.module == 'flagquantum':
+            aliases.update(alias.asname or alias.name for alias in node.names if alias.name == 'synth')
+        if isinstance(node, ast.Import):
+            aliases.update(alias.asname for alias in node.names
+                           if alias.name == 'flagquantum.synth' and alias.asname)
+    # Inspect direct top-level calls only. Capability checks guarded by
+    # try/if, optional methods in callbacks and shadowed aliases belong to Python.
+    rebound = {node.id for node in ast.walk(tree)
+               if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store)}
+    for statement in tree.body:
+        if not isinstance(statement, (ast.Expr, ast.Assign, ast.AnnAssign)):
+            continue
+        value = statement.value
+        if (isinstance(value, ast.Call) and isinstance(value.func, ast.Attribute)
+                and isinstance(value.func.value, ast.Name)
+                and value.func.value.id in aliases - rebound):
+            required.add(value.func.attr)
+    if not required:
+        return
+    guidance = ('Select a compatible SDK in the compute environment and check it again. '
+                'Version numbers alone do not establish support. No research code was executed.')
+    try:
+        synth = importlib.import_module('flagquantum.synth')
+    except ImportError as error:
+        raise RuntimeError('Environment check: FlagQuantum synth could not be imported. ' + guidance) from error
+    missing = sorted(name for name in required if not hasattr(synth, name))
+    if missing:
+        raise RuntimeError('Environment check: missing FlagQuantum synth APIs: '
+                           + ', '.join(missing) + '. ' + guidance)
+'''
+
 FQX_LIMITS = {'files': 8, 'file_bytes': 16 * 1024 * 1024,
               'total_bytes': 32 * 1024 * 1024, 'chunk_bytes': 64 * 1024}
 
@@ -129,10 +175,11 @@ def supervise():
         emit({'type':'runtime', 'python':sys.version.split()[0], 'cwd':str(root)})
         # Observe the actual SDK imported by the script without requiring it for
         # ordinary Python tasks or changing the user's source file.
-        driver = RUNTIME_MANIFEST_CODE + "\n" + """import runpy,sys,json
+        driver = RUNTIME_MANIFEST_CODE + "\n" + SYNTHESIS_PREFLIGHT_CODE + "\n" + """import runpy,sys,json
 from pathlib import Path
 try:
     sys.path.insert(0, str(Path(sys.argv[1]).resolve().parent))
+    check_synthesis_environment(sys.argv[1])
     runpy.run_path(sys.argv[1], run_name='__main__')
 finally:
     fq = sys.modules.get('flagquantum')
