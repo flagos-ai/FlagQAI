@@ -8,7 +8,10 @@ import socket
 from urllib.parse import unquote, urlsplit, parse_qs
 
 from quantum_workspace_protocol import LIMITS
-from .service import QueueFullError
+from .service import QuantumWorkspaceService, QueueFullError
+from .compute_environments import ComputeEnvironments
+from flagquantum_adapter.local_cpu import LocalCPUAdapter
+from flagquantum_adapter.ssh_cpu import SSHCPUAdapter
 from .editor_files import create_model, read_model
 from .history_preferences import history_trash
 from .bridge import WorkspaceBridge, BridgeConflict
@@ -20,10 +23,14 @@ from .projects import ProjectConflict
 
 
 def create_server(settings, service):
-    experiments = ExperimentImports(settings)
+    environments = None
+    if isinstance(service, QuantumWorkspaceService) and isinstance(service.adapter, (LocalCPUAdapter, SSHCPUAdapter)):
+        environments = ComputeEnvironments(settings)
+        service.environments = environments
+    experiments = ExperimentImports(settings, runtime_settings=environments.snapshot if environments else None)
     python_runs = PythonRuns(settings, service, experiments)
     research_packages = ResearchPackages(settings, experiments, python_runs)
-    reproductions = Reproductions(settings, research_packages, python_runs, experiments)
+    reproductions = Reproductions(settings, research_packages, python_runs, experiments, environments)
     bridge = WorkspaceBridge(settings, service, python_runs)
     class WorkspaceHandler(SimpleHTTPRequestHandler):
         def __init__(self, *args, **kwargs):
@@ -243,6 +250,8 @@ def create_server(settings, service):
                 return self.reply({'cwd': str(Path(settings.agent_cwd or settings.web_root.parent).resolve())})
             if self.path.startswith('/v1/'):
                 return self.agent_proxy('GET')
+            if self.path == '/api/compute-environment':
+                return self.reply(environments.describe()) if environments else self.reply({'error':'Compute selection is unavailable for this adapter.'}, 404)
             if self.path == '/api/health':
                 return self.reply(service.health())
             if self.path == '/api/jobs':
@@ -258,6 +267,19 @@ def create_server(settings, service):
         def do_POST(self):
             if not self.allowed():
                 return self.reply({'error': 'Only local same-origin access is allowed.'}, 403)
+            if self.path in ('/api/compute-environment/check', '/api/compute-environment/activate'):
+                if not environments:
+                    return self.reply({'error':'Compute selection is unavailable for this adapter.'}, 404)
+                try:
+                    length = int(self.headers.get('Content-Length', '0'))
+                    if self.headers.get('Content-Type', '').split(';')[0] != 'application/json' or not 0 < length <= 8192:
+                        raise ValueError('Use bounded JSON compute settings.')
+                    data = json.loads(self.rfile.read(length))
+                    if self.path.endswith('/check'):
+                        return self.reply(environments.check(data, python_runs))
+                    return self.reply(environments.activate(data))
+                except (ValueError, TypeError, OSError, RuntimeError) as error:
+                    return self.reply({'error':str(error)}, 400)
             if self.path.startswith('/api/projects'):
                 try:
                     length = int(self.headers.get('Content-Length', '0'))

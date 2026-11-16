@@ -24,7 +24,33 @@ async function request<T>(path: string, body?: unknown): Promise<T> {
   if (!response.ok) throw Error(result.error || "Computation request failed.");
   return result;
 }
+export type ComputeConfig = {
+  transport: "local" | "ssh";
+  local_python: string;
+  remote_python: string;
+  ssh_target: string;
+  ssh_port: number;
+  ssh_identity?: string;
+};
+export type ComputeSelection = { config: ComputeConfig; revision: number };
 export const quantumAPI = {
+  computeEnvironment: () =>
+    request<ComputeSelection>("/api/compute-environment"),
+  checkComputeEnvironment: (config: ComputeConfig) =>
+    request<{
+      check_id: string;
+      runtime: {
+        python: string;
+        sdk_version?: string;
+        pytorch?: string;
+        synth_supported?: boolean;
+      };
+    }>("/api/compute-environment/check", config),
+  activateComputeEnvironment: (data: {
+    config: ComputeConfig;
+    expected_revision: number;
+    check_id: string;
+  }) => request<ComputeSelection>("/api/compute-environment/activate", data),
   health: () => request<ComputeHealth>("/api/health"),
   compile: (source: string) =>
     request<CompiledProgram>("/api/compile", { source }),

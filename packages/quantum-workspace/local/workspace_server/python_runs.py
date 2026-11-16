@@ -61,9 +61,18 @@ class PythonRuns:
             return {'message':error.msg, 'line':error.lineno or 1, 'column':error.offset or 1}
         return None
 
-    def environment(self):
-        return {'transport':self.settings.compute_transport, 'timeout_seconds':90,
-            'python':self.settings.local_python or sys.executable if self.settings.compute_transport == 'local' else self.settings.remote_python or 'Remote python3',
+    def selected_settings(self):
+        environments = getattr(self.quantum, 'environments', None)
+        return environments.snapshot() if environments else self.settings
+
+    def environment(self, settings=None):
+        environments = getattr(self.quantum, 'environments', None)
+        if settings is None and environments:
+            with environments.lock:
+                return {**self.environment(environments.snapshot()), 'configuration_revision':environments.revision}
+        settings = settings or self.settings
+        return {'transport':settings.compute_transport, 'timeout_seconds':90,
+            'python':(settings.local_python or sys.executable) if settings.compute_transport == 'local' else settings.remote_python or 'python3',
             'scope':'Single-file task in a temporary working directory'}
 
     def check_agent_runtime(self):
@@ -100,11 +109,12 @@ with tempfile.TemporaryDirectory(prefix='fq-sdk-preflight-') as directory:
     def inspect_sdk(self):
         """Describe the configured SDK without creating a run or accepting code."""
         from .sdk_inspection import PROBE
+        settings = self.selected_settings()
         if not self.preflight_lock.acquire(blocking=False):
             raise ValueError('An SDK check is already running. Retry when it finishes.')
         try:
             with tempfile.TemporaryFile() as output:
-                subprocess.run(self.command(PROBE), timeout=20, check=True,
+                subprocess.run(self.command(PROBE, settings=settings), timeout=20, check=True,
                                stdin=subprocess.DEVNULL, stdout=output, stderr=subprocess.DEVNULL)
                 output.seek(0)
                 raw = output.read(65537)
@@ -117,7 +127,7 @@ with tempfile.TemporaryDirectory(prefix='fq-sdk-preflight-') as directory:
             raise ValueError('Cannot inspect the selected FlagQuantum SDK. Check the compute environment; no experiment was submitted.') from error
         finally:
             self.preflight_lock.release()
-        return {**value, 'environment': self.environment(),
+        return {**value, 'environment': self.environment(settings),
                 'scope': 'Read-only API introspection; no circuit executed or experiment submitted.'}
 
     def submit_project(self, data):
@@ -129,12 +139,20 @@ with tempfile.TemporaryDirectory(prefix='fq-sdk-preflight-') as directory:
     def submit(self, data, bundle=None):
         diagnostic = self.validate(data.get('source'))
         # The selected runtime is authoritative for syntax (it may be newer than the host).
+        environments = getattr(self.quantum, 'environments', None)
+        if environments:
+            with environments.lock:
+                selected = environments.snapshot()
+                environment = {**self.environment(selected), 'configuration_revision': environments.revision}
+        else:
+            selected = self.settings
+            environment = self.environment(selected)
         with self.lock:
             if len(self.active) >= 4: raise ValueError('Python queue full. Wait for a task to finish.')
             run = {'id':str(uuid.uuid4()), 'name':str(data.get('name') or 'Python task')[:100],
                 'source':data['source'], 'source_hash':source_hash(data['source']), 'status':'queued', 'created_at':time.time(), 'logs':[],
                 'experiments':[], 'collection_errors':[], 'collection_status':'pending',
-                'environment':self.environment()}
+                'environment':environment}
             if bundle is not None:
                 run['project'] = bundle['project']
                 inputs = self.settings.database_path.parent / 'python-inputs'
@@ -143,7 +161,7 @@ with tempfile.TemporaryDirectory(prefix='fq-sdk-preflight-') as directory:
             cancel = threading.Event()
             self.active[run['id']] = cancel
             self.store.put(run)
-            self.pool.submit(self.execute, run, cancel)
+            self.pool.submit(self.execute, run, cancel, selected)
         return run
 
     def get(self, run_id):
@@ -206,22 +224,23 @@ with tempfile.TemporaryDirectory(prefix='fq-sdk-preflight-') as directory:
                 self.store.put(run)
             with self.lock: self.recollecting.discard(run_id)
 
-    def command(self, worker=None):
-        if self.settings.macos_python_isolation and self.settings.compute_transport != 'local':
+    def command(self, worker=None, settings=None):
+        settings = settings or self.selected_settings()
+        if settings.macos_python_isolation and settings.compute_transport != 'local':
             raise RuntimeError('macOS Python isolation requires the local compute runner.')
-        worker = worker or ('ISOLATE_PYTHON = ' + repr(self.settings.macos_python_isolation) + '\n'
+        worker = worker or ('ISOLATE_PYTHON = ' + repr(settings.macos_python_isolation) + '\n'
             + 'RUNTIME_MANIFEST_CODE = ' + repr((Path(__file__).parent/'runtime_facts.py').read_text()) + '\n' + (Path(__file__).parent/'python_worker.py').read_text())
-        if self.settings.compute_transport == 'local':
-            return [self.settings.local_python or sys.executable, '-u', '-c', worker]
-        if not self.settings.ssh_target: raise RuntimeError('Configure the SSH CPU target before running Python.')
+        if settings.compute_transport == 'local':
+            return [settings.local_python or sys.executable, '-u', '-c', worker]
+        if not settings.ssh_target: raise RuntimeError('Configure the SSH CPU target before running Python.')
         encoded = base64.b64encode(worker.encode()).decode()
         driver = "import base64;exec(compile(base64.b64decode('%s'),'<python-supervisor>','exec'))" % encoded
         import shlex
-        return ['ssh','-T','-p',str(self.settings.ssh_port),'-o','BatchMode=yes','-o','ConnectTimeout=12',
-            '-o','StrictHostKeyChecking=yes','-o','ForwardAgent=no','-o','ForwardX11=no',self.settings.ssh_target,
-            shlex.quote(self.settings.remote_python or 'python3') + ' -u -c '+shlex.quote(driver)]
+        return ['ssh', *(['-i', os.path.expanduser(settings.ssh_identity)] if settings.ssh_identity else []), '-T','-p',str(settings.ssh_port),'-o','BatchMode=yes','-o','ConnectTimeout=12',
+            '-o','StrictHostKeyChecking=yes','-o','ForwardAgent=no','-o','ForwardX11=no','--',settings.ssh_target,
+            shlex.quote(settings.remote_python or 'python3') + ' -u -c '+shlex.quote(driver)]
 
-    def execute(self, run, cancel):
+    def execute(self, run, cancel, selected):
         process = None
         staging = tempfile.TemporaryDirectory(prefix='fqx-transfer-')
         transfer = ExperimentTransfer(Path(staging.name))
@@ -229,7 +248,7 @@ with tempfile.TemporaryDirectory(prefix='fq-sdk-preflight-') as directory:
         try:
             if cancel.is_set(): run['status']='cancelled'; return
             run['status'] = 'running'; self.store.put(run)
-            process = subprocess.Popen(self.command(), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            process = subprocess.Popen(self.command(settings=selected), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE, text=True, start_new_session=True)
             request = {'source':run['source'], 'helper':(Path(__file__).parent/'synthesis_projection.py').read_text() + '\n' + (Path(__file__).parent/'python_publish.py').read_text()}
             if run.get('project'):
@@ -297,7 +316,7 @@ with tempfile.TemporaryDirectory(prefix='fq-sdk-preflight-') as directory:
                     if cancel.is_set(): break
                     try:
                         record = self.experiments.import_file(item['path'].read_bytes(), Path(item['name']).name,
-                                                              python_run=run, task_path=item['name'])
+                                                              python_run=run, task_path=item['name'], local_archive_python=selected.local_python)
                         run['experiments'].append({'id': record['id'], 'filename': item['name'], 'sha256': item['sha256'], 'has_result': record['program']['experiment']['has_result']})
                     except (ValueError, OSError) as error:
                         # Keep the user's completed file even when its preview fails.
@@ -348,7 +367,7 @@ with tempfile.TemporaryDirectory(prefix='fq-sdk-preflight-') as directory:
         for gate in compiled.get('instructions',[]):
             if not isinstance(gate,dict) or not isinstance(gate.get('name'),str) or not isinstance(gate.get('wires'),list) or not gate['wires'] or any(type(wire) is not int or not 0 <= wire < qubits for wire in gate['wires']) or not isinstance(gate.get('params',{}),dict):
                 raise ValueError('Invalid published gate.')
-        compiled.update(source_hash=source_hash(source), transport=self.settings.compute_transport)
+        compiled.update(source_hash=source_hash(source), transport=run.get('environment', {}).get('transport', self.settings.compute_transport))
         program = {'id':'python-'+run['id'], 'name':str(artifact.get('name') or run['name'])[:100],
             'source':source, 'compiled':compiled, 'created':int(time.time()*1000),
             'origin':{'language':'python','source':run.get('source',''), 'run_id':run['id']}}

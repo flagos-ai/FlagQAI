@@ -3,12 +3,18 @@ import base64
 import json
 from pathlib import Path
 import subprocess
+import shlex
+import os
 
 
 class SSHCPUAdapter:
-    def __init__(self, target, port=2222):
+    transport = "ssh"
+
+    def __init__(self, target, port=2222, python=None, identity=""):
+        self.identity = identity
         self.target = target
         self.port = port
+        self.python = python or "python3"
 
     def execute(self, request):
         if not self.target:
@@ -25,11 +31,11 @@ class SSHCPUAdapter:
             f"exec(compile(base64.b64decode('{driver}'),'<workspace-driver>','exec'))\n"
         )
         command = [
-            'ssh', '-T', '-p', str(self.port), '-o', 'BatchMode=yes',
+            'ssh', *(['-i', os.path.expanduser(self.identity)] if self.identity else []), '-T', '-p', str(self.port), '-o', 'BatchMode=yes',
             '-o', 'ConnectTimeout=12', '-o', 'ConnectionAttempts=1',
             '-o', 'StrictHostKeyChecking=yes', '-o', 'ForwardAgent=no',
-            '-o', 'ForwardX11=no', self.target,
-            'OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 timeout 90s python3 -',
+            '-o', 'ForwardX11=no', '--', self.target,
+            'OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 timeout 90s ' + shlex.quote(self.python) + ' -',
         ]
         try:
             result = subprocess.run(command, input=script, text=True, capture_output=True, timeout=105)

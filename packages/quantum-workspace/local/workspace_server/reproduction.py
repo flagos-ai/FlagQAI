@@ -146,8 +146,9 @@ def compare_runs(original, replay, expected, actual):
 
 
 class Reproductions:
-    def __init__(self, settings, packages, runs, experiments):
+    def __init__(self, settings, packages, runs, experiments, environments=None):
         self.packages, self.runs, self.experiments = packages, runs, experiments
+        self.environments = environments
         if packages is not None: packages.reproductions = self
         self.store = SQLiteJobStore(settings.database_path.with_suffix('.reproductions.sqlite3')); self.store.initialize()
         self.lock = threading.RLock()
@@ -171,11 +172,19 @@ class Reproductions:
             comparable(record)
         return run, records
 
+    def environment_lock(self):
+        from contextlib import nullcontext
+        return self.environments.lock if self.environments else nullcontext()
+
     def check(self, request):
         run, records = self.original(request)
         runtime, inspection_error = {}, None
         try:
-            process = subprocess.Popen(self.runs.command(PROBE + "\nresult = runtime_manifest(fq, " + repr(source_imports(run['source'])) + "); result['import_errors'] = errors; print(json.dumps(result))"), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True)
+            probe = PROBE + "\nresult = runtime_manifest(fq, " + repr(source_imports(run['source'])) + "); result['import_errors'] = errors; print(json.dumps(result))"
+            with self.environment_lock():
+                configured = self.runs.environment()
+                command = self.runs.command(probe)
+            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True)
             try: output, errors = process.communicate(timeout=25)
             except subprocess.TimeoutExpired:
                 try: os.killpg(process.pid, signal.SIGKILL)
@@ -191,7 +200,7 @@ class Reproductions:
                 raise ValueError('Runtime inspection returned invalid metadata. No reproduction was submitted.')
         except OSError:
             inspection_error = 'Configured Python executable is unavailable or cannot be started. Check its path and permissions. No reproduction was submitted.'
-        except ValueError as error:
+        except (ValueError, RuntimeError) as error:
             inspection_error = str(error)
         differences = []
         execution = []
@@ -217,14 +226,14 @@ class Reproductions:
             differences = ['The current runtime could not be inspected. Compatibility is unchecked.']
         identity = 'verify-' + uuid.uuid4().hex
         record = {'id': identity, 'status': 'blocked' if plan['blockers'] else 'prepared', 'created_at': time.time(), 'package_id': request.get('package_id'), 'original_run': run['id'], 'source_hash': run['source_hash'],
-                  'original_archives': run['experiments'], 'configured_environment': self.runs.environment(), 'runtime': runtime, 'producer_versions': versions, 'recorded_execution': execution,
+                  'original_archives': run['experiments'], 'configured_environment': configured, 'runtime': runtime, 'producer_versions': versions, 'recorded_execution': execution,
                   'preparation': plan, 'differences': sorted(set(differences)), 'notice': 'Backend and device are selected by the unchanged archived code; external dependencies are not bundled. Version agreement does not guarantee reproduction.'}
         if inspection_error: record['error'] = inspection_error
         self.store.put(record)
         return record
 
     def start(self, identity):
-        with self.lock:
+        with self.lock, self.environment_lock():
             saved = self.store.get(identity)
             if not saved: raise ValueError('Check the environment first.')
             if saved['status'] != 'prepared': return self.get(identity)

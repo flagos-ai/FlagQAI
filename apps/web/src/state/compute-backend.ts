@@ -5,6 +5,7 @@ export type ComputeHealth = {
   max_qubits?: number;
   max_shots?: number;
   note?: string;
+  configured?: boolean;
 };
 
 export function isComputeHealth(value: unknown): value is ComputeHealth {

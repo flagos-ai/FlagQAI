@@ -54,7 +54,7 @@ class ProjectTests(PythonRunCase):
         entry=self.file('src/experiment.py','from helper import VALUE\nprint(VALUE)')
         helper=self.file('src/helper.py','VALUE=7')
         entered,release=threading.Event(),threading.Event(); command=self.runs.command
-        def held(): entered.set();release.wait(5);return command()
+        def held(**kwargs): entered.set();release.wait(5);return command(**kwargs)
         with patch.object(self.runs,'command',held):
             run=self.runs.submit_project({'project_id':self.identity,'entry':'src/experiment.py','expected_revision':entry['revision']})
             self.assertTrue(entered.wait(3))
