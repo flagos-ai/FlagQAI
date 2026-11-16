@@ -1,3 +1,4 @@
+import { normalizeModelFolder } from "./model-folders.ts";
 import {
   pythonExample,
   migrateLegacyPythonExample,
@@ -152,6 +153,11 @@ export function restoreWorkspace(
     models: Array.isArray(saved.models)
       ? saved.models
       : readJSON<Model[]>(storage, "fq-documents", []),
+    modelFolders: Array.isArray(saved.modelFolders)
+      ? [...new Set(saved.modelFolders.map(normalizeModelFolder))]
+          .filter((folder): folder is string => folder !== null)
+          .slice(-128)
+      : [],
     jobs: [],
     selectedJobId:
       typeof saved.selectedJobId === "string" ? saved.selectedJobId : null,
@@ -177,6 +183,7 @@ export function workspaceBackup(state: WorkspaceState) {
     agentOpen,
     programs,
     models,
+    modelFolders,
     selectedProgramId,
     selectedJobId,
     shots,
@@ -207,6 +214,7 @@ export function workspaceBackup(state: WorkspaceState) {
     name,
     programs: programs.filter((program) => !program.experiment),
     models,
+    modelFolders,
     selectedProgramId,
     selectedJobId,
     shots,

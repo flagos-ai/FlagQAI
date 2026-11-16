@@ -1,10 +1,12 @@
+import { ModelFolderLibrary } from "./ModelFolderLibrary";
+import { modelFolderTree } from "../state/model-folders";
 import { SynthesisExampleLibrary } from "./SynthesisExampleLibrary";
 import { matchingSynthesisExamples } from "../state/synthesis-catalog";
 import { qaoaTaskName, qaoaSource } from "../tasks/qaoa-maxcut.mjs";
 import { UIIcon } from "./UIIcon";
 import { CodeExample } from "./CodeExample";
 import { useEffect, useRef, useState } from "react";
-import type { Model } from "../contracts/quantum-workspace";
+import type { Model, WorkspaceAction } from "../contracts/quantum-workspace";
 import {
   pythonExamples as examples,
   interpretPythonPrompt as interpretPrompt,
@@ -12,6 +14,8 @@ import {
 
 export function ModelLibrary({
   models,
+  folders,
+  dispatch,
   onSelect,
   onUpload,
   busy,
@@ -24,6 +28,8 @@ export function ModelLibrary({
   busy?: boolean;
   importing?: boolean;
   models: Model[];
+  folders?: string[];
+  dispatch: (action: WorkspaceAction) => void;
   onSelect: (model: Model) => void;
   onUpload: (file: File) => void;
 }) {
@@ -54,9 +60,10 @@ export function ModelLibrary({
     model.name.toLowerCase().includes(term),
   );
   const showReferenceTask = qaoaTaskName.toLowerCase().includes(term);
-  const visibleModels = models.filter((model) =>
-    model.name.toLowerCase().includes(term),
-  );
+  const folderPaths = modelFolderTree(models, folders);
+  const folderMatches = term
+    ? modelFolderTree(models, folders, term)
+    : folderPaths;
   const clearSearch = () => {
     setQuery("");
     search.current?.focus({ preventScroll: true });
@@ -152,7 +159,7 @@ export function ModelLibrary({
             </div>
           </div>
           {!visibleExamples.length &&
-            !visibleModels.length &&
+            !folderMatches.length &&
             !synthesisMatches.length &&
             !showReferenceTask && (
               <p role="status">
@@ -209,32 +216,15 @@ export function ModelLibrary({
               </button>
             </section>
           )}
-          {(!term || visibleModels.length > 0) && (
-            <section className="fq-model-library-group" aria-label="My models">
-              <small className="eyebrow">MY MODELS {models.length}</small>
-              {visibleModels.map((m) => (
-                <button
-                  key={(m.language || "qasm") + ":" + m.name}
-                  className="fq-library-card"
-                  onClick={() => onSelect(m)}
-                >
-                  <span className="fq-library-title">
-                    <UIIcon name="file" size={14} />
-                    {m.name}
-                  </span>
-                  <small
-                    title={
-                      m.reviewOrigin
-                        ? `Reviewed file ${m.reviewOrigin.fileId} · revision ${m.reviewOrigin.revision}`
-                        : undefined
-                    }
-                  >
-                    {m.language === "python" ? "Python" : "OpenQASM"}
-                    {m.reviewOrigin ? " · Reviewed snapshot" : ""}
-                  </small>
-                </button>
-              ))}
-            </section>
+          {(!term || folderMatches.length > 0) && (
+            <ModelFolderLibrary
+              models={models}
+              tree={folderMatches}
+              paths={folderPaths}
+              searching={!!term}
+              onSelect={onSelect}
+              dispatch={dispatch}
+            />
           )}
           <button
             className="secondary"

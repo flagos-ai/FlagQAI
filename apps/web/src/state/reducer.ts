@@ -1,3 +1,4 @@
+import { modelKey, normalizeModelFolder } from "./model-folders.ts";
 import { reviewMatches } from "./agent-review.ts";
 import { checkpointProject, projectTransition } from "./project-workspace.ts";
 import { mergeBackupDrafts } from "./backup-import.ts";
@@ -108,6 +109,26 @@ function reduceWorkspace(
     }
     case "python-run":
       return { ...state, pythonRunId: action.id };
+    case "model-folder-create":
+    case "model-folder-move": {
+      const path = normalizeModelFolder(action.path);
+      if (!path) return state;
+      const modelFolders = [
+        ...new Set([...(state.modelFolders || []), path]),
+      ].slice(-128);
+      return {
+        ...state,
+        modelFolders,
+        models:
+          action.type === "model-folder-move"
+            ? state.models.map((model) =>
+                modelKey(model) === action.key
+                  ? { ...model, folder: path }
+                  : model,
+              )
+            : state.models,
+      };
+    }
     case "language": {
       const previous = state.language || "qasm";
       if (previous === action.language) return state;
@@ -499,7 +520,11 @@ function reduceWorkspace(
         ],
       };
     }
-    case "save":
+    case "save": {
+      const currentKey = modelKey(state);
+      const folder = normalizeModelFolder(
+        state.models.find((model) => modelKey(model) === currentKey)?.folder,
+      );
       return {
         ...state,
         models: [
@@ -507,13 +532,11 @@ function reduceWorkspace(
             name: state.name,
             source: state.source,
             language: state.language || "qasm",
+            ...(folder ? { folder } : {}),
           },
-          ...state.models.filter(
-            (m) =>
-              m.name !== state.name ||
-              (m.language || "qasm") !== (state.language || "qasm"),
-          ),
+          ...state.models.filter((model) => modelKey(model) !== currentKey),
         ].slice(0, 40),
       };
+    }
   }
 }
