@@ -1,0 +1,1894 @@
+{
+  "revision": "b3fa4a78935777bb8e3853752192e9cd47972b2f",
+  "entries": [
+    {
+      "id": "algorithms/machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority",
+      "category": "Algorithms",
+      "name": "hybrid qnn for subset majority",
+      "path": "algorithms/machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority/README.md",
+      "upstreamWorkflowValidated": true
+    },
+    {
+      "id": "algorithms/machine_learning/qgan/qgan_bars_and_strips",
+      "category": "Algorithms",
+      "name": "qgan bars and strips",
+      "path": "algorithms/machine_learning/qgan/qgan_bars_and_strips",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/machine_learning/qgan/qgan_bars_and_strips/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/machine_learning/qsvm",
+      "category": "Algorithms",
+      "name": "qsvm",
+      "path": "algorithms/machine_learning/qsvm",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/machine_learning/qsvm/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/machine_learning/quantum_autoencoder",
+      "category": "Algorithms",
+      "name": "quantum autoencoder",
+      "path": "algorithms/machine_learning/quantum_autoencoder",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/machine_learning/quantum_autoencoder/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/amplitude_amplification_and_estimation/oblivious_amplitude_amplification",
+      "category": "Algorithms",
+      "name": "oblivious amplitude amplification",
+      "path": "algorithms/amplitude_amplification_and_estimation/oblivious_amplitude_amplification",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/amplitude_amplification_and_estimation/oblivious_amplitude_amplification/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/amplitude_amplification_and_estimation/qmc_user_defined",
+      "category": "Algorithms",
+      "name": "qmc user defined",
+      "path": "algorithms/amplitude_amplification_and_estimation/qmc_user_defined",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/amplitude_amplification_and_estimation/qmc_user_defined/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/amplitude_amplification/qsvt_fixed_point",
+      "category": "Algorithms",
+      "name": "qsvt fixed point",
+      "path": "algorithms/amplitude_amplification/qsvt_fixed_point",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/amplitude_amplification/qsvt_fixed_point/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/amplitude_amplification_and_estimation/quantum_counting",
+      "category": "Algorithms",
+      "name": "quantum counting",
+      "path": "algorithms/amplitude_amplification_and_estimation/quantum_counting",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/amplitude_amplification_and_estimation/quantum_counting/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_iqae",
+      "category": "Algorithms",
+      "name": "quantum counting iqae",
+      "path": "algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_iqae",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_iqae/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_qpe",
+      "category": "Algorithms",
+      "name": "quantum counting qpe",
+      "path": "algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_qpe",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_qpe/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/foundational/bernstein_vazirani",
+      "category": "Algorithms",
+      "name": "bernstein vazirani",
+      "path": "algorithms/foundational/bernstein_vazirani",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/foundational/bernstein_vazirani/README.md",
+      "title": "Bernstein\u2013Vazirani",
+      "purpose": "Recover a five-bit secret using a phase oracle.",
+      "source": "# Official FlagQuantum example: algorithms/foundational/bernstein_vazirani\n# Source revision: b3fa4a78935777bb8e3853752192e9cd47972b2f\n# Workbench copy: original definitions; explicit run, resources and FQX save below.\n# Recover a five-bit secret using a phase oracle.\n\n\"\"\"Recover a hidden five-bit integer from its linear phase oracle.\"\"\"\n\nimport math\nfrom collections import Counter\nfrom random import Random\n\nimport flagquantum as fq\nfrom flagquantum.drawer import draw\nfrom flagquantum.synth import (\n    PHASE,\n    Output,\n    Program,\n    QArray,\n    QBit,\n    allocate,\n    hadamard_transform,\n    qfunc,\n    synthesize,\n)\n\n\n@qfunc\ndef linear_phase(weight: float, bit: QBit) -> None:\n    PHASE(math.pi * weight, bit)\n\n\n@qfunc\ndef hidden_string(weights: list[float], x: QArray[QBit]) -> None:\n    for index in range(len(weights)):\n        linear_phase(weights[index], x[index])\n\n\n@qfunc\ndef main(weights: list[float], x: Output[QArray[QBit]]) -> None:\n    allocate(5, x)\n    hadamard_transform(x)\n    hidden_string(weights, x)\n    hadamard_transform(x)\n\n\ndef build_program(secret: int = 13) -> Program:\n    \"\"\"Bind the classical secret; the oracle applies exp(i*pi*a dot x).\"\"\"\n    if type(secret) is not int or not 0 <= secret < 32:\n        raise ValueError(\"secret must be a five-bit integer in 0..31\")\n    weights = [float((secret >> index) & 1) for index in range(5)]\n    return synthesize(main, classical_inputs={\"weights\": weights}, max_qubits=6)\n\n\ndef run_example(secret: int = 13) -> None:\n    program = build_program(secret)\n    print(draw(program.circuit))\n    result = fq.run(program)\n    probabilities = dict(program.probabilities(result, registers=(\"x\",)))\n    # Local seeded sampling replaces the upstream cloud sampling session.\n    samples = Random(17).choices(\n        list(probabilities), weights=list(probabilities.values()), k=1000\n    )\n    counts = Counter(samples)\n    recovered = counts.most_common(1)[0][0][0]\n    assert recovered == secret\n    print(\"Secret integer:\", recovered)\n    print(\"Exact recovery probability:\", probabilities[(recovered,)])\n    print(\"Counts:\", dict(counts))\n\n# Run explicitly; no Agent or paid model is required.\nprogram = build_program()\nresult = fq.run(program)\nprint(dict(program.probabilities(result, registers=('x',))))\nprint(\"Resources:\", program.report[\"resources\"])\nfq.save(\"bernstein_vazirani.fqx\", result.plan, result=result)\n",
+      "requiredCapabilities": [
+        "Output",
+        "PHASE",
+        "Program",
+        "QArray",
+        "QBit",
+        "allocate",
+        "hadamard_transform",
+        "qfunc",
+        "synthesize"
+      ],
+      "sourceSha256": "351627620c300030e3641b02de36af933b4035652380da51b1863510af89b92c",
+      "upstreamSha256": "1d0cf0732c4d92a667eae68f26cb22db1f71605a459addd4676981a959e2f194",
+      "filename": "bernstein_vazirani.fqx",
+      "comparison": "examples.synthesis.algorithms.foundational.bernstein_vazirani.comparisons.circuit",
+      "upstreamWorkflowValidated": true
+    },
+    {
+      "id": "algorithms/foundational/deutsch_jozsa",
+      "category": "Algorithms",
+      "name": "deutsch jozsa",
+      "path": "algorithms/foundational/deutsch_jozsa",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/foundational/deutsch_jozsa/README.md",
+      "upstreamWorkflowValidated": true
+    },
+    {
+      "id": "algorithms/foundational/quantum_teleportation",
+      "category": "Algorithms",
+      "name": "quantum teleportation",
+      "path": "algorithms/foundational/quantum_teleportation",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/foundational/quantum_teleportation/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/foundational/simon",
+      "category": "Algorithms",
+      "name": "simon",
+      "path": "algorithms/foundational/simon",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/foundational/simon/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/hamiltonian_simulation/hamiltonian_simulation_guide",
+      "category": "Algorithms",
+      "name": "hamiltonian simulation guide",
+      "path": "algorithms/hamiltonian_simulation/hamiltonian_simulation_guide",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_qdrift",
+      "category": "Algorithms",
+      "name": "hamiltonian simulation guide qdrift",
+      "path": "algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_qdrift",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_qdrift/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_trotter",
+      "category": "Algorithms",
+      "name": "hamiltonian simulation guide trotter",
+      "path": "algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_trotter",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_trotter/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/metrology/classical_shadow_tomography",
+      "category": "Algorithms",
+      "name": "classical shadow tomography",
+      "path": "algorithms/metrology/classical_shadow_tomography",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/metrology/classical_shadow_tomography/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/number_theory_and_cryptography/discrete_log",
+      "category": "Algorithms",
+      "name": "discrete log",
+      "path": "algorithms/number_theory_and_cryptography/discrete_log",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/number_theory_and_cryptography/discrete_log/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/number_theory_and_cryptography/elliptic_curves/elliptic_curve_discrete_log",
+      "category": "Algorithms",
+      "name": "elliptic curve discrete log",
+      "path": "algorithms/number_theory_and_cryptography/elliptic_curves/elliptic_curve_discrete_log",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/number_theory_and_cryptography/elliptic_curves/elliptic_curve_discrete_log/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/number_theory_and_cryptography/hidden_shift",
+      "category": "Algorithms",
+      "name": "hidden shift",
+      "path": "algorithms/number_theory_and_cryptography/hidden_shift",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/number_theory_and_cryptography/hidden_shift/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/number_theory_and_cryptography/shor",
+      "category": "Algorithms",
+      "name": "shor",
+      "path": "algorithms/number_theory_and_cryptography/shor",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/number_theory_and_cryptography/shor/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/quantum_differential_equations_solvers/discrete_poisson_solver",
+      "category": "Algorithms",
+      "name": "discrete poisson solver",
+      "path": "algorithms/quantum_differential_equations_solvers/discrete_poisson_solver",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/quantum_differential_equations_solvers/discrete_poisson_solver/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/quantum_differential_equations_solvers/time_marching",
+      "category": "Algorithms",
+      "name": "time marching",
+      "path": "algorithms/quantum_differential_equations_solvers/time_marching",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/quantum_differential_equations_solvers/time_marching/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc",
+      "category": "Algorithms",
+      "name": "solving qlsp with aqc",
+      "path": "algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/quantum_linear_solvers/hhl",
+      "category": "Algorithms",
+      "name": "hhl",
+      "path": "algorithms/quantum_linear_solvers/hhl",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/quantum_linear_solvers/hhl/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/quantum_linear_solvers/qsvt_matrix_inversion",
+      "category": "Algorithms",
+      "name": "qsvt matrix inversion",
+      "path": "algorithms/quantum_linear_solvers/qsvt_matrix_inversion",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/quantum_linear_solvers/qsvt_matrix_inversion/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/quantum_linear_solvers/vqls/vqls_with_lcu",
+      "category": "Algorithms",
+      "name": "vqls with lcu",
+      "path": "algorithms/quantum_linear_solvers/vqls/vqls_with_lcu",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/quantum_linear_solvers/vqls/vqls_with_lcu/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/quantum_phase_estimation/qpe_for_matrix",
+      "category": "Algorithms",
+      "name": "qpe for matrix",
+      "path": "algorithms/quantum_phase_estimation/qpe_for_matrix",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/quantum_phase_estimation/qpe_for_matrix/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/quantum_phase_estimation/qpe_with_qubitization/qpe_for_molecule_with_qubitization",
+      "category": "Algorithms",
+      "name": "qpe for molecule with qubitization",
+      "path": "algorithms/quantum_phase_estimation/qpe_with_qubitization/qpe_for_molecule_with_qubitization",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/quantum_phase_estimation/qpe_with_qubitization/qpe_for_molecule_with_qubitization/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/quantum_primitives/gqsp",
+      "category": "Algorithms",
+      "name": "gqsp",
+      "path": "algorithms/quantum_primitives/gqsp",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/quantum_primitives/gqsp/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/quantum_primitives/hadamard_test",
+      "category": "Algorithms",
+      "name": "hadamard test",
+      "path": "algorithms/quantum_primitives/hadamard_test",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/quantum_primitives/hadamard_test/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/quantum_primitives/swap_test",
+      "category": "Algorithms",
+      "name": "swap test",
+      "path": "algorithms/quantum_primitives/swap_test",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/quantum_primitives/swap_test/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/quantum_state_preparation/adapt_vqe",
+      "category": "Algorithms",
+      "name": "adapt vqe",
+      "path": "algorithms/quantum_state_preparation/adapt_vqe",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/quantum_state_preparation/adapt_vqe/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/quantum_state_preparation/gibbs/quantum_thermal_state_preparation",
+      "category": "Algorithms",
+      "name": "quantum thermal state preparation",
+      "path": "algorithms/quantum_state_preparation/gibbs/quantum_thermal_state_preparation",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/quantum_state_preparation/gibbs/quantum_thermal_state_preparation/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/search_and_optimization/qaoa",
+      "category": "Algorithms",
+      "name": "qaoa",
+      "path": "algorithms/search_and_optimization/qaoa",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/search_and_optimization/qaoa/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/search_and_optimization/qaoa/qaoa_knapsack",
+      "category": "Algorithms",
+      "name": "qaoa knapsack",
+      "path": "algorithms/search_and_optimization/qaoa/qaoa_knapsack",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/search_and_optimization/qaoa/qaoa_knapsack/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/search_and_optimization/qaoa/qaoa_max_cut",
+      "category": "Algorithms",
+      "name": "qaoa max cut",
+      "path": "algorithms/search_and_optimization/qaoa/qaoa_max_cut",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/search_and_optimization/qaoa/qaoa_max_cut/README.md",
+      "title": "QAOA \u00b7 Max-Cut",
+      "purpose": "Five vertices and four layers; fixed parameters, not an optimized solution.",
+      "source": "# Official FlagQuantum example: algorithms/search_and_optimization/qaoa/qaoa_max_cut\n# Source revision: b3fa4a78935777bb8e3853752192e9cd47972b2f\n# Workbench copy: original definitions; explicit run, resources and FQX save below.\n# Five vertices and four layers; fixed parameters, not an optimized solution.\n\n\"\"\"Native four-layer MaxCut with an explicitly selected cost helper.\"\"\"\n\nimport flagquantum as fq\nfrom flagquantum import synth\nfrom flagquantum.synth import (\n    RX,\n    Output,\n    QArray,\n    QBit,\n    allocate,\n    hadamard_transform,\n    phase,\n    qfunc,\n)\n\n\n@qfunc\ndef maxcut_cost_layer(gamma: float, vertices: QArray[QBit]) -> None:\n    phase(\n        (\n            vertices[0] * (1 - vertices[1])\n            + vertices[1] * (1 - vertices[0])\n            + vertices[0] * (1 - vertices[2])\n            + vertices[2] * (1 - vertices[0])\n            + vertices[1] * (1 - vertices[2])\n            + vertices[2] * (1 - vertices[1])\n            + vertices[1] * (1 - vertices[3])\n            + vertices[3] * (1 - vertices[1])\n            + vertices[2] * (1 - vertices[4])\n            + vertices[4] * (1 - vertices[2])\n            + vertices[3] * (1 - vertices[4])\n            + vertices[4] * (1 - vertices[3])\n        )\n        / 6,\n        gamma,\n    )\n\n\n@qfunc\ndef mixer_layer(beta: float, vertices: QArray[QBit]) -> None:\n    for vertex in range(5):\n        RX(beta, vertices[vertex])\n\n\n@qfunc\ndef ansatz(params: list[float], vertices: QArray[QBit]) -> None:\n    for layer in range(4):\n        maxcut_cost_layer(params[layer], vertices)\n        mixer_layer(params[4 + layer], vertices)\n\n\n@qfunc\ndef main(params: list[float], v: Output[QArray[QBit]]) -> None:\n    allocate(5, v)\n    hadamard_transform(v)\n    ansatz(params, v)\n\n\nDEFAULT_PARAMS = (\n    0.1,\n    0.2,\n    0.30000000000000004,\n    0.4,\n    0.5,\n    0.6000000000000001,\n    0.7000000000000001,\n    0.8,\n)\n\n\ndef build_program(params: tuple[float, ...] = DEFAULT_PARAMS) -> synth.Program:\n    if len(params) != 8:\n        raise ValueError(\"Four MaxCut layers require eight real parameters\")\n    return synth.synthesize(main, classical_inputs={\"params\": params}, max_workspace=0)\n\n\ndef run_example() -> None:\n    program = build_program()\n    print(dict(program.probabilities(fq.run(program), registers=(\"v\",))))\n    print(program.report[\"resources\"])\n\n# Run explicitly; no Agent or paid model is required.\nprogram = build_program()\nresult = fq.run(program)\nprint(dict(program.probabilities(result, registers=('v',))))\nprint(\"Resources:\", program.report[\"resources\"])\nfq.save(\"qaoa_max_cut.fqx\", result.plan, result=result)\n",
+      "requiredCapabilities": [
+        "Output",
+        "QArray",
+        "QBit",
+        "RX",
+        "allocate",
+        "hadamard_transform",
+        "phase",
+        "qfunc"
+      ],
+      "sourceSha256": "5b7ad4060dfc366a45745761eb3eeed2832a5b430e13b9bda0e5a2fd9c022fdd",
+      "upstreamSha256": "24ba7c84bcef713ec8856470ff148dc456b29e29920084852525bc78ff820f9c",
+      "filename": "qaoa_max_cut.fqx",
+      "comparison": "examples.synthesis.algorithms.search_and_optimization.qaoa.qaoa_max_cut.comparisons.circuit",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/search_and_optimization/dqi/dqi_max_xorsat",
+      "category": "Algorithms",
+      "name": "dqi max xorsat",
+      "path": "algorithms/search_and_optimization/dqi/dqi_max_xorsat",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/search_and_optimization/dqi/dqi_max_xorsat/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/search_and_optimization/grover/three_sat_grover",
+      "category": "Algorithms",
+      "name": "three sat grover",
+      "path": "algorithms/search_and_optimization/grover/three_sat_grover",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/search_and_optimization/grover/three_sat_grover/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/search_and_optimization/grover/grover",
+      "category": "Algorithms",
+      "name": "grover",
+      "path": "algorithms/search_and_optimization/grover/grover",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/search_and_optimization/grover/grover/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/search_and_optimization/grover/grover_max_cut",
+      "category": "Algorithms",
+      "name": "grover max cut",
+      "path": "algorithms/search_and_optimization/grover/grover_max_cut",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/search_and_optimization/grover/grover_max_cut/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "algorithms/search_and_optimization/grover_mixer_qaoa/gm_qaoa",
+      "category": "Algorithms",
+      "name": "gm qaoa",
+      "path": "algorithms/search_and_optimization/grover_mixer_qaoa/gm_qaoa",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/algorithms/search_and_optimization/grover_mixer_qaoa/gm_qaoa/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/cfd/double_slit_experiment/quantum_double_slit_experiment",
+      "category": "Applications",
+      "name": "quantum double slit experiment",
+      "path": "applications/cfd/double_slit_experiment/quantum_double_slit_experiment",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/cfd/double_slit_experiment/quantum_double_slit_experiment/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/cfd/heat_eq_qsvt",
+      "category": "Applications",
+      "name": "heat eq qsvt",
+      "path": "applications/cfd/heat_eq_qsvt",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/cfd/heat_eq_qsvt/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/cfd/qlbm",
+      "category": "Applications",
+      "name": "qlbm",
+      "path": "applications/cfd/qlbm",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/cfd/qlbm/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/benchmarking/quantum_volume",
+      "category": "Applications",
+      "name": "quantum volume",
+      "path": "applications/benchmarking/quantum_volume",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/benchmarking/quantum_volume/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/benchmarking/randomized_benchmarking",
+      "category": "Applications",
+      "name": "randomized benchmarking",
+      "path": "applications/benchmarking/randomized_benchmarking",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/benchmarking/randomized_benchmarking/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/chemistry/molecular_energy_curve",
+      "category": "Applications",
+      "name": "molecular energy curve",
+      "path": "applications/chemistry/molecular_energy_curve",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/chemistry/molecular_energy_curve/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/chemistry/molecule_eigensolver",
+      "category": "Applications",
+      "name": "molecule eigensolver",
+      "path": "applications/chemistry/molecule_eigensolver",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/chemistry/molecule_eigensolver/README.md",
+      "title": "Molecular variational ansatz",
+      "purpose": "Retained one-qubit ansatz; not a complete molecular eigensolver workflow.",
+      "source": "# Official FlagQuantum example: applications/chemistry/molecule_eigensolver\n# Source revision: b3fa4a78935777bb8e3853752192e9cd47972b2f\n# Workbench copy: original definitions; explicit run, resources and FQX save below.\n# Retained one-qubit ansatz; not a complete molecular eigensolver workflow.\n\n\"\"\"Prepare the retained one-qubit molecular variational ansatz natively.\"\"\"\n\nimport flagquantum as fq\nfrom flagquantum import synth\nfrom flagquantum.synth import Output, QArray, QBit, X, allocate, qfunc, suzuki_trotter\n\nGENERATOR = -0.5 * fq.Y(0)\nDEFAULT_PARAMS = (0.37,)\n\n\n@qfunc\ndef prepare_reference(state: Output[QArray[QBit]]) -> None:\n    allocate(1, state)\n    X(state[0])\n\n\n@qfunc\ndef main(params: list[float], state: Output[QArray[QBit]]) -> None:\n    prepare_reference(state)\n    suzuki_trotter(GENERATOR, params[0], 1, 1, state)\n\n\ndef build_program(params: tuple[float, ...] = DEFAULT_PARAMS) -> synth.Program:\n    if len(params) != 1:\n        raise ValueError(\"The retained molecular ansatz requires one parameter\")\n    return synth.synthesize(main, classical_inputs={\"params\": params}, max_workspace=0)\n\n# Run explicitly; no Agent or paid model is required.\nprogram = build_program()\nresult = fq.run(program)\nprint(dict(program.probabilities(result, registers=('state',))))\nprint(\"Resources:\", program.report[\"resources\"])\nfq.save(\"molecule_eigensolver.fqx\", result.plan, result=result)\n",
+      "requiredCapabilities": [
+        "Output",
+        "QArray",
+        "QBit",
+        "X",
+        "allocate",
+        "qfunc",
+        "suzuki_trotter"
+      ],
+      "sourceSha256": "58d6d3306b5447f7e2305ec35cea8caf1aa87eb543d8e08eab240d4b88a27aee",
+      "upstreamSha256": "cb29b067f9f6b0de9088b64992cc1060895fed3727dcbba2189923ae8d17e62d",
+      "filename": "molecule_eigensolver.fqx",
+      "comparison": "examples.synthesis.applications.chemistry.molecule_eigensolver.comparisons.circuit",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/chemistry/protein_folding/protein_folding_with_qaoa/protein_folding",
+      "category": "Applications",
+      "name": "protein folding",
+      "path": "applications/chemistry/protein_folding/protein_folding_with_qaoa/protein_folding",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/chemistry/protein_folding/protein_folding_with_qaoa/protein_folding/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/chemistry/protein_folding/protein_folding_with_quantum_walk/qfold",
+      "category": "Applications",
+      "name": "qfold",
+      "path": "applications/chemistry/protein_folding/protein_folding_with_quantum_walk/qfold",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/chemistry/protein_folding/protein_folding_with_quantum_walk/qfold/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/chemistry/qpe_for_molecules",
+      "category": "Applications",
+      "name": "qpe for molecules",
+      "path": "applications/chemistry/qpe_for_molecules",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/chemistry/qpe_for_molecules/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/chemistry/quantum_drude_oscillator",
+      "category": "Applications",
+      "name": "quantum drude oscillator",
+      "path": "applications/chemistry/quantum_drude_oscillator",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/chemistry/quantum_drude_oscillator/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/chemistry/quantum_walk_fmo",
+      "category": "Applications",
+      "name": "quantum walk fmo",
+      "path": "applications/chemistry/quantum_walk_fmo",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/chemistry/quantum_walk_fmo/README.md",
+      "upstreamWorkflowValidated": true
+    },
+    {
+      "id": "applications/chemistry/second_quantized_hamiltonian",
+      "category": "Applications",
+      "name": "second quantized hamiltonian",
+      "path": "applications/chemistry/second_quantized_hamiltonian",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/chemistry/second_quantized_hamiltonian/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/chemistry/tensor_hypercontraction",
+      "category": "Applications",
+      "name": "tensor hypercontraction",
+      "path": "applications/chemistry/tensor_hypercontraction",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/chemistry/tensor_hypercontraction/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/cybersecurity/link_monitoring",
+      "category": "Applications",
+      "name": "link monitoring",
+      "path": "applications/cybersecurity/link_monitoring",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/cybersecurity/link_monitoring/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/cybersecurity/patching_management/patch_min_vertex_cover",
+      "category": "Applications",
+      "name": "patch min vertex cover",
+      "path": "applications/cybersecurity/patching_management/patch_min_vertex_cover",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/cybersecurity/patching_management/patch_min_vertex_cover/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/cybersecurity/whitebox_fuzzing",
+      "category": "Applications",
+      "name": "whitebox fuzzing",
+      "path": "applications/cybersecurity/whitebox_fuzzing",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/cybersecurity/whitebox_fuzzing/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/finance/autocallable_options/partial_exponential_state_preparation",
+      "category": "Applications",
+      "name": "partial exponential state preparation",
+      "path": "applications/finance/autocallable_options/partial_exponential_state_preparation",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/finance/autocallable_options/partial_exponential_state_preparation/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/finance/autocallable_options/quantum_autocallable_option_pricing",
+      "category": "Applications",
+      "name": "quantum autocallable option pricing",
+      "path": "applications/finance/autocallable_options/quantum_autocallable_option_pricing",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/finance/autocallable_options/quantum_autocallable_option_pricing/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/finance/brownian_chebyshev_polynomials",
+      "category": "Applications",
+      "name": "brownian chebyshev polynomials",
+      "path": "applications/finance/brownian_chebyshev_polynomials",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/finance/brownian_chebyshev_polynomials/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/finance/credit_card_fraud",
+      "category": "Applications",
+      "name": "credit card fraud",
+      "path": "applications/finance/credit_card_fraud",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/finance/credit_card_fraud/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl",
+      "category": "Applications",
+      "name": "portfolio optimization with hhl",
+      "path": "applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/finance/option_pricing",
+      "category": "Applications",
+      "name": "option pricing",
+      "path": "applications/finance/option_pricing",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/finance/option_pricing/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/finance/portfolio_optimization",
+      "category": "Applications",
+      "name": "portfolio optimization",
+      "path": "applications/finance/portfolio_optimization",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/finance/portfolio_optimization/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/finance/portfolio_optimization_hhl/hhl_portfolio",
+      "category": "Applications",
+      "name": "hhl portfolio",
+      "path": "applications/finance/portfolio_optimization_hhl/hhl_portfolio",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/finance/portfolio_optimization_hhl/hhl_portfolio/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/finance/rainbow_options/rainbow_options_bruteforce_method",
+      "category": "Applications",
+      "name": "rainbow options bruteforce method",
+      "path": "applications/finance/rainbow_options/rainbow_options_bruteforce_method",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/finance/rainbow_options/rainbow_options_bruteforce_method/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/finance/rainbow_options/rainbow_options_direct_method",
+      "category": "Applications",
+      "name": "rainbow options direct method",
+      "path": "applications/finance/rainbow_options/rainbow_options_direct_method",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/finance/rainbow_options/rainbow_options_direct_method/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/finance/rainbow_options/rainbow_options_integration_method",
+      "category": "Applications",
+      "name": "rainbow options integration method",
+      "path": "applications/finance/rainbow_options/rainbow_options_integration_method",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/finance/rainbow_options/rainbow_options_integration_method/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/finance/value_at_risk",
+      "category": "Applications",
+      "name": "value at risk",
+      "path": "applications/finance/value_at_risk",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/finance/value_at_risk/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/logistics/facility_location",
+      "category": "Applications",
+      "name": "facility location",
+      "path": "applications/logistics/facility_location",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/logistics/facility_location/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/logistics/task_scheduling_problem",
+      "category": "Applications",
+      "name": "task scheduling problem",
+      "path": "applications/logistics/task_scheduling_problem",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/logistics/task_scheduling_problem/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/logistics/traveling_salesman_problem",
+      "category": "Applications",
+      "name": "traveling salesman problem",
+      "path": "applications/logistics/traveling_salesman_problem",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/logistics/traveling_salesman_problem/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/logistics/vehicle_routing_problem",
+      "category": "Applications",
+      "name": "vehicle routing problem",
+      "path": "applications/logistics/vehicle_routing_problem",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/logistics/vehicle_routing_problem/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/optimization/adapt_qaoa",
+      "category": "Applications",
+      "name": "adapt qaoa",
+      "path": "applications/optimization/adapt_qaoa",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/optimization/adapt_qaoa/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/optimization/electric_grid_optimization",
+      "category": "Applications",
+      "name": "electric grid optimization",
+      "path": "applications/optimization/electric_grid_optimization",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/optimization/electric_grid_optimization/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/optimization/integer_linear_programming",
+      "category": "Applications",
+      "name": "integer linear programming",
+      "path": "applications/optimization/integer_linear_programming",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/optimization/integer_linear_programming/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/optimization/kidney_exchange/kidney_exchange_problem",
+      "category": "Applications",
+      "name": "kidney exchange problem",
+      "path": "applications/optimization/kidney_exchange/kidney_exchange_problem",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/optimization/kidney_exchange/kidney_exchange_problem/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs",
+      "category": "Applications",
+      "name": "evidence scaling labs",
+      "path": "applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/optimization/max_clique",
+      "category": "Applications",
+      "name": "max clique",
+      "path": "applications/optimization/max_clique",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/optimization/max_clique/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/optimization/max_independent_set",
+      "category": "Applications",
+      "name": "max independent set",
+      "path": "applications/optimization/max_independent_set",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/optimization/max_independent_set/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/optimization/max_induced_k_color_subgraph",
+      "category": "Applications",
+      "name": "max induced k color subgraph",
+      "path": "applications/optimization/max_induced_k_color_subgraph",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/optimization/max_induced_k_color_subgraph/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/optimization/max_k_vertex_cover",
+      "category": "Applications",
+      "name": "max k vertex cover",
+      "path": "applications/optimization/max_k_vertex_cover",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/optimization/max_k_vertex_cover/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/optimization/min_graph_coloring",
+      "category": "Applications",
+      "name": "min graph coloring",
+      "path": "applications/optimization/min_graph_coloring",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/optimization/min_graph_coloring/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/optimization/minimum_dominating_set",
+      "category": "Applications",
+      "name": "minimum dominating set",
+      "path": "applications/optimization/minimum_dominating_set",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/optimization/minimum_dominating_set/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/optimization/qaoa_in_qaoa",
+      "category": "Applications",
+      "name": "qaoa in qaoa",
+      "path": "applications/optimization/qaoa_in_qaoa",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/optimization/qaoa_in_qaoa/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/optimization/rectangles_packing/rectangles_packing_grid",
+      "category": "Applications",
+      "name": "rectangles packing grid",
+      "path": "applications/optimization/rectangles_packing/rectangles_packing_grid",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/optimization/rectangles_packing/rectangles_packing_grid/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/optimization/robust_posture_optimization",
+      "category": "Applications",
+      "name": "robust posture optimization",
+      "path": "applications/optimization/robust_posture_optimization",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/optimization/robust_posture_optimization/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/optimization/set_cover",
+      "category": "Applications",
+      "name": "set cover",
+      "path": "applications/optimization/set_cover",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/optimization/set_cover/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/optimization/set_partition",
+      "category": "Applications",
+      "name": "set partition",
+      "path": "applications/optimization/set_partition",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/optimization/set_partition/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/optimization/variational_quantum_imaginary_time_evolution",
+      "category": "Applications",
+      "name": "variational quantum imaginary time evolution",
+      "path": "applications/optimization/variational_quantum_imaginary_time_evolution",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/optimization/variational_quantum_imaginary_time_evolution/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/physical_systems/fermi_hubbard_model_1d/fermi_hubbard_1d",
+      "category": "Applications",
+      "name": "fermi hubbard 1d",
+      "path": "applications/physical_systems/fermi_hubbard_model_1d/fermi_hubbard_1d",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/physical_systems/fermi_hubbard_model_1d/fermi_hubbard_1d/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/physical_systems/hhl_lanchester",
+      "category": "Applications",
+      "name": "hhl lanchester",
+      "path": "applications/physical_systems/hhl_lanchester",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/physical_systems/hhl_lanchester/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/physical_systems/ising_model",
+      "category": "Applications",
+      "name": "ising model",
+      "path": "applications/physical_systems/ising_model",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/physical_systems/ising_model/README.md",
+      "title": "Ising model",
+      "purpose": "Six-spin layered ansatz; fixed parameters, not a ground-state search.",
+      "source": "# Official FlagQuantum example: applications/physical_systems/ising_model\n# Source revision: b3fa4a78935777bb8e3853752192e9cd47972b2f\n# Workbench copy: original definitions; explicit run, resources and FQX save below.\n# Six-spin layered ansatz; fixed parameters, not a ground-state search.\n\n\"\"\"Native layered quantum program for ising model.\"\"\"\n\nimport flagquantum as fq\nfrom flagquantum import synth\nfrom flagquantum.synth import (\n    RX,\n    Output,\n    QArray,\n    QBit,\n    allocate,\n    hadamard_transform,\n    phase,\n    qfunc,\n)\n\n\n@qfunc\ndef cost_layer(gamma: float, v: QArray[QBit]) -> None:\n    phase(\n        -20\n        * (\n            (2 * v[0] - 1)\n            + (2 * v[1] - 1)\n            + (2 * v[2] - 1)\n            + (2 * v[3] - 1)\n            + (2 * v[4] - 1)\n            + (2 * v[5] - 1)\n        )\n        + 10\n        * (\n            (2 * v[0] - 1) * (2 * v[1] - 1)\n            + (2 * v[0] - 1) * (2 * v[5] - 1)\n            + (2 * v[1] - 1) * (2 * v[2] - 1)\n            + (2 * v[2] - 1) * (2 * v[3] - 1)\n            + (2 * v[3] - 1) * (2 * v[4] - 1)\n            + (2 * v[4] - 1) * (2 * v[5] - 1)\n        ),\n        gamma,\n    )\n\n\n@qfunc\ndef main(params: list[float], v: Output[QArray[QBit]]) -> None:\n    allocate(6, v)\n    hadamard_transform(v)\n    for i in range(5):\n        cost_layer(params[i], v)\n        for j in range(6):\n            RX(params[5 + i], v[j])\n\n\ndef build_program(\n    params: tuple[float, ...] = (\n        0.01,\n        0.02,\n        0.03,\n        0.04,\n        0.05,\n        0.06,\n        0.07,\n        0.08,\n        0.09,\n        0.1,\n    )\n) -> synth.Program:\n    if len(params) != 10:\n        raise ValueError(\"This 5-layer program requires 10 real parameters\")\n    return synth.synthesize(main, classical_inputs={\"params\": params}, max_workspace=0)\n\n# Run explicitly; no Agent or paid model is required.\nprogram = build_program()\nresult = fq.run(program)\nprint(dict(program.probabilities(result, registers=('v',))))\nprint(\"Resources:\", program.report[\"resources\"])\nfq.save(\"ising_model.fqx\", result.plan, result=result)\n",
+      "requiredCapabilities": [
+        "Output",
+        "QArray",
+        "QBit",
+        "RX",
+        "allocate",
+        "hadamard_transform",
+        "phase",
+        "qfunc"
+      ],
+      "sourceSha256": "dfe9b72bf2c1f458cf934bb5531e2033c47e15d94cb4573e871f0c883e483d91",
+      "upstreamSha256": "f809d94c4df4c946216b880e0e752b8bdf226649f41c830f14463e8fae3c5104",
+      "filename": "ising_model.fqx",
+      "comparison": "examples.synthesis.applications.physical_systems.ising_model.comparisons.circuit",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/physical_systems/quantum_chaos/quantum_sawtooth_map",
+      "category": "Applications",
+      "name": "quantum sawtooth map",
+      "path": "applications/physical_systems/quantum_chaos/quantum_sawtooth_map",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/physical_systems/quantum_chaos/quantum_sawtooth_map/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/plasma/vlasov_ampere",
+      "category": "Applications",
+      "name": "vlasov ampere",
+      "path": "applications/plasma/vlasov_ampere",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/plasma/vlasov_ampere/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/telecom/network_traffic_optimization",
+      "category": "Applications",
+      "name": "network traffic optimization",
+      "path": "applications/telecom/network_traffic_optimization",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/telecom/network_traffic_optimization/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/telecom/radio_access_network/radio_access_network_positioning_antennas",
+      "category": "Applications",
+      "name": "radio access network positioning antennas",
+      "path": "applications/telecom/radio_access_network/radio_access_network_positioning_antennas",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/telecom/radio_access_network/radio_access_network_positioning_antennas/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/telecom/resiliency_planning",
+      "category": "Applications",
+      "name": "resiliency planning",
+      "path": "applications/telecom/resiliency_planning",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/telecom/resiliency_planning/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "applications/telecom/resiliency_planning/resiliency_planning_amd",
+      "category": "Applications",
+      "name": "resiliency planning amd",
+      "path": "applications/telecom/resiliency_planning/resiliency_planning_amd",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/applications/telecom/resiliency_planning/resiliency_planning_amd/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "community/paper_implementation_project/block_encoding_nd_laplacian/periodic_laplacian_1d",
+      "category": "Community",
+      "name": "periodic laplacian 1d",
+      "path": "community/paper_implementation_project/block_encoding_nd_laplacian/periodic_laplacian_1d",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/community/paper_implementation_project/block_encoding_nd_laplacian/periodic_laplacian_1d/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "community/paper_implementation_project/block_encoding_nd_laplacian/periodic_laplacian_nd",
+      "category": "Community",
+      "name": "periodic laplacian nd",
+      "path": "community/paper_implementation_project/block_encoding_nd_laplacian/periodic_laplacian_nd",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/community/paper_implementation_project/block_encoding_nd_laplacian/periodic_laplacian_nd/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "community/paper_implementation_project/bb84/bb84_implementation",
+      "category": "Community",
+      "name": "bb84 implementation",
+      "path": "community/paper_implementation_project/bb84/bb84_implementation",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/community/paper_implementation_project/bb84/bb84_implementation/README.md",
+      "title": "BB84 signal preparation",
+      "purpose": "Eight prepared and rotated signals; does not measure or certify a secret key.",
+      "source": "# Official FlagQuantum example: community/paper_implementation_project/bb84/bb84_implementation\n# Source revision: b3fa4a78935777bb8e3853752192e9cd47972b2f\n# Workbench copy: original definitions; explicit run, resources and FQX save below.\n# Eight prepared and rotated signals; does not measure or certify a secret key.\n\n\"\"\"Prepare and rotate all eight BB84 signals with classical integer helpers.\"\"\"\n\nimport flagquantum as fq\nfrom flagquantum import synth\nfrom flagquantum.synth import H, Output, QArray, QBit, X, allocate, qfunc\n\nMESSAGE = (0, 0, 1, 1, 0, 0, 0, 1)\nALICE_BASES = (1, 1, 0, 1, 1, 1, 0, 1)\nBOB_BASES = (1, 0, 0, 0, 0, 1, 1, 0)\n\n\n@qfunc\ndef bb84(\n    message: list[int], alice_bases: list[int], bob_bases: list[int], qba: QArray[QBit]\n) -> None:\n    for i in range(len(message)):\n        if message[i] == 1:\n            X(qba[i])\n    for i in range(len(alice_bases)):\n        if alice_bases[i] == 1:\n            H(qba[i])\n    for i in range(len(bob_bases)):\n        if bob_bases[i] == 1:\n            H(qba[i])\n\n\n@qfunc\ndef main(qba: Output[QArray[QBit]]) -> None:\n    allocate(8, qba)\n    bb84(\n        [0, 0, 1, 1, 0, 0, 0, 1],\n        [1, 1, 0, 1, 1, 1, 0, 1],\n        [1, 0, 0, 0, 0, 1, 1, 0],\n        qba,\n    )\n\n\n@qfunc\ndef prepare_key(\n    message: list[int],\n    alice_bases: list[int],\n    bob_bases: list[int],\n    qba: Output[QArray[QBit]],\n) -> None:\n    allocate(8, qba)\n    bb84(message, alice_bases, bob_bases, qba)\n\n\ndef build_program(\n    message: tuple[int, ...] = MESSAGE,\n    alice_bases: tuple[int, ...] = ALICE_BASES,\n    bob_bases: tuple[int, ...] = BOB_BASES,\n) -> synth.Program:\n    \"\"\"Bind eight binary signals; this example does not measure or certify a key.\"\"\"\n    if any(\n        len(values) != 8\n        or any(type(value) is not int or value not in (0, 1) for value in values)\n        for values in (message, alice_bases, bob_bases)\n    ):\n        raise ValueError(\n            \"BB84 example needs three eight-element binary integer sequences\"\n        )\n    return synth.synthesize(\n        prepare_key,\n        classical_inputs={\n            \"message\": message,\n            \"alice_bases\": alice_bases,\n            \"bob_bases\": bob_bases,\n        },\n        max_workspace=0,\n    )\n\n\ndef run_example() -> None:\n    program = build_program()\n    print(dict(program.probabilities(fq.run(program), registers=(\"qba\",))))\n\n# Run explicitly; no Agent or paid model is required.\nprogram = build_program()\nresult = fq.run(program)\nprint(dict(program.probabilities(result, registers=('qba',))))\nprint(\"Resources:\", program.report[\"resources\"])\nfq.save(\"bb84_implementation.fqx\", result.plan, result=result)\n",
+      "requiredCapabilities": [
+        "H",
+        "Output",
+        "QArray",
+        "QBit",
+        "X",
+        "allocate",
+        "qfunc"
+      ],
+      "sourceSha256": "9f1ffb09319e74aac9d3229697f30e97a2a0477bbca4f0f35473e1b302c0c762",
+      "upstreamSha256": "2fdbace43c618b0563a574f8565c3bd115efcf33264e1721d7453101100088d3",
+      "filename": "bb84_implementation.fqx",
+      "comparison": "examples.synthesis.community.paper_implementation_project.bb84.bb84_implementation.comparisons.circuit",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "community/paper_implementation_project/block_encoding/checkerboard",
+      "category": "Community",
+      "name": "checkerboard",
+      "path": "community/paper_implementation_project/block_encoding/checkerboard",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/community/paper_implementation_project/block_encoding/checkerboard/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "community/paper_implementation_project/block_encoding/laplacian_4x4",
+      "category": "Community",
+      "name": "laplacian 4x4",
+      "path": "community/paper_implementation_project/block_encoding/laplacian_4x4",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/community/paper_implementation_project/block_encoding/laplacian_4x4/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "community/paper_implementation_project/block_encoding/toeplitz",
+      "category": "Community",
+      "name": "toeplitz",
+      "path": "community/paper_implementation_project/block_encoding/toeplitz",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/community/paper_implementation_project/block_encoding/toeplitz/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "community/paper_implementation_project/block_encoding/tridiagonal",
+      "category": "Community",
+      "name": "tridiagonal",
+      "path": "community/paper_implementation_project/block_encoding/tridiagonal",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/community/paper_implementation_project/block_encoding/tridiagonal/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "community/paper_implementation_project/bpde",
+      "category": "Community",
+      "name": "bpde",
+      "path": "community/paper_implementation_project/bpde",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/community/paper_implementation_project/bpde/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "community/paper_implementation_project/classical_shadows",
+      "category": "Community",
+      "name": "classical shadows",
+      "path": "community/paper_implementation_project/classical_shadows",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/community/paper_implementation_project/classical_shadows/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "community/paper_implementation_project/quantum_algo_for_solving_linear_differential_equations/harmonic_oscillator",
+      "category": "Community",
+      "name": "harmonic oscillator",
+      "path": "community/paper_implementation_project/quantum_algo_for_solving_linear_differential_equations/harmonic_oscillator",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/community/paper_implementation_project/quantum_algo_for_solving_linear_differential_equations/harmonic_oscillator/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "community/paper_implementation_project/quantum_compression_algorithm_for_symmetric_states",
+      "category": "Community",
+      "name": "quantum compression algorithm for symmetric states",
+      "path": "community/paper_implementation_project/quantum_compression_algorithm_for_symmetric_states",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/community/paper_implementation_project/quantum_compression_algorithm_for_symmetric_states/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "community/paper_implementation_project/quantum_state_preparation_without_coherent_arithmetic/stateprep_guassian_using_qsvt",
+      "category": "Community",
+      "name": "stateprep guassian using qsvt",
+      "path": "community/paper_implementation_project/quantum_state_preparation_without_coherent_arithmetic/stateprep_guassian_using_qsvt",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/community/paper_implementation_project/quantum_state_preparation_without_coherent_arithmetic/stateprep_guassian_using_qsvt/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/arithmetic/arithmetic_expression",
+      "category": "Functions",
+      "name": "arithmetic expression",
+      "path": "functions/arithmetic/arithmetic_expression",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/arithmetic/arithmetic_expression/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/arithmetic/arithmetic_expression/arithmetic_expression_example",
+      "category": "Functions",
+      "name": "arithmetic expression example",
+      "path": "functions/arithmetic/arithmetic_expression/arithmetic_expression_example",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/arithmetic/arithmetic_expression/arithmetic_expression_example/README.md",
+      "upstreamWorkflowValidated": true
+    },
+    {
+      "id": "functions/arithmetic/bitwise_and/bitwise_and_2vars_example",
+      "category": "Functions",
+      "name": "bitwise and 2vars example",
+      "path": "functions/arithmetic/bitwise_and/bitwise_and_2vars_example",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/arithmetic/bitwise_and/bitwise_and_2vars_example/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/arithmetic/bitwise_and/bitwise_and_integer_example",
+      "category": "Functions",
+      "name": "bitwise and integer example",
+      "path": "functions/arithmetic/bitwise_and/bitwise_and_integer_example",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/arithmetic/bitwise_and/bitwise_and_integer_example/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/arithmetic/bitwise_invert/bitwise_invert_example",
+      "category": "Functions",
+      "name": "bitwise invert example",
+      "path": "functions/arithmetic/bitwise_invert/bitwise_invert_example",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/arithmetic/bitwise_invert/bitwise_invert_example/README.md",
+      "upstreamWorkflowValidated": true
+    },
+    {
+      "id": "functions/arithmetic/bitwise_or/bitwise_or_2vars_example",
+      "category": "Functions",
+      "name": "bitwise or 2vars example",
+      "path": "functions/arithmetic/bitwise_or/bitwise_or_2vars_example",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/arithmetic/bitwise_or/bitwise_or_2vars_example/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/arithmetic/bitwise_or/bitwise_or_integer_example",
+      "category": "Functions",
+      "name": "bitwise or integer example",
+      "path": "functions/arithmetic/bitwise_or/bitwise_or_integer_example",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/arithmetic/bitwise_or/bitwise_or_integer_example/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/arithmetic/bitwise_xor/bitwise_xor_2vars_example",
+      "category": "Functions",
+      "name": "bitwise xor 2vars example",
+      "path": "functions/arithmetic/bitwise_xor/bitwise_xor_2vars_example",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/arithmetic/bitwise_xor/bitwise_xor_2vars_example/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/arithmetic/bitwise_xor/bitwise_xor_integer_example",
+      "category": "Functions",
+      "name": "bitwise xor integer example",
+      "path": "functions/arithmetic/bitwise_xor/bitwise_xor_integer_example",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/arithmetic/bitwise_xor/bitwise_xor_integer_example/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/arithmetic/comparator/comparator_2vars_example",
+      "category": "Functions",
+      "name": "comparator 2vars example",
+      "path": "functions/arithmetic/comparator/comparator_2vars_example",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/arithmetic/comparator/comparator_2vars_example/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/arithmetic/comparator/comparator_integer_example",
+      "category": "Functions",
+      "name": "comparator integer example",
+      "path": "functions/arithmetic/comparator/comparator_integer_example",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/arithmetic/comparator/comparator_integer_example/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/arithmetic/extremum/maximum_float_example",
+      "category": "Functions",
+      "name": "maximum float example",
+      "path": "functions/arithmetic/extremum/maximum_float_example",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/arithmetic/extremum/maximum_float_example/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/arithmetic/extremum/maximum_integer_example",
+      "category": "Functions",
+      "name": "maximum integer example",
+      "path": "functions/arithmetic/extremum/maximum_integer_example",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/arithmetic/extremum/maximum_integer_example/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/arithmetic/extremum/minimum_2vars_example",
+      "category": "Functions",
+      "name": "minimum 2vars example",
+      "path": "functions/arithmetic/extremum/minimum_2vars_example",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/arithmetic/extremum/minimum_2vars_example/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/arithmetic/modular_exp/modular_exp_example",
+      "category": "Functions",
+      "name": "modular exp example",
+      "path": "functions/arithmetic/modular_exp/modular_exp_example",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/arithmetic/modular_exp/modular_exp_example/README.md",
+      "upstreamWorkflowValidated": true
+    },
+    {
+      "id": "functions/arithmetic/modulo/modulo_example",
+      "category": "Functions",
+      "name": "modulo example",
+      "path": "functions/arithmetic/modulo/modulo_example",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/arithmetic/modulo/modulo_example/README.md",
+      "upstreamWorkflowValidated": true
+    },
+    {
+      "id": "functions/arithmetic/multiplication/multiplication_2vars_example",
+      "category": "Functions",
+      "name": "multiplication 2vars example",
+      "path": "functions/arithmetic/multiplication/multiplication_2vars_example",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/arithmetic/multiplication/multiplication_2vars_example/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/arithmetic/multiplication/multiplication_float_example",
+      "category": "Functions",
+      "name": "multiplication float example",
+      "path": "functions/arithmetic/multiplication/multiplication_float_example",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/arithmetic/multiplication/multiplication_float_example/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/arithmetic/negation/negation_example",
+      "category": "Functions",
+      "name": "negation example",
+      "path": "functions/arithmetic/negation/negation_example",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/arithmetic/negation/negation_example/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/arithmetic/subtraction/subtraction_2vars_example",
+      "category": "Functions",
+      "name": "subtraction 2vars example",
+      "path": "functions/arithmetic/subtraction/subtraction_2vars_example",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/arithmetic/subtraction/subtraction_2vars_example/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/arithmetic/subtraction/subtraction_float_example",
+      "category": "Functions",
+      "name": "subtraction float example",
+      "path": "functions/arithmetic/subtraction/subtraction_float_example",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/arithmetic/subtraction/subtraction_float_example/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/mcx/mcx_example",
+      "category": "Functions",
+      "name": "mcx example",
+      "path": "functions/mcx/mcx_example",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/mcx/mcx_example/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/amplitude_amplification/exact_amplitude_amplification",
+      "category": "Functions",
+      "name": "exact amplitude amplification",
+      "path": "functions/amplitude_amplification/exact_amplitude_amplification",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/amplitude_amplification/exact_amplitude_amplification/README.md",
+      "upstreamWorkflowValidated": true
+    },
+    {
+      "id": "functions/grover_operator",
+      "category": "Functions",
+      "name": "grover operator",
+      "path": "functions/grover_operator",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/grover_operator/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/hadamard_transform",
+      "category": "Functions",
+      "name": "hadamard transform",
+      "path": "functions/hadamard_transform",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/hadamard_transform/README.md",
+      "upstreamWorkflowValidated": true
+    },
+    {
+      "id": "functions/linear_pauli_rotations",
+      "category": "Functions",
+      "name": "linear pauli rotations",
+      "path": "functions/linear_pauli_rotations",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/linear_pauli_rotations/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/qct_qst/qct_qst_type1",
+      "category": "Functions",
+      "name": "qct qst type1",
+      "path": "functions/qct_qst/qct_qst_type1",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/qct_qst/qct_qst_type1/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/qct_qst/qct_qst_type2",
+      "category": "Functions",
+      "name": "qct qst type2",
+      "path": "functions/qct_qst/qct_qst_type2",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/qct_qst/qct_qst_type2/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/qct_qst/qct_type2",
+      "category": "Functions",
+      "name": "qct type2",
+      "path": "functions/qct_qst/qct_type2",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/qct_qst/qct_type2/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/qct_qst/qst_type2",
+      "category": "Functions",
+      "name": "qst type2",
+      "path": "functions/qct_qst/qst_type2",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/qct_qst/qst_type2/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/qft",
+      "category": "Functions",
+      "name": "qft",
+      "path": "functions/qft",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/qft/README.md",
+      "title": "Quantum Fourier transform",
+      "purpose": "Four-qubit Fourier transform; edit the register size.",
+      "source": "# Official FlagQuantum example: functions/qft\n# Source revision: b3fa4a78935777bb8e3853752192e9cd47972b2f\n# Workbench copy: original definitions; explicit run, resources and FQX save below.\n# Four-qubit Fourier transform; edit the register size.\n\n\"\"\"Synthesize and execute the native four-qubit Fourier transform.\"\"\"\n\nimport flagquantum as fq\nfrom flagquantum import synth\nfrom flagquantum.synth import Output, QArray, QBit, allocate, qft, qfunc\n\n\n@qfunc\ndef main(x: Output[QArray[QBit]]) -> None:\n    allocate(4, x)\n    qft(x)\n\n\ndef build_program() -> synth.Program:\n    \"\"\"Run the complete source Notebook's allocate/transform/synthesize workflow.\"\"\"\n    return synth.synthesize(main)\n\n# Run explicitly; no Agent or paid model is required.\nprogram = build_program()\nresult = fq.run(program)\nprint(dict(program.probabilities(result, registers=('x',))))\nprint(\"Resources:\", program.report[\"resources\"])\nfq.save(\"qft.fqx\", result.plan, result=result)\n",
+      "requiredCapabilities": [
+        "Output",
+        "QArray",
+        "QBit",
+        "allocate",
+        "qft",
+        "qfunc"
+      ],
+      "sourceSha256": "f78f8c8b8858d14b14e69bb7379ea6e9056bcaa0e7c2361ced559a4708caf16a",
+      "upstreamSha256": "7640712fc24f3a83ab08e517a31d0bfee3ad0e1e666e2a103b0be09e7fa8cfb9",
+      "filename": "qft.fqx",
+      "comparison": "examples.synthesis.functions.qft.comparisons.circuit",
+      "upstreamWorkflowValidated": true
+    },
+    {
+      "id": "functions/qpe",
+      "category": "Functions",
+      "name": "qpe",
+      "path": "functions/qpe",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/qpe/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/qpe/qpe_flexible",
+      "category": "Functions",
+      "name": "qpe flexible",
+      "path": "functions/qpe/qpe_flexible",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/qpe/qpe_flexible/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/qsvt",
+      "category": "Functions",
+      "name": "qsvt",
+      "path": "functions/qsvt",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/qsvt/README.md",
+      "title": "QSVT \u00b7 Concrete polynomial",
+      "purpose": "Ten logical outputs with a fixed phase sequence and comparison oracle.",
+      "source": "# Official FlagQuantum example: functions/qsvt\n# Source revision: b3fa4a78935777bb8e3853752192e9cd47972b2f\n# Workbench copy: original definitions; explicit run, resources and FQX save below.\n# Ten logical outputs with a fixed phase sequence and comparison oracle.\n\n\"\"\"A concrete square-root QSVT program with reversible comparison XOR.\"\"\"\n\nimport flagquantum as fq\nfrom flagquantum import synth\nfrom flagquantum.synth import (\n    H,\n    Output,\n    QBit,\n    QNum,\n    allocate,\n    apply,\n    control,\n    hadamard_transform,\n    phase,\n    qfunc,\n    within,\n)\n\nPHASES = (\n    -2.401688306254694,\n    2.669374314067509,\n    3.817567704355659,\n    3.817567704355659,\n    2.669374314067509,\n    -14.968058920613865,\n)\n\n\n@qfunc\ndef project_zero(angle: float, aux: QBit, register: QNum) -> None:\n    # RZ(angle) on aux XOR (register == 0), without mutating either borrow.\n    phase(aux - 0.5, angle)\n    control(register < 1, lambda: phase(1 - 2 * aux, angle))\n\n\n@qfunc\ndef main(\n    phases: list[float],\n    state: Output[QNum],\n    ref: Output[QNum],\n    ind: Output[QBit],\n    qsvt_aux: Output[QBit],\n) -> None:\n    allocate(4, state)\n    allocate(4, ref)\n    allocate(ind)\n    allocate(qsvt_aux)\n    hadamard_transform(state)\n    H(qsvt_aux)\n    project_zero(phases[0], qsvt_aux, ref)\n    for step in range(2):\n        with within():\n            hadamard_transform(ref)\n            ind ^= state <= ref\n        with apply():\n            project_zero(phases[2 * step + 1], qsvt_aux, ind)\n        project_zero(phases[2 * step + 2], qsvt_aux, ref)\n    hadamard_transform(ref)\n    ind ^= state <= ref\n    project_zero(phases[5], qsvt_aux, ind)\n    H(qsvt_aux)\n\n\ndef build_program(phases: tuple[float, ...] = PHASES) -> synth.Program:\n    \"\"\"Keep all ten logical outputs; this is the source's concrete polynomial.\"\"\"\n    if len(phases) != 6:\n        raise ValueError(\"this concrete QSVT program requires six phases\")\n    return synth.synthesize(main, classical_inputs={\"phases\": list(phases)})\n\n# Run explicitly; no Agent or paid model is required.\nprogram = build_program()\nresult = fq.run(program)\nprint(dict(program.probabilities(result, registers=('state', 'ref', 'ind', 'qsvt_aux'))))\nprint(\"Resources:\", program.report[\"resources\"])\nfq.save(\"qsvt.fqx\", result.plan, result=result)\n",
+      "requiredCapabilities": [
+        "H",
+        "Output",
+        "QBit",
+        "QNum",
+        "allocate",
+        "apply",
+        "control",
+        "hadamard_transform",
+        "phase",
+        "qfunc",
+        "within"
+      ],
+      "sourceSha256": "cd7f7a0d310ce65b39467fe5ac549a251025ca29bb10abcf732b9676104d534b",
+      "upstreamSha256": "447d9ff0f3f990a9501c0f861e600c16cd30401453dc7a887d60f3b41dd6ed3f",
+      "filename": "qsvt.fqx",
+      "comparison": "examples.synthesis.functions.qsvt.comparisons.circuit",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/state_preparation/prepare_bell_state",
+      "category": "Functions",
+      "name": "prepare bell state",
+      "path": "functions/state_preparation/prepare_bell_state",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/state_preparation/prepare_bell_state/README.md",
+      "upstreamWorkflowValidated": true
+    },
+    {
+      "id": "functions/state_preparation/prepare_exponential_state",
+      "category": "Functions",
+      "name": "prepare exponential state",
+      "path": "functions/state_preparation/prepare_exponential_state",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/state_preparation/prepare_exponential_state/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/state_preparation/prepare_ghz_state",
+      "category": "Functions",
+      "name": "prepare ghz state",
+      "path": "functions/state_preparation/prepare_ghz_state",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/state_preparation/prepare_ghz_state/README.md",
+      "title": "GHZ state preparation",
+      "purpose": "Five-qubit entanglement from a named high-level primitive.",
+      "source": "# Official FlagQuantum example: functions/state_preparation/prepare_ghz_state\n# Source revision: b3fa4a78935777bb8e3853752192e9cd47972b2f\n# Workbench copy: original definitions; explicit run, resources and FQX save below.\n# Five-qubit entanglement from a named high-level primitive.\n\n\"\"\"Run the native Python counterpart of the pinned prepare_ghz_state.qmod.\"\"\"\n\nimport flagquantum as fq\nfrom flagquantum import synth\nfrom flagquantum.synth import Output, QNum, prepare_ghz_state, qfunc\n\n\n@qfunc\ndef main(x: Output[QNum]) -> None:\n    prepare_ghz_state(5, x)\n\n# Run explicitly; no Agent or paid model is required.\nprogram = synth.synthesize(main, memory_limit_bytes=512 * 1024**2)\nresult = fq.run(program)\nprint(dict(program.probabilities(result, registers=('x',))))\nprint(\"Resources:\", program.report[\"resources\"])\nfq.save(\"prepare_ghz_state.fqx\", result.plan, result=result)\n",
+      "requiredCapabilities": [
+        "Output",
+        "QNum",
+        "prepare_ghz_state",
+        "qfunc"
+      ],
+      "sourceSha256": "9557e9d86513a32f4afa177178d55dd238512e79d3468a46ae60ba1d9ce44cf9",
+      "upstreamSha256": "af83cb135071604a969bfa00ddcbb6e7616cf2c175178350860228b41cab0912",
+      "filename": "prepare_ghz_state.fqx",
+      "comparison": "examples.synthesis.functions.state_preparation.prepare_ghz_state.comparisons.circuit",
+      "upstreamWorkflowValidated": true
+    },
+    {
+      "id": "functions/state_preparation/prepare_uniform_interval_state",
+      "category": "Functions",
+      "name": "prepare uniform interval state",
+      "path": "functions/state_preparation/prepare_uniform_interval_state",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/state_preparation/prepare_uniform_interval_state/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/state_preparation/prepare_uniform_trimmed_state",
+      "category": "Functions",
+      "name": "prepare uniform trimmed state",
+      "path": "functions/state_preparation/prepare_uniform_trimmed_state",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/state_preparation/prepare_uniform_trimmed_state/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/data_encoding/encode_in_angle",
+      "category": "Functions",
+      "name": "encode in angle",
+      "path": "functions/data_encoding/encode_in_angle",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/data_encoding/encode_in_angle/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/data_encoding/encode_on_bloch",
+      "category": "Functions",
+      "name": "encode on bloch",
+      "path": "functions/data_encoding/encode_on_bloch",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/data_encoding/encode_on_bloch/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/hamiltonian_evolution/qdrift",
+      "category": "Functions",
+      "name": "qdrift",
+      "path": "functions/hamiltonian_evolution/qdrift",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/hamiltonian_evolution/qdrift/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/hamiltonian_evolution/suzuki_trotter",
+      "category": "Functions",
+      "name": "suzuki trotter",
+      "path": "functions/hamiltonian_evolution/suzuki_trotter",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/hamiltonian_evolution/suzuki_trotter/README.md",
+      "title": "Hamiltonian evolution \u00b7 Suzuki\u2013Trotter",
+      "purpose": "Three-qubit Pauli product formula; adjust the evolution time.",
+      "source": "# Official FlagQuantum example: functions/hamiltonian_evolution/suzuki_trotter\n# Source revision: b3fa4a78935777bb8e3853752192e9cd47972b2f\n# Workbench copy: original definitions; explicit run, resources and FQX save below.\n# Three-qubit Pauli product formula; adjust the evolution time.\n\n\"\"\"Evolve a static native Observable with an ordered Pauli product formula.\"\"\"\n\nimport flagquantum as fq\nfrom flagquantum import synth\nfrom flagquantum.synth import Output, QArray, QBit, allocate, qfunc, suzuki_trotter\n\nHAMILTONIAN = 1.5 * (fq.X(0) @ fq.X(1) @ fq.Z(2)) + 0.5 * (fq.Y(0) @ fq.X(1) @ fq.Z(2))\n\n\n@qfunc\ndef main(time: float, qba: Output[QArray[QBit]]) -> None:\n    allocate(3, qba)\n    suzuki_trotter(HAMILTONIAN, time, 1, 1, qba)\n\n\ndef build_program(time: float = 0.37) -> synth.Program:\n    return synth.synthesize(main, classical_inputs={\"time\": time})\n\n\ndef run_example() -> None:\n    \"\"\"Synthesize, execute and read named amplitudes as probabilities.\"\"\"\n    program = build_program()\n    print(dict(program.probabilities(fq.run(program), registers=(\"qba\",))))\n\n# Run explicitly; no Agent or paid model is required.\nprogram = build_program()\nresult = fq.run(program)\nprint(dict(program.probabilities(result, registers=('qba',))))\nprint(\"Resources:\", program.report[\"resources\"])\nfq.save(\"suzuki_trotter.fqx\", result.plan, result=result)\n",
+      "requiredCapabilities": [
+        "Output",
+        "QArray",
+        "QBit",
+        "allocate",
+        "qfunc",
+        "suzuki_trotter"
+      ],
+      "sourceSha256": "d90c0b537971bb46d2002390776d6a4d209862530b240c0329fe83499da88bf7",
+      "upstreamSha256": "4a89118bf5a1709516383431f0ed0beeee014c3e4d6003de8b0d29fd24315daf",
+      "filename": "suzuki_trotter.fqx",
+      "comparison": "examples.synthesis.functions.hamiltonian_evolution.suzuki_trotter.comparisons.circuit",
+      "upstreamWorkflowValidated": true
+    },
+    {
+      "id": "functions/state_preparation/example_prepare_amplitudes",
+      "category": "Functions",
+      "name": "example prepare amplitudes",
+      "path": "functions/state_preparation/example_prepare_amplitudes",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/state_preparation/example_prepare_amplitudes/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/state_preparation/example_prepare_state",
+      "category": "Functions",
+      "name": "example prepare state",
+      "path": "functions/state_preparation/example_prepare_state",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/state_preparation/example_prepare_state/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/standard_gates/crx",
+      "category": "Functions",
+      "name": "crx",
+      "path": "functions/standard_gates/crx",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/standard_gates/crx/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/standard_gates/cx",
+      "category": "Functions",
+      "name": "cx",
+      "path": "functions/standard_gates/cx",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/standard_gates/cx/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/standard_gates/phase",
+      "category": "Functions",
+      "name": "phase",
+      "path": "functions/standard_gates/phase",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/standard_gates/phase/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/standard_gates/r",
+      "category": "Functions",
+      "name": "r",
+      "path": "functions/standard_gates/r",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/standard_gates/r/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/standard_gates/rz",
+      "category": "Functions",
+      "name": "rz",
+      "path": "functions/standard_gates/rz",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/standard_gates/rz/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/standard_gates/rzz",
+      "category": "Functions",
+      "name": "rzz",
+      "path": "functions/standard_gates/rzz",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/standard_gates/rzz/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/standard_gates/swap",
+      "category": "Functions",
+      "name": "swap",
+      "path": "functions/standard_gates/swap",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/standard_gates/swap/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/standard_gates/u",
+      "category": "Functions",
+      "name": "u",
+      "path": "functions/standard_gates/u",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/standard_gates/u/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/standard_gates/x",
+      "category": "Functions",
+      "name": "x",
+      "path": "functions/standard_gates/x",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/standard_gates/x/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "functions/unitary",
+      "category": "Functions",
+      "name": "unitary",
+      "path": "functions/unitary",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/functions/unitary/README.md",
+      "upstreamWorkflowValidated": true
+    },
+    {
+      "id": "tutorials/advanced_tutorials/discrete_quantum_walk",
+      "category": "Tutorials",
+      "name": "discrete quantum walk",
+      "path": "tutorials/advanced_tutorials/discrete_quantum_walk",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/advanced_tutorials/discrete_quantum_walk/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle",
+      "category": "Tutorials",
+      "name": "quantum walk circle",
+      "path": "tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle_balanced_coin",
+      "category": "Tutorials",
+      "name": "quantum walk circle balanced coin",
+      "path": "tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle_balanced_coin",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle_balanced_coin/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_hypercube",
+      "category": "Tutorials",
+      "name": "quantum walk hypercube",
+      "path": "tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_hypercube",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_hypercube/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/advanced_tutorials/discrete_quantum_walk_2d/discrete_time_quantum_walk",
+      "category": "Tutorials",
+      "name": "discrete time quantum walk",
+      "path": "tutorials/advanced_tutorials/discrete_quantum_walk_2d/discrete_time_quantum_walk",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/advanced_tutorials/discrete_quantum_walk_2d/discrete_time_quantum_walk/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/advanced_tutorials/linear_approximation_of_tanh/tanh",
+      "category": "Tutorials",
+      "name": "tanh",
+      "path": "tutorials/advanced_tutorials/linear_approximation_of_tanh/tanh",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/advanced_tutorials/linear_approximation_of_tanh/tanh/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/basics/add_bell_states",
+      "category": "Tutorials",
+      "name": "add bell states",
+      "path": "tutorials/basics/add_bell_states",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/basics/add_bell_states/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/basics/entanglement",
+      "category": "Tutorials",
+      "name": "entanglement",
+      "path": "tutorials/basics/entanglement",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/basics/entanglement/README.md",
+      "upstreamWorkflowValidated": true
+    },
+    {
+      "id": "tutorials/basics/exponentiation/example_exponentiation",
+      "category": "Tutorials",
+      "name": "example exponentiation",
+      "path": "tutorials/basics/exponentiation/example_exponentiation",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/basics/exponentiation/example_exponentiation/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/basics/grover_graph_coloring",
+      "category": "Tutorials",
+      "name": "grover graph coloring",
+      "path": "tutorials/basics/grover_graph_coloring",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/basics/grover_graph_coloring/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/basics/mcx",
+      "category": "Tutorials",
+      "name": "mcx",
+      "path": "tutorials/basics/mcx",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/basics/mcx/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/basics/optimization/learning_optimization",
+      "category": "Tutorials",
+      "name": "learning optimization",
+      "path": "tutorials/basics/optimization/learning_optimization",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/basics/optimization/learning_optimization/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/basics/prepare_state",
+      "category": "Tutorials",
+      "name": "prepare state",
+      "path": "tutorials/basics/prepare_state",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/basics/prepare_state/README.md",
+      "upstreamWorkflowValidated": true
+    },
+    {
+      "id": "tutorials/basics/qmci_pi_estimation",
+      "category": "Tutorials",
+      "name": "qmci pi estimation",
+      "path": "tutorials/basics/qmci_pi_estimation",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/basics/qmci_pi_estimation/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/basics/qml",
+      "category": "Tutorials",
+      "name": "qml",
+      "path": "tutorials/basics/qml",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/basics/qml/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/basics/quantum_primitives/hadamard_test_tutorial",
+      "category": "Tutorials",
+      "name": "hadamard test tutorial",
+      "path": "tutorials/basics/quantum_primitives/hadamard_test_tutorial",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/basics/quantum_primitives/hadamard_test_tutorial/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/basics/quantum_primitives/linear_combination_of_unitaries",
+      "category": "Tutorials",
+      "name": "linear combination of unitaries",
+      "path": "tutorials/basics/quantum_primitives/linear_combination_of_unitaries",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/basics/quantum_primitives/linear_combination_of_unitaries/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/basics/quantumwalk_complex_network",
+      "category": "Tutorials",
+      "name": "quantumwalk complex network",
+      "path": "tutorials/basics/quantumwalk_complex_network",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/basics/quantumwalk_complex_network/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/basics/quantum_programming/qmod_tutorial_part1",
+      "category": "Tutorials",
+      "name": "qmod tutorial part1",
+      "path": "tutorials/basics/quantum_programming/qmod_tutorial_part1",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/basics/quantum_programming/qmod_tutorial_part1/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/basics/quantum_programming/controlled_rotation",
+      "category": "Tutorials",
+      "name": "controlled rotation",
+      "path": "tutorials/basics/quantum_programming/controlled_rotation",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/basics/quantum_programming/controlled_rotation/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/basics/quantum_programming/classiq_overview_tutorial",
+      "category": "Tutorials",
+      "name": "classiq overview tutorial",
+      "path": "tutorials/basics/quantum_programming/classiq_overview_tutorial",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/basics/quantum_programming/classiq_overview_tutorial/README.md",
+      "upstreamWorkflowValidated": true
+    },
+    {
+      "id": "tutorials/basics/quantum_programming/execution_tutorial",
+      "category": "Tutorials",
+      "name": "execution tutorial",
+      "path": "tutorials/basics/quantum_programming/execution_tutorial",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/basics/quantum_programming/execution_tutorial/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/basics/quantum_programming/execution_tutorial_part2",
+      "category": "Tutorials",
+      "name": "execution tutorial part2",
+      "path": "tutorials/basics/quantum_programming/execution_tutorial_part2",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/basics/quantum_programming/execution_tutorial_part2/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/basics/quantum_programming/synthesis_tutorial",
+      "category": "Tutorials",
+      "name": "synthesis tutorial",
+      "path": "tutorials/basics/quantum_programming/synthesis_tutorial",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/basics/quantum_programming/synthesis_tutorial/README.md",
+      "title": "Synthesis objectives \u00b7 Width and depth",
+      "purpose": "Synthesize x\u00b2 + 1; change the objective to depth and compare resource costs.",
+      "source": "# Official FlagQuantum example: tutorials/basics/quantum_programming/synthesis_tutorial\n# Source revision: b3fa4a78935777bb8e3853752192e9cd47972b2f\n# Workbench copy: original definitions; explicit run, resources and FQX save below.\n# Synthesize x\u00b2 + 1; change the objective to depth and compare resource costs.\n\n\"\"\"Compare width and depth objectives for the same quantum arithmetic program.\"\"\"\n\nfrom typing import Literal\n\nimport flagquantum as fq\nfrom flagquantum import synth\nfrom flagquantum.compiler import estimate_resources\nfrom flagquantum.drawer import draw\nfrom flagquantum.synth import Output, QNum, allocate, hadamard_transform, qfunc\n\n\n@qfunc\ndef main(x: Output[QNum], y: Output[QNum]) -> None:\n    allocate(3, x)\n    hadamard_transform(x)\n    y |= x**2 + 1\n\n\ndef build_program(objective: Literal[\"width\", \"depth\"]) -> synth.Program:\n    return synth.synthesize(main, objective=objective, memory_limit_bytes=512 * 1024**2)\n\n\ndef run_example() -> None:\n    objectives: tuple[Literal[\"width\", \"depth\"], ...] = (\"depth\", \"width\")\n    for objective in objectives:\n        program = build_program(objective)\n        print(draw(program.circuit))\n        resources = estimate_resources(program.circuit)\n        print(\n            objective,\n            \"resources:\",\n            {\"width\": resources.n_qubits, \"depth\": resources.depth},\n        )\n        result = fq.run(program)\n        print(dict(program.probabilities(result, registers=(\"x\", \"y\"))))\n\n# Run explicitly; no Agent or paid model is required.\nprogram = build_program(\"width\")\nresult = fq.run(program)\nprint(dict(program.probabilities(result, registers=('x', 'y'))))\nprint(\"Resources:\", program.report[\"resources\"])\nfq.save(\"synthesis_tutorial.fqx\", result.plan, result=result)\n",
+      "requiredCapabilities": [
+        "Output",
+        "QNum",
+        "allocate",
+        "hadamard_transform",
+        "qfunc"
+      ],
+      "sourceSha256": "0a31054c2e78d789b5780789ad5d1d8a9545268b96f76510e52126064a4a7c81",
+      "upstreamSha256": "cf8bed6f549e6dea43eedc6580bc928f6b9526d706b01645185e9c1a6eaec288",
+      "filename": "synthesis_tutorial.fqx",
+      "comparison": "examples.synthesis.tutorials.basics.quantum_programming.synthesis_tutorial.comparisons.circuit",
+      "upstreamWorkflowValidated": true
+    },
+    {
+      "id": "tutorials/technology_demonstrations/QPE/qpe_for_grover_operator",
+      "category": "Tutorials",
+      "name": "qpe for grover operator",
+      "path": "tutorials/technology_demonstrations/QPE/qpe_for_grover_operator",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/technology_demonstrations/QPE/qpe_for_grover_operator/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/technology_demonstrations/QPE/qpe_for_unitary_matrix",
+      "category": "Tutorials",
+      "name": "qpe for unitary matrix",
+      "path": "tutorials/technology_demonstrations/QPE/qpe_for_unitary_matrix",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/technology_demonstrations/QPE/qpe_for_unitary_matrix/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/technology_demonstrations/approximated_state_preparation",
+      "category": "Tutorials",
+      "name": "approximated state preparation",
+      "path": "tutorials/technology_demonstrations/approximated_state_preparation",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/technology_demonstrations/approximated_state_preparation/README.md",
+      "upstreamWorkflowValidated": true
+    },
+    {
+      "id": "tutorials/technology_demonstrations/arithmetic_expressions",
+      "category": "Tutorials",
+      "name": "arithmetic expressions",
+      "path": "tutorials/technology_demonstrations/arithmetic_expressions",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/technology_demonstrations/arithmetic_expressions/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management",
+      "category": "Tutorials",
+      "name": "auxiliary management",
+      "path": "tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management/README.md",
+      "upstreamWorkflowValidated": true
+    },
+    {
+      "id": "tutorials/technology_demonstrations/classiq_paper/qsvt/classiq_qsvt",
+      "category": "Tutorials",
+      "name": "classiq qsvt",
+      "path": "tutorials/technology_demonstrations/classiq_paper/qsvt/classiq_qsvt",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/technology_demonstrations/classiq_paper/qsvt/classiq_qsvt/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/technology_demonstrations/classiq_paper/quantum_walk/classiq_discrete_quantum_walk",
+      "category": "Tutorials",
+      "name": "classiq discrete quantum walk",
+      "path": "tutorials/technology_demonstrations/classiq_paper/quantum_walk/classiq_discrete_quantum_walk",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/technology_demonstrations/classiq_paper/quantum_walk/classiq_discrete_quantum_walk/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/technology_demonstrations/discrete_quantum_walk_circle",
+      "category": "Tutorials",
+      "name": "discrete quantum walk circle",
+      "path": "tutorials/technology_demonstrations/discrete_quantum_walk_circle",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/technology_demonstrations/discrete_quantum_walk_circle/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/technology_demonstrations/hamiltonian_evolution",
+      "category": "Tutorials",
+      "name": "hamiltonian evolution",
+      "path": "tutorials/technology_demonstrations/hamiltonian_evolution",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/technology_demonstrations/hamiltonian_evolution/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/technology_demonstrations/hardware_aware_mcx",
+      "category": "Tutorials",
+      "name": "hardware aware mcx",
+      "path": "tutorials/technology_demonstrations/hardware_aware_mcx",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/technology_demonstrations/hardware_aware_mcx/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/technology_demonstrations/hhl/hhl_example",
+      "category": "Tutorials",
+      "name": "hhl example",
+      "path": "tutorials/technology_demonstrations/hhl/hhl_example",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/technology_demonstrations/hhl/hhl_example/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/technology_demonstrations/oracle_generation/three_sat_oracles",
+      "category": "Tutorials",
+      "name": "three sat oracles",
+      "path": "tutorials/technology_demonstrations/oracle_generation/three_sat_oracles",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/technology_demonstrations/oracle_generation/three_sat_oracles/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/technology_demonstrations/qaoa/qaoa_demonstration",
+      "category": "Tutorials",
+      "name": "qaoa demonstration",
+      "path": "tutorials/technology_demonstrations/qaoa/qaoa_demonstration",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/technology_demonstrations/qaoa/qaoa_demonstration/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_i",
+      "category": "Tutorials",
+      "name": "algo design qce tutorial part i",
+      "path": "tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_i",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_i/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_ii",
+      "category": "Tutorials",
+      "name": "algo design qce tutorial part ii",
+      "path": "tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_ii",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_ii/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut",
+      "category": "Tutorials",
+      "name": "combinatorial qmod workshop for maxcut",
+      "path": "tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/workshops/finance_workshops/option_pricing_workshop",
+      "category": "Tutorials",
+      "name": "option pricing workshop",
+      "path": "tutorials/workshops/finance_workshops/option_pricing_workshop",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/workshops/finance_workshops/option_pricing_workshop/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/workshops/finance_workshops/combi_workshop_inequality_constriants_po",
+      "category": "Tutorials",
+      "name": "combi workshop inequality constriants po",
+      "path": "tutorials/workshops/finance_workshops/combi_workshop_inequality_constriants_po",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/workshops/finance_workshops/combi_workshop_inequality_constriants_po/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_po",
+      "category": "Tutorials",
+      "name": "combi workshop equality constriants po",
+      "path": "tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_po",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_po/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/workshops/finance_workshops/rainbow_options_workshop_bruteforce",
+      "category": "Tutorials",
+      "name": "rainbow options workshop bruteforce",
+      "path": "tutorials/workshops/finance_workshops/rainbow_options_workshop_bruteforce",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/workshops/finance_workshops/rainbow_options_workshop_bruteforce/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/workshops/grover_workshop",
+      "category": "Tutorials",
+      "name": "grover workshop",
+      "path": "tutorials/workshops/grover_workshop",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/workshops/grover_workshop/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/workshops/hhl_workshop",
+      "category": "Tutorials",
+      "name": "hhl workshop",
+      "path": "tutorials/workshops/hhl_workshop",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/workshops/hhl_workshop/README.md",
+      "upstreamWorkflowValidated": false
+    },
+    {
+      "id": "tutorials/workshops/oracle_workshop/oracles_workshop",
+      "category": "Tutorials",
+      "name": "oracles workshop",
+      "path": "tutorials/workshops/oracle_workshop/oracles_workshop",
+      "readme": "https://github.com/flagos-ai/FlagQuantum/blob/b3fa4a78935777bb8e3853752192e9cd47972b2f/examples/synthesis/tutorials/workshops/oracle_workshop/oracles_workshop/README.md",
+      "upstreamWorkflowValidated": false
+    }
+  ]
+}

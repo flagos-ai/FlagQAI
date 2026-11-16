@@ -1,0 +1,72 @@
+[
+  {
+    "path": "functions/qft",
+    "title": "Quantum Fourier transform",
+    "build": "build_program()",
+    "registers": ["x"],
+    "purpose": "Four-qubit Fourier transform; edit the register size."
+  },
+  {
+    "path": "functions/state_preparation/prepare_ghz_state",
+    "title": "GHZ state preparation",
+    "build": "synth.synthesize(main, memory_limit_bytes=512 * 1024**2)",
+    "registers": ["x"],
+    "purpose": "Five-qubit entanglement from a named high-level primitive."
+  },
+  {
+    "path": "algorithms/foundational/bernstein_vazirani",
+    "title": "Bernstein–Vazirani",
+    "build": "build_program()",
+    "registers": ["x"],
+    "purpose": "Recover a five-bit secret using a phase oracle."
+  },
+  {
+    "path": "algorithms/search_and_optimization/qaoa/qaoa_max_cut",
+    "title": "QAOA · Max-Cut",
+    "build": "build_program()",
+    "registers": ["v"],
+    "purpose": "Five vertices and four layers; fixed parameters, not an optimized solution."
+  },
+  {
+    "path": "applications/physical_systems/ising_model",
+    "title": "Ising model",
+    "build": "build_program()",
+    "registers": ["v"],
+    "purpose": "Six-spin layered ansatz; fixed parameters, not a ground-state search."
+  },
+  {
+    "path": "applications/chemistry/molecule_eigensolver",
+    "title": "Molecular variational ansatz",
+    "build": "build_program()",
+    "registers": ["state"],
+    "purpose": "Retained one-qubit ansatz; not a complete molecular eigensolver workflow."
+  },
+  {
+    "path": "functions/hamiltonian_evolution/suzuki_trotter",
+    "title": "Hamiltonian evolution · Suzuki–Trotter",
+    "build": "build_program()",
+    "registers": ["qba"],
+    "purpose": "Three-qubit Pauli product formula; adjust the evolution time."
+  },
+  {
+    "path": "community/paper_implementation_project/bb84/bb84_implementation",
+    "title": "BB84 signal preparation",
+    "build": "build_program()",
+    "registers": ["qba"],
+    "purpose": "Eight prepared and rotated signals; does not measure or certify a secret key."
+  },
+  {
+    "path": "functions/qsvt",
+    "title": "QSVT · Concrete polynomial",
+    "build": "build_program()",
+    "registers": ["state", "ref", "ind", "qsvt_aux"],
+    "purpose": "Ten logical outputs with a fixed phase sequence and comparison oracle."
+  },
+  {
+    "path": "tutorials/basics/quantum_programming/synthesis_tutorial",
+    "title": "Synthesis objectives · Width and depth",
+    "build": "build_program(\"width\")",
+    "registers": ["x", "y"],
+    "purpose": "Synthesize x² + 1; change the objective to depth and compare resource costs."
+  }
+]
