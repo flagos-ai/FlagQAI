@@ -247,8 +247,10 @@ test("CLI tool header prefers native presentation and extracts paths without pai
   const html = render(AgentTool, { tool: { ...base, durationMs: 1234 } });
   assert.match(html, /src\/main.py/);
   assert.match(html, /Done.*1.2 s/);
-  assert.match(html, /Show 1 more line/);
-  assert.doesNotMatch(html, /file_path|<pre>.*four/);
+  assert.doesNotMatch(
+    html,
+    /Show 1 more line|Tool result preview|file_path|<pre>/,
+  );
   assert.match(
     render(AgentTool, {
       tool: { ...base, status: "error", errorText: "permission denied" },
@@ -313,7 +315,11 @@ test("native diff and search results stay structured and completed result replac
   };
   assert.equal(toolPresentation(tool).detail, "Edit main.py");
   assert.equal(toolPresentation(tool).category, "mutate");
-  assert.match(render(AgentTool, { tool }), /removed/);
+  assert.match(toolPresentation(tool).body, /-old\n\+new/);
+  assert.doesNotMatch(
+    render(AgentTool, { tool }),
+    /removed|Tool result preview/,
+  );
   assert.equal(
     toolPresentation({
       ...tool,

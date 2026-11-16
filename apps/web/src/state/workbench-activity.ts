@@ -98,7 +98,7 @@ export function workbenchActivity(
           : name === "workbench_run_python"
             ? "Started"
             : "Still running";
-      tone = "neutral";
+      tone = "pending";
       lines.push(
         result.wait_outcome === "deadline"
           ? "Wait ended; the existing run continues. It was not submitted again."
@@ -110,7 +110,7 @@ export function workbenchActivity(
         : [];
       if (collection === "pending" || collection === "collecting") {
         state = "Collecting results";
-        tone = "neutral";
+        tone = "pending";
         lines.push(
           "Python finished; saved artifacts are still being collected.",
         );
