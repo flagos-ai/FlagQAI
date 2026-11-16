@@ -648,6 +648,7 @@ function JobResults({
                   program={program}
                   changed={new Set()}
                   onOpen={openCircuit}
+                  inspect
                 />
               </section>
             ) : (

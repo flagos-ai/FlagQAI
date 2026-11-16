@@ -159,3 +159,79 @@ test("saved synthesis attribution preserves semantic groups, gate order and draf
   await page.getByRole("button", { name: "MODEL", exact: true }).click();
   await expect(editor).toHaveValue(draft);
 });
+
+test("Jobs inspects saved gates in place and resets attribution between results", async ({
+  page,
+}) => {
+  await page.goto("/#model");
+  const editor = page.getByRole("textbox", {
+    name: "Quantum model code editor",
+  });
+  const draft = "# keep the original source\nprint('draft')\n";
+  await editor.fill(draft);
+  const before = new Set(
+    (await get(page, "/api/python/runs")).map(({ id }) => id),
+  );
+  const source = fixture.replace(
+    'fq.save("attribution.fqx", program)',
+    `result = fq.run(program)
+fq.save("attributed-result.fqx", result.plan, result=result)
+plain = fq.run(fq.Circuit(1).rx(0, 0.7853981633974483))
+fq.save("plain-result.fqx", plain.plan, result=plain)`,
+  );
+  const response = await page.request.post("/api/python/runs", {
+    data: { source, name: "Inspect saved gates" },
+  });
+  expect(response.ok()).toBe(true);
+  const { id } = await response.json();
+  await expect
+    .poll(async () => {
+      const run = await get(page, "/api/python/runs/" + id);
+      return run.collection_status;
+    })
+    .toBe("completed");
+
+  await page.reload();
+  await page.getByRole("button", { name: "JOBS", exact: true }).click();
+  const open = (name) =>
+    page.getByRole("button", { name: `Open job ${name}`, exact: true }).click();
+  const circuit = page.getByRole("button", { name: "Circuit", exact: true });
+  const attribution = page.getByRole("region", {
+    name: "Compiler source attribution",
+  });
+  await open("attributed-result");
+  await circuit.click();
+  const cx = page.getByRole("button", {
+    name: "Inspect CX gate 2",
+    exact: true,
+  });
+  await cx.press("Enter");
+  await expect(cx).toHaveAttribute("aria-pressed", "true");
+  await expect(page).toHaveURL(/#jobs$/);
+  await expect(
+    page.getByRole("status").filter({ hasText: "CX · Gate 2 · Qubits 0, 1" }),
+  ).toBeVisible();
+  await expect(attribution.getByRole("listitem")).toHaveCount(2);
+
+  await open("plain-result");
+  await circuit.click();
+  const rx = page.getByRole("button", {
+    name: "Inspect RX gate 1",
+    exact: true,
+  });
+  await expect(rx).toHaveAttribute("aria-pressed", "false");
+  await rx.click();
+  await expect(page.locator(".fq-preview-gate-details")).toContainText("π/4");
+  await expect(attribution).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Open in Quantum →", exact: true })
+    .click();
+  await expect(page).toHaveURL(/#program$/);
+  await page.getByRole("button", { name: "MODEL", exact: true }).click();
+  await expect(editor).toHaveValue(draft);
+  expect(
+    (await get(page, "/api/python/runs"))
+      .filter(({ id }) => !before.has(id))
+      .map(({ id }) => id),
+  ).toEqual([id]);
+});

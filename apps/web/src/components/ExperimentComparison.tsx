@@ -1,3 +1,5 @@
+import { parameterValue } from "../state/circuit-scene";
+import { CircuitSources } from "./CircuitSources";
 import { SynthesisComparison } from "./SynthesisEvidence";
 import { ComparisonFindings } from "./ComparisonFindings";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -28,12 +30,15 @@ export function CircuitPreview({
   changed,
   onOpen,
   compact = false,
+  inspect = false,
 }: {
   compact?: boolean;
+  inspect?: boolean;
   program: ProgramSnapshot;
   changed: Set<number>;
   onOpen: () => void;
 }) {
+  const [selected, setSelected] = useState<number>();
   const all = program.compiled.instructions,
     gates = all.slice(0, 16);
   const wires = program.compiled.qubits,
@@ -41,6 +46,12 @@ export function CircuitPreview({
     rowGap = compact ? 56 : 76,
     height = (compact ? 28 : 32) + wires * rowGap;
   const y = (wire: number) => (compact ? 34 : 42) + wire * rowGap;
+  const selectedGate =
+    inspect && selected !== undefined ? gates[selected] : undefined;
+  const select = (index: number) => {
+    if (inspect) setSelected(index);
+    else onOpen();
+  };
   return (
     <div className={"fq-compare-circuit" + (compact ? " is-compact" : "")}>
       <div
@@ -101,7 +112,8 @@ export function CircuitPreview({
                       y={y(wire)}
                       label={"q" + wire}
                       wires={[wire]}
-                      onSelect={onOpen}
+                      onSelect={() => select(index)}
+                      selected={inspect && selected === index}
                     />
                   ))
                 ) : (
@@ -112,7 +124,8 @@ export function CircuitPreview({
                     width={54}
                     y={y}
                     bus={false}
-                    onSelect={onOpen}
+                    onSelect={() => select(index)}
+                    selected={inspect && selected === index}
                   />
                 )}
               </g>
@@ -120,6 +133,23 @@ export function CircuitPreview({
           })}
         </svg>
       </div>
+      {selected !== undefined && selectedGate && (
+        <div className="fq-preview-gate-details">
+          <p role="status">
+            {selectedGate.name.toUpperCase()} · Gate {selected + 1} · Qubits{" "}
+            {selectedGate.wires.join(", ")}
+          </p>
+          {Object.entries(selectedGate.params || {}).map(([name, value]) => (
+            <p key={name}>
+              {name} = <code>{parameterValue(value)}</code>
+            </p>
+          ))}
+          <CircuitSources
+            compiled={program.compiled}
+            ids={selectedGate.source_ids}
+          />
+        </div>
+      )}
       {(all.length > 16 || wires > 6) && (
         <small className="fq-preview-caption">
           {all.length > 16
