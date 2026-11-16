@@ -1330,3 +1330,48 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.fq-scientific-synthesis {
+  border-top: 1px solid var(--ui-line);
+  margin-top: 16px;
+  padding: 10px 0;
+  font-size: 12px;
+}
+.fq-scientific-synthesis summary {
+  cursor: pointer;
+}
+.fq-scientific-synthesis p {
+  max-width: 64ch;
+  color: var(--ui-muted);
+  line-height: 1.5;
+}
+.fq-science-grid-controls,
+.fq-science-grid-controls label {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.fq-science-grid-table {
+  overflow-x: auto;
+  margin: 10px 0;
+}
+.fq-science-grid-table table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+.fq-science-grid-table caption {
+  text-align: left;
+  color: var(--ui-muted);
+  padding-bottom: 4px;
+}
+.fq-science-grid-table th,
+.fq-science-grid-table td {
+  padding: 5px 6px;
+  border-bottom: 1px solid var(--ui-line);
+}
+.fq-science-grid-scope {
+  margin-top: 10px;
+  color: var(--ui-muted);
+}

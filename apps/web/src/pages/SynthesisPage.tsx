@@ -1,3 +1,4 @@
+import { ScientificSynthesis } from "../components/ScientificSynthesis";
 import type {
   WorkspaceAction,
   WorkspaceState,
@@ -183,6 +184,7 @@ export function SynthesisPage({
             <small>FlagQuantum {result.compiled.version}</small>
           </section>
         )}
+        <ScientificSynthesis programs={state.programs} dispatch={dispatch} />
       </div>
     </section>
   );
