@@ -8,10 +8,10 @@ import flagquantum as fq
 from flagquantum_web import publish
 plan = fq.compile(fq.Circuit(2).h(0).cx(0, 1))
 manifest = {"schema": "flagquantum.synthesis-source.v1", "entry": "fixture",
-            "nodes": [{"id": "prepare", "label": "Prepare"}, {"id": "entangle", "label": "Entangle"}]}
+            "nodes": [{"id": "prepare", "label": "Prepare", "line": 4}, {"id": "entangle", "label": "Entangle", "line": 5}]}
 program = replace(plan, metadata={**plan.metadata, "flagquantum.synthesis": manifest},
-                  instructions=tuple(replace(g, metadata={**g.metadata, "flagquantum.synthesis.origins": [origin]})
-                                     for g, origin in zip(plan.instructions, ["prepare", "entangle"])))
+                  instructions=tuple(replace(g, metadata={**g.metadata, "flagquantum.synthesis.origins": origins})
+                                     for g, origins in zip(plan.instructions, [["prepare"], ["prepare", "entangle"]])))
 fq.save("attribution.fqx", program)
 publish(program, name="Declared attribution fixture")
 `;
@@ -88,6 +88,32 @@ test("saved synthesis attribution preserves semantic groups, gate order and draf
   await select.focus();
   await select.press("Enter");
   await expect(page.locator(".fq-node-details h3")).toHaveText(first.label);
+  const attribution = page.getByRole("region", {
+    name: "Compiler source attribution",
+  });
+  const captured = compiled.synthesis_sources.find(
+    ({ id }) => id === first.source_ids[0],
+  );
+  await expect(attribution).toContainText(captured.operation || captured.label);
+  if (captured.line)
+    await expect(attribution).toContainText(
+      `captured source line ${captured.line}`,
+    );
+  if (process.env.FQ_SYNTH_SOURCE_ARCHIVE) {
+    const operation = compiled.synthesis_sources.find(
+      ({ operation, action, line }) => operation && action && line,
+    );
+    const module = compiled.hierarchy.children.find(({ source_ids }) =>
+      source_ids.includes(operation.id),
+    );
+    await page
+      .getByRole("button", { name: "Select " + module.label, exact: true })
+      .first()
+      .press("Enter");
+    await expect(attribution).toContainText(
+      `${operation.operation} · ${operation.action} · captured source line ${operation.line}`,
+    );
+  }
   await page.getByRole("button", { name: "Fit", exact: true }).click();
   await page.screenshot({
     path: testInfo.outputPath("synthesis-attribution.png"),
@@ -99,6 +125,16 @@ test("saved synthesis attribution preserves semantic groups, gate order and draf
   await expect(
     page.locator(".fq-circuit-symbol[aria-label^='Inspect']"),
   ).toHaveCount(compiled.instructions.length);
+  if (!process.env.FQ_SYNTH_SOURCE_ARCHIVE) {
+    await page
+      .getByRole("button", { name: "Inspect CX gate 2", exact: true })
+      .click();
+    await expect(attribution).toContainText("Combined compiler sources");
+    await expect(attribution.getByRole("listitem")).toHaveCount(2);
+    await expect(attribution).toContainText(
+      "Entangle · captured source line 5",
+    );
+  }
   const labels = await page
     .locator(".fq-circuit-symbol[aria-label^='Inspect']")
     .evaluateAll((nodes) =>

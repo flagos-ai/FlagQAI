@@ -1,3 +1,4 @@
+import { CircuitSources } from "../components/CircuitSources";
 import { UIIcon } from "../components/UIIcon";
 import { CloseButton } from "../components/CloseButton";
 import { ProjectProvenance } from "../components/ProjectProvenance";
@@ -356,6 +357,12 @@ export function ProgramPage({
                         <b>{value}</b>
                       </p>
                     ))}
+                    {c && (
+                      <CircuitSources
+                        compiled={c}
+                        ids={selection.module.source_ids}
+                      />
+                    )}
                     <pre>
                       {JSON.stringify(selection.module.gate_counts, null, 2)}
                     </pre>
@@ -372,6 +379,12 @@ export function ProgramPage({
                       View gate reference ↗
                     </button>
                     <p>Qubits: {selection.gate.wires.join(", ")}</p>
+                    {c && (
+                      <CircuitSources
+                        compiled={c}
+                        ids={selection.gate.source_ids}
+                      />
+                    )}
                     <p>
                       Source line:{" "}
                       {selection.gate.line || "Not included in this circuit"}
