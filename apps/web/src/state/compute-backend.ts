@@ -1,3 +1,7 @@
+import {
+  executionSummary,
+  type ExecutionSelection,
+} from "./execution-profile.ts";
 export type ComputeHealth = {
   backend: string;
   transport: string;
@@ -6,6 +10,7 @@ export type ComputeHealth = {
   max_shots?: number;
   note?: string;
   configured?: boolean;
+  execution?: ExecutionSelection;
 };
 
 export function isComputeHealth(value: unknown): value is ComputeHealth {
@@ -28,7 +33,7 @@ export function computeBackendName(info: ComputeHealth) {
 }
 
 export function computeBackendLabel(info: ComputeHealth) {
-  return `${computeBackendName(info)} · ${info.transport}`;
+  return `${info.execution?.revision && !info.execution.stale ? executionSummary(info.execution.profile) : computeBackendName(info)} · ${info.transport}`;
 }
 
 export function reportedLimit(value: unknown) {

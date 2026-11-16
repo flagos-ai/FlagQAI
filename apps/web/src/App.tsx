@@ -530,6 +530,7 @@ export default function App() {
               state={state}
               dispatch={dispatch}
               run={() => void run()}
+              runBlockedReason={backend.runBlockedReason}
             />
           )}
           {state.page === "jobs" && (

@@ -4234,7 +4234,8 @@ test("Execution separates common settings from advanced options without losing s
   const advanced = execution.locator(".fq-execution-advanced");
   const runtime = page
     .getByRole("region", { name: "Compute backend", exact: true })
-    .locator("details");
+    .locator("details")
+    .filter({ has: page.getByText("Limits and details", { exact: true }) });
   const shots = execution.getByRole("spinbutton", {
     name: "Num Shots",
     exact: true,
@@ -4672,7 +4673,9 @@ test("Execution backend uses service metadata and preserves folded limits and ma
     name: "Compute backend",
     exact: true,
   });
-  const details = backend.locator("details");
+  const details = backend.locator("details").filter({
+    has: page.getByText("Limits and details", { exact: true }),
+  });
   const refresh = page.getByRole("button", {
     name: "Refresh compute backend",
     exact: true,

@@ -1,3 +1,4 @@
+import { ExecutionConfiguration } from "./ExecutionConfiguration";
 import { useState } from "react";
 import type { useComputeBackend } from "../hooks/useComputeBackend";
 import { computeBackendName, reportedLimit } from "../state/compute-backend";
@@ -111,6 +112,16 @@ export function ExecutionBackend({
               )}
             </dl>
             <p>Credentials stay in the local environment.</p>
+          </details>
+        )}
+        {info?.execution && (
+          <details className="fq-execution-selection">
+            <summary>Simulator and hardware targets</summary>
+            <ExecutionConfiguration
+              onApplied={backend.refresh}
+              target={backend.targetPreview}
+              onTargetChange={backend.setTargetPreview}
+            />
           </details>
         )}
       </section>

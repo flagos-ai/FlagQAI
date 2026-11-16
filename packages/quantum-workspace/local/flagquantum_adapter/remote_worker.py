@@ -6,6 +6,15 @@ try:
     torch.set_num_threads(2)
     import flagquantum as fq
     request=json.load(sys.stdin)
+    execution = request.get('execution')
+    if execution is not None:
+        import re
+        if execution.get('target') != 'simulator' or execution.get('scale') != 'single_device':
+            raise ValueError('This executor cannot submit QPU or distributed jobs. No fallback was attempted.')
+        if (execution.get('method') not in ('statevector','mps','tensor_network','density_matrix','stabilizer')
+                or execution.get('backend') != 'pytorch' or execution.get('precision') != 'complex64'
+                or not re.fullmatch(r'[a-z][a-z0-9_]*(?::[0-9]{1,3})?', execution.get('device', ''))):
+            raise ValueError('Unsupported circuit sampling execution profile.')
     source=request['source']
     if not isinstance(source,str) or len(source.encode())>32768:
         raise ValueError('Model must be at most 32 KiB.')
@@ -29,10 +38,23 @@ try:
         shots=request.get('shots',1024);seed=request.get('seed',42)
         if type(shots) is not int or not 1<=shots<=100000:raise ValueError('Shots must be 1–100000.')
         if type(seed) is not int or not 0<=seed<=2147483647:raise ValueError('Seed must be 0–2147483647.')
-        result=fq.run(compiled,outputs=fq.counts(),options=fq.ExecutionOptions(shots=shots,seed=seed,device='cpu',backend='pytorch',allow_backend_fallback=False))
+        options = {'device':'cpu','backend':'pytorch','allow_backend_fallback':False}
+        if execution is not None:
+            options.update(mode=execution['method'],device=execution['device'],precision=execution['precision'])
+        result=fq.run(compiled,outputs=fq.counts(),options=fq.ExecutionOptions(shots=shots,seed=seed,**options))
+        runtime = dict(result.runtime)
+        if execution is not None and runtime.get('mode') != execution['method']:
+            raise RuntimeError('SDK did not confirm the requested simulation method. Result refused.')
+        if execution is not None and (runtime.get('device') not in (None, execution['device']) or (execution['device'] != 'cpu' and runtime.get('device') != execution['device'])):
+            raise RuntimeError('SDK returned a different compute device. Result refused.')
         counts=next(m.value[0] for m in result.measurements if m.kind=='counts')
         if sum(counts.values())!=shots:raise RuntimeError('Returned counts do not match requested shots.')
-        response.update(counts={k:int(v) for k,v in counts.items()},shots=shots,seed=seed,runtime=result.runtime,decoded=decode_counts(counts,registers,compiled.n_wires))
+        response.update(counts={k:int(v) for k,v in counts.items()},shots=shots,seed=seed,runtime=runtime,decoded=decode_counts(counts,registers,compiled.n_wires))
+    if execution is not None:
+        response['backend'] = 'flagquantum_pytorch_cpu' if execution['device'] == 'cpu' else 'flagquantum_pytorch'
+        response['execution_requested'] = execution
+    if execution is not None and request.get('operation') == 'run':
+        response['execution_actual'] = {'target':'simulator','backend':execution['backend'],'method':runtime['mode'], 'device':runtime.get('device'), 'scale':'single_device','sdk_version':fq.__version__}
     response['elapsed_seconds']=round(time.monotonic()-started,3)
     print(json.dumps({'ok':True,'result':response}))
 except Exception as error:

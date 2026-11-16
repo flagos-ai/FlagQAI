@@ -10,6 +10,7 @@ from urllib.parse import unquote, urlsplit, parse_qs
 from quantum_workspace_protocol import LIMITS
 from .service import QuantumWorkspaceService, QueueFullError
 from .compute_environments import ComputeEnvironments
+from .execution_profiles import ExecutionProfiles
 from flagquantum_adapter.local_cpu import LocalCPUAdapter
 from flagquantum_adapter.ssh_cpu import SSHCPUAdapter
 from .editor_files import create_model, read_model
@@ -27,6 +28,7 @@ def create_server(settings, service):
     if isinstance(service, QuantumWorkspaceService) and isinstance(service.adapter, (LocalCPUAdapter, SSHCPUAdapter)):
         environments = ComputeEnvironments(settings)
         service.environments = environments
+        service.execution_profiles = ExecutionProfiles(environments)
     experiments = ExperimentImports(settings, runtime_settings=environments.snapshot if environments else None)
     python_runs = PythonRuns(settings, service, experiments)
     research_packages = ResearchPackages(settings, experiments, python_runs)
@@ -250,6 +252,8 @@ def create_server(settings, service):
                 return self.reply({'cwd': str(Path(settings.agent_cwd or settings.web_root.parent).resolve())})
             if self.path.startswith('/v1/'):
                 return self.agent_proxy('GET')
+            if self.path == '/api/execution-profile':
+                return self.reply(service.execution_profiles.describe()) if environments else self.reply({'error':'Execution selection is unavailable for this adapter.'}, 404)
             if self.path == '/api/compute-environment':
                 return self.reply(environments.describe()) if environments else self.reply({'error':'Compute selection is unavailable for this adapter.'}, 404)
             if self.path == '/api/health':
@@ -267,6 +271,19 @@ def create_server(settings, service):
         def do_POST(self):
             if not self.allowed():
                 return self.reply({'error': 'Only local same-origin access is allowed.'}, 403)
+            if self.path in ('/api/execution-profile/check', '/api/execution-profile/activate'):
+                if not environments:
+                    return self.reply({'error':'Execution selection is unavailable for this adapter.'}, 404)
+                try:
+                    length = int(self.headers.get('Content-Length', '0'))
+                    if self.headers.get('Content-Type', '').split(';')[0] != 'application/json' or not 0 < length <= 4096:
+                        raise ValueError('Use bounded JSON execution settings.')
+                    data = json.loads(self.rfile.read(length))
+                    if self.path.endswith('/check'):
+                        return self.reply(service.execution_profiles.discover(python_runs))
+                    return self.reply(service.execution_profiles.activate(data))
+                except (ValueError, TypeError, OSError, RuntimeError) as error:
+                    return self.reply({'error':str(error)}, 400)
             if self.path in ('/api/compute-environment/check', '/api/compute-environment/activate'):
                 if not environments:
                     return self.reply({'error':'Compute selection is unavailable for this adapter.'}, 404)
