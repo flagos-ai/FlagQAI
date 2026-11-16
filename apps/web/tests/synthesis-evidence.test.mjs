@@ -4,6 +4,8 @@ import {
   synthesisEvidence,
   programSynthesis,
   compareSynthesis,
+  synthesisIteration,
+  savedOptimizationPair,
   synthesisModules,
 } from "../src/state/synthesis-evidence.ts";
 const hash = "a".repeat(64),
@@ -162,4 +164,90 @@ test("operation cost attribution counts fused and unmapped gates exactly once", 
     wires: 3,
   });
   assert.equal(rows.at(-1).label, "Unmapped");
+});
+function iterationPair() {
+  const a = synthesisEvidence(fixture()),
+    b = structuredClone(a);
+  a.iteration = {
+    role: "baseline",
+    baseline_program_hash: a.program_hash,
+    method: "flagquantum.compiler.optimize",
+    optimization_level: 2,
+    prepared_state_max_error: 0,
+  };
+  b.program_hash = "f".repeat(64);
+  b.iteration = { ...a.iteration, role: "candidate" };
+  return [a, b];
+}
+test("optimization reports distinguish no gain, reduction, regressions, tradeoffs and failed checks", () => {
+  const [a, b] = iterationPair();
+  assert.equal(synthesisIteration(a, b).verdict, "No resource improvement");
+  b.report.resources.n_operations = 0;
+  assert.equal(synthesisIteration(a, b).verdict, "Resources reduced");
+  b.report.resources.depth = 2;
+  assert.equal(synthesisIteration(a, b).verdict, "Resource tradeoff");
+  b.report.resources.n_operations = 2;
+  assert.equal(synthesisIteration(a, b).verdict, "Resource cost increased");
+  for (const mutate of [
+    (e) => (e.checks.saved_circuit_replay = false),
+    (e) => (e.checks.max_probability_error = 1e-8),
+    (e) => (e.iteration.prepared_state_max_error = 1e-8),
+    (e) => {
+      e.outcomes[0].probability += 1e-8;
+      e.outcomes[1].probability -= 1e-8;
+    },
+  ]) {
+    const [base, next] = iterationPair();
+    mutate(next);
+    assert.equal(synthesisIteration(base, next).passed, false);
+  }
+});
+test("candidate use requires its exact baseline, source, target, compiler and valid metadata", () => {
+  for (const mutate of [
+    (e) => (e.iteration.baseline_program_hash = "d".repeat(64)),
+    (e) => (e.source_sha256 = "d".repeat(64)),
+    (e) => (e.constraints.topology = "line"),
+    (e) => (e.sdk_code_sha256 = "d".repeat(64)),
+    (e) => (e.report.resources.basis = "another_basis"),
+    (e) => (e.iteration.optimization_level = 1),
+  ]) {
+    const [a, b] = iterationPair();
+    mutate(b);
+    assert.equal(synthesisIteration(a, b), null);
+  }
+  const [a, b] = iterationPair();
+  a.constraints = { max_qubits: 16, objective: "width" };
+  b.constraints = { objective: "width", max_qubits: 16 };
+  assert.ok(synthesisIteration(a, b));
+  const info = fixture();
+  info.metrics.flagqai_synthesis.iteration = a.iteration;
+  assert.ok(synthesisEvidence(info));
+  info.metrics.flagqai_synthesis.iteration.prepared_state_max_error = NaN;
+  assert.equal(synthesisEvidence(info), null);
+});
+
+test("the optimization shortcut only pairs saved runs from the same submission", () => {
+  const [base, candidate] = iterationPair();
+  const record = (id, evidence, run) => ({
+    id,
+    compiled: { qubits: 2, depth: 1, instructions: [{ name: "h" }] },
+    origin: { source_hash: source },
+    experiment: {
+      has_result: true,
+      program_hash: evidence.program_hash,
+      python_run: {
+        id: run,
+        source_hash: source,
+        execution_status: "completed",
+      },
+      metrics: { flagqai_synthesis: evidence },
+    },
+  });
+  const records = [
+    record("b", base, "first"),
+    record("c", candidate, "second"),
+  ];
+  assert.equal(savedOptimizationPair(records), null);
+  records[1].experiment.python_run.id = "first";
+  assert.deepEqual(savedOptimizationPair(records), { left: "b", right: "c" });
 });

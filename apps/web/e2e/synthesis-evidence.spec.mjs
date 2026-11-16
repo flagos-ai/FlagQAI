@@ -130,3 +130,42 @@ test("synthesis reports show recorded constraints, named outputs and actual reso
   }
   await verifyDraftAndCount(page, draft, ids);
 });
+
+test("compiler optimization reports a verified no-gain result under the pinned SDK", async ({
+  page,
+}) => {
+  const { draft, run, ids } = await openAndRun(
+    page,
+    "Verify a compiler optimization",
+    "Open optimization model",
+  );
+  if (compatible) {
+    expect(run.experiments.map(({ filename }) => filename).sort()).toEqual([
+      "optimization-baseline.fqx",
+      "optimization-candidate.fqx",
+    ]);
+    await page.getByRole("button", { name: "SYNTHESIS", exact: true }).click();
+    await page
+      .getByText("Verify a compiler optimization", { exact: true })
+      .press("Enter");
+    await page
+      .getByRole("button", {
+        name: "Compare saved optimization pair",
+        exact: true,
+      })
+      .click();
+    const comparison = page.getByRole("region", {
+      name: "Synthesis report comparison",
+      exact: true,
+    });
+    await expect(comparison).toContainText("No resource improvement");
+    await expect(comparison).toContainText(
+      "Script verified the prepared state and replay",
+    );
+    await page
+      .getByRole("button", { name: "Swap comparison sides", exact: true })
+      .click();
+    await expect(comparison).toContainText("No resource improvement");
+  }
+  await verifyDraftAndCount(page, draft, ids);
+});
