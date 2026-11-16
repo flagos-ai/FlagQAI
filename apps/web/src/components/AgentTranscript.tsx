@@ -226,6 +226,10 @@ function Questions({
     </section>
   );
 }
+function atLatestOutput(node: HTMLElement) {
+  return node.scrollHeight - node.scrollTop - node.clientHeight <= 2;
+}
+
 export function AgentTranscript({
   agent,
   roster,
@@ -256,10 +260,7 @@ export function AgentTranscript({
   const measure = useCallback(() => {
     const node = viewport.current;
     if (!node) return;
-    const offBottom =
-      node.scrollHeight - node.scrollTop - node.clientHeight > 48;
-    follow.current = !offBottom;
-    setAway(offBottom);
+    setAway(!atLatestOutput(node));
     const top = node.getBoundingClientRect().top;
     let current: number | null = null;
     // Keep the question belonging to the response being read, including older turns.
@@ -324,7 +325,10 @@ export function AgentTranscript({
       <div
         className="fq-agent-thread"
         ref={viewport}
-        onScroll={measure}
+        onScroll={(event) => {
+          follow.current = atLatestOutput(event.currentTarget);
+          measure();
+        }}
         role="log"
         tabIndex={-1}
         aria-label="Agent conversation"
@@ -422,7 +426,28 @@ export function AgentTranscript({
                         .map(renderRow)}
                     </div>
                   ) : (
-                    <details className="fq-agent-work">
+                    <details
+                      className="fq-agent-work"
+                      onToggle={(event) => {
+                        const details = event.currentTarget;
+                        const node = viewport.current;
+                        const header = details.firstElementChild;
+                        if (!details.open || !node || !header) return;
+                        const visible = node.getBoundingClientRect();
+                        const heading = header.getBoundingClientRect();
+                        const previewBottom = Math.min(
+                          details.getBoundingClientRect().bottom,
+                          heading.bottom + 96,
+                        );
+                        // Keep the disclosure heading below the pinned question.
+                        const reveal = Math.min(
+                          previewBottom - visible.bottom + 12,
+                          heading.top - visible.top - 40,
+                        );
+                        if (reveal > 0) node.scrollTop += reveal;
+                        measure();
+                      }}
+                    >
                       <summary
                         onClick={() => {
                           follow.current = false;
@@ -590,6 +615,7 @@ export function AgentTranscript({
         <button
           className="fq-agent-jump-latest"
           aria-label="Jump to latest output"
+          title="Latest output"
           onClick={() => {
             follow.current = true;
             if (viewport.current)
@@ -598,7 +624,7 @@ export function AgentTranscript({
             viewport.current?.focus({ preventScroll: true });
           }}
         >
-          <span aria-hidden="true">↓</span> Latest output
+          <span aria-hidden="true">↓</span>
         </button>
       )}
     </div>

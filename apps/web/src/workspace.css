@@ -3023,16 +3023,16 @@ body,
   bottom: 10px;
   left: 50%;
   transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
   border: 1px solid #ffffff24;
-  border-radius: 18px;
+  border-radius: 50%;
   background: #35383df5;
   box-shadow: 0 2px 8px #00000035;
-  white-space: nowrap;
-  font-size: 10px;
+  font-size: 16px;
   color: #dbe9f4;
 }
 .fq-agent-pinned-question:hover,

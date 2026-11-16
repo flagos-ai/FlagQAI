@@ -289,6 +289,55 @@ const backend = {
           );
           return { accepted: true };
         }
+        if (requestText.startsWith("transcript scroll acceptance\n")) {
+          for (let index = 1; index <= 5; index++) {
+            const callId = `scroll-${turn}-${index}`;
+            emit(
+              {
+                type: "tool.call",
+                seq: ++seq,
+                callId,
+                name: "Read",
+                turn,
+                step: 1,
+                time: Date.now(),
+                argsJson: JSON.stringify({ file: `record-${index}.md` }),
+              },
+              {
+                type: "tool.result",
+                seq: ++seq,
+                callId,
+                turn,
+                step: 1,
+                time: Date.now(),
+                isError: false,
+                text: "Fixture record read.",
+              },
+            );
+          }
+          const text = Array.from(
+            { length: 32 },
+            (_, index) => `Recorded finding ${index + 1}.`,
+          ).join("\n\n");
+          status = "idle";
+          emit(
+            {
+              type: "assistant.message",
+              seq: ++seq,
+              turn,
+              step: 1,
+              blocks: [{ type: "text", text }],
+            },
+            {
+              type: "turn.end",
+              turn,
+              reason: { kind: "completed" },
+              time: Date.now(),
+            },
+            { type: "session.status", status },
+          );
+          return { accepted: true };
+        }
         void (async () => {
           if (controlCase) {
             const callId = "read-" + turn;
