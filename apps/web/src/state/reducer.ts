@@ -523,7 +523,16 @@ function reduceWorkspace(
     case "agent":
       return { ...state, agentOpen: action.open };
     case "use-draft":
-      return { ...state, execution: null };
+    case "execution-circuit": {
+      if (state.busy) return state;
+      if (action.type === "use-draft" || action.id === null)
+        return { ...state, execution: null, error: null };
+      const program =
+        state.execution?.id === action.id
+          ? state.execution
+          : state.programs.find((item) => item.id === action.id);
+      return program ? { ...state, execution: program, error: null } : state;
+    }
     case "save-review-version": {
       const { review, source } = action;
       if (!reviewMatches(state, review)) return state;

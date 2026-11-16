@@ -1407,3 +1407,18 @@
   max-height: 14rem;
   overflow: auto;
 }
+
+.fq-execution-circuit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: min(34rem, 80%);
+  color: var(--ui-muted);
+  font-size: 12px;
+}
+.fq-execution-circuit select {
+  min-width: 0;
+  flex: 1;
+  text-overflow: ellipsis;
+}

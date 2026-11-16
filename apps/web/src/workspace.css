@@ -7090,21 +7090,6 @@ body,
   gap: 8px;
   flex-wrap: wrap;
 }
-.fq-execution-identity {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 4px 10px;
-  min-width: 0;
-}
-.fq-execution-identity strong {
-  font-size: 12px;
-  font-weight: 500;
-  overflow-wrap: anywhere;
-}
-.fq-execution-identity small {
-  font-size: 10px;
-}
 .fq-execution-toolbar > button {
   min-height: 30px;
   padding: 4px 12px;
@@ -7160,22 +7145,6 @@ body,
 .fq-execution-advanced-fields > p {
   font-size: 11px;
   margin: 0 0 8px;
-}
-.fq-execution-source {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px 14px;
-  padding: 0 0 12px;
-}
-.fq-execution-source > p {
-  flex: 1 1 260px;
-  font-size: 11px;
-  margin: 0;
-  line-height: 1.6;
-}
-.fq-execution-source > button {
-  font-size: 11px;
 }
 @container (max-width: 480px) {
   .fq-execution-common {

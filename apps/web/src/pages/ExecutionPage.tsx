@@ -1,3 +1,5 @@
+import { ExecutionCircuit } from "../components/ExecutionCircuit";
+import { executionSourceBlockedReason } from "../state/execution-source";
 import { useEffect, useState } from "react";
 import { UIIcon } from "../components/UIIcon";
 import type {
@@ -15,6 +17,8 @@ export function ExecutionPage({
   run: () => void;
   runBlockedReason?: string;
 }) {
+  const sourceBlockedReason = executionSourceBlockedReason(state);
+  const blockedReason = sourceBlockedReason || runBlockedReason;
   const validSeed =
     Number.isInteger(state.seed) && state.seed >= 0 && state.seed <= 2147483647;
   const valid =
@@ -40,16 +44,11 @@ export function ExecutionPage({
       aria-label="Execution configuration"
     >
       <div className="fq-toolbar fq-execution-toolbar">
-        <span className="fq-execution-identity">
-          <strong>{state.execution?.name || state.name}</strong>
-          <small>
-            {state.execution ? "Compiled program snapshot" : "Model draft"}
-          </small>
-        </span>
+        <ExecutionCircuit state={state} dispatch={dispatch} />
         <div className="push" />
         <button
           className="primary"
-          disabled={state.busy || !valid || !!runBlockedReason}
+          disabled={state.busy || !valid || !!blockedReason}
           onClick={run}
         >
           <UIIcon
@@ -61,24 +60,18 @@ export function ExecutionPage({
         </button>
       </div>
       <div className="fq-content-pad fq-execution-content">
-        {runBlockedReason && <p role="status">{runBlockedReason}</p>}
-        {state.execution && (
-          <section
-            className="fq-execution-source"
-            aria-label="Execution source"
-          >
-            <p>
-              The task uses this source snapshot. Your Model draft is unchanged.
-              {state.execution.experiment &&
-                " This is a new execution using the current backend and settings; the archived plan and results stay unchanged."}
-            </p>
-            <button
-              className="link"
-              onClick={() => dispatch({ type: "use-draft" })}
-            >
-              Use current Model draft instead
-            </button>
-          </section>
+        {blockedReason && (
+          <p role="status">
+            {blockedReason}{" "}
+            {sourceBlockedReason && (
+              <button
+                className="link"
+                onClick={() => dispatch({ type: "navigate", page: "model" })}
+              >
+                Open Model
+              </button>
+            )}
+          </p>
         )}
         <section
           className="fq-panel fq-execution-settings"
