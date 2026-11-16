@@ -1216,3 +1216,110 @@
 .fq-synthesis-catalog-license {
   font-size: 11px;
 }
+
+.fq-model-folders-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.fq-model-folders-heading > button {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+}
+.fq-workspace.fq-ui-controls .fq-model-folder-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 6px 4px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font-size: 12px;
+  color: inherit;
+}
+.fq-model-folder-toggle > span:nth-last-child(2) {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fq-model-folder-toggle small {
+  color: #939eac;
+  font-size: 11px;
+}
+.fq-model-folder-contents {
+  margin-left: 3px;
+  padding-left: 5px;
+  border-left: 1px solid #ffffff0b;
+}
+.fq-model-folder-file {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.fq-model-folder-file > .fq-library-card {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 3px;
+}
+.fq-model-folder-file .fq-library-title {
+  gap: 6px;
+  min-width: 0;
+}
+.fq-model-folder-file .fq-library-title > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fq-model-folder-file .fq-library-title svg {
+  flex-shrink: 0;
+}
+.fq-model-folder-file .fq-library-card small {
+  margin-top: 3px;
+  font-size: 10px;
+}
+.fq-model-folder-empty {
+  display: block;
+  padding: 4px 6px 8px;
+  color: #939eac;
+  font-size: 11px;
+}
+.fq-model-folder-form {
+  padding: 8px;
+  margin: 5px 0;
+  background: #ffffff05;
+  border-radius: 5px;
+}
+.fq-model-folder-form label {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+}
+.fq-model-folder-form input {
+  width: 100%;
+  min-width: 0;
+  margin: 5px 0;
+}
+.fq-model-folder-form > div {
+  display: flex;
+  gap: 5px;
+}
+.fq-model-folder-chevron {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  fill: none;
+}
+.fq-model-folder-chevron[data-expanded="true"] {
+  transform: rotate(90deg);
+}
+.fq-model-folder-file > .fq-model-folder-move {
+  flex: 0 0 26px;
+}
+.fq-workspace.fq-ui-controls
+  .fq-model-folder-toggle:not([aria-disabled="true"]):hover {
+  background: #ffffff08;
+}

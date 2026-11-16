@@ -216,6 +216,8 @@ export default function App() {
             />
           }
           models={state.models}
+          folders={state.modelFolders}
+          dispatch={dispatch}
           onSelect={(model) =>
             dispatch({ type: "model", model, preserveDraft: true })
           }

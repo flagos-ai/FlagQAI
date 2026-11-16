@@ -1,3 +1,4 @@
+import { normalizeModelFolder } from "./model-folders.ts";
 import type { Model } from "../contracts/quantum-workspace";
 
 export const MAX_BACKUP_BYTES = 16 * 1024 * 1024;
@@ -7,7 +8,7 @@ const object = (value: unknown): Record<string, unknown> => {
   return value as Record<string, unknown>;
 };
 
-/** Extract code only. Imported file links and execution records are never trusted. */
+/** Extract detached code drafts and their library locations. */
 export function backupDrafts(text: string): Model[] {
   if (new TextEncoder().encode(text).length > MAX_BACKUP_BYTES)
     throw Error("Choose a backup no larger than 16 MiB.");
@@ -34,12 +35,19 @@ export function backupDrafts(text: string): Model[] {
       !["python", "qasm"].includes(String(kind))
     )
       throw Error("A backup draft has invalid code, name or language.");
-    if (!models.some((m) => m.source === item.source && m.language === kind))
+    const folder = normalizeModelFolder(item.folder);
+    const duplicate = models.find(
+      (model) => model.source === item.source && model.language === kind,
+    );
+    if (!duplicate)
       models.push({
         name: item.name,
         source: item.source,
         language: kind as "python" | "qasm",
+        ...(folder ? { folder } : {}),
       });
+    else if (folder && duplicate.name === item.name && !duplicate.folder)
+      duplicate.folder = folder;
     if (models.length > 128)
       throw Error("Backups support up to 128 distinct code drafts.");
     // Preserve both sides of an unresolved Agent edit as separate detached drafts.
@@ -91,7 +99,13 @@ export function mergeBackupDrafts(
       suffix = 1;
     while (merged.some((m) => m.name === name))
       name = `${model.name.slice(0, 230)} · Restored ${suffix++}`;
-    merged.push({ name, source: model.source, language: model.language });
+    const folder = normalizeModelFolder(model.folder);
+    merged.push({
+      name,
+      source: model.source,
+      language: model.language,
+      ...(folder ? { folder } : {}),
+    });
   }
   return merged;
 }

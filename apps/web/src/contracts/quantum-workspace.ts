@@ -201,6 +201,7 @@ export type Diagnostic = {
 };
 export type SourceLanguage = "qasm" | "python";
 export type Model = {
+  folder?: string;
   reviewOrigin?: { fileId: string; revision: string };
   name: string;
   source: string;
@@ -248,6 +249,7 @@ export type WorkspaceState = {
   programs: ProgramSnapshot[];
   selectedProgramId: string | null;
   models: Model[];
+  modelFolders?: string[];
   jobs: QuantumJob[];
   selectedJobId: string | null;
   execution: ProgramSnapshot | null;
@@ -274,6 +276,8 @@ export type WorkspaceAction =
       decision: "accept" | "keep" | "undo";
     }
   | { type: "language"; language: SourceLanguage }
+  | { type: "model-folder-create"; path: string }
+  | { type: "model-folder-move"; key: string; path: string }
   | { type: "python-run"; id: string }
   | { type: "add-agent-model"; model: Model }
   | {
