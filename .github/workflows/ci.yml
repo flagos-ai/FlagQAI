@@ -216,9 +216,7 @@ jobs:
 
   web:
     name: Optional Web source and local workspace
-    # Enable only after the organization restricts the runner group to this
-    # workflow on protected main. Pull request code stays on hosted runners.
-    runs-on: ${{ fromJSON(github.event_name == 'push' && github.ref == 'refs/heads/main' && github.ref_protected && vars.FLAGQAI_WEB_RUNNER == 'enabled' && '["self-hosted","Linux","X64","flagqai-web-linux"]' || '"ubuntu-latest"') }}
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
       PYTHONPATH: ${{ github.workspace }}/.ci-flagquantum-sdk
@@ -227,61 +225,4 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11.26.0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: pnpm
-          cache-dependency-path: apps/web/pnpm-lock.yaml
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      # Import save/load from a verified source checkout instead of resolving a PyPI SDK.
-      # Test the immutable merged SDK source; CPU PyTorch executes the circuits.
-      - uses: actions/checkout@v4
-        with:
-          repository: flagos-ai/FlagQuantum
-          ref: 4ed3b8252200900d25350aaac6ddc9abbf8bc1e6
-          path: .ci-flagquantum-sdk
-          persist-credentials: false
-      - name: Install pinned SDK CPU runtime
-        run: python -m pip install --index-url https://download.pytorch.org/whl/cpu -r packages/quantum-workspace/tests/sdk-runtime.txt
-      # Web protocol tests exercise the pinned native compaction implementation.
-      - run: pnpm cli:install
-      - run: pnpm web:install
-      - run: pnpm web:check
-      - run: pnpm web:build
-      - name: Verify workspace-scoped Agent proxy routes
-        run: python -m unittest discover -s packages/quantum-workspace/tests -p test_agent_proxy.py -v
-      - name: Required real SDK workspace acceptance (zero skipped tests)
-        run: python packages/quantum-workspace/tests/sdk_acceptance.py --report apps/web/sdk-results/acceptance.json
-      - name: Compile scripted native Agent fixture
-        run: pnpm --dir apps/cli run compile
-      - name: Verify session-scoped workbench tools
-        run: node --test apps/cli/scripts/workbench-tools.test.mjs apps/cli/scripts/source-server-overlay.test.mjs
-      - name: Install pinned Chromium test browser
-        env:
-          RUNNER_ENVIRONMENT: ${{ runner.environment }}
-        run: |
-          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            pnpm --dir apps/web exec playwright install chromium
-          else
-            pnpm --dir apps/web exec playwright install --with-deps chromium
-          fi
-      - name: Browser workbench acceptance (real SDK, scripted Agent, no model calls)
-        run: pnpm --dir apps/web test:e2e
-      - name: Verify complete product journeys
-        if: always()
-        run: node apps/web/scripts/product-acceptance.mjs
-      - name: Upload SDK report and browser failure evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: web-sdk-acceptance
-          path: |
-            apps/web/sdk-results/
-            apps/web/test-results/
-            apps/web/playwright-report/
-          if-no-files-found: warn
+      - uses: ./.github/actions/web-acceptance

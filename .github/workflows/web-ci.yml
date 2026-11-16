@@ -1,0 +1,67 @@
+name: Web runner admission and acceptance
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  admission:
+    name: Select Web runner
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      runner: ${{ steps.select.outputs.result }}
+    steps:
+      - id: select
+        uses: actions/github-script@v7
+        env:
+          RUNNER_ENABLED: ${{ vars.FLAGQAI_WEB_RUNNER }}
+          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+        with:
+          script: |
+            const hosted = 'ubuntu-latest';
+            const pr = context.payload.pull_request;
+            const repo = 'flagos-ai/FlagQAI';
+
+            if (process.env.RUNNER_ENABLED !== 'enabled' ||
+                context.eventName !== 'pull_request' ||
+                context.payload.repository?.full_name !== repo ||
+                pr?.base?.repo?.full_name !== repo ||
+                pr?.head?.repo?.full_name !== repo ||
+                pr.user?.type !== 'User') {
+              return hosted;
+            }
+
+            const users = new Set([pr.user.login, context.actor, process.env.TRIGGERING_ACTOR]);
+            for (const username of users) {
+              if (!username) return hosted;
+              try {
+                const {data} = await github.rest.repos.getCollaboratorPermissionLevel({
+                  ...context.repo,
+                  username,
+                  request: {timeout: 10000},
+                });
+                if (data.permission !== 'admin') return hosted;
+              } catch (error) {
+                core.warning('Repository permission check could not be completed. Using GitHub-hosted Linux.');
+                return hosted;
+              }
+            }
+
+            return ['self-hosted', 'Linux', 'X64', 'flagqai-web-linux'];
+
+  acceptance:
+    name: Web and real SDK acceptance
+    needs: admission
+    runs-on: ${{ fromJSON(needs.admission.outputs.runner || '"ubuntu-latest"') }}
+    timeout-minutes: 30
+    env:
+      PYTHONPATH: ${{ github.workspace }}/.ci-flagquantum-sdk
+      FQ_LOCAL_PYTHON: python3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/web-acceptance

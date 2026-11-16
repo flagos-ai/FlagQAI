@@ -1,0 +1,75 @@
+name: Web and real SDK acceptance
+description: Check the Web with the pinned SDK and scripted Agent
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@v4
+      with:
+        version: 11.26.0
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 24
+        cache: pnpm
+        cache-dependency-path: apps/web/pnpm-lock.yaml
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    # Import save/load from a verified source checkout instead of resolving a PyPI SDK.
+    # Test the immutable merged SDK source; CPU PyTorch executes the circuits.
+    - uses: actions/checkout@v4
+      with:
+        repository: flagos-ai/FlagQuantum
+        ref: 4ed3b8252200900d25350aaac6ddc9abbf8bc1e6
+        path: .ci-flagquantum-sdk
+        persist-credentials: false
+    - name: Install pinned SDK CPU runtime
+      shell: bash
+      run: python -m pip install --index-url https://download.pytorch.org/whl/cpu -r packages/quantum-workspace/tests/sdk-runtime.txt
+    # Web protocol tests exercise the pinned native compaction implementation.
+    - run: pnpm cli:install
+      shell: bash
+    - run: pnpm web:install
+      shell: bash
+    - run: pnpm web:check
+      shell: bash
+    - run: pnpm web:build
+      shell: bash
+    - name: Verify workspace-scoped Agent proxy routes
+      shell: bash
+      run: python -m unittest discover -s packages/quantum-workspace/tests -p test_agent_proxy.py -v
+    - name: Required real SDK workspace acceptance (zero skipped tests)
+      shell: bash
+      run: python packages/quantum-workspace/tests/sdk_acceptance.py --report apps/web/sdk-results/acceptance.json
+    - name: Compile scripted native Agent fixture
+      shell: bash
+      run: pnpm --dir apps/cli run compile
+    - name: Verify session-scoped workbench tools
+      shell: bash
+      run: node --test apps/cli/scripts/workbench-tools.test.mjs apps/cli/scripts/source-server-overlay.test.mjs
+    - name: Install pinned Chromium test browser
+      env:
+        RUNNER_ENVIRONMENT: ${{ runner.environment }}
+      shell: bash
+      run: |
+        if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+          pnpm --dir apps/web exec playwright install chromium
+        else
+          pnpm --dir apps/web exec playwright install --with-deps chromium
+        fi
+    - name: Browser workbench acceptance (real SDK, scripted Agent, no model calls)
+      shell: bash
+      run: pnpm --dir apps/web test:e2e
+    - name: Verify complete product journeys
+      if: always()
+      shell: bash
+      run: node apps/web/scripts/product-acceptance.mjs
+    - name: Upload SDK report and browser failure evidence
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: web-sdk-acceptance
+        path: |
+          apps/web/sdk-results/
+          apps/web/test-results/
+          apps/web/playwright-report/
+        if-no-files-found: warn
