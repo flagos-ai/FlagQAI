@@ -1,8 +1,9 @@
+import { readExperiment } from "../api/experiments";
 import { SavedStateResult } from "../components/SavedStateResult";
 import { UIIcon } from "../components/UIIcon";
 import { useJobView } from "../hooks/useJobView";
 import { ExportMenu } from "../components/ExportMenu";
-import { useId, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import {
   CircuitPreview,
   ExperimentComparison,
@@ -53,7 +54,31 @@ export function JobsPage({ state, dispatch }: Props) {
     <JobResults key={job.id} job={job} state={state} dispatch={dispatch} />
   );
 }
-function JobResults({ job, state, dispatch }: Props & { job: QuantumJob }) {
+function JobResults({
+  job: original,
+  state,
+  dispatch,
+}: Props & { job: QuantumJob }) {
+  const [upgraded, setUpgraded] = useState<QuantumJob>();
+  const experiment = original.experiment;
+  const legacySamples =
+    experiment &&
+    experiment.sample_histogram_version === undefined &&
+    experiment.measurements.some((row) => row.kind === "sample")
+      ? experiment.id
+      : undefined;
+  useEffect(() => {
+    if (!legacySamples) return;
+    const controller = new AbortController();
+    void readExperiment(legacySamples, controller.signal)
+      .then(({ job }) => {
+        if (!controller.signal.aborted && job?.id === original.id)
+          setUpgraded(job);
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [legacySamples, original.id]);
+  const job = legacySamples ? (upgraded ?? original) : original;
   const id = useId();
   const [tab, setTab] = useState("results");
   const { view: preferences, update } = useJobView(job);
@@ -516,7 +541,9 @@ function JobResults({ job, state, dispatch }: Props & { job: QuantumJob }) {
                         <details>
                           <summary>How to read</summary>
                           <p>
-                            Keys are shown as saved; integer keys are labeled.
+                            {measurement?.kind === "sample"
+                              ? "Counts are aggregated from the complete saved shots."
+                              : "Keys are shown as saved; integer keys are labeled."}
                             Probabilities use all recorded counts, including
                             states outside the current filter or page.
                           </p>

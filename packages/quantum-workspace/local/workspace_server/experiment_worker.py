@@ -83,18 +83,26 @@ def project(path):
                                       'count': count} for key, count in batch.items()] for batch in values]
             else:
                 record['value'] = plain(values)
+                if measurement.kind == 'sample':
+                    batches = sample_histograms(values, len(measurement.qubits))
+                    if batches is not None:
+                        record['batches'] = batches
             measurements.append(record)
     measured = set()
     for measurement in ir.measurements:
         if measurement.kind == 'counts':
             measured.update(range(ir.n_wires) if measurement.wires is None else measurement.wires)
-    if result is not None:
-        for measurement in result.measurements:
-            if measurement.kind == 'counts':
-                measured.update(measurement.qubits)
+    for measurement in measurements:
+        if measurement['kind'] == 'counts':
+            measured.update(measurement['qubits'])
+    count_wires = sorted(measured)
+    for measurement in measurements:
+        if measurement['kind'] == 'sample' and measurement.get('batches'):
+            measured.update(measurement['qubits'])
     compiled['measurement_qubits'] = sorted(measured)
     record = {'producer_version': producer, 'has_result': result is not None,
               'program_hash': ir.content_hash, 'measurements': measurements,
+              'sample_histogram_version': 1,
               'execution_plan': plain(experiment.execution_plan)}
     if result is not None:
         record.update(state_distribution=state_distribution(result, ir.n_wires), accuracy=plain(result.accuracy.to_dict()), runtime=plain(result.runtime),
@@ -103,8 +111,36 @@ def project(path):
     payload = {'source': source, 'compiled': compiled, 'experiment': record}
     encoded = json.dumps(payload, allow_nan=False)
     if len(encoded.encode()) > 2 * 1024 * 1024:
+        # Derived histograms must not prevent opening an otherwise valid archive.
+        for measurement in measurements:
+            if measurement['kind'] == 'sample':
+                measurement.pop('batches', None)
+        compiled['measurement_qubits'] = count_wires
+        encoded = json.dumps(payload, allow_nan=False)
+    if len(encoded.encode()) > 2 * 1024 * 1024:
         raise ValueError('Experiment preview exceeds 2 MiB; use the SDK to inspect this file.')
     return payload
+
+
+def sample_histograms(value, width):
+    """Aggregate complete saved shots, never the truncated tensor preview."""
+    import torch
+    if (not isinstance(value, torch.Tensor) or value.ndim != 3
+            or value.shape[2] != width or not 1 <= width <= 16
+            or not 1 <= value.shape[0] <= 64 or value.shape[1] < 1 or value.numel() > 16 * 1024 * 1024):
+        return None
+    samples = value.detach().cpu()
+    if not bool(((samples == 0) | (samples == 1)).all()):
+        return None
+    batches, outcomes = [], 0
+    for batch in samples:
+        states, counts = torch.unique(batch, dim=0, return_counts=True, sorted=True)
+        outcomes += len(states)
+        if outcomes > 65536:
+            return None
+        batches.append([{'state':''.join(str(int(bit)) for bit in row), 'key_type':'string', 'count':int(count)}
+                        for row, count in zip(states.tolist(), counts.tolist())])
+    return batches
 
 
 def plain(value, depth=0):

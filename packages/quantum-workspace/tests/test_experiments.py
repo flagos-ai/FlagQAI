@@ -107,6 +107,56 @@ class ExperimentTests(unittest.TestCase):
         self.assertIsInstance(angle, (int, float))
         self.assertAlmostEqual(angle, .5)
 
+    def test_complete_saved_samples_are_aggregated_before_preview_truncation_and_legacy_upgrade(self):
+        import torch
+        from flagquantum.runtime.result import MeasurementResult
+        samples = torch.tensor([[[0, 1]] * 700 + [[1, 0]] * 324, [[1, 1]] * 1024])
+        measurement = MeasurementResult(kind='sample', qubits=(1, 0), shots=1024, value=samples)
+        result = replace(self.result, measurements=(measurement,))
+        path = self.root / 'samples.fqx'; fq.save(path, self.program, result=result)
+        record = self.imports.import_file(path.read_bytes(), 'samples.fqx')
+        info = record['program']['experiment']; projected = info['measurements'][0]
+        self.assertTrue(projected['value']['truncated'])
+        self.assertEqual(projected['kind'], 'sample')
+        self.assertEqual(projected['qubits'], [1, 0])
+        self.assertEqual(projected['batches'][0], [{'state':'01','key_type':'string','count':700}, {'state':'10','key_type':'string','count':324}])
+        self.assertEqual(projected['batches'][1], [{'state':'11','key_type':'string','count':1024}])
+        self.assertEqual(record['job']['result']['shots'], 1024)
+        for target in (info, record['job']['experiment']):
+            target.pop('sample_histogram_version', None)
+            for row in target['measurements']: row.pop('batches', None)
+        record['job']['result'].update(counts={}, shots=0)
+        self.imports.store.put(record)
+        with patch.object(self.imports, '_project', wraps=self.imports._project) as project:
+            self.imports.records()
+            project.assert_not_called()
+            restored = self.imports.get(record['id'])
+            self.assertEqual(self.imports.get(record['id']), restored)
+            self.assertEqual(project.call_count, 1)
+        self.assertEqual(restored['job']['result']['counts'], {'01':700,'10':324})
+        self.assertEqual(restored['job']['result']['shots'], 1024)
+        self.assertEqual(self.imports.file(record['id']).read_bytes(), path.read_bytes())
+        self.assertEqual(self.compute.calls, [])
+
+    def test_real_sdk_sample_projection_does_not_run_or_sample(self):
+        import torch
+        result = fq.run(fq.Circuit(3).x(2), outputs=fq.samples([2, 0]),
+                        options=fq.ExecutionOptions(shots=1024, seed=42))
+        path = self.root / 'real-sample.fqx'
+        fq.save(path, result.plan, result=result)
+        spec = importlib.util.spec_from_file_location('sample_projection', Path(__file__).parents[1] / 'local/workspace_server/experiment_worker.py')
+        worker = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(worker)
+        with patch.object(fq, 'run', side_effect=AssertionError('must not run')), \
+             patch.object(torch, 'multinomial', side_effect=AssertionError('must not sample')):
+            measurement = worker.project(path)['experiment']['measurements'][0]
+            self.assertEqual(measurement['qubits'], [2, 0])
+            self.assertTrue(measurement['value']['truncated'])
+            self.assertEqual(measurement['batches'], [[{'state': '10', 'key_type': 'string', 'count': 1024}]])
+            self.assertIsNone(worker.sample_histograms(torch.tensor([[[2, 0]]]), 2))
+            self.assertIsNone(worker.sample_histograms(torch.zeros((1, 0, 2)), 2))
+            self.assertIsNone(worker.sample_histograms(torch.zeros((8, 2)), 2))
+
     def test_state_only_results_do_not_invent_counts_and_preview_truncation_is_explicit(self):
         import torch
         result = replace(self.result, measurements=(), state=torch.arange(2048, dtype=torch.float64))

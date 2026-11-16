@@ -17,6 +17,14 @@ from .research_results import attach_result
 MAX_UPLOAD_BYTES = 16 * 1024 * 1024
 
 
+def _first_counts(info):
+    # Prefer recorded counts for the compatibility field when both kinds exist.
+    measurements = sorted(info['measurements'], key=lambda row: row['kind'] != 'counts')
+    rows = next((row['batches'][0] for row in measurements if row.get('batches')), [])
+    return {(row['state'] + ' (integer)' if row['key_type'] == 'integer' else row['state']): row['count']
+            for row in rows}
+
+
 class ExperimentImports:
     def __init__(self, settings):
         self.settings = settings
@@ -36,16 +44,32 @@ class ExperimentImports:
             info = record['program'].get('experiment', {})
             # Upgrade only the selected legacy record, from its saved archive.
             # A bounded amplitude prefix must never masquerade as a full state.
-            if info.get('state') is not None and 'state_distribution' not in info:
+            needs_state = info.get('state') is not None and 'state_distribution' not in info
+            needs_samples = ('sample_histogram_version' not in info
+                             and any(row['kind'] == 'sample' for row in info.get('measurements', [])))
+            if needs_state or needs_samples:
                 try:
                     path = self.root / (identity + '.fqx')
                     if sha256(path.read_bytes()).hexdigest() != info.get('sha256'):
                         raise ValueError('Saved archive no longer matches the imported result.')
                     projected = self._project(path)
-                    distribution = projected['experiment'].get('state_distribution')
-                    info['state_distribution'] = distribution
-                    if record.get('job'):
-                        record['job']['experiment']['state_distribution'] = distribution
+                    job = record.get('job')
+                    if needs_state:
+                        distribution = projected['experiment'].get('state_distribution')
+                        info['state_distribution'] = distribution
+                        if job:
+                            job['experiment']['state_distribution'] = distribution
+                    if needs_samples:
+                        info.update(measurements=projected['experiment']['measurements'],
+                                    sample_histogram_version=1)
+                        wires = projected['compiled']['measurement_qubits']
+                        record['program']['compiled']['measurement_qubits'] = wires
+                        if job:
+                            job['experiment'].update(measurements=info['measurements'], sample_histogram_version=1)
+                            counts = _first_counts(info)
+                            shots = sum(counts.values())
+                            job['result'].update(counts=counts, shots=shots, measurement_qubits=wires)
+                            job['request']['shots'] = shots
                     self.store.put(record)
                 except (OSError, ValueError, subprocess.SubprocessError):
                     pass  # Keep the original recorded values and failure trace.
@@ -116,8 +140,7 @@ class ExperimentImports:
             if python_run is not None and python_run.get('project'): info['python_run']['project'] = python_run['project']
             record = {'id': identity, 'status': 'imported', 'program': program}
             if info['has_result']:
-                counts = next((m['batches'][0] for m in info['measurements'] if m.get('batches')), [])
-                values = {(r['state'] + ' (integer)' if r['key_type'] == 'integer' else r['state']): r['count'] for r in counts}
+                values = _first_counts(info)
                 shots = sum(values.values())
                 plan = info.get('execution_plan') or {}
                 options = plan.get('resolved_options') or {}
