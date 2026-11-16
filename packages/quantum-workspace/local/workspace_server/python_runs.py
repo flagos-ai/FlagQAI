@@ -97,6 +97,29 @@ with tempfile.TemporaryDirectory(prefix='fq-sdk-preflight-') as directory:
             self.preflight_lock.release()
         return None
 
+    def inspect_sdk(self):
+        """Describe the configured SDK without creating a run or accepting code."""
+        from .sdk_inspection import PROBE
+        if not self.preflight_lock.acquire(blocking=False):
+            raise ValueError('An SDK check is already running. Retry when it finishes.')
+        try:
+            with tempfile.TemporaryFile() as output:
+                subprocess.run(self.command(PROBE), timeout=20, check=True,
+                               stdin=subprocess.DEVNULL, stdout=output, stderr=subprocess.DEVNULL)
+                output.seek(0)
+                raw = output.read(65537)
+            if len(raw) > 65536:
+                raise ValueError('SDK inspection exceeded the response limit.')
+            value = json.loads(raw.decode().strip().splitlines()[-1])
+            if not isinstance(value, dict) or not isinstance(value.get('apis'), dict):
+                raise ValueError('SDK inspection returned an invalid report.')
+        except (OSError, RuntimeError, subprocess.SubprocessError, ValueError, IndexError) as error:
+            raise ValueError('Cannot inspect the selected FlagQuantum SDK. Check the compute environment; no experiment was submitted.') from error
+        finally:
+            self.preflight_lock.release()
+        return {**value, 'environment': self.environment(),
+                'scope': 'Read-only API introspection; no circuit executed or experiment submitted.'}
+
     def submit_project(self, data):
         bundle = self.projects.snapshot(data.get('project_id'), data.get('entry'),
             source=data.get('source'), expected_revision=data.get('expected_revision'), expected_hash=data.get('expected_hash'))

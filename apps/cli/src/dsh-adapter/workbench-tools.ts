@@ -67,10 +67,10 @@ export function createWorkbenchTools(
     }
   }
   return [
-    tool('workbench_inspect', 'Read authoritative workbench state, browser draft, shared model, Python run, saved experiment or project. Run/experiment evidence defaults to a compact projection with explicit truncation indicators. Use detail=full when more data is needed, instead of shell inspection, archive extraction or guessing file formats.',
-      schema({ resource: { type: 'string', enum: ['workspace', 'draft', 'model', 'run', 'experiment', 'project'] }, id: string, detail: { type: 'string', enum: ['summary', 'full'] } }, ['resource']),
+    tool('workbench_inspect', 'Read authoritative workbench state, browser draft, shared model, Python run, saved experiment, project or installed SDK. workspace identifies the selected Python interpreter; sdk reads its API signatures and documentation without running an experiment. Run/experiment evidence defaults to a compact projection with explicit truncation indicators. Use detail=full when more data is needed, instead of shell inspection, archive extraction or guessing file formats.',
+      schema({ resource: { type: 'string', enum: ['workspace', 'sdk', 'draft', 'model', 'run', 'experiment', 'project'] }, id: string, detail: { type: 'string', enum: ['summary', 'full'] } }, ['resource']),
       async (input, signal) => {
-        const operations: Record<string, [string, string]> = { workspace: ['status', ''], draft: ['draft.read', ''], model: ['model.read', 'model_id'], run: ['python.read', 'run_id'], experiment: ['experiment.read', 'experiment_id'], project: ['project.inspect', 'project_id'] }
+        const operations: Record<string, [string, string]> = { workspace: ['status', ''], sdk: ['sdk.inspect', ''], draft: ['draft.read', ''], model: ['model.read', 'model_id'], run: ['python.read', 'run_id'], experiment: ['experiment.read', 'experiment_id'], project: ['project.inspect', 'project_id'] }
         const [op, key] = operations[input.resource]
         if (key && !input.id) throw new Error('This resource requires an id.')
         const target = binding()
