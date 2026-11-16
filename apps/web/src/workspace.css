@@ -7660,3 +7660,34 @@ body,
 .fq-state-result .fq-job-table-scroll {
   max-height: 460px;
 }
+
+.fq-comparison-findings .fq-comparison-resource-table :is(th, td) {
+  padding: 4px 8px;
+}
+
+/* Keep detailed gate positions readable even for large groups. */
+.fq-comparison-change-details {
+  margin-top: 8px;
+}
+.fq-comparison-change-details summary {
+  cursor: pointer;
+}
+.fq-operation-changes {
+  max-height: 240px;
+  overflow: auto;
+  margin-top: 8px;
+}
+.fq-operation-changes h4 {
+  margin: 0 0 6px;
+}
+.fq-operation-changes td {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+.fq-operation-changes code {
+  display: block;
+}
+.fq-comparison-distribution-summary span,
+.fq-comparison-distribution-summary small {
+  margin-left: 8px;
+}

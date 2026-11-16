@@ -2144,11 +2144,33 @@ test("comparison task opens a durable side-by-side experiment with real gate and
   await expect(comparison).toBeVisible({ timeout: 90000 });
   await expect(
     comparison.getByRole("heading", {
-      name: "1 added · 0 removed operations",
+      name: "1 more operation · same qubit count",
       exact: true,
     }),
   ).toBeVisible();
-  await expect(comparison).toContainText("+ X on q1");
+  const gateChanges = comparison.getByText(
+    "Gate changes · 1 added · 0 removed operations",
+    { exact: true },
+  );
+  const added = comparison.getByRole("region", { name: "Added in B" });
+  await expect(added).toBeHidden();
+  await gateChanges.focus();
+  await gateChanges.press("Enter");
+  await expect(added).toBeVisible();
+  await expect(added.getByRole("row").last()).toContainText("+ X on q1");
+  await expect(
+    added.getByRole("row").last().getByRole("cell").last(),
+  ).toHaveText(/^#\d+$/);
+  const resources = comparison.getByRole("table", {
+    name: "Circuit resource comparison",
+  });
+  await expect(
+    resources
+      .getByRole("row", { name: /Operations/ })
+      .getByRole("cell")
+      .last(),
+  ).toHaveText("+1");
+  await gateChanges.click();
   await expect(comparison).toContainText("100.0%");
   await expect(
     page.getByRole("region", { name: "Experiment progress" }),
@@ -2352,7 +2374,7 @@ test("comparison task opens a durable side-by-side experiment with real gate and
     .click();
   await expect(
     comparison.getByRole("heading", {
-      name: "0 added · 1 removed operations",
+      name: "1 fewer operation · same qubit count",
       exact: true,
     }),
   ).toBeVisible();
