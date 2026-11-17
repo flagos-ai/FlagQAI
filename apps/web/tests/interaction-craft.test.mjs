@@ -55,6 +55,16 @@ test("run feedback never presents a previous run or a stop request as confirmed 
   );
   assert.equal(pythonRunFeedback({}).label, "Ready");
 });
+test("completed runs distinguish available console output from blank logs", () => {
+  const run = { id: "a", status: "completed" };
+  const feedback = (logs) =>
+    pythonRunFeedback({ selectedId: run.id, run: { ...run, logs } });
+  assert.match(feedback([{ text: "   " }]).message, /without console output/);
+  assert.match(
+    feedback([{ text: "  " }, { text: "result: 0.625" }]).message,
+    /with console output/,
+  );
+});
 test("Jobs view preferences survive remounts, stay scoped by result and clamp stale indices", () => {
   const values = new Map(),
     storage = {
