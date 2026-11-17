@@ -689,12 +689,17 @@ test("scripted Agent streams tools, survives lost receipt + refresh, and protect
     expect(restored.ok).toBeTruthy();
   }
   try {
-    await expect(
-      page.locator(".fq-agent-work-live .fq-cli-tool").first(),
-    ).toBeVisible();
-    await expect(page.locator(".fq-agent-work-live")).toContainText(
-      "python.read",
-    );
+    const work = page.locator(".fq-agent-work-live");
+    const summary = work.locator(":scope > summary");
+    const tool = work.locator(".fq-cli-tool").first();
+    await expect(summary).toContainText("Work details");
+    await expect(work).not.toHaveAttribute("open");
+    await expect(tool).toBeHidden();
+    await summary.press("Enter");
+    await expect(tool).toBeVisible();
+    await expect(work).toContainText("python.read");
+    await summary.press("Enter");
+    await expect(tool).toBeHidden();
   } finally {
     await rm(hold, { force: true });
   }

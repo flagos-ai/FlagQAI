@@ -3409,7 +3409,7 @@ body,
   outline-offset: 1px;
 }
 
-/* Completed work remains available without competing with the final answer. */
+/* Work details stay available while the primary conversation stays in view. */
 .fq-agent-work {
   margin: 12px 0 16px;
   min-width: 0;

@@ -149,15 +149,18 @@ export function currentTurnActivity(
     | undefined,
 ) {
   if (!turn?.active) return "";
+  let lastTool = "";
   for (let index = turn.rows.length - 1; index >= 0; index--) {
     const row = turn.rows[index];
     if (row.kind !== "tool" || !row.tool?.name) continue;
     if (row.tool.status === "running" || row.tool.status === "pending")
       return row.tool.name;
+    if (!lastTool && ["ok", "error"].includes(row.tool.status))
+      lastTool = `Last tool · ${row.tool.name}`;
   }
   return (
     turn.progress?.todos?.find((item) => item.status === "in_progress")
-      ?.content || ""
+      ?.content || lastTool
   );
 }
 

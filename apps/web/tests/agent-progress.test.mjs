@@ -294,7 +294,7 @@ test("the footer always shows a gray idle dot or a colored parallel count", () =
   assert.match(active, /<span aria-hidden="true">2<\/span>/);
 });
 
-test("live activity uses the latest current tool or in-progress task", () => {
+test("live activity uses the running tool, current task or last recorded tool", () => {
   const read = { kind: "tool", tool: { name: "Read", status: "running" } };
   const run = { kind: "tool", tool: { name: "Bash", status: "running" } };
   const settled = { kind: "tool", tool: { name: "Write", status: "ok" } };
@@ -315,6 +315,10 @@ test("live activity uses the latest current tool or in-progress task", () => {
   assert.equal(
     currentTurnActivity({ active: false, rows: [read], progress }),
     "",
+  );
+  assert.equal(
+    currentTurnActivity({ active: true, rows: [settled] }),
+    "Last tool · Write",
   );
   assert.equal(currentTurnActivity({ active: true, rows: [] }), "");
   assert.equal(currentTurnActivity(undefined), "");

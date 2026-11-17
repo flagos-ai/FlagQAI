@@ -534,6 +534,7 @@ export function AgentTranscript({
               </div>
             );
             // Keep the final answer and all actionable notices outside the fold.
+            const workRows = turn.work.filter((row) => row.kind !== "subagent");
             const question = turn.visible.filter((row) => row.kind === "user");
             const remaining = turn.visible.filter((row) => row.kind !== "user");
             const duration = workDuration(turn.durationMs);
@@ -580,79 +581,81 @@ export function AgentTranscript({
                   onPrepare={onPrepare}
                   researchTurns={researchTurns}
                 />
-                {(turn.work.length > 0 || hasProgress || actions.length > 0) &&
-                  (live ? (
-                    <div className="fq-agent-work-live">
-                      {progressPanel}
-                      {turn.work
-                        .filter((row) => row.kind !== "subagent")
-                        .map(renderRow)}
-                    </div>
-                  ) : (
-                    <details
-                      className="fq-agent-work"
-                      onToggle={(event) => {
-                        const details = event.currentTarget;
-                        if (restoringDetails.current === details) {
-                          restoringDetails.current = null;
-                          return;
-                        }
-                        if (!details.open) {
-                          savePosition(unreadReply);
-                          return;
-                        }
-                        const node = viewport.current;
-                        const header = details.firstElementChild;
-                        if (!node || !header) return;
-                        const visible = node.getBoundingClientRect();
-                        const heading = header.getBoundingClientRect();
-                        const previewBottom = Math.min(
-                          details.getBoundingClientRect().bottom,
-                          heading.bottom + 96,
-                        );
-                        // Keep the disclosure heading below the pinned question.
-                        const reveal = Math.min(
-                          previewBottom - visible.bottom + 12,
-                          heading.top - visible.top - 40,
-                        );
-                        if (reveal > 0) node.scrollTop += reveal;
-                        measure();
+                {live && progressPanel}
+                {(workRows.length > 0 ||
+                  (!live && (hasProgress || actions.length > 0))) && (
+                  <details
+                    className={
+                      live
+                        ? "fq-agent-work fq-agent-work-live"
+                        : "fq-agent-work"
+                    }
+                    onToggle={(event) => {
+                      const details = event.currentTarget;
+                      if (restoringDetails.current === details) {
+                        restoringDetails.current = null;
+                        return;
+                      }
+                      if (!details.open) {
                         savePosition(unreadReply);
+                        return;
+                      }
+                      const node = viewport.current;
+                      const header = details.firstElementChild;
+                      if (!node || !header) return;
+                      const visible = node.getBoundingClientRect();
+                      const heading = header.getBoundingClientRect();
+                      const previewBottom = Math.min(
+                        details.getBoundingClientRect().bottom,
+                        heading.bottom + 96,
+                      );
+                      // Keep the disclosure heading below the pinned question.
+                      const reveal = Math.min(
+                        previewBottom - visible.bottom + 12,
+                        heading.top - visible.top - 40,
+                      );
+                      if (reveal > 0) node.scrollTop += reveal;
+                      measure();
+                      savePosition(unreadReply);
+                    }}
+                  >
+                    <summary
+                      onClick={() => {
+                        follow.current = false;
                       }}
                     >
-                      <summary
-                        onClick={() => {
-                          follow.current = false;
-                        }}
-                      >
-                        <span>Worked{duration ? " for " + duration : ""}</span>
-                        <span className="fq-agent-work-count">
-                          {turn.toolCount > 0
-                            ? `${turn.toolCount} tool ${turn.toolCount === 1 ? "call" : "calls"}`
-                            : hasProgress || actions.length > 0
-                              ? "Task activity"
-                              : "Thought"}
-                        </span>
-                        {turn.outcome && turn.outcome !== "completed" && (
+                      <span>
+                        {live
+                          ? "Work details"
+                          : "Worked" + (duration ? " for " + duration : "")}
+                      </span>
+                      <span className="fq-agent-work-count">
+                        {turn.toolCount > 0
+                          ? `${turn.toolCount} tool ${turn.toolCount === 1 ? "call" : "calls"}`
+                          : hasProgress || actions.length > 0
+                            ? "Task activity"
+                            : "Thought"}
+                      </span>
+                      {!live &&
+                        turn.outcome &&
+                        turn.outcome !== "completed" && (
                           <span>
                             {turn.outcome === "error"
                               ? "Failed"
                               : "Interrupted"}
                           </span>
                         )}
-                        <svg aria-hidden="true" viewBox="0 0 16 16">
-                          <path d="m6 4 4 4-4 4" />
-                        </svg>
-                      </summary>
-                      <div className="fq-agent-work-body">
-                        {progressPanel}
-                        {turn.work
-                          .filter((row) => row.kind !== "subagent")
-                          .map(renderRow)}
-                        {workspaceActivity}
-                      </div>
-                    </details>
-                  ))}
+                      <svg aria-hidden="true" viewBox="0 0 16 16">
+                        <path d="m6 4 4 4-4 4" />
+                      </svg>
+                    </summary>
+                    <div className="fq-agent-work-body">
+                      {!live && progressPanel}
+                      {workRows.map(renderRow)}
+                      {!live && workspaceActivity}
+                    </div>
+                  </details>
+                )}
                 {remaining.map(renderRow)}
                 {live && workspaceActivity}
               </div>
