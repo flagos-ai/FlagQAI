@@ -23,6 +23,7 @@ from .invsqrt_evidence import read_export
 from .research_runs import list_research_runs, read_research_run
 from .research_baseline import update_baseline
 from .research_candidates import propose_candidate
+from .research_execution import decide_candidate
 from .reproduction import Reproductions
 from .projects import ProjectConflict
 
@@ -303,13 +304,13 @@ def create_server(settings, service):
             if not self.allowed():
                 return self.reply({'error': 'Only local same-origin access is allowed.'}, 403)
             research_action = re.fullmatch(
-                r'/api/research-runs/(invsqrt-[a-f0-9]{32})/(baseline|revision)', self.path,
+                r'/api/research-runs/(invsqrt-[a-f0-9]{32})/(baseline|revision|decision)', self.path,
             )
             if research_action:
                 identity, action = research_action.groups()
                 try:
                     length = int(self.headers.get('Content-Length', '0'))
-                    limit = 4096 if action == 'baseline' else 262144
+                    limit = 262144 if action == 'revision' else 4096
                     if self.headers.get('Content-Type', '').split(';')[0] != 'application/json' or not 0 < length <= limit:
                         raise ValueError('Use bounded JSON for research changes.')
                     data = json.loads(self.rfile.read(length))
@@ -318,6 +319,10 @@ def create_server(settings, service):
                 try:
                     if action == 'baseline':
                         return self.reply({'baseline': update_baseline(settings, identity, data)})
+                    if action == 'decision':
+                        runtime = environments.snapshot() if environments else settings
+                        decide_candidate(runtime, identity, data)
+                        return self.reply({'run': read_research_run(settings, identity)})
                     return self.reply(propose_candidate(settings, identity, data))
                 except ValueError as error:
                     return self.reply({'error': str(error)}, 409)
