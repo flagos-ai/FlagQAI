@@ -1,6 +1,7 @@
 import { parameterValue } from "../state/circuit-scene";
 import { CircuitSources } from "./CircuitSources";
 import { SynthesisComparison } from "./SynthesisEvidence";
+import { programSynthesis } from "../state/synthesis-evidence";
 import { ComparisonFindings } from "./ComparisonFindings";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
@@ -339,6 +340,10 @@ export function ExperimentComparison({
     right = records.find((record) => record.id === pair.right);
   const lm = left?.job ? comparisonMeasurements(left.job) : [],
     rm = right?.job ? comparisonMeasurements(right.job) : [];
+  const leftSynthesis = left ? programSynthesis(left.program) : null;
+  const rightSynthesis = right ? programSynthesis(right.program) : null;
+  const namedOnly =
+    !lm.length && !rm.length && !!leftSynthesis && !!rightSynthesis;
   const a = lm[leftMeasure],
     b = rm[rightMeasure];
   const warning =
@@ -422,9 +427,12 @@ export function ExperimentComparison({
                 diff={diff}
                 comparison={comparison}
                 warning={warning}
+                namedOnly={namedOnly}
               />
             )}
-            {left && right && <SynthesisComparison left={left} right={right} />}
+            {left && right && (
+              <SynthesisComparison a={leftSynthesis} b={rightSynthesis} />
+            )}
             <div className="fq-comparison-grid">
               {[
                 {
@@ -500,28 +508,32 @@ export function ExperimentComparison({
                         Open circuit <UIIcon name="arrow" size={12} />
                       </button>
                     </div>
-                    <label>
-                      Recorded measurement
-                      <select
-                        aria-label={
-                          index ? "Variant measurement" : "Baseline measurement"
-                        }
-                        value={side.selected}
-                        onChange={(event) =>
-                          side.select(Number(event.target.value))
-                        }
-                      >
-                        {side.measures.map((item, i) => (
-                          <option value={i} key={i}>
-                            {item.measurement.kind} · q[
-                            {item.measurement.qubits.join(", ")}] · batch{" "}
-                            {item.batch + 1}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                    {!namedOnly && (
+                      <label>
+                        Recorded measurement
+                        <select
+                          aria-label={
+                            index
+                              ? "Variant measurement"
+                              : "Baseline measurement"
+                          }
+                          value={side.selected}
+                          onChange={(event) =>
+                            side.select(Number(event.target.value))
+                          }
+                        >
+                          {side.measures.map((item, i) => (
+                            <option value={i} key={i}>
+                              {item.measurement.kind} · q[
+                              {item.measurement.qubits.join(", ")}] · batch{" "}
+                              {item.batch + 1}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
                     {!measurement || !total ? (
-                      <p>No non-empty counts batch saved.</p>
+                      !namedOnly && <p>No non-empty counts batch saved.</p>
                     ) : (
                       <>
                         <div
