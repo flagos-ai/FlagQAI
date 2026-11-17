@@ -10,6 +10,8 @@ import type { Model, WorkspaceAction } from "../contracts/quantum-workspace";
 import {
   pythonExamples as examples,
   interpretPythonPrompt as interpretPrompt,
+  circuitExampleCaption,
+  openCircuitExample,
 } from "../state/python-templates";
 
 export function ModelLibrary({
@@ -177,16 +179,17 @@ export function ModelLibrary({
                 <button
                   className="fq-library-card"
                   key={m.name}
-                  onClick={() => onSelect(m)}
+                  onClick={() => onSelect(openCircuitExample(m))}
                 >
                   <span className="fq-library-title">
                     <UIIcon name="file" size={14} />
                     {m.name}
                   </span>
                   <small>
-                    {m.name.includes("Arithmetic")
-                      ? "Superposition · res = 3x + 2"
-                      : "Python · Quantum circuit"}
+                    {circuitExampleCaption(m) ??
+                      (m.name.includes("Arithmetic")
+                        ? "Superposition · res = 3x + 2"
+                        : "Python · Quantum circuit")}
                   </small>
                 </button>
               ))}

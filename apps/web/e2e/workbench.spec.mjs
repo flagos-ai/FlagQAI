@@ -109,11 +109,18 @@ for (const [name, states] of [
     });
     if ((await agent.getAttribute("aria-expanded")) === "true")
       await agent.click();
+    if (name === "X State") {
+      await editor(page).fill(draft);
+      await expect(
+        page.getByRole("button", { name: /^X State/ }),
+      ).toContainText("predict its measurement");
+    }
     await page
       .getByRole("button", {
         name: new RegExp("^" + name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
       })
       .click();
+    if (states) await expect(editor(page)).toHaveValue(/^# Predict: /);
     const run = await runPython(page);
     expect(run.status, JSON.stringify(run)).toBe("completed");
     expect(run.collection_status).toBe("completed");
@@ -148,6 +155,41 @@ for (const [name, states] of [
     await expect(
       results.getByRole("link", { name: "Download original .fqx ↓" }),
     ).toHaveAttribute("href", `/api/experiments/${record.id}/file`);
+    if (name === "X State") {
+      await page.getByRole("button", { name: "MODEL", exact: true }).click();
+      await expect(editor(page)).toHaveValue(/# Try: Remove circuit\.x\(0\)/);
+      const variation = await runPython(
+        page,
+        run.source
+          .replace("\ncircuit.x(0)\n", "\n")
+          .replace('"x-state.fqx"', '"x-state-no-x.fqx"'),
+      );
+      const changed = await savedRecord(page, variation);
+      expect(changed.job.result.counts).toEqual({ 0: 1024 });
+      expect((await savedRecord(page, run)).job.result.counts).toEqual({
+        1: 1024,
+      });
+      await page.getByRole("button", { name: "JOBS", exact: true }).click();
+      for (const job of [record.job, changed.job]) {
+        await page
+          .getByRole("checkbox", { name: `Compare ${job.name}`, exact: true })
+          .check();
+      }
+      await page
+        .getByRole("button", { name: "Compare 2 / 2", exact: true })
+        .click();
+      await expect(
+        page.getByRole("region", { name: "Experiment comparison" }),
+      ).toBeVisible();
+      expect(
+        await page.evaluate((source) => {
+          const saved = JSON.parse(
+            localStorage.getItem("fq-react-workspace-v1"),
+          );
+          return saved.models.some((model) => model.source === source);
+        }, draft),
+      ).toBe(true);
+    }
   });
 }
 
