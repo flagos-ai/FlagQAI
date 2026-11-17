@@ -10,6 +10,13 @@ test("a saved return value opens by default when it is the only result", async (
   const draft = "# Keep this unsaved model\nprint('retain')\n";
   await editor.fill(draft);
 
+  async function runIds() {
+    const response = await page.request.get("/api/python/runs");
+    expect(response.ok()).toBeTruthy();
+    return (await response.json()).map(({ id }) => id).sort();
+  }
+
+  const before = await runIds();
   const submitted = await page.request.post("/api/python/runs", {
     data: {
       name: "Save return values",
@@ -73,9 +80,7 @@ fq.save("value-only.fqx", state.plan, result=value_only)
 
   await page.reload();
   await expect(returnedValue.locator("pre")).toContainText("0.625");
-  const runsResponse = await page.request.get("/api/python/runs");
-  expect(runsResponse.ok()).toBeTruthy();
-  expect((await runsResponse.json()).map((run) => run.id)).toEqual([id]);
+  expect(await runIds()).toEqual([...before, id].sort());
   await page.getByRole("button", { name: "MODEL", exact: true }).click();
   await expect(editor).toHaveValue(draft);
 });
