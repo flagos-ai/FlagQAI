@@ -2547,6 +2547,21 @@ body,
   font-size: 10px;
   color: #97a4b5;
 }
+.fq-agent-live-status {
+  display: flex;
+  min-width: 0;
+  gap: inherit;
+  align-items: center;
+}
+.fq-agent-live-status > span:not(.fq-agent-live-activity),
+.fq-agent-live-time {
+  flex-shrink: 0;
+}
+.fq-agent-live-time {
+  margin-inline-start: auto;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 .fq-agent-live-activity {
   min-width: 0;
   overflow: hidden;
