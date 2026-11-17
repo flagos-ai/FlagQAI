@@ -1,12 +1,10 @@
-import type {
-  ExperimentImport,
-  ProgramSnapshot,
-} from "../contracts/quantum-workspace";
+import type { ProgramSnapshot } from "../contracts/quantum-workspace";
 import {
   compareSynthesis,
   programSynthesis,
   synthesisIteration,
   synthesisModules,
+  type SynthesisEvidence,
 } from "../state/synthesis-evidence";
 
 export function SynthesisEvidenceCard({
@@ -121,14 +119,12 @@ export function SynthesisEvidenceCard({
 }
 
 export function SynthesisComparison({
-  left,
-  right,
+  a,
+  b,
 }: {
-  left: ExperimentImport;
-  right: ExperimentImport;
+  a: SynthesisEvidence | null;
+  b: SynthesisEvidence | null;
 }) {
-  const a = programSynthesis(left.program),
-    b = programSynthesis(right.program);
   if (!a && !b) return null;
   const compared = a && b ? compareSynthesis(a, b) : null;
   const iteration =

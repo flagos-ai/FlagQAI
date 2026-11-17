@@ -67,12 +67,14 @@ export function ComparisonFindings({
   diff,
   comparison,
   warning,
+  namedOnly,
 }: {
   left: ExperimentImport;
   right: ExperimentImport;
   diff: ReturnType<typeof circuitDifference>;
   comparison: ReturnType<typeof compareDistributions>;
   warning: string | null;
+  namedOnly: boolean;
 }) {
   const a = left.program.compiled,
     b = right.program.compiled;
@@ -121,7 +123,12 @@ export function ComparisonFindings({
           ))}
         </tbody>
       </table>
-      {warning ? (
+      {namedOnly ? (
+        <p>
+          See the synthesis report for the recorded named probabilities. No
+          saved sample distributions are available.
+        </p>
+      ) : warning ? (
         <p role="status">{warning}</p>
       ) : comparison ? (
         <p className="fq-comparison-distribution-summary">

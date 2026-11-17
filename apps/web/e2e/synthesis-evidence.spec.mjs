@@ -127,6 +127,24 @@ test("synthesis reports show recorded constraints, named outputs and actual reso
     );
     await expect(comparison).toContainText("+113 operations");
     await expect(comparison).toContainText("+61 depth");
+    const results = page.getByRole("region", {
+      name: "Experiment comparison",
+      exact: true,
+    });
+    await expect(
+      results.getByText(
+        "See the synthesis report for the recorded named probabilities.",
+        { exact: false },
+      ),
+    ).toBeVisible();
+    await expect(
+      results.getByRole("combobox", {
+        name: /^(Baseline|Variant) measurement$/,
+      }),
+    ).toHaveCount(0);
+    await expect(
+      results.getByText("No non-empty counts batch saved."),
+    ).toHaveCount(0);
   }
   await verifyDraftAndCount(page, draft, ids);
 });
