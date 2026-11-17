@@ -151,6 +151,17 @@ export function EditorSyncBar({
                             : "Watching Agent file · Live sync"
                 : "Share a model file to see Agent edits here")}
         </span>
+        {state.agentDraft && (
+          <button
+            title={`Return to ${state.agentDraft.name}`}
+            onClick={() => {
+              dispatch({ type: "return-agent-draft" });
+              setReview(null);
+            }}
+          >
+            Return to draft
+          </button>
+        )}
         {link ? (
           <>
             {(link.incoming || change) && (

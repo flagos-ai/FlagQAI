@@ -29,6 +29,7 @@ export async function platformNavigation(
   action: PlatformAction,
   state: WorkspaceState,
   readers: Readers,
+  automatic = false,
 ): Promise<WorkspaceAction[]> {
   const result = action.result;
   if (!result) return [];
@@ -56,6 +57,7 @@ export async function platformNavigation(
   if (result.file && action.operation === "model.create")
     changes.push({
       type: "open-agent-model",
+      automatic,
       model: {
         name: result.name || "Agent model",
         source: result.file.source,

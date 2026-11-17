@@ -239,7 +239,18 @@ export type EditorLink = {
     outcome: "pending" | "accepted" | "kept" | "undone";
   };
 };
+export type AgentDraft = {
+  name: string;
+  source: string;
+  language: SourceLanguage;
+  undo: string[];
+  editorLink?: EditorLink;
+  pythonStyle?: PythonStyle;
+  projectTab?: string;
+};
+
 export type WorkspaceState = {
+  agentDraft?: AgentDraft;
   project?: ProjectInfo;
   projectTabs?: ProjectTab[];
   activeProjectTab?: string;
@@ -294,8 +305,10 @@ export type WorkspaceAction =
   | { type: "model-folder-move"; key: string; path: string }
   | { type: "python-run"; id: string }
   | { type: "add-agent-model"; model: Model }
+  | { type: "return-agent-draft" }
   | {
       type: "open-agent-model";
+      automatic?: boolean;
       model: Model;
       file: { id: string; path: string; source: string; revision: string };
     }

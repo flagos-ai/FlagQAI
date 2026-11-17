@@ -1,9 +1,12 @@
 import { normalizeModelFolder } from "./model-folders.ts";
+import { validPythonStyle } from "./python-style.ts";
 import {
   pythonExample,
   migrateLegacyPythonExample,
 } from "./python-workspace.ts";
 import type {
+  AgentDraft,
+  EditorLink,
   Model,
   ProgramSnapshot,
   WorkspaceState,
@@ -34,6 +37,37 @@ export function readJSON<T>(
     return fallback;
   }
 }
+function restoreEditorLink(link: EditorLink | undefined, name: string) {
+  return link &&
+    link.modelName === name &&
+    (/^[a-f0-9]{32}\.(?:qasm|py)$/.test(link.id) || !!link.project) &&
+    typeof link.base === "string" &&
+    typeof link.revision === "string"
+    ? link
+    : undefined;
+}
+
+function restoreAgentDraft(draft?: AgentDraft): AgentDraft | undefined {
+  if (
+    !draft ||
+    typeof draft.name !== "string" ||
+    typeof draft.source !== "string" ||
+    (draft.language !== "python" && draft.language !== "qasm") ||
+    !Array.isArray(draft.undo)
+  )
+    return undefined;
+  return {
+    name: draft.name,
+    source: draft.source,
+    language: draft.language,
+    undo: draft.undo.filter((source) => typeof source === "string").slice(-40),
+    editorLink: restoreEditorLink(draft.editorLink, draft.name),
+    pythonStyle: validPythonStyle(draft.pythonStyle),
+    projectTab:
+      typeof draft.projectTab === "string" ? draft.projectTab : undefined,
+  };
+}
+
 export function restoreWorkspace(
   storage: WorkspaceStorage,
   hash: string,
@@ -106,6 +140,7 @@ export function restoreWorkspace(
     ? hash
     : "model";
   return {
+    agentDraft: restoreAgentDraft(saved.agentDraft),
     project: saved.project,
     projectTabs: Array.isArray(saved.projectTabs)
       ? saved.projectTabs
@@ -134,15 +169,7 @@ export function restoreWorkspace(
     page: page as WorkspaceState["page"],
     name,
     source,
-    editorLink:
-      saved.editorLink &&
-      saved.editorLink.modelName === name &&
-      (/^[a-f0-9]{32}\.(?:qasm|py)$/.test(saved.editorLink.id) ||
-        !!saved.editorLink.project) &&
-      typeof saved.editorLink.base === "string" &&
-      typeof saved.editorLink.revision === "string"
-        ? saved.editorLink
-        : undefined,
+    editorLink: restoreEditorLink(saved.editorLink, name),
     programs,
     selectedProgramId:
       programs.some((p) => p.id === saved.selectedProgramId) ||
@@ -197,6 +224,7 @@ export function workspaceBackup(state: WorkspaceState) {
     activeProjectTab,
     projectScratch,
     editorLink,
+    agentDraft,
   } = state;
   return JSON.stringify({
     schema,
@@ -212,6 +240,7 @@ export function workspaceBackup(state: WorkspaceState) {
     pythonRunId,
     agentOpen,
     editorLink,
+    agentDraft,
     source,
     name,
     programs: programs.filter((program) => !program.experiment),

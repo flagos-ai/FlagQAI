@@ -5,7 +5,8 @@ import {
   shouldFollowTarget,
 } from "../src/state/platform-navigation.ts";
 import { workspaceReducer as reduce } from "../src/state/reducer.ts";
-import { restoreWorkspace } from "../src/state/persistence.ts";
+import { restoreWorkspace, workspaceBackup } from "../src/state/persistence.ts";
+import { backupDrafts } from "../src/state/backup-import.ts";
 const id = "fqx-" + "f".repeat(32);
 const record = {
   id,
@@ -141,4 +142,122 @@ test("already-loaded focus avoids redundant archive loads; failed loads cannot p
     }),
     /navigation target/,
   );
+});
+
+const createdModel = (name, source, number = "1") => ({
+  operation: "model.create",
+  result: {
+    name,
+    file: {
+      id: number.repeat(32) + ".py",
+      source,
+      revision: "v1",
+      path: "models/" + name + ".py",
+    },
+  },
+});
+const unusedReaders = {
+  experiment: async () => {
+    throw Error("Unexpected archive read");
+  },
+  job: async () => {
+    throw Error("Unexpected job read");
+  },
+};
+
+test("a followed model can return to the first draft after refresh without losing later manual edits", async () => {
+  const before = {
+    ...state(),
+    name: "Local experiment",
+    pythonStyles: { '["model","Local experiment"]': "synthesis" },
+    editorLink: {
+      id: "3".repeat(32) + ".py",
+      modelName: "Local experiment",
+      path: "models/local.py",
+      base: "original linked file",
+      revision: "local-v1",
+    },
+  };
+  const open = async (action, current, automatic) =>
+    (
+      await platformNavigation(action, current, unusedReaders, automatic)
+    ).reduce(reduce, current);
+  const action = createdModel("Agent first", "first source");
+  assert.equal((await open(action, before, false)).agentDraft, undefined);
+  const first = await open(action, before, true);
+  assert.equal(first.source, "first source");
+  assert.equal(first.agentDraft.source, before.source);
+  const second = await open(
+    createdModel("Agent second", "second source", "2"),
+    first,
+    true,
+  );
+  assert.equal(second.agentDraft.source, before.source);
+  const edited = reduce(second, { type: "edit", source: "my variant notes" });
+  const snapshot = workspaceBackup(edited);
+  assert.ok(
+    backupDrafts(snapshot).some(({ source }) => source === before.source),
+  );
+  const restored = restoreWorkspace(
+    { getItem: (key) => (key === "fq-react-workspace-v1" ? snapshot : null) },
+    "model",
+  );
+  const returned = reduce(restored, { type: "return-agent-draft" });
+  for (const field of [
+    "name",
+    "source",
+    "language",
+    "undo",
+    "editorLink",
+    "pythonStyles",
+  ])
+    assert.deepEqual(returned[field], before[field], field);
+  assert.equal(returned.agentDraft, undefined);
+  assert.ok(
+    returned.models.some(({ source }) => source === "my variant notes"),
+  );
+});
+
+test("returning to a project tab retains disk changes that arrived while following Agent code", async () => {
+  const project = {
+    id: "project",
+    name: "Project",
+    root: "/tmp/work",
+    path: "work",
+  };
+  const file = {
+    id: "project-file",
+    path: "main.py",
+    workspace_path: "/tmp/work/main.py",
+    source: "on disk",
+    revision: "v1",
+    project: { id: project.id, path: "main.py" },
+  };
+  let current = reduce(state(), { type: "project-open-file", project, file });
+  current = reduce(current, { type: "edit", source: "my project changes" });
+  const changes = await platformNavigation(
+    createdModel("Agent experiment", "Agent code"),
+    current,
+    unusedReaders,
+    true,
+  );
+  current = changes.reduce(reduce, current);
+  assert.equal(current.activeProjectTab, undefined);
+  current = reduce(current, {
+    type: "project-file-update",
+    file: { ...file, source: "updated on disk", revision: "v2" },
+  });
+  const snapshot = workspaceBackup(current);
+  current = restoreWorkspace(
+    { getItem: (key) => (key === "fq-react-workspace-v1" ? snapshot : null) },
+    "model",
+  );
+  current = reduce(current, { type: "return-agent-draft" });
+  assert.equal(current.activeProjectTab, file.id);
+  assert.equal(current.source, "my project changes");
+  assert.deepEqual(current.editorLink.incoming, {
+    source: "updated on disk",
+    revision: "v2",
+  });
+  assert.deepEqual(current.undo, ["on disk"]);
 });

@@ -58,12 +58,18 @@ export function usePlatformBridge(
   followRef.current = follow;
   const session = agent.session?.sessionId;
   const turnSeq = agent.view.lastUserSeq;
-  const open = async (action: PlatformAction, allowed = () => true) => {
+  const open = async (
+    action: PlatformAction,
+    allowed = () => true,
+    automatic = false,
+  ) => {
     try {
-      const changes = await platformNavigation(action, current.current, {
-        experiment: readExperiment,
-        job: quantumAPI.job,
-      });
+      const changes = await platformNavigation(
+        action,
+        current.current,
+        { experiment: readExperiment, job: quantumAPI.job },
+        automatic,
+      );
       if (allowed()) for (const change of changes) dispatch(change);
     } catch (problem) {
       if (!allowed()) return;
@@ -296,6 +302,7 @@ export function usePlatformBridge(
               !controller.signal.aborted &&
               followRef.current &&
               shouldFollowTarget(current.current, selected),
+            true,
           );
         if (records.length)
           setActions((previous) => {

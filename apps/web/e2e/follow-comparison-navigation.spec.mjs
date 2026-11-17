@@ -133,9 +133,31 @@ for name, circuit in (
   await page.getByRole("button", { name: "JOBS", exact: true }).click();
   await expect(comparison).toBeVisible();
   await page.getByRole("button", { name: "MODEL", exact: true }).click();
+  const edited = source + "# My notes on this Agent version\n";
+  await editor.fill(edited);
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          JSON.parse(localStorage.getItem("fq-react-workspace-v1") || "{}")
+            .source,
+      ),
+    )
+    .toBe(edited);
+  await page.reload();
+  await expect(editor).toHaveValue(edited);
+  const returnToDraft = page.getByRole("button", {
+    name: "Return to draft",
+    exact: true,
+  });
+  await returnToDraft.click();
+  await expect(editor).toHaveValue(draft);
+  await expect(returnToDraft).toHaveCount(0);
   await page
     .getByRole("button", { name: "Show model library", exact: true })
     .click();
-  await page.getByRole("button", { name: /Draft · Python Bell pair/ }).click();
-  await expect(editor).toHaveValue(draft);
+  await page
+    .getByRole("button", { name: /Draft · Comparison follow model/ })
+    .click();
+  await expect(editor).toHaveValue(edited);
 });

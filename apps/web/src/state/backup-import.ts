@@ -77,6 +77,7 @@ export function backupDrafts(text: string): Model[] {
     data[key].forEach((item) => add(item));
   }
   if (data.projectScratch != null) add(data.projectScratch);
+  if (data.agentDraft != null) add(data.agentDraft);
   if (data.languageDrafts != null) {
     for (const [kind, value] of Object.entries(object(data.languageDrafts))) {
       if (!["python", "qasm"].includes(kind))
