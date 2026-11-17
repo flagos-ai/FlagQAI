@@ -18,3 +18,19 @@ circuit. Reads reject symlinks, hard-linked files, and paths outside the run.
 An integrity error is reported as HTTP 409. The service reads the local
 artifacts without launching the verifier or a model. These records describe
 local verification under the archived settings.
+
+## Project baseline
+
+Research run details include the project's current baseline revision and
+decision history. Explicit adoption and restoration use
+`POST /api/research-runs/{id}/baseline` with a JSON body containing
+`decision` (`adopt` or `restore`), `source_sha256`,
+`expected_project_revision`, and a stable `request_id`.
+
+The service binds decisions to the archived candidate source, circuit, and
+verifier output. The older `current.json` pointer remains readable, while
+baseline decisions require a per-run archive. Restore selects a previously
+adopted verified version. A competing decision at the same revision returns
+HTTP 409. Retrying the same request returns the current baseline and preserves
+any later decision. The baseline pointer and history are stored separately
+from the archived research runs.
