@@ -1,4 +1,5 @@
 import { SynthesisEvidenceCard } from "../components/SynthesisEvidence";
+import { ResearchRunDetails } from "../components/ResearchRunDetails";
 import { readExperiment } from "../api/experiments";
 import { SavedStateResult } from "../components/SavedStateResult";
 import { UIIcon } from "../components/UIIcon";
@@ -38,6 +39,14 @@ export function JobsPage({ state, dispatch }: Props) {
     state.jobs.find((item) => item.id === state.selectedJobId) || state.jobs[0];
   if (state.comparison)
     return <ExperimentComparison state={state} dispatch={dispatch} />;
+  if (state.selectedResearchRunId)
+    return (
+      <ResearchRunDetails
+        key={state.selectedResearchRunId}
+        id={state.selectedResearchRunId}
+        onBack={() => dispatch({ type: "research-run" })}
+      />
+    );
   if (!job)
     return (
       <div className="fq-empty">

@@ -63,6 +63,7 @@ function reduceWorkspace(
     case "compare-experiments":
       return {
         ...state,
+        selectedResearchRunId: undefined,
         comparison:
           action.left && action.right && action.left !== action.right
             ? { left: action.left, right: action.right }
@@ -581,7 +582,18 @@ function reduceWorkspace(
           : action.jobs[0]?.id || null,
       };
     case "job":
-      return { ...state, selectedJobId: action.id };
+      return {
+        ...state,
+        selectedJobId: action.id,
+        selectedResearchRunId: undefined,
+      };
+    case "research-run":
+      return {
+        ...state,
+        page: "jobs",
+        comparison: undefined,
+        selectedResearchRunId: action.id,
+      };
     case "busy":
       return { ...state, busy: action.value };
     case "error":

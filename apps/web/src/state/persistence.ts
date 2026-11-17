@@ -189,6 +189,11 @@ export function restoreWorkspace(
     jobs: [],
     selectedJobId:
       typeof saved.selectedJobId === "string" ? saved.selectedJobId : null,
+    selectedResearchRunId:
+      typeof saved.selectedResearchRunId === "string" &&
+      /^invsqrt-[a-f0-9]{32}$/.test(saved.selectedResearchRunId)
+        ? saved.selectedResearchRunId
+        : undefined,
     execution: null,
     shots: saved.shots || 2048,
     seed: saved.seed ?? 42,
@@ -215,6 +220,7 @@ export function workspaceBackup(state: WorkspaceState) {
     pythonStyles,
     selectedProgramId,
     selectedJobId,
+    selectedResearchRunId,
     shots,
     seed,
     jobName,
@@ -249,6 +255,7 @@ export function workspaceBackup(state: WorkspaceState) {
     pythonStyles,
     selectedProgramId,
     selectedJobId,
+    selectedResearchRunId,
     shots,
     seed,
     jobName,

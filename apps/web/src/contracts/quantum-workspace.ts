@@ -276,6 +276,7 @@ export type WorkspaceState = {
   pythonStyles?: Record<string, PythonStyle>;
   jobs: QuantumJob[];
   selectedJobId: string | null;
+  selectedResearchRunId?: string;
   execution: ProgramSnapshot | null;
   shots: number;
   seed: number;
@@ -343,6 +344,7 @@ export type WorkspaceAction =
   | { type: "jobs"; jobs: QuantumJob[] }
   | { type: "merge-jobs"; jobs: QuantumJob[] }
   | { type: "job"; id: string }
+  | { type: "research-run"; id?: string }
   | { type: "busy"; value: boolean }
   | { type: "error"; source: string; message: string }
   | {
