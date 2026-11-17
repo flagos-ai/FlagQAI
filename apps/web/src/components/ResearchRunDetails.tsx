@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { researchRunsAPI, type ResearchRun } from "../api/research-runs";
+import { ResearchBaseline } from "./ResearchBaseline";
 
 function metric(value: string | number | null, digits: number | null) {
   if (value == null) return "Unavailable";
@@ -11,9 +12,11 @@ function metric(value: string | number | null, digits: number | null) {
 export function ResearchRunDetails({
   id,
   onBack,
+  onOpen,
 }: {
   id: string;
   onBack: () => void;
+  onOpen: (id: string) => void;
 }) {
   const [run, setRun] = useState<ResearchRun>();
   const [error, setError] = useState("");
@@ -130,6 +133,31 @@ export function ResearchRunDetails({
                 </a>
               ))}
             </nav>
+          )}
+          {run.project.baseline && (
+            <ResearchBaseline
+              run={run}
+              baseline={run.project.baseline}
+              onOpen={onOpen}
+              onReload={() => {
+                setRun(undefined);
+                setError("");
+                setRevision((value) => value + 1);
+              }}
+              onChange={(baseline) =>
+                setRun(
+                  (current) =>
+                    current && {
+                      ...current,
+                      project: { ...current.project, baseline },
+                      is_project_baseline:
+                        baseline.current?.run_id === current.id &&
+                        baseline.current.source_sha256 ===
+                          current.source_sha256,
+                    },
+                )
+              }
+            />
           )}
           <details
             onToggle={(event) => setShowEvidence(event.currentTarget.open)}

@@ -7089,6 +7089,20 @@ body,
   max-height: 320px;
   overflow: auto;
 }
+.fq-project-baseline {
+  margin: 12px 0;
+  padding: 10px 0;
+  border-top: 1px solid #ffffff19;
+}
+.fq-project-baseline p {
+  margin: 6px 0;
+}
+.fq-project-baseline details {
+  margin-top: 8px;
+}
+.fq-project-baseline li {
+  margin: 4px 0;
+}
 .fq-jobs-list h3 {
   padding-top: 10px;
   padding-bottom: 5px;
