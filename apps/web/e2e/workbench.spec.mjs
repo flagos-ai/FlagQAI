@@ -4311,6 +4311,9 @@ test("Execution separates common settings from advanced options without losing s
     exact: true,
   });
   await expect(circuit).toHaveValue(record.id);
+  const source = execution.getByRole("region", { name: "Execution source" });
+  await expect(source).toContainText("current backend and run settings");
+  await expect(source).not.toContainText("synthesis constraints");
   expect((await settings.boundingBox()).height).toBeLessThan(170);
   await shots.fill("64");
   await name.fill("compact-execution-validation");
@@ -4365,8 +4368,10 @@ test("Execution separates common settings from advanced options without losing s
   await page.setViewportSize({ width: 1440, height: 1000 });
   // After refresh, choose the archived circuit directly from Execution.
   await expect(circuit).toHaveValue("");
+  await expect(source).toBeHidden();
   await expect(submit).toBeDisabled();
   await circuit.selectOption(record.id);
+  await expect(source).toContainText("this circuit’s OpenQASM");
   await expect(submit).toBeEnabled();
   const request = page.waitForRequest(
     (request) =>

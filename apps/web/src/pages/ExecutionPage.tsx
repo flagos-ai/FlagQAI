@@ -1,7 +1,8 @@
 import { ExecutionCircuit } from "../components/ExecutionCircuit";
 import { executionSourceBlockedReason } from "../state/execution-source";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { UIIcon } from "../components/UIIcon";
+import { programSynthesis } from "../state/synthesis-evidence";
 import type {
   WorkspaceAction,
   WorkspaceState,
@@ -19,6 +20,11 @@ export function ExecutionPage({
 }) {
   const sourceBlockedReason = executionSourceBlockedReason(state);
   const blockedReason = sourceBlockedReason || runBlockedReason;
+  const savedCircuit = state.execution;
+  const synthesis = useMemo(
+    () => savedCircuit && programSynthesis(savedCircuit),
+    [savedCircuit],
+  );
   const validSeed =
     Number.isInteger(state.seed) && state.seed >= 0 && state.seed <= 2147483647;
   const valid =
@@ -72,6 +78,23 @@ export function ExecutionPage({
               </button>
             )}
           </p>
+        )}
+        {savedCircuit && (
+          <section
+            className="fq-execution-source"
+            aria-label="Execution source"
+          >
+            <p>
+              Run creates a new job from this circuit’s OpenQASM with the
+              current backend and run settings.
+            </p>
+            {synthesis && (
+              <p>
+                To change synthesis constraints, synthesize again from the
+                original Python source.
+              </p>
+            )}
+          </section>
         )}
         <section
           className="fq-panel fq-execution-settings"

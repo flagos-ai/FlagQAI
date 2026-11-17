@@ -145,6 +145,26 @@ test("synthesis reports show recorded constraints, named outputs and actual reso
     await expect(
       results.getByText("No non-empty counts batch saved."),
     ).toHaveCount(0);
+    const jobsBefore = (await get(page, "/api/jobs")).map(({ id }) => id);
+    await page.getByRole("button", { name: "QUANTUM", exact: true }).click();
+    await page
+      .getByRole("button", {
+        name: `Open quantum program ${archive.program.name}`,
+        exact: true,
+      })
+      .click();
+    await page.getByRole("button", { name: "Run again", exact: true }).click();
+    await expect(
+      page.getByRole("combobox", { name: "Execution circuit", exact: true }),
+    ).toHaveValue(archive.id);
+    const source = page.getByRole("region", { name: "Execution source" });
+    await expect(source).toContainText("this circuit’s OpenQASM");
+    await expect(source).toContainText(
+      "To change synthesis constraints, synthesize again from the original Python source.",
+    );
+    expect((await get(page, "/api/jobs")).map(({ id }) => id)).toEqual(
+      jobsBefore,
+    );
   }
   await verifyDraftAndCount(page, draft, ids);
 });
