@@ -71,14 +71,22 @@ class WorkspaceAPITests(unittest.TestCase):
             variants.append({'name': name, 'seconds': 1, 'report': result,
                              'sha256': digest, 'report_sha256': hashlib.sha256(output).hexdigest()})
             exports.append({'name': filename, 'sha256': digest})
+            exports.append({'name': name + '.stdout.json', 'sha256': hashlib.sha256(output).hexdigest()})
         package = b'fixture export bytes'
         (work / 'submission.zip').write_bytes(package)
         exports.append({'name': 'submission.zip', 'sha256': hashlib.sha256(package).hexdigest()})
+        provenance = {}
+        for filename, key in (('verifier.py', 'verifier_sha256'), ('official-metric.py', 'metric_sha256')):
+            content = b'raise AssertionError("Staging must never execute this file")\n'
+            (work / filename).write_bytes(content)
+            provenance[key] = hashlib.sha256(content).hexdigest()
+            exports.append({'name': filename, 'sha256': provenance[key]})
         source = f'X q0 # {identity}'.encode()
         (work / 'candidate.kmx').write_bytes(source)
         exports.append({'name': 'candidate.kmx', 'sha256': hashlib.sha256(source).hexdigest()})
         report = {'id': identity, 'status': 'completed', 'created_at': '2026-11-05T00:00:00+00:00',
-                  'scope': 'Synthetic test fixture', 'variants': variants, 'exports': exports}
+                  'scope': 'Synthetic test fixture', 'variants': variants, 'exports': exports,
+                  'provenance': provenance}
         (work / 'report.json').write_text(json.dumps(report))
         return work, report
 
@@ -101,7 +109,7 @@ class WorkspaceAPITests(unittest.TestCase):
         self.assertEqual(run['evidence'], archived)
         self.assertEqual(run['comparison']['rows'][4]['values'], [200, 180])
         self.assertEqual(run['comparison']['cost_ratio'], 200 / 180)
-        download = run['exports'][1]['url']
+        download = next(item['url'] for item in run['exports'] if item['name'] == 'candidate.kmb')
         self.assertEqual(self.request(download), (200, b'candidate circuit bytes'))
         self.assertEqual(self.request(download, origin='https://untrusted.example')[0], 403)
         self.assertEqual(self.request('/api/research-runs/invsqrt-' + 'c' * 32)[0], 404)
@@ -190,6 +198,69 @@ class WorkspaceAPITests(unittest.TestCase):
         self.assertEqual(self.request(url)[0], 200)
         self.assertEqual(self.request(url + '/baseline', data)[0], 409)
         self.assertFalse((work.parent / 'project-baseline.json').exists())
+
+    def test_candidate_revision_binds_review_to_source_and_adopted_baseline(self):
+        work, parent = self.saved_verifier_fixture()
+        baseline_work, baseline = self.saved_verifier_fixture('b' * 32)
+        route = '/api/research-runs/invsqrt-'
+        self.assertEqual(self.request(route + baseline['id'] + '/baseline', {
+            'decision': 'adopt', 'source_sha256': baseline['exports'][-1]['sha256'],
+            'expected_project_revision': 0, 'request_id': 'adopt',
+        })[0], 200)
+        revision = route + parent['id'] + '/revision'
+        data = {
+            'request_id': 'stage', 'parent_sha256': parent['exports'][-1]['sha256'],
+            'expected_project_revision': 1, 'before': 'X q0', 'after': 'Z q0',
+            'reason': 'Compare a single gate change',
+        }
+        self.assertEqual(self.request(revision, {**data, 'expected_project_revision': 0})[0], 409)
+        self.assertEqual(self.request(revision, {**data, 'parent_sha256': 'c' * 64})[0], 409)
+        self.assertEqual(self.request(revision, {**data, 'before': ' '})[0], 409)
+        old = (work / 'candidate.kmx').read_bytes()
+        status, body = self.request(revision, data)
+        self.assertEqual(status, 200)
+        identity = json.loads(body)['research_run']['id']
+        self.assertEqual(self.request(revision, data), (200, body))
+        self.assertEqual(self.request(revision, {**data, 'after': 'R q0'})[0], 409)
+        run = json.loads(self.request('/api/research-runs/' + identity)[1])['run']
+        self.assertEqual(run['status'], 'review')
+        self.assertEqual(run['exports'], [])
+        self.assertEqual(run['proposal']['parent'], 'invsqrt-' + parent['id'])
+        self.assertEqual(run['proposal']['baseline_parent'], 'invsqrt-' + baseline['id'])
+        self.assertIn('+Z q0', run['proposal']['diff'])
+        draft = work.parent / identity.removeprefix('invsqrt-')
+        self.assertEqual((draft / 'baseline.kmb').read_bytes(), (baseline_work / 'candidate.kmb').read_bytes())
+        self.assertEqual((work / 'candidate.kmx').read_bytes(), old)
+        self.assertFalse((draft / 'candidate.kmb').exists())
+        self.assertEqual(len(json.loads(self.request('/api/research-runs')[1])['runs']), 3)
+        self.service.submit.assert_not_called()
+
+    def test_failed_candidate_can_be_revised_without_erasing_the_attempt(self):
+        work, parent = self.saved_verifier_fixture()
+        failed_id = 'c' * 32
+        failed = work.parent / failed_id
+        failed.mkdir()
+        source = b'Z q0'
+        digest = hashlib.sha256(source).hexdigest()
+        (failed / 'candidate.kmx').write_bytes(source)
+        report = {
+            'id': failed_id, 'status': 'failed', 'created_at': '2026-11-06T00:00:00+00:00',
+            'error': 'Recorded verifier failure',
+            'proposal': {'parent': 'invsqrt-' + parent['id'], 'source_sha256': digest},
+        }
+        stored = json.dumps(report).encode()
+        (failed / 'report.json').write_bytes(stored)
+        route = '/api/research-runs/invsqrt-' + failed_id + '/revision'
+        status, body = self.request(route, {
+            'request_id': 'repair', 'parent_sha256': digest, 'expected_project_revision': 0,
+            'before': 'Z q0', 'after': 'X q0', 'reason': 'Try a new gate',
+        })
+        self.assertEqual(status, 200)
+        identity = json.loads(body)['research_run']['id']
+        detail = json.loads(self.request('/api/research-runs/' + identity)[1])['run']
+        self.assertEqual(detail['proposal']['parent'], 'invsqrt-' + failed_id)
+        self.assertEqual(detail['proposal']['baseline_parent'], 'invsqrt-' + parent['id'])
+        self.assertEqual((failed / 'report.json').read_bytes(), stored)
 
     def test_compilation_delegates_to_service(self):
         body = {'source': 'OPENQASM 2.0; qreg q[2];'}
