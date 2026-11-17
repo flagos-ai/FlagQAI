@@ -34,3 +34,16 @@ adopted verified version. A competing decision at the same revision returns
 HTTP 409. Retrying the same request returns the current baseline and preserves
 any later decision. The baseline pointer and history are stored separately
 from the archived research runs.
+
+## Candidate revisions
+
+`POST /api/research-runs/{id}/revision` stages a new candidate for review.
+The body contains `before`, `after`, `reason`, `parent_sha256`,
+`expected_project_revision`, and a stable `request_id`. The text replacement
+must identify exactly one source region. The route returns the saved run ID
+and records a diff, the source hash, and the active verified baseline. Saved
+failed attempts can be used as parents for new revisions.
+
+Staging writes a separate archive and preserves the parent and baseline files.
+The workspace reuses the same candidate ID when the request is retried.
+A staged revision awaits a separate review before verification.

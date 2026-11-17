@@ -9,11 +9,14 @@ def research_run(report, details=False):
     identity = 'invsqrt-' + report['id']
     proposal = report.get('proposal') or {}
     change = report.get('change') or {}
+    title = report.get('task', 'Baseline and phase-rotation candidate')
+    if proposal:
+        title = ('Candidate revision awaiting review' if report['status'] == 'review'
+                 else 'Reviewed candidate iteration')
     run = {
         'id': identity,
         'project': {'id': 'study-invsqrt', 'name': 'InvSqrt compilation study'},
-        'title': ('Reviewed candidate iteration' if proposal else
-                  report.get('task', 'Baseline and phase-rotation candidate')),
+        'title': title,
         'status': report['status'],
         'created_at': report['created_at'],
         'summary': change.get('description', 'Official baseline reproduction'),

@@ -1,4 +1,5 @@
 """Project baseline pointers with atomic, revision-checked adoption history."""
+from contextlib import contextmanager
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -72,6 +73,10 @@ def verified_version(settings, identity):
     if not isinstance(identity, str) or not _RUN_ID.fullmatch(identity):
         raise ValueError('Choose a verified research version.')
     report = read_report(settings, identity.removeprefix('invsqrt-'), allow_current=False)
+    return verified_report_version(settings, report)
+
+
+def verified_report_version(settings, report):
     if not report or report['status'] != 'completed':
         raise ValueError('Only a fully verified version can become the project baseline.')
     source_hash = hashlib.sha256(read_report_export(settings, report, 'candidate.kmx')).hexdigest()
@@ -79,15 +84,13 @@ def verified_version(settings, identity):
         raise ValueError('Verified source version changed.')
     candidate = next(item for item in report['variants'] if item['name'] == 'candidate')
     return {
-        'run_id': identity, 'source_sha256': source_hash,
+        'run_id': 'invsqrt-' + report['id'], 'source_sha256': source_hash,
         'circuit_sha256': candidate['sha256'], 'report_sha256': candidate['report_sha256'],
         'metrics': candidate['report'],
     }
 
 
 def update_baseline(settings, identity, data):
-    from fcntl import LOCK_EX, flock
-
     if not isinstance(data, dict) or set(data) != {
         'decision', 'source_sha256', 'expected_project_revision', 'request_id',
     }:
@@ -100,6 +103,14 @@ def update_baseline(settings, identity, data):
     if data['decision'] not in ('adopt', 'restore'):
         raise ValueError('Choose adopt or restore.')
 
+    with research_control_lock(settings) as directory:
+        return decide_baseline(settings, identity, data, directory)
+
+
+@contextmanager
+def research_control_lock(settings):
+    from fcntl import LOCK_EX, flock
+
     with evidence_directory(evidence_root(settings)) as directory:
         descriptor = os.open(
             '.control.lock', os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW | os.O_NONBLOCK,
@@ -110,7 +121,7 @@ def update_baseline(settings, identity, data):
             if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
                 raise ValueError('Invalid project baseline lock file.')
             flock(lock.fileno(), LOCK_EX)
-            return decide_baseline(settings, identity, data, directory)
+            yield directory
 
 
 def decide_baseline(settings, identity, data, directory):
