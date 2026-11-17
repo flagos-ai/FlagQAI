@@ -1,3 +1,5 @@
+import { rm, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import { test, expect } from "@playwright/test";
 
 test("latest output hides at the bottom and opening Worked for reveals its first tool", async ({
@@ -139,6 +141,7 @@ test("latest output hides at the bottom and opening Worked for reveals its first
   await expect.poll(headingOffset).toBeCloseTo(84, 0);
   await expect(editor).toHaveValue(draft);
   await expect(composer).toHaveValue(chatDraft);
+  await expect(latest).toHaveAttribute("title", "Latest output");
   await latest.click();
   await expect(latest).toHaveCount(0);
   await expect
@@ -151,4 +154,44 @@ test("latest output hides at the bottom and opening Worked for reveals its first
     )
     .toBe(false);
   expect(sent).toHaveLength(1);
+
+  await transcript.evaluate((node) => {
+    node.scrollTop = 0;
+  });
+  await expect(latest).toHaveAttribute("title", "Latest output");
+  const hold = join(process.env.FQ_E2E_CONTROL_DIR, "hold-unread-reply");
+  await writeFile(
+    hold,
+    "Wait until the reader is away from the latest output.",
+  );
+  try {
+    await composer.fill("unread reply acceptance");
+    await page
+      .getByRole("button", { name: "Send message", exact: true })
+      .click();
+    await expect(
+      page.getByRole("status", { name: "Working", exact: true }),
+    ).toBeVisible();
+    await expect(latest).toHaveAttribute("title", "Latest output");
+  } finally {
+    await rm(hold, { force: true });
+  }
+  await expect(latest).toHaveAttribute("data-unread", "true");
+  await expect(latest).toHaveAttribute(
+    "aria-description",
+    "New reply available",
+  );
+  await expect
+    .poll(() => transcript.evaluate((node) => node.scrollTop))
+    .toBe(0);
+  await latest.click();
+  await expect(latest).toHaveCount(0);
+  await expect(transcript.getByText("New scripted reply.")).toBeInViewport();
+  await transcript.evaluate((node) => {
+    node.scrollTop = 0;
+  });
+  await expect(latest).toHaveAttribute("title", "Latest output");
+  await expect(latest).not.toHaveAttribute("data-unread");
+  await expect(editor).toHaveValue(draft);
+  expect(sent).toHaveLength(2);
 });

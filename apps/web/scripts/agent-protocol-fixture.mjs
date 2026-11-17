@@ -341,6 +341,38 @@ const backend = {
           return { accepted: true };
         }
         void (async () => {
+          if (
+            requestText === "unread reply acceptance" &&
+            process.env.FQ_E2E_CONTROL_DIR
+          ) {
+            const hold = join(
+              process.env.FQ_E2E_CONTROL_DIR,
+              "hold-unread-reply",
+            );
+            const deadline = Date.now() + 15000;
+            while (!cancelled && existsSync(hold) && Date.now() < deadline) {
+              await delay(50);
+            }
+            if (cancelled) return;
+            emit(
+              {
+                type: "assistant.message",
+                seq: ++seq,
+                turn,
+                step: 1,
+                blocks: [{ type: "text", text: "New scripted reply." }],
+              },
+              {
+                type: "turn.end",
+                turn,
+                reason: { kind: "completed" },
+                time: Date.now(),
+              },
+            );
+            status = "idle";
+            emit({ type: "session.status", status });
+            return;
+          }
           if (controlCase) {
             const callId = "read-" + turn;
             emit({
