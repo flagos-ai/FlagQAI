@@ -4401,7 +4401,7 @@ test("Synthesis shows source-bound compilation status and reusable results witho
   await expect(editor(page)).toHaveValue(pythonDraft);
   await page.getByRole("button", { name: "OpenQASM", exact: true }).click();
   const source =
-    'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\ncreg c[2];\n// Source-bound synthesis acceptance\nh q[0];\ncx q[0],q[1];\nmeasure q[0] -> c[0];\nmeasure q[1] -> c[1];\n';
+    'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\ncreg c[2];\n// @module acceptance | Source check\nh q[0];\ncx q[0],q[1];\nmeasure q[0] -> c[0];\nmeasure q[1] -> c[1];\n';
   await editor(page).fill(source);
   await page.getByRole("button", { name: "SYNTHESIS", exact: true }).click();
   await expect(status).toHaveText("Ready to compile");
@@ -4442,6 +4442,10 @@ test("Synthesis shows source-bound compilation status and reusable results witho
       exact: true,
     }),
   ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Select Source check", exact: true })
+    .press("Enter");
+  await expect(page.locator(".fq-node-details")).toContainText("Lines 6–7");
   await page.getByRole("button", { name: "SYNTHESIS", exact: true }).click();
   await expect(status).toHaveText("Compiled");
   const result = synthesis.getByRole("region", {

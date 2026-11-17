@@ -65,6 +65,10 @@ export function ProgramPage({
   const svg = useRef<SVGSVGElement>(null),
     program = state.programs.find((p) => p.id === state.selectedProgramId),
     c = program?.compiled;
+  const selectedModule =
+    selection && "module" in selection ? selection.module : null;
+  const sourceStart = selectedModule?.source_start;
+  const sourceEnd = selectedModule?.source_end;
   useEffect(() => {
     setSelection(null);
     setSourceView(null);
@@ -347,16 +351,22 @@ export function ProgramPage({
                       ["Active qubits", selection.module.wires.length],
                       ["Source depth", selection.module.depth],
                       ["Children", selection.module.children.length],
-                      [
-                        "Source",
-                        `Lines ${selection.module.source_start || "—"}–${selection.module.source_end || "—"}`,
-                      ],
                     ].map(([name, value]) => (
                       <p key={name}>
                         {name}
                         <b>{value}</b>
                       </p>
                     ))}
+                    {sourceStart != null && sourceStart > 0 && (
+                      <p>
+                        Source
+                        <b>
+                          {sourceEnd != null && sourceEnd > sourceStart
+                            ? `Lines ${sourceStart}–${sourceEnd}`
+                            : `Line ${sourceStart}`}
+                        </b>
+                      </p>
+                    )}
                     {c && (
                       <CircuitSources
                         compiled={c}

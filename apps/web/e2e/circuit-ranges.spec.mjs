@@ -126,6 +126,7 @@ fq.save("flat81.fqx", fq.compile(circuit))
   await range.press("Enter");
   await expect(range).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator(".fq-node-details h3")).toHaveText("Gates 1–14");
+  await expect(page.locator(".fq-node-details")).not.toContainText(/Lines? /);
   expect(
     await page
       .locator("[data-module-frame]")
