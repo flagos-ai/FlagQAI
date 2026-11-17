@@ -924,7 +924,14 @@ test("workspace restores file view and folds; keyboard file search and save-and-
   await page
     .getByRole("button", { name: "Open project workspace", exact: true })
     .click();
-  await page.getByRole("button", { name: "Open project", exact: true }).click();
+  const localFiles = page.getByRole("region", {
+    name: "Local files",
+    exact: true,
+  });
+  await expect(localFiles.getByRole("heading")).toHaveText("Local files");
+  await localFiles
+    .getByRole("button", { name: "Open project", exact: true })
+    .click();
   await page.getByRole("button", { name: "Create new", exact: true }).click();
   await page
     .getByRole("textbox", { name: "Project directory", exact: true })
@@ -1156,8 +1163,16 @@ test("workspace restores file view and folds; keyboard file search and save-and-
   const folder = page
     .locator("details.fq-project-folder")
     .filter({ has: page.locator("summary").filter({ hasText: /^src$/ }) });
-  await folder.locator("summary").click();
+  const folderHeader = folder.locator(":scope > summary");
+  await expect(folderHeader.getByText("src", { exact: true })).toHaveAttribute(
+    "title",
+    "src",
+  );
+  const chevron = folderHeader.locator(".fq-project-folder-chevron");
+  await expect(chevron).toHaveCSS("transform", "matrix(0, 1, -1, 0, 0, 0)");
+  await folderHeader.press("Enter");
   await expect(folder).not.toHaveAttribute("open");
+  await expect(chevron).toHaveCSS("transform", "none");
   const treeSearch = page.getByRole("textbox", {
     name: "Find project file",
     exact: true,

@@ -56,7 +56,15 @@ function FileTree({
                 );
             }}
           >
-            {folder}
+            <UIIcon
+              name="chevron"
+              size={12}
+              className="fq-project-folder-chevron"
+            />
+            <UIIcon name="folder" size={14} />
+            <span className="fq-project-file-name" title={prefix + folder}>
+              {folder}
+            </span>
           </summary>
           <FileTree
             files={files.filter((file) =>
@@ -491,14 +499,9 @@ export function ProjectExplorer({
           </details>
         </>
       ) : (
-        <div className="fq-project-empty">
-          <span className="fq-project-empty-symbol" aria-hidden="true">
-            ‹ / ›
-          </span>
-          <h3>Your code, together.</h3>
-          <p>
-            Open a local project to edit files, work with Agent and run Python.
-          </p>
+        <section className="fq-project-start" aria-label="Local files">
+          <h3>Local files</h3>
+          <p>Open a folder to edit files and run code with Agent.</p>
           <button
             className="primary"
             onClick={() => {
@@ -523,7 +526,7 @@ export function ProjectExplorer({
               ))}
             </section>
           )}
-        </div>
+        </section>
       )}
     </div>
   );
