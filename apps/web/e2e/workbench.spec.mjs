@@ -1887,6 +1887,10 @@ test("native decisions, uncertain stops and reconnect preserve one task without 
   ).toHaveCount(0);
   for (const kind of ["unknown", "failed"]) {
     await send("stop-" + kind);
+    // The stop button can be shown during delivery, before the native turn starts.
+    await expect(
+      page.getByRole("status", { name: "Working", exact: true }),
+    ).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Stop Agent", exact: true }),
     ).toBeEnabled();
