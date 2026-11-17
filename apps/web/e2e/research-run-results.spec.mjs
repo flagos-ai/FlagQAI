@@ -5,6 +5,57 @@ import { basename, join } from "node:path";
 
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 
+async function saveVerifiedRun(
+  saved,
+  id,
+  task,
+  score,
+  pack = "Saved submission fixture",
+) {
+  const variants = await Promise.all(
+    [
+      ["baseline", 200],
+      ["candidate", score],
+    ].map(async ([name, score]) => {
+      const circuit = Buffer.from(name + " circuit");
+      const report = {
+        status: "PASS",
+        verified_shots: 200540928,
+        circuit_sha256: sha256(circuit),
+        score,
+      };
+      const output = JSON.stringify(report);
+      await writeFile(join(saved, name + ".kmb"), circuit);
+      await writeFile(join(saved, name + ".stdout.json"), output);
+      return {
+        name,
+        seconds: 1,
+        report,
+        sha256: sha256(circuit),
+        report_sha256: sha256(output),
+      };
+    }),
+  );
+  const source = "X q0 # " + id;
+  await writeFile(join(saved, "candidate.kmx"), source);
+  await writeFile(join(saved, "submission.zip"), pack);
+  await writeFile(
+    join(saved, "report.json"),
+    JSON.stringify({
+      id,
+      task,
+      status: "completed",
+      created_at: "2026-11-05T00:00:00Z",
+      scope: "Local verification fixture",
+      variants,
+      exports: [
+        { name: "submission.zip", sha256: sha256(pack) },
+        { name: "candidate.kmx", sha256: sha256(source) },
+      ],
+    }),
+  );
+}
+
 test("Jobs opens recorded research comparisons and retains failed attempts and drafts", async ({
   page,
 }) => {
@@ -27,45 +78,8 @@ test("Jobs opens recorded research comparisons and retains failed attempts and d
   try {
     await mkdir(saved);
     await mkdir(failed);
-    const variants = await Promise.all(
-      [
-        ["baseline", 200],
-        ["candidate", 180],
-      ].map(async ([name, score]) => {
-        const circuit = Buffer.from(name + " circuit");
-        const report = {
-          status: "PASS",
-          verified_shots: 200540928,
-          circuit_sha256: sha256(circuit),
-          score,
-        };
-        const output = JSON.stringify(report);
-        await writeFile(join(saved, name + ".kmb"), circuit);
-        await writeFile(join(saved, name + ".stdout.json"), output);
-        return {
-          name,
-          seconds: 1,
-          report,
-          sha256: sha256(circuit),
-          report_sha256: sha256(output),
-        };
-      }),
-    );
     const pack = "Saved submission fixture";
-    await writeFile(join(saved, "submission.zip"), pack);
-    await writeFile(
-      join(saved, "report.json"),
-      JSON.stringify({
-        id,
-        title: "Phase candidate",
-        task: "Phase candidate",
-        status: "completed",
-        created_at: "2026-11-05T00:00:00Z",
-        scope: "Local verification fixture",
-        variants,
-        exports: [{ name: "submission.zip", sha256: sha256(pack) }],
-      }),
-    );
+    await saveVerifiedRun(saved, id, "Phase candidate", 180, pack);
     await writeFile(
       join(failed, "report.json"),
       JSON.stringify({
@@ -132,6 +146,113 @@ test("Jobs opens recorded research comparisons and retains failed attempts and d
     await expect(editor).toHaveValue(draft);
     expect(await jobIds()).toEqual(jobsBefore);
   } finally {
+    await rm(root, { recursive: true });
+  }
+});
+
+test("Jobs confirms baseline decisions, resolves stale windows, and preserves a rollback", async ({
+  page,
+  browser,
+  baseURL,
+}) => {
+  const { cwd } = await (await page.request.get("/api/agent")).json();
+  expect(basename(cwd)).toMatch(/^flagqai-ui-test-/);
+  const root = join(cwd, "invsqrt");
+  const ids = [randomUUID(), randomUUID()].map((id) => id.replaceAll("-", ""));
+  await mkdir(root);
+  const otherContext = await browser.newContext({ baseURL });
+  const other = await otherContext.newPage();
+  try {
+    for (const [index, id] of ids.entries()) {
+      const path = join(root, id);
+      await mkdir(path);
+      await saveVerifiedRun(
+        path,
+        id,
+        `Verified candidate ${index + 1}`,
+        190 - index,
+      );
+    }
+
+    await page.goto("/#model");
+    const draft = "# Keep this working model while reviewing baselines.\n";
+    const editor = page.getByRole("textbox", {
+      name: "Quantum model code editor",
+    });
+    await editor.fill(draft);
+    await page.getByRole("button", { name: "JOBS", exact: true }).click();
+    await other.goto("/#jobs");
+    const open = async (tab, index) =>
+      tab
+        .getByRole("button", {
+          name: new RegExp(`^Open research run Verified candidate ${index}`),
+        })
+        .click();
+    const baseline = (tab) =>
+      tab.getByRole("region", { name: "Project baseline", exact: true });
+    const adopt = (tab) =>
+      baseline(tab).getByRole("button", { name: "Adopt verified candidate" });
+    const dialog = (tab) =>
+      tab.getByRole("dialog", { name: "Adopt project baseline" });
+    const confirm = (tab) =>
+      dialog(tab).getByRole("button", { name: "Confirm adopt" });
+    await open(page, 1);
+    await open(other, 2);
+    await expect(baseline(other)).toContainText("revision 0");
+    await adopt(page).click();
+    await expect(dialog(page)).toContainText("Current revision 0");
+    const requestIds = [];
+    await page.route("**/baseline", async (route) => {
+      requestIds.push(route.request().postDataJSON().request_id);
+      const response = await route.fetch();
+      if (requestIds.length === 1) await route.abort("failed");
+      else await route.fulfill({ response });
+    });
+    await confirm(page).click();
+    await expect(dialog(page).getByRole("alert")).toBeVisible();
+    await confirm(page).click();
+    await expect(baseline(page)).toContainText(
+      "This version is the current baseline.",
+    );
+    expect(requestIds).toHaveLength(2);
+    expect(new Set(requestIds).size).toBe(1);
+    await page.unroute("**/baseline");
+
+    await adopt(other).click();
+    await confirm(other).click();
+    await expect(dialog(other).getByRole("alert")).toContainText(
+      "changed in another window",
+    );
+    await dialog(other)
+      .getByRole("button", { name: "Reload baseline" })
+      .click();
+    await expect(baseline(other)).toContainText("revision 1");
+    await adopt(other).click();
+    await confirm(other).click();
+    await expect(baseline(other)).toContainText("revision 2");
+
+    await page.reload();
+    await expect(baseline(page)).toContainText("revision 2");
+    await baseline(page)
+      .getByRole("button", { name: "Restore this version" })
+      .click();
+    await page
+      .getByRole("dialog", { name: "Restore project baseline" })
+      .getByRole("button", { name: "Confirm restore" })
+      .click();
+    await expect(baseline(page)).toContainText(
+      "This version is the current baseline.",
+    );
+    await baseline(page)
+      .getByText("Baseline history · 3 decisions", { exact: true })
+      .click();
+    await expect(baseline(page).getByRole("listitem").first()).toContainText(
+      "r3 · Restored",
+    );
+    await page.getByRole("button", { name: "MODEL", exact: true }).click();
+    await expect(editor).toHaveValue(draft);
+  } finally {
+    await otherContext.close();
     await rm(root, { recursive: true });
   }
 });

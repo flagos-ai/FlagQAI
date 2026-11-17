@@ -45,6 +45,7 @@ export function JobsPage({ state, dispatch }: Props) {
         key={state.selectedResearchRunId}
         id={state.selectedResearchRunId}
         onBack={() => dispatch({ type: "research-run" })}
+        onOpen={(id) => dispatch({ type: "research-run", id })}
       />
     );
   if (!job)
