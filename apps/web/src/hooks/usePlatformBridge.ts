@@ -1,3 +1,4 @@
+import { previewCode } from "../state/agent-code-preview";
 import { readExperiment } from "../api/experiments";
 import { pythonAPI } from "../api/python-runs";
 import {
@@ -5,7 +6,7 @@ import {
   shouldFollowTarget,
 } from "../state/platform-navigation";
 import { quantumAPI } from "../api/quantum-workspace";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   WorkspaceState,
   WorkspaceAction,
@@ -325,6 +326,27 @@ export function usePlatformBridge(
     (tab) => tab.id === state.activeProjectTab,
   )?.project;
   const projectContext = activeProject || state.project;
+  const preview = useMemo(
+    () =>
+      follow && agent.phase === "connected"
+        ? previewCode(agent.view.codeStream)
+        : undefined,
+    [follow, agent.phase, agent.view.codeStream],
+  );
+  const liveCode =
+    preview?.requestId &&
+    actions.some(
+      (action) =>
+        action.operation === "model.create" &&
+        action.id === preview.requestId &&
+        action.status !== "running",
+    )
+      ? undefined
+      : preview;
+  const previewId = liveCode?.id;
+  useEffect(() => {
+    if (previewId) dispatch({ type: "navigate", page: "model" });
+  }, [previewId, dispatch]);
   return {
     client,
     session,
@@ -332,6 +354,7 @@ export function usePlatformBridge(
     error,
     backend,
     actions,
+    liveCode,
     follow,
     setFollow,
     open,

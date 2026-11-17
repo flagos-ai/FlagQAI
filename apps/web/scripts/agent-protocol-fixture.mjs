@@ -544,6 +544,70 @@ const backend = {
               });
               return result;
             };
+            if (
+              process.env.FQ_E2E_CONTROL_DIR &&
+              requestText === "live code acceptance"
+            ) {
+              const attemptId = "live-code-" + turn;
+              const args = {
+                name: "Streamed Python",
+                source: '# Quantum preview · ψ\nprint("ready")\n',
+                request_id: randomUUID(),
+              };
+              const json = JSON.stringify(args);
+              const split = json.indexOf("print") + "print".length;
+              const push = (index, partialJson, name) =>
+                emit({
+                  type: "assistant.delta",
+                  attemptId,
+                  index,
+                  time: Date.now(),
+                  delta: {
+                    kind: "tool-args",
+                    callId: attemptId,
+                    name,
+                    partialJson,
+                  },
+                });
+              const wait = async (name) => {
+                const deadline = Date.now() + 60000;
+                const path = join(process.env.FQ_E2E_CONTROL_DIR, name);
+                while (!cancelled && existsSync(path)) {
+                  if (Date.now() > deadline)
+                    throw Error("Live code acceptance barrier timed out.");
+                  await delay(100);
+                }
+              };
+              emit({
+                type: "assistant.attempt.start",
+                attemptId,
+                turn,
+                step: 1,
+              });
+              push(0, json.slice(0, split), "workbench_create_python");
+              await wait("hold-live-python");
+              if (cancelled) return;
+              push(1, json.slice(split));
+              await wait("hold-live-python-model");
+              if (cancelled) return;
+              emit({
+                type: "assistant.attempt.end",
+                attemptId,
+                outcome: "committed",
+              });
+              await typed("workbench_create_python", args);
+              status = "idle";
+              emit(
+                {
+                  type: "turn.end",
+                  turn,
+                  reason: { kind: "completed" },
+                  time: Date.now(),
+                },
+                { type: "session.status", status },
+              );
+              return;
+            }
             const iterationLine = requestText
               .split("\n")
               .find((line) => line.startsWith("# FLAGQAI_QAOA_ITERATION="));
