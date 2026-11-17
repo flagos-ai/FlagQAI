@@ -101,6 +101,12 @@ function JobResults({
   const measurement = job.experiment?.measurements[measurementIndex];
   const recorded = jobCounts(job, measurementIndex, batchIndex);
   const total = Object.values(recorded).reduce((sum, count) => sum + count, 0);
+  const showReturnedValue =
+    total === 0 &&
+    job.experiment?.value != null &&
+    job.experiment.state == null &&
+    job.experiment.samples == null &&
+    job.experiment.measurements.length === 0;
   const result =
     job.result && job.experiment
       ? { ...job.result, counts: recorded, shots: total, decoded: undefined }
@@ -572,7 +578,8 @@ function JobResults({
                         </details>
                       </div>
                     </section>
-                  ) : job.experiment?.state != null ? null : (
+                  ) : job.experiment?.state != null ||
+                    showReturnedValue ? null : (
                     <div className="fq-job-notice">
                       <h2>No counts distribution</h2>
                       <p>
@@ -596,7 +603,12 @@ function JobResults({
                     />
                   )}
                   {program && <SynthesisEvidenceCard program={program} />}
-                  {job.experiment && <RecordedValues info={job.experiment} />}
+                  {job.experiment && (
+                    <RecordedValues
+                      info={job.experiment}
+                      showReturnedValue={showReturnedValue}
+                    />
+                  )}
                   {Boolean(
                     result.decoded?.length && result.registers?.length,
                   ) && (
