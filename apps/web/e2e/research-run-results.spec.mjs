@@ -39,6 +39,10 @@ async function saveVerifiedRun(
   const source = "X q0 # " + id;
   await writeFile(join(saved, "candidate.kmx"), source);
   await writeFile(join(saved, "submission.zip"), pack);
+  const verifier =
+    "raise AssertionError('The review must not execute archived Python')\n";
+  await writeFile(join(saved, "verifier.py"), verifier);
+  await writeFile(join(saved, "official-metric.py"), verifier);
   await writeFile(
     join(saved, "report.json"),
     JSON.stringify({
@@ -47,10 +51,23 @@ async function saveVerifiedRun(
       status: "completed",
       created_at: "2026-11-05T00:00:00Z",
       scope: "Local verification fixture",
+      provenance: {
+        verifier_sha256: sha256(verifier),
+        metric_sha256: sha256(verifier),
+      },
       variants,
       exports: [
         { name: "submission.zip", sha256: sha256(pack) },
         { name: "candidate.kmx", sha256: sha256(source) },
+        { name: "verifier.py", sha256: sha256(verifier) },
+        { name: "official-metric.py", sha256: sha256(verifier) },
+        ...variants.flatMap((variant) => [
+          { name: variant.name + ".kmb", sha256: variant.sha256 },
+          {
+            name: variant.name + ".stdout.json",
+            sha256: variant.report_sha256,
+          },
+        ]),
       ],
     }),
   );
@@ -253,6 +270,114 @@ test("Jobs confirms baseline decisions, resolves stale windows, and preserves a 
     await expect(editor).toHaveValue(draft);
   } finally {
     await otherContext.close();
+    await rm(root, { recursive: true });
+  }
+});
+
+test("a failed research candidate can be revised after refresh and a lost receipt", async ({
+  page,
+}) => {
+  const { cwd } = await (await page.request.get("/api/agent")).json();
+  expect(basename(cwd)).toMatch(/^flagqai-ui-test-/);
+  const root = join(cwd, "invsqrt");
+  const [parent, failure] = [randomUUID(), randomUUID()].map((id) =>
+    id.replaceAll("-", ""),
+  );
+  await mkdir(root);
+  try {
+    const parentPath = join(root, parent),
+      failurePath = join(root, failure);
+    await mkdir(parentPath);
+    await mkdir(failurePath);
+    await saveVerifiedRun(parentPath, parent, "Passing baseline", 180);
+    const source = "Z q0\n";
+    await writeFile(join(failurePath, "candidate.kmx"), source);
+    const earlier = JSON.stringify({
+      id: failure,
+      status: "failed",
+      created_at: "2026-11-06T00:00:00Z",
+      error: "Recorded verifier failure",
+      proposal: { parent: "invsqrt-" + parent, source_sha256: sha256(source) },
+    });
+    await writeFile(join(failurePath, "report.json"), earlier);
+
+    await page.goto("/#model");
+    const model = page.getByRole("textbox", {
+      name: "Quantum model code editor",
+    });
+    const draft = "# Independent model draft\n";
+    await model.fill(draft);
+    await page.getByRole("button", { name: "JOBS", exact: true }).click();
+    await page
+      .getByRole("button", {
+        name: /^Open research run Reviewed candidate iteration/,
+      })
+      .click();
+    const report = page.getByRole("region", {
+      name: "Research run",
+      exact: true,
+    });
+    await report
+      .getByText("Continue with a new revision", { exact: true })
+      .click();
+    const replace = report.getByRole("textbox", {
+      name: "Text to replace",
+      exact: true,
+    });
+    const replacement = report.getByRole("textbox", {
+      name: "Replacement",
+      exact: true,
+    });
+    const reason = report.getByRole("textbox", { name: "Reason", exact: true });
+    await replace.fill("Z q0");
+    await replacement.fill("X q0");
+    await reason.fill("Review the gate correction.");
+    await page.reload();
+    await expect(reason).toBeVisible();
+    await expect(reason).toHaveValue("Review the gate correction.");
+    const requests = [];
+    await page.route("**/revision", async (route) => {
+      requests.push(route.request().postDataJSON());
+      const response = await route.fetch();
+      if (requests.length === 1) await route.abort("failed");
+      else await route.fulfill({ response });
+    });
+    const stage = report.getByRole("button", {
+      name: "Stage revision",
+      exact: true,
+    });
+    await stage.click();
+    await expect(
+      report.getByRole("alert").filter({ hasText: "Failed to fetch" }),
+    ).toBeVisible();
+    await page.reload();
+    await expect(replace).toHaveValue("Z q0");
+    await expect(replacement).toHaveValue("X q0");
+    await stage.click();
+    await expect(report).toContainText("Candidate revision awaiting review");
+    expect(requests).toHaveLength(2);
+    expect(requests[1]).toEqual(requests[0]);
+    await report.getByText("Candidate changes", { exact: true }).click();
+    await expect(report.locator("pre")).toContainText("-Z q0");
+    await expect(report.locator("pre")).toContainText("+X q0");
+    await page
+      .getByRole("combobox", { name: "Filter jobs by status" })
+      .selectOption("review");
+    await expect(
+      page.getByRole("button", {
+        name: /^Open research run Candidate revision/,
+      }),
+    ).toHaveCount(1);
+    await report.getByRole("button", { name: "Open parent run" }).click();
+    await expect(report.getByRole("alert")).toContainText(
+      "Recorded verifier failure",
+    );
+    expect(await readFile(join(failurePath, "report.json"), "utf8")).toBe(
+      earlier,
+    );
+    await page.getByRole("button", { name: "MODEL", exact: true }).click();
+    await expect(model).toHaveValue(draft);
+  } finally {
     await rm(root, { recursive: true });
   }
 });

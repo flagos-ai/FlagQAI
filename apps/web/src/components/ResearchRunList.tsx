@@ -33,7 +33,7 @@ export function ResearchRunList({
           setError("Could not load saved research runs.");
       });
     return () => controller.abort();
-  }, [revision]);
+  }, [revision, selectedId]);
   const term = query.trim().toLowerCase();
   const visible = runs.filter(
     (run) =>
@@ -74,7 +74,9 @@ export function ResearchRunList({
               <strong>{run.title}</strong>
               <span className="fq-job-row-summary">
                 <i className={"fq-job-dot " + run.status} aria-hidden="true" />
-                <span className="fq-research-status">{run.status}</span>
+                <span className="fq-research-status">
+                  {run.status === "review" ? "Review required" : run.status}
+                </span>
                 <time dateTime={run.created_at}>
                   {date.toLocaleDateString([], {
                     month: "short",
