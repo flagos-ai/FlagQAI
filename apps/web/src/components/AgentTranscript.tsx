@@ -11,7 +11,13 @@ import {
   childRunning,
   currentTurnActivity,
 } from "../state/agent-progress";
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import type {
   SessionViewRow,
   SessionSubagentView,
@@ -272,6 +278,20 @@ function atLatestOutput(node: HTMLElement) {
   return node.scrollHeight - node.scrollTop - node.clientHeight <= 2;
 }
 
+function AgentElapsedTime({ startedAt }: { startedAt: number }) {
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  const elapsed = Math.floor(Math.max(0, now - startedAt) / 1000);
+  return (
+    <span className="fq-agent-live-time" role="timer" aria-label="Elapsed time">
+      {elapsed > 0 ? workDuration(elapsed * 1000) : "0s"}
+    </span>
+  );
+}
+
 export function AgentTranscript({
   agent,
   roster,
@@ -289,6 +309,10 @@ export function AgentTranscript({
 }) {
   const turns = progressTurns(agent.view, roster);
   const runStatus = agentRunStatus(agent);
+  const startedAt =
+    agent.phase === "connected" && agent.view.projected && agent.view.working
+      ? agent.view.activeTiming?.startedAt
+      : undefined;
   const activity =
     runStatus === "Working" ? currentTurnActivity(turns.at(-1)) : "";
   const researchTurns = researchTurnsFromProgress(turns, bridge.actions);
@@ -767,16 +791,21 @@ export function AgentTranscript({
           {(agent.view.working ||
             Object.keys(agent.view.permissions).length > 0 ||
             Object.keys(agent.view.questions).length > 0) && (
-            <div className="fq-agent-live" role="status">
-              <span aria-hidden="true" className="fq-activity-marker active">
-                ◌
-              </span>{" "}
-              <span>{runStatus}</span>
-              {activity && (
-                <span className="fq-agent-live-activity" title={activity}>
-                  · {activity}
-                </span>
-              )}
+            <div className="fq-agent-live">
+              <div className="fq-agent-live-status" role="status">
+                <span aria-hidden="true" className="fq-activity-marker active">
+                  ◌
+                </span>{" "}
+                <span>{runStatus}</span>
+                {activity && (
+                  <span className="fq-agent-live-activity" title={activity}>
+                    · {activity}
+                  </span>
+                )}
+              </div>
+              {startedAt !== undefined &&
+                Number.isFinite(startedAt) &&
+                startedAt > 0 && <AgentElapsedTime startedAt={startedAt} />}
             </div>
           )}
           {stopNotice && (

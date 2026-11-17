@@ -1890,6 +1890,12 @@ test("native decisions, uncertain stops and reconnect preserve one task without 
   await expect(
     page.getByRole("button", { name: "Submit answers", exact: true }),
   ).toHaveCount(0);
+  const timer = page.getByRole("timer", { name: "Elapsed time", exact: true });
+  const elapsed = async () => {
+    const text = (await timer.textContent()) || "";
+    const match = /^(?:(\d+)m )?(\d+)s$/.exec(text.trim());
+    return match ? Number(match[1] || 0) * 60 + Number(match[2]) : -1;
+  };
   for (const kind of ["unknown", "failed"]) {
     await send("stop-" + kind);
     // The stop button can be shown during delivery, before the native turn starts.
@@ -1918,12 +1924,15 @@ test("native decisions, uncertain stops and reconnect preserve one task without 
     await editor(page).fill(draft);
     // Drop the live stream, then restore it. Neither reconnect nor refresh may
     // create another native submission or silently retry the stop request.
+    await expect.poll(elapsed).toBeGreaterThanOrEqual(2);
+    const timeBeforeReconnect = await elapsed();
     const beforeReconnect = await get(page, network);
     try {
       await page.request.post(network, { data: { offline: true } });
       await expect(
         page.getByRole("status", { name: "Reconnecting…", exact: true }),
       ).toBeVisible();
+      await expect(timer).toHaveCount(0);
       await expect(
         page.getByRole("button", { name: "Stop Agent", exact: true }),
       ).toBeDisabled();
@@ -1939,6 +1948,8 @@ test("native decisions, uncertain stops and reconnect preserve one task without 
     await expect(
       page.getByRole("status", { name: "Working", exact: true }),
     ).toBeVisible();
+    await expect(timer).toBeVisible();
+    expect(await elapsed()).toBeGreaterThanOrEqual(timeBeforeReconnect);
     await expect(input).toHaveValue("Keep this unsent draft while stopping.");
     await expect(editor(page)).toHaveValue(draft);
     const restored = await get(page, network);
@@ -1957,6 +1968,7 @@ test("native decisions, uncertain stops and reconnect preserve one task without 
       page.getByRole("status", { name: "Connected", exact: true }),
     ).toBeVisible();
   }
+  await expect(timer).toHaveCount(0);
   const hold = join(process.env.FQ_E2E_CONTROL_DIR, "hold-stop");
   await writeFile(
     hold,
