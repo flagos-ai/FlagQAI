@@ -85,6 +85,7 @@ export function AgentExperimentTask({
     };
   }, [signature, active]);
   const list = ids.flatMap((id) => (runs[id] ? [runs[id]] : []));
+  const latestRun = list.at(-1);
   const outputs = comparisonCandidates(list);
   const task = experimentTaskStatus({
     runs: list,
@@ -100,11 +101,10 @@ export function AgentExperimentTask({
     setOpening(true);
     setActionError("");
     try {
-      const latest = list.at(-1);
-      const baseline = latest?.experiments?.find(
+      const baseline = latestRun?.experiments?.find(
         (e) => e.filename === "01-maxcut-baseline.fqx" && e.has_result,
       );
-      const optimized = latest?.experiments?.find(
+      const optimized = latestRun?.experiments?.find(
         (e) => e.filename === "02-maxcut-qaoa.fqx" && e.has_result,
       );
       if (baseline && optimized) await onCompare(baseline.id, optimized.id);
@@ -144,6 +144,22 @@ export function AgentExperimentTask({
     )
   )
     return null;
+  const qaoaRun =
+    settled &&
+    outcome === "completed" &&
+    latestRun?.experiments?.some((e) => e.filename === "02-maxcut-qaoa.fqx")
+      ? latestRun
+      : undefined;
+  const compareResults = outputs.length >= 2 && (
+    <button
+      className="primary"
+      disabled={opening}
+      onClick={() => void compare()}
+    >
+      {opening ? "Opening comparison…" : "Compare results"}
+      <UIIcon name="arrow" size={12} />
+    </button>
+  );
   return (
     <section className="fq-experiment-task" aria-label="Experiment progress">
       <div>
@@ -249,37 +265,26 @@ export function AgentExperimentTask({
           are retained.
         </p>
       )}
-      {list.at(-1)?.source.includes("# FLAGQAI_QAOA_ITERATION=") && (
+      {latestRun?.source.includes("# FLAGQAI_QAOA_ITERATION=") && (
         <QaoaIteration
           active={active}
-          run={list.at(-1)!}
+          run={latestRun}
           onCompare={onCompare}
           onInspect={onInspect}
         />
       )}
-      {settled &&
-        outcome === "completed" &&
-        list
-          .at(-1)
-          ?.experiments?.some((e) => e.filename === "02-maxcut-qaoa.fqx") && (
-          <QaoaOutcome
-            run={list.at(-1)!}
-            onCompare={onCompare}
-            onCircuit={onCircuit}
-            onPrepare={onPrepare}
-            researchTurns={researchTurns}
-            onInspect={onInspect}
-          />
-        )}
-      {outputs.length >= 2 && (
-        <button
-          className="primary"
-          disabled={opening}
-          onClick={() => void compare()}
-        >
-          {opening ? "Opening comparison…" : "Compare results"}
-          <UIIcon name="arrow" size={12} />
-        </button>
+      {qaoaRun ? (
+        <QaoaOutcome
+          run={qaoaRun}
+          compareSaved={outputs.length >= 2 ? compare : undefined}
+          onCompare={onCompare}
+          onCircuit={onCircuit}
+          onPrepare={onPrepare}
+          researchTurns={researchTurns}
+          onInspect={onInspect}
+        />
+      ) : (
+        compareResults
       )}
     </section>
   );

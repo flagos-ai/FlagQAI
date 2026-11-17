@@ -4945,9 +4945,43 @@ test("QAOA Max-Cut reference: scripted Agent orchestration, real optimization, c
   expect(optimized.job.result.qubits).toBe(6);
   expect(optimized.job.result.counts).toEqual(replay.job.result.counts);
   expect(optimized.job.result.counts).not.toEqual(baseline.job.result.counts);
-  await page
-    .getByRole("button", { name: "Compare results", exact: true })
+  const compareResults = outcomeCard.getByRole("button", {
+    name: "Compare results",
+    exact: true,
+  });
+  const actions = outcomeCard.getByRole("navigation", {
+    name: "QAOA result actions",
+  });
+  await expect(actions.getByRole("button").first()).toHaveText(
+    "Compare results",
+  );
+  await expect(
+    progress.getByRole("button", { name: "Compare results", exact: true }),
+  ).toHaveCount(1);
+
+  // A missing replay read cannot prevent comparison of the saved A/B pair.
+  const replayRead = `**/api/experiments/${replay.id}`;
+  await page.route(replayRead, (route) =>
+    route.fulfill({
+      status: 503,
+      json: { error: "Replay archive temporarily unavailable" },
+    }),
+  );
+  await page.reload();
+  await expect(outcomeCard).toContainText("Summary unavailable");
+  await expect(
+    outcomeCard.getByRole("button", { name: "Check replay", exact: true }),
+  ).toHaveCount(0);
+  await compareResults.click();
+  await expect(page).toHaveURL(/#jobs$/);
+  await page.unroute(replayRead);
+  await outcomeCard
+    .getByRole("button", { name: "Retry summary", exact: true })
     .click();
+  await expect(outcomeCard).toContainText(
+    "Seeded replay matches saved results",
+  );
+
   const comparison = page.getByRole("region", {
     name: "Experiment comparison",
     exact: true,
@@ -4964,16 +4998,26 @@ test("QAOA Max-Cut reference: scripted Agent orchestration, real optimization, c
       exact: true,
     }),
   ).toHaveValue(optimized.id);
+  await compareResults.click();
   await page.screenshot({
     path: testInfo.outputPath("qaoa-baseline-optimized.png"),
     fullPage: true,
   });
-  await comparison
-    .getByRole("combobox", { name: "Variant experiment", exact: true })
-    .selectOption({ value: replay.id });
-  await comparison
-    .getByRole("combobox", { name: "Baseline experiment", exact: true })
-    .selectOption({ value: optimized.id });
+  await outcomeCard
+    .getByRole("button", { name: "Check replay", exact: true })
+    .click();
+  await expect(
+    comparison.getByRole("combobox", {
+      name: "Baseline experiment",
+      exact: true,
+    }),
+  ).toHaveValue(optimized.id);
+  await expect(
+    comparison.getByRole("combobox", {
+      name: "Variant experiment",
+      exact: true,
+    }),
+  ).toHaveValue(replay.id);
   await expect(
     comparison.getByRole("region", {
       name: "Observed differences",

@@ -13,6 +13,7 @@ import { CodeExample } from "./CodeExample";
 type Summary = Awaited<ReturnType<typeof qaoaOutcome>>;
 export function QaoaOutcome({
   run,
+  compareSaved,
   onCompare,
   onCircuit,
   onPrepare,
@@ -20,6 +21,7 @@ export function QaoaOutcome({
   onInspect,
 }: {
   run: PythonRun;
+  compareSaved?: () => Promise<void>;
   onCompare: (left: string, right: string) => Promise<void>;
   onCircuit: (id: string) => Promise<void>;
   onPrepare: (prompt: string) => void;
@@ -81,6 +83,19 @@ export function QaoaOutcome({
       setBusy(false);
     }
   };
+  const compare = s
+    ? () => onCompare(s.records[0].id, s.records[1].id)
+    : compareSaved;
+  const compareResults = compare && (
+    <button
+      className="primary"
+      disabled={busy}
+      onClick={() => void act(compare)}
+    >
+      Compare results
+      <UIIcon name="arrow" size={12} />
+    </button>
+  );
   return (
     <section className="fq-qaoa-outcome" aria-label="QAOA outcome">
       <header>
@@ -130,6 +145,15 @@ export function QaoaOutcome({
             {s.backend}
           </small>
           <nav aria-label="QAOA result actions">
+            {compareResults}
+            <button
+              disabled={busy}
+              onClick={() =>
+                void act(() => onCompare(s.records[1].id, s.records[2].id))
+              }
+            >
+              Check replay
+            </button>
             <button onClick={() => setResearch(true)}>
               View research record
             </button>
@@ -151,14 +175,6 @@ export function QaoaOutcome({
               onClick={() => void act(() => onCircuit(s.records[1].id))}
             >
               View circuit
-            </button>
-            <button
-              disabled={busy}
-              onClick={() =>
-                void act(() => onCompare(s.records[1].id, s.records[2].id))
-              }
-            >
-              Check replay
             </button>
             <a
               href={experimentFileURL(s.records[1].id)}
@@ -219,6 +235,9 @@ export function QaoaOutcome({
             </p>
           </details>
         </>
+      )}
+      {!s && compareResults && (
+        <nav aria-label="QAOA result actions">{compareResults}</nav>
       )}
       {prepared && (
         <p role="status">
