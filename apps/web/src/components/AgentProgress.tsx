@@ -154,15 +154,20 @@ function Child({
 }
 export function AgentProgress({
   todos = [],
+  active = false,
   children,
   sessionId,
   onInspect,
 }: {
   todos?: SessionTodoItem[];
+  active?: boolean;
   children: ChildActivity[];
   sessionId?: string;
   onInspect?: () => void;
 }) {
+  const currentTask = active
+    ? todos.find((item) => item.status === "in_progress")
+    : undefined;
   const completed = todos.filter((item) => item.status === "completed").length;
   const running = children.filter((child) =>
     ["starting", "running"].includes(child.status),
@@ -178,9 +183,14 @@ export function AgentProgress({
         <details className="fq-agent-todos">
           <summary>
             <span aria-hidden="true">☷</span>
-            <span>
+            <span className="fq-todo-count">
               Tasks {completed}/{todos.length}
             </span>
+            {currentTask && (
+              <span className="fq-progress-title" title={currentTask.content}>
+                {currentTask.content}
+              </span>
+            )}
             <progress
               value={completed}
               max={todos.length}

@@ -370,8 +370,9 @@ conversation and explains preservation before the write.
 ### Task progress and child agents
 
 The Agent transcript displays native Todo snapshots and child-agent lifecycle
-updates per user turn. Expand **Tasks** to inspect pending, active and completed
-steps. Child cards show the reported status, model, duration and summary; opening
+updates per user turn. During a turn, **Tasks** shows the current step when the
+Agent reports one. Expand it to inspect pending, active and completed steps.
+Child cards show the reported status, model, duration and summary; opening
 a card loads the native read-only transcript, with refresh and earlier-history
 controls when supported. Unsupported history reports an explicit error rather
 than inventing child output. The native child catalog supplies a periodically

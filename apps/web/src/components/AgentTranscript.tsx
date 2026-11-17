@@ -521,6 +521,7 @@ export function AgentTranscript({
             const progressPanel = (
               <AgentProgress
                 todos={progress?.todos}
+                active={turn.active}
                 children={live ? [] : children}
                 sessionId={agent.session?.id}
                 onInspect={() => {
