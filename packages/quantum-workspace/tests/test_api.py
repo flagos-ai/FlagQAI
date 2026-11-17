@@ -2,6 +2,7 @@ from pathlib import Path
 import sys
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'local'))
 """HTTP contract characterization; no SSH connection or production data required."""
+from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import json
 import tempfile
@@ -54,8 +55,7 @@ class WorkspaceAPITests(unittest.TestCase):
         self.assertEqual(json.loads(self.request('/api/jobs')[1]), [])
         self.assertEqual(self.request('/api/health')[0], 200)
 
-    def saved_verifier_fixture(self):
-        identity = 'a' * 32
+    def saved_verifier_fixture(self, identity='a' * 32):
         work = self.settings.database_path.parent / 'invsqrt' / identity
         work.mkdir(parents=True)
         variants, exports = [], []
@@ -74,6 +74,9 @@ class WorkspaceAPITests(unittest.TestCase):
         package = b'fixture export bytes'
         (work / 'submission.zip').write_bytes(package)
         exports.append({'name': 'submission.zip', 'sha256': hashlib.sha256(package).hexdigest()})
+        source = f'X q0 # {identity}'.encode()
+        (work / 'candidate.kmx').write_bytes(source)
+        exports.append({'name': 'candidate.kmx', 'sha256': hashlib.sha256(source).hexdigest()})
         report = {'id': identity, 'status': 'completed', 'created_at': '2026-11-05T00:00:00+00:00',
                   'scope': 'Synthetic test fixture', 'variants': variants, 'exports': exports}
         (work / 'report.json').write_text(json.dumps(report))
@@ -130,6 +133,63 @@ class WorkspaceAPITests(unittest.TestCase):
         stdout = work / 'candidate.stdout.json'
         stdout.write_bytes(stdout.read_bytes() + b'\n')
         self.assertEqual(self.request(run)[0], 409)
+
+    def test_adopt_restore_and_retry_keep_baseline_history_and_reports(self):
+        first, a = self.saved_verifier_fixture()
+        _, b = self.saved_verifier_fixture('b' * 32)
+        original = (first / 'report.json').read_bytes()
+        url = '/api/research-runs/invsqrt-'
+
+        def decide(report, revision, request_id, action='adopt'):
+            return self.request(url + report['id'] + '/baseline', {
+                'expected_project_revision': revision, 'request_id': request_id,
+                'source_sha256': report['exports'][-1]['sha256'], 'decision': action,
+            })
+
+        self.assertEqual(decide(a, 0, 'first')[0], 200)
+        self.assertEqual(decide(b, 0, 'stale')[0], 409)
+        self.assertEqual(decide(b, 1, 'second')[0], 200)
+        status, body = decide(a, 2, 'rollback', 'restore')
+        self.assertEqual(status, 200)
+        state = json.loads(body)['baseline']
+        self.assertEqual(decide(b, 1, 'second'), (200, body))
+        self.assertEqual(decide(a, 3, 'second')[0], 409)
+        run = json.loads(self.request(url + a['id'])[1])['run']
+        self.assertEqual(state['revision'], 3)
+        self.assertEqual([event['action'] for event in state['history']], ['adopt', 'adopt', 'restore'])
+        self.assertEqual(run['project']['baseline'], state)
+        self.assertTrue(run['is_project_baseline'])
+        self.assertEqual((first / 'report.json').read_bytes(), original)
+        self.service.submit.assert_not_called()
+
+    def test_concurrent_windows_cannot_both_adopt_at_one_revision(self):
+        records = [self.saved_verifier_fixture(letter * 32)[1] for letter in 'ab']
+
+        def adopt(report):
+            return self.request('/api/research-runs/invsqrt-' + report['id'] + '/baseline', {
+                'expected_project_revision': 0, 'request_id': report['id'],
+                'source_sha256': report['exports'][-1]['sha256'], 'decision': 'adopt',
+            })[0]
+
+        with ThreadPoolExecutor(max_workers=2) as workers:
+            self.assertEqual(sorted(workers.map(adopt, records)), [200, 409])
+
+    def test_baseline_requires_the_reviewed_archived_source(self):
+        work, report = self.saved_verifier_fixture()
+        url = '/api/research-runs/invsqrt-' + report['id']
+        data = {
+            'expected_project_revision': 0, 'request_id': 'reviewed-source',
+            'source_sha256': report['exports'][-1]['sha256'], 'decision': 'restore',
+        }
+        self.assertEqual(self.request(url + '/baseline', data)[0], 409)
+        data['decision'] = 'adopt'
+        (work / 'candidate.kmx').write_bytes(b'tampered source')
+        self.assertEqual(self.request(url + '/baseline', data)[0], 409)
+        (work / 'candidate.kmx').write_bytes(f"X q0 # {report['id']}".encode())
+        (work / 'report.json').rename(work.parent / 'current.json')
+        self.assertEqual(self.request(url)[0], 200)
+        self.assertEqual(self.request(url + '/baseline', data)[0], 409)
+        self.assertFalse((work.parent / 'project-baseline.json').exists())
 
     def test_compilation_delegates_to_service(self):
         body = {'source': 'OPENQASM 2.0; qreg q[2];'}

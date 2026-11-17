@@ -35,14 +35,18 @@ def evidence_directory(path):
 
 def regular_bytes(path, limit):
     with evidence_directory(path.parent) as directory:
-        descriptor = os.open(path.name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK,
-                             dir_fd=directory)
-        with os.fdopen(descriptor, 'rb') as stream:
-            before = os.fstat(stream.fileno())
-            if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or before.st_size > limit:
-                raise ValueError('Evidence must be a bounded regular file.')
-            raw = stream.read(limit + 1)
-            after = os.fstat(stream.fileno())
+        return regular_file_bytes(directory, path.name, limit)
+
+
+def regular_file_bytes(directory, name, limit):
+    descriptor = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK,
+                         dir_fd=directory)
+    with os.fdopen(descriptor, 'rb') as stream:
+        before = os.fstat(stream.fileno())
+        if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or before.st_size > limit:
+            raise ValueError('Evidence must be a bounded regular file.')
+        raw = stream.read(limit + 1)
+        after = os.fstat(stream.fileno())
     if len(raw) > limit or (before.st_mtime_ns, before.st_size) != (after.st_mtime_ns, after.st_size):
         raise ValueError('Evidence changed while reading.')
     return raw
@@ -70,7 +74,7 @@ def read_json(raw):
     return value
 
 
-def read_report(settings, identity=None):
+def read_report(settings, identity=None, *, allow_current=True):
     root = evidence_root(settings)
     if identity is not None and not IDENTITY.fullmatch(identity):
         raise ValueError('Invalid evidence identity.')
@@ -78,7 +82,7 @@ def read_report(settings, identity=None):
     try:
         report = read_json(regular_bytes(path, REPORT_LIMIT))
     except FileNotFoundError:
-        if identity:
+        if identity and allow_current:
             current = read_report(settings)
             return current if current and current['id'] == identity else None
         return None
@@ -127,15 +131,18 @@ def read_report(settings, identity=None):
 
 
 def read_export(settings, identity, name):
+    return read_report_export(settings, read_report(settings, identity), name)
+
+
+def read_report_export(settings, report, name):
     if not EXPORT_NAME.fullmatch(name):
         raise ValueError('Invalid evidence export name.')
-    report = read_report(settings, identity)
-    if not report or report['id'] != identity or report.get('status') != 'completed':
+    if not report or report.get('status') != 'completed':
         raise ValueError('Completed evidence is unavailable.')
     entry = next((item for item in report['exports'] if item['name'] == name), None)
     if not entry:
         raise ValueError('Export is unavailable.')
-    raw = regular_bytes(evidence_root(settings) / identity / name, 128 * 1024 * 1024)
+    raw = regular_bytes(evidence_root(settings) / report['id'] / name, 128 * 1024 * 1024)
     if hashlib.sha256(raw).hexdigest() != entry['sha256']:
         raise ValueError('Export hash mismatch.')
     return raw

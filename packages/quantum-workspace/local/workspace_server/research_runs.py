@@ -2,6 +2,7 @@
 from math import isfinite
 
 from .invsqrt_evidence import evidence_ids, read_report
+from .research_baseline import project_baseline
 
 
 def research_run(report, details=False):
@@ -84,4 +85,17 @@ def read_research_run(settings, identity):
     if not identity.startswith('invsqrt-'):
         return None
     report = read_report(settings, identity.removeprefix('invsqrt-'))
-    return research_run(report, details=True) if report else None
+    if not report:
+        return None
+    run = research_run(report, details=True)
+    baseline = project_baseline(settings)
+    run['project']['baseline'] = baseline
+    current = baseline['current']
+    run['is_project_baseline'] = bool(
+        current and current['run_id'] == identity
+        and report['status'] == 'completed'
+        and current['source_sha256'] == run['source_sha256']
+        and any(v['name'] == 'candidate' and v['sha256'] == current['circuit_sha256']
+                and v['report_sha256'] == current['report_sha256'] for v in report['variants'])
+    )
+    return run

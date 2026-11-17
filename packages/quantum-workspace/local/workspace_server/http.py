@@ -21,6 +21,7 @@ from .experiments import ExperimentImports, MAX_UPLOAD_BYTES
 from .research_packages import ResearchPackages, MAX_PACKAGE
 from .invsqrt_evidence import read_export
 from .research_runs import list_research_runs, read_research_run
+from .research_baseline import update_baseline
 from .reproduction import Reproductions
 from .projects import ProjectConflict
 
@@ -300,6 +301,21 @@ def create_server(settings, service):
         def do_POST(self):
             if not self.allowed():
                 return self.reply({'error': 'Only local same-origin access is allowed.'}, 403)
+            baseline = re.fullmatch(r'/api/research-runs/(invsqrt-[a-f0-9]{32})/baseline', self.path)
+            if baseline:
+                try:
+                    length = int(self.headers.get('Content-Length', '0'))
+                    if self.headers.get('Content-Type', '').split(';')[0] != 'application/json' or not 0 < length <= 4096:
+                        raise ValueError('Use bounded JSON for baseline decisions.')
+                    data = json.loads(self.rfile.read(length))
+                except (ValueError, TypeError):
+                    return self.reply({'error': 'Invalid baseline decision body.'}, 400)
+                try:
+                    return self.reply({'baseline': update_baseline(settings, baseline.group(1), data)})
+                except ValueError as error:
+                    return self.reply({'error': str(error)}, 409)
+                except (OSError, TypeError, KeyError, ArithmeticError):
+                    return self.reply({'error': 'Cannot update the baseline. Check the archived evidence.'}, 409)
             if self.path in ('/api/execution-profile/check', '/api/execution-profile/activate'):
                 if not environments:
                     return self.reply({'error':'Execution selection is unavailable for this adapter.'}, 404)
