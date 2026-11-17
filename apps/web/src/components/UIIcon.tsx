@@ -63,6 +63,10 @@ const shapes = {
       <path d="M14 3v6h6" />
     </>
   ),
+  folder: (
+    <path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" />
+  ),
+  chevron: <path d="m9 5 7 7-7 7" />,
   code: <path d="m8 6-6 6 6 6m8-12 6 6-6 6m-3-16-2 20" />,
   circuit: (
     <>

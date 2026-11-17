@@ -4593,11 +4593,29 @@ body,
 .fq-project-folder {
   min-width: 0;
 }
-.fq-project-folder summary {
+.fq-project-folder > summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 4px 8px;
+  list-style: none;
   cursor: pointer;
   color: #bdc4cc;
-  padding: 7px 8px;
   font-size: 12px;
+}
+.fq-project-folder > summary::-webkit-details-marker {
+  display: none;
+}
+.fq-project-folder > summary .fq-ui-icon {
+  flex-shrink: 0;
+  color: #a2afbf;
+}
+.fq-project-folder[open] > summary .fq-project-folder-chevron {
+  transform: rotate(90deg);
+}
+.fq-project-folder > summary:hover {
+  background: #ffffff09;
 }
 .fq-project-folder > button,
 .fq-project-folder > details {
@@ -4609,19 +4627,22 @@ body,
   color: var(--muted);
   line-height: 1.6;
 }
-.fq-project-empty h3 {
-  color: var(--text);
-  font-size: 17px;
-  font-weight: 500;
-  margin: 12px 0 8px;
-}
 .fq-project-empty p {
   margin: 0 0 16px;
 }
-.fq-project-empty-symbol {
-  color: #a0bed4;
-  font-size: 28px;
-  letter-spacing: 2px;
+.fq-project-start {
+  padding: 6px 0 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.fq-project-start h3 {
+  margin: 0 0 4px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+}
+.fq-project-start p {
+  margin: 0 0 8px;
 }
 .fq-project-empty small {
   display: block;
