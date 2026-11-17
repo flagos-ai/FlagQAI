@@ -7048,6 +7048,47 @@ body,
 .fq-jobs-list {
   padding-bottom: 8px;
 }
+.fq-research-run {
+  min-width: 0;
+  overflow: auto;
+  overflow-wrap: anywhere;
+}
+.fq-research-run header {
+  margin-top: 12px;
+}
+.fq-research-run h2 {
+  margin: 4px 0;
+}
+.fq-research-status {
+  text-transform: capitalize;
+}
+.fq-research-run-table {
+  overflow-x: auto;
+}
+.fq-research-run-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.fq-research-run-table :is(th, td) {
+  padding: 6px 10px;
+  border-bottom: 1px solid #ffffff19;
+  text-align: left;
+}
+.fq-research-run-table :is(td, thead th:not(:first-child)) {
+  white-space: nowrap;
+  text-align: right;
+}
+.fq-research-run-downloads {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 12px 0;
+}
+.fq-research-run details pre {
+  max-height: 320px;
+  overflow: auto;
+}
 .fq-jobs-list h3 {
   padding-top: 10px;
   padding-bottom: 5px;

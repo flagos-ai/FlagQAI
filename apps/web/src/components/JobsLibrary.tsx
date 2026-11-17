@@ -5,6 +5,7 @@ import type {
 } from "../contracts/quantum-workspace";
 import { jobActive, jobGroups, jobStatus } from "../state/job-presentation";
 import { UIIcon } from "./UIIcon";
+import { ResearchRunList } from "./ResearchRunList";
 
 export function JobsLibrary({
   state,
@@ -23,7 +24,10 @@ export function JobsLibrary({
   return (
     <>
       <div className="fq-pane-title">
-        JOBS <span className="fq-jobs-total">{state.jobs.length}</span>
+        JOBS
+        {state.jobs.length > 0 && (
+          <span className="fq-jobs-total">{state.jobs.length}</span>
+        )}
       </div>
       <div className="fq-jobs-search">
         <label>
@@ -56,7 +60,8 @@ export function JobsLibrary({
                 key={job.id}
                 className={
                   "fq-job-row " +
-                  ((state.selectedJobId || state.jobs[0]?.id) === job.id
+                  (!state.selectedResearchRunId &&
+                  (state.selectedJobId || state.jobs[0]?.id) === job.id
                     ? "selected"
                     : "")
                 }
@@ -87,6 +92,7 @@ export function JobsLibrary({
                         : `${job.name} · ${jobStatus(job)}${job.experiment ? " · " + new Date(job.experiment.imported_at).toLocaleString() : ""}`
                   }
                   aria-current={
+                    !state.selectedResearchRunId &&
                     (state.selectedJobId || state.jobs[0]?.id) === job.id
                       ? "true"
                       : undefined
@@ -152,13 +158,21 @@ export function JobsLibrary({
             ))}
           </section>
         ))}
-        {!groups.length && (
-          <p className="fq-jobs-no-match">
-            {state.jobs.length
-              ? "No matching jobs. Try another search or status."
-              : "Your runs and saved results will appear here."}
-          </p>
-        )}
+        <ResearchRunList
+          query={query}
+          status={status}
+          selectedId={state.selectedResearchRunId}
+          dispatch={dispatch}
+          empty={
+            !groups.length && (
+              <p className="fq-jobs-no-match">
+                {state.jobs.length || query.trim() || status !== "all"
+                  ? "No matching jobs. Try another search or status."
+                  : "Your runs and saved results will appear here."}
+              </p>
+            )
+          }
+        />
       </div>
       <div className="fq-jobs-compare-action">
         <button
