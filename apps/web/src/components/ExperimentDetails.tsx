@@ -62,7 +62,13 @@ export function ExperimentDetails({ info }: { info: ExperimentInfo }) {
   );
 }
 
-export function RecordedValues({ info }: { info: ExperimentInfo }) {
+export function RecordedValues({
+  info,
+  showReturnedValue = false,
+}: {
+  info: ExperimentInfo;
+  showReturnedValue?: boolean;
+}) {
   const values = [
     ["Returned value", info.value],
     ["Recorded state", info.state],
@@ -71,7 +77,11 @@ export function RecordedValues({ info }: { info: ExperimentInfo }) {
   return (
     <>
       {values.map(([label, value]) => (
-        <details className="fq-record-value" key={String(label)}>
+        <details
+          className="fq-record-value"
+          key={String(label)}
+          open={showReturnedValue && label === "Returned value"}
+        >
           <summary>{String(label)}</summary>
           <p>
             Complex amplitudes use [real, imaginary]. Previews show up to 1024
