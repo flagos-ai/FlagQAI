@@ -40,6 +40,12 @@ export type CandidateRevision = {
   expected_project_revision: number;
 };
 
+export type CandidateDecision = Omit<BaselineDecision, "decision"> & {
+  decision: "verify" | "reject";
+};
+
+export const RESEARCH_RUNS_CHANGED = "fq-research-runs-changed";
+
 export type ResearchRun = ResearchRunSummary & {
   project: ResearchRunSummary["project"] & { baseline?: ProjectBaseline };
   is_project_baseline?: boolean;
@@ -114,6 +120,12 @@ export const researchRunsAPI = {
         body: JSON.stringify(revision),
       },
     ),
+  decide: (id: string, decision: CandidateDecision) =>
+    request<{ run: ResearchRun }>(`/${encodeURIComponent(id)}/decision`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(decision),
+    }),
   file: (id: string, name: string) =>
     `${endpoint}/${encodeURIComponent(id)}/files/${encodeURIComponent(name)}`,
 };

@@ -381,3 +381,126 @@ test("a failed research candidate can be revised after refresh and a lost receip
     await rm(root, { recursive: true });
   }
 });
+
+test("candidate review requires confirmation and follows verification after reload", async ({
+  page,
+}) => {
+  const { cwd } = await (await page.request.get("/api/agent")).json();
+  expect(basename(cwd)).toMatch(/^flagqai-ui-test-/);
+  const root = join(cwd, "invsqrt");
+  const identity = randomUUID().replaceAll("-", "");
+  const item = "/api/research-runs/invsqrt-" + identity;
+  await mkdir(root);
+  try {
+    const parent = join(root, identity);
+    await mkdir(parent);
+    await saveVerifiedRun(parent, identity, "Verified review baseline", 180);
+    const source = await readFile(join(parent, "candidate.kmx"));
+    const stage = async (request_id) => {
+      const response = await page.request.post(item + "/revision", {
+        data: {
+          request_id,
+          parent_sha256: sha256(source),
+          expected_project_revision: 0,
+          before: "X q0",
+          after: "Z q0",
+          reason: "Compare a new gate",
+        },
+      });
+      expect(response.ok()).toBe(true);
+      return (await response.json()).research_run.id;
+    };
+    const first = await stage("browser-verify"),
+      second = await stage("browser-reject");
+    const open = async (id) =>
+      page
+        .getByRole("button", {
+          name: new RegExp(
+            `^Open research run Candidate revision.*${id.slice(-8)}$`,
+          ),
+        })
+        .click();
+    const detail = page.getByRole("region", {
+      name: "Research run",
+      exact: true,
+    });
+    const review = (name) =>
+      detail
+        .getByRole("region", { name: "Candidate review" })
+        .getByRole("button", { name, exact: true });
+    const confirm = (title, name) =>
+      page
+        .getByRole("dialog", { name: title, exact: true })
+        .getByRole("button", { name, exact: true });
+
+    await page.goto("/#jobs");
+    await open(first);
+    const transitions = [];
+    const path = join(root, first.replace("invsqrt-", ""), "report.json");
+    const staged = JSON.parse(await readFile(path, "utf8"));
+    await page.route("**/decision", async (route) => {
+      const decision = route.request().postDataJSON();
+      if (decision.decision === "reject") {
+        await route.continue();
+        return;
+      }
+      transitions.push(decision);
+      if (transitions.length === 1) {
+        await route.abort("failed");
+        return;
+      }
+      await writeFile(path, JSON.stringify({ ...staged, status: "running" }));
+      const response = await page.request.get("/api/research-runs/" + first);
+      await route.fulfill({ response });
+    });
+
+    await review("Verify candidate").click();
+    await confirm("Verify candidate", "Cancel").click();
+    expect(transitions).toHaveLength(0);
+    await review("Verify candidate").click();
+    await confirm("Verify candidate", "Start verification").click();
+    await expect(page.getByRole("dialog").getByRole("alert")).toContainText(
+      "Failed to fetch",
+    );
+    await page.reload();
+    await review("Verify candidate").click();
+    await confirm("Verify candidate", "Start verification").click();
+    await expect(detail.getByRole("status")).toContainText(
+      "Verification running locally",
+    );
+    expect(transitions).toHaveLength(2);
+    expect(transitions[0]).toEqual(transitions[1]);
+    await page.reload();
+    await expect(detail.getByRole("status")).toContainText(
+      "Verification running locally",
+    );
+    await writeFile(
+      path,
+      JSON.stringify({
+        ...staged,
+        status: "interrupted",
+        error: "Verification was interrupted.",
+      }),
+    );
+    await expect(detail.getByRole("alert")).toContainText(
+      "Verification was interrupted.",
+    );
+    await expect(
+      detail.getByText("Continue with a new revision"),
+    ).toBeVisible();
+    expect(transitions).toHaveLength(2);
+
+    await open(second);
+    await review("Reject candidate").click();
+    await confirm("Reject candidate", "Confirm rejection").click();
+    await expect(detail.getByText("rejected", { exact: true })).toBeVisible();
+    await expect(
+      detail.getByRole("region", { name: "Candidate review" }),
+    ).toHaveCount(0);
+    await expect(
+      detail.getByText("Continue with a new revision"),
+    ).toBeVisible();
+  } finally {
+    await rm(root, { recursive: true });
+  }
+});

@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
-import { researchRunsAPI, type ResearchRun } from "../api/research-runs";
+import {
+  RESEARCH_RUNS_CHANGED,
+  researchRunsAPI,
+  type ResearchRun,
+} from "../api/research-runs";
 import { ResearchBaseline } from "./ResearchBaseline";
+import { ResearchCandidateDecision } from "./ResearchCandidateDecision";
 import {
   ResearchCandidateDiff,
   ResearchCandidateRevision,
@@ -26,26 +31,39 @@ export function ResearchRunDetails({
   const [error, setError] = useState("");
   const [revision, setRevision] = useState(0);
   const [showEvidence, setShowEvidence] = useState(false);
+  const running = run?.status === "running";
   useEffect(() => {
     const controller = new AbortController();
-    void researchRunsAPI
-      .read(id, controller.signal)
-      .then(({ run }) => {
+    let timer: ReturnType<typeof setTimeout>;
+    let follow = running;
+    const load = async () => {
+      try {
+        const { run } = await researchRunsAPI.read(id, controller.signal);
         if (!controller.signal.aborted) {
+          if (follow && run.status !== "running")
+            window.dispatchEvent(new Event(RESEARCH_RUNS_CHANGED));
+          follow = run.status === "running";
           setRun(run);
           setError("");
         }
-      })
-      .catch((problem) => {
+      } catch (problem) {
         if (!controller.signal.aborted)
           setError(
             problem instanceof Error
               ? problem.message
               : "Cannot read this research run.",
           );
-      });
-    return () => controller.abort();
-  }, [id, revision]);
+      } finally {
+        if (follow && !controller.signal.aborted)
+          timer = setTimeout(load, 2000);
+      }
+    };
+    void load();
+    return () => {
+      controller.abort();
+      clearTimeout(timer);
+    };
+  }, [id, revision, running]);
   const ratio = run?.comparison.cost_ratio;
   const change =
     ratio && Number.isFinite(ratio) && ratio > 0 ? (1 - 1 / ratio) * 100 : null;
@@ -97,6 +115,7 @@ export function ResearchRunDetails({
           </header>
           <p>{run.summary}</p>
           {run.error && <p role="alert">{run.error}</p>}
+          {running && <p role="status">Verification running locally…</p>}
           {change !== null && (
             <p>
               Resource cost{" "}
@@ -153,6 +172,18 @@ export function ResearchRunDetails({
             </nav>
           )}
           <ResearchCandidateDiff run={run} onOpen={onOpen} />
+          {run.status === "review" && sourceHash && baseline && (
+            <ResearchCandidateDecision
+              run={run}
+              sourceHash={sourceHash}
+              projectRevision={baseline.revision}
+              onReload={reload}
+              onChange={(updated) => {
+                setRun(updated);
+                window.dispatchEvent(new Event(RESEARCH_RUNS_CHANGED));
+              }}
+            />
+          )}
           {baseline && (
             <ResearchBaseline
               run={run}
