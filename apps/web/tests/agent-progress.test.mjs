@@ -178,6 +178,34 @@ test("compact progress exposes pending work and failures without falsely complet
   assert.match(html, /&lt;script&gt;/);
 });
 
+test("collapsed progress names the current task only while its turn is active", () => {
+  const todos = [
+    { content: "Read source", status: "completed" },
+    { content: "Check <outputs>", status: "in_progress" },
+    { content: "Save report", status: "pending" },
+  ];
+  const render = (active, items = todos) =>
+    renderToStaticMarkup(
+      React.createElement(AgentProgress, {
+        active,
+        todos: items,
+        children: [],
+      }),
+    );
+  const summary = (html) => html.match(/<summary>(.*?)<\/summary>/s)?.[1];
+  const live = render(true);
+  assert.match(summary(live), /Tasks 1\/3/);
+  assert.match(summary(live), /title="Check &lt;outputs&gt;"/);
+  assert.doesNotMatch(summary(live), /Read source|Save report/);
+  const history = render(false);
+  assert.doesNotMatch(summary(history), /Check &lt;outputs&gt;/);
+  assert.match(history, /<li class="in_progress">.*Check &lt;outputs&gt;/);
+  assert.doesNotMatch(
+    summary(render(true, [todos[0], todos[2]])),
+    /fq-progress-title/,
+  );
+});
+
 test("a background child after the final reply never folds the final answer", () => {
   const state = {
     ...emptyAgentView(),

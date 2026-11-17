@@ -430,10 +430,13 @@ const backend = {
             }
             return;
           }
+          const progressRequested =
+            requestText.trim() === "Inspect circuit progress.";
           if (
-            process.env.FQ_TEST_BRIDGE === "1" ||
-            process.env.FQ_TEST_PYTHON === "1" ||
-            process.env.FQ_TEST_REPAIR === "1"
+            !progressRequested &&
+            (process.env.FQ_TEST_BRIDGE === "1" ||
+              process.env.FQ_TEST_PYTHON === "1" ||
+              process.env.FQ_TEST_REPAIR === "1")
           ) {
             const marker = "\n\n<workspace_controls>\n";
             const at = input.text.lastIndexOf(marker);
@@ -1286,7 +1289,9 @@ const backend = {
             );
             return;
           }
-          if (process.env.FQ_TEST_PROGRESS === "1") {
+          const showProgress =
+            process.env.FQ_TEST_PROGRESS === "1" || progressRequested;
+          if (showProgress) {
             const agentId = `child-${turn}`;
             const createdAt = Date.now();
             children.set(agentId, {
@@ -1423,7 +1428,7 @@ const backend = {
             }
             return;
           }
-          await finish(callId, false);
+          await finish(callId, false, showProgress);
         })().catch((error) => {
           status = "idle";
           emit(
@@ -1494,7 +1499,11 @@ const backend = {
         { type: "assistant.attempt.end", attemptId, outcome: "completed" },
       );
     }
-    async function finish(callId, rejected) {
+    async function finish(
+      callId,
+      rejected,
+      showProgress = process.env.FQ_TEST_PROGRESS === "1",
+    ) {
       if (cancelled) return;
       emit({
         type: "tool.result",
@@ -1554,7 +1563,7 @@ This is a saved test response; no model was called.`
               : "The tool completed. Streaming reply and tool history are preserved by the native projection.",
         2,
       );
-      if (process.env.FQ_TEST_PROGRESS === "1")
+      if (showProgress)
         emit({
           type: "todo.write",
           items: [

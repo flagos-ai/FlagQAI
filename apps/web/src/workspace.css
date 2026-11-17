@@ -3516,6 +3516,9 @@ body,
   overflow: hidden;
   background: #ffffff0b;
 }
+.fq-todo-count {
+  white-space: nowrap;
+}
 .fq-agent-todos progress::-webkit-progress-bar {
   background: #ffffff0b;
 }
