@@ -240,6 +240,7 @@ type ReadingPosition = {
   workedOpen: boolean;
   resource: string;
   cursor: number;
+  unreadReply?: boolean;
 };
 
 function readPosition(key: string): ReadingPosition | null {
@@ -303,26 +304,34 @@ export function AgentTranscript({
     ? "fq-agent-reading:" +
       JSON.stringify([session.backendId, session.sessionId, session.cwd])
     : "";
-  const savePosition = () => {
-    const node = viewport.current;
-    if (!node || !session || pendingPosition.current) return;
-    if (follow.current) {
-      writePosition(positionKey, null);
-      return;
-    }
-    const top = node.getBoundingClientRect().top;
-    const turn = Array.from(
-      node.querySelectorAll<HTMLElement>("[data-reading-turn]"),
-    ).find((element) => element.getBoundingClientRect().bottom > top);
-    if (!turn?.dataset.readingTurn) return;
-    writePosition(positionKey, {
-      turn: turn.dataset.readingTurn,
-      offset: top - turn.getBoundingClientRect().top,
-      workedOpen: !!turn.querySelector(":scope > details.fq-agent-work[open]"),
-      resource: session.id,
-      cursor: agent.view.cursor,
-    });
-  };
+  const resource = session?.id;
+  const cursor = agent.view.cursor;
+  const savePosition = useCallback(
+    (unread: boolean) => {
+      const node = viewport.current;
+      if (!node || !resource || pendingPosition.current) return;
+      if (follow.current) {
+        writePosition(positionKey, null);
+        return;
+      }
+      const top = node.getBoundingClientRect().top;
+      const turn = Array.from(
+        node.querySelectorAll<HTMLElement>("[data-reading-turn]"),
+      ).find((element) => element.getBoundingClientRect().bottom > top);
+      if (!turn?.dataset.readingTurn) return;
+      writePosition(positionKey, {
+        turn: turn.dataset.readingTurn,
+        offset: top - turn.getBoundingClientRect().top,
+        workedOpen: !!turn.querySelector(
+          ":scope > details.fq-agent-work[open]",
+        ),
+        resource,
+        cursor,
+        unreadReply: unread,
+      });
+    },
+    [positionKey, resource, cursor],
+  );
   const [pinned, setPinned] = useState<number | null>(null);
   const [away, setAway] = useState(false);
   const [unreadReply, setUnreadReply] = useState(false);
@@ -370,11 +379,14 @@ export function AgentTranscript({
       if (
         !saved &&
         !follow.current &&
+        !atLatestOutput(node) &&
+        !unreadReply &&
         previous !== undefined &&
         latestReply &&
         (previous?.id !== latestReply.id || previous.text !== latestReply.text)
       ) {
         setUnreadReply(true);
+        savePosition(true);
       }
       previousReply.current = latestReply;
     }
@@ -389,6 +401,7 @@ export function AgentTranscript({
       ).find((element) => element.dataset.readingTurn === saved.turn);
       pendingPosition.current = null;
       if (turn) {
+        setUnreadReply(saved.unreadReply === true);
         const worked = turn.querySelector<HTMLDetailsElement>(
           ":scope > details.fq-agent-work",
         );
@@ -417,7 +430,9 @@ export function AgentTranscript({
     agent.sending,
     measure,
     positionKey,
+    savePosition,
     session?.id,
+    unreadReply,
   ]);
   useLayoutEffect(() => {
     const observer = new ResizeObserver(() => {
@@ -452,7 +467,7 @@ export function AgentTranscript({
               node.getBoundingClientRect().top -
               12;
             measure();
-            savePosition();
+            savePosition(unreadReply);
             target.focus({ preventScroll: true });
           }}
         >
@@ -468,7 +483,7 @@ export function AgentTranscript({
           if (pendingPosition.current) return;
           follow.current = atLatestOutput(event.currentTarget);
           measure();
-          savePosition();
+          savePosition(unreadReply);
         }}
         role="log"
         tabIndex={-1}
@@ -583,7 +598,7 @@ export function AgentTranscript({
                           return;
                         }
                         if (!details.open) {
-                          savePosition();
+                          savePosition(unreadReply);
                           return;
                         }
                         const node = viewport.current;
@@ -602,7 +617,7 @@ export function AgentTranscript({
                         );
                         if (reveal > 0) node.scrollTop += reveal;
                         measure();
-                        savePosition();
+                        savePosition(unreadReply);
                       }}
                     >
                       <summary
@@ -780,7 +795,7 @@ export function AgentTranscript({
             if (viewport.current)
               viewport.current.scrollTop = viewport.current.scrollHeight;
             measure();
-            savePosition();
+            savePosition(unreadReply);
             viewport.current?.focus({ preventScroll: true });
           }}
         >

@@ -184,12 +184,22 @@ test("latest output hides at the bottom and opening Worked for reveals its first
   await expect
     .poll(() => transcript.evaluate((node) => node.scrollTop))
     .toBe(0);
+  await page.reload();
+  await expect(connected).toBeVisible();
+  await expect(latest).toHaveAttribute("data-unread", "true");
+  await expect
+    .poll(() => transcript.evaluate((node) => node.scrollTop))
+    .toBe(0);
   await latest.click();
   await expect(latest).toHaveCount(0);
   await expect(transcript.getByText("New scripted reply.")).toBeInViewport();
   await transcript.evaluate((node) => {
     node.scrollTop = 0;
   });
+  await expect(latest).toHaveAttribute("title", "Latest output");
+  await expect(latest).not.toHaveAttribute("data-unread");
+  await page.reload();
+  await expect(connected).toBeVisible();
   await expect(latest).toHaveAttribute("title", "Latest output");
   await expect(latest).not.toHaveAttribute("data-unread");
   await expect(editor).toHaveValue(draft);
