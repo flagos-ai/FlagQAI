@@ -450,6 +450,7 @@ export default function App() {
           )}
           {state.page === "model" && (
             <ModelPage
+              codePreview={bridge.liveCode}
               onFindFile={() => setQuickOpen(true)}
               projectWorkspace={projectWorkspace}
               onOpenProject={() => {

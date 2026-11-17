@@ -1,3 +1,4 @@
+import { codeStream, type AgentCodeStream } from "./agent-code-preview.ts";
 import { stripPlatformControls } from "./agent-attachments.ts";
 import { todoItems, type TurnProgress } from "./agent-progress.ts";
 import type {
@@ -10,6 +11,7 @@ import type {
   QuestionRequestView,
 } from "../../../../packages/protocol/agent/events.mjs";
 export type AgentView = {
+  codeStream?: AgentCodeStream;
   cursor: number;
   progress?: Record<number, TurnProgress>;
   todoSnapshot?: string;
@@ -49,6 +51,7 @@ export function applyAgentRecord(
   if (record.id <= previous.cursor) return previous;
   const next = { ...previous, cursor: record.id },
     event = record.event;
+  next.codeStream = codeStream(previous.codeStream, record);
   // Native timestamps survive replay/reconnect; never time a turn from browser arrival.
   if (
     event.type === "user.message" &&

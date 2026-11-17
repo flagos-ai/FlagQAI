@@ -148,7 +148,11 @@ export function useAgentConversation() {
           if (controller.signal.aborted) return;
           // Retain transcript rows, but require a fresh native snapshot before
           // accepting input after reconnect; opening HTTP alone is insufficient.
-          setView((previous) => ({ ...previous, projected: false }));
+          setView((previous) => ({
+            ...previous,
+            projected: false,
+            codeStream: undefined,
+          }));
           if (
             problem instanceof FlagQaiApiError &&
             [403, 404].includes(problem.status)

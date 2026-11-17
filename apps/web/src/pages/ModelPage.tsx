@@ -6,6 +6,8 @@ import {
 } from "../state/python-style";
 import { reviewActionValid, type ReviewAction } from "../state/agent-review";
 import { workspaceReducer } from "../state/reducer";
+import { LivePythonPreview } from "../components/LivePythonPreview";
+import type { AgentCodePreview } from "../state/agent-code-preview";
 import { UIIcon } from "../components/UIIcon";
 import { EditorFind } from "../components/EditorFind";
 import { markCodeMatch, type CodeMatch } from "../state/editor-find";
@@ -43,6 +45,7 @@ import type { PythonRun } from "../api/python-runs";
 import type { PlatformBridge } from "../hooks/usePlatformBridge";
 import type { ResearchTurn } from "../state/research-record";
 export function ModelPage({
+  codePreview,
   state,
   dispatch,
   compile,
@@ -70,6 +73,7 @@ export function ModelPage({
     endLine: number,
   ) => void;
   state: WorkspaceState;
+  codePreview?: AgentCodePreview;
   dispatch: React.Dispatch<WorkspaceAction>;
   compile: (source?: string, name?: string) => Promise<void>;
 }) {
@@ -232,7 +236,7 @@ export function ModelPage({
       !["queued", "running"].includes(python.run?.status || "")
     : errors.length === 0 && !state.busy;
   const runCurrent = () => {
-    if (!canRun) return;
+    if (!canRun || codePreview) return;
     if (isPython) void python.start(!!needsProjectSave);
     else compile();
   };
@@ -422,7 +426,7 @@ export function ModelPage({
             }));
           }}
         />
-        <div className="fq-toolbar fq-model-toolbar">
+        <div className="fq-toolbar fq-model-toolbar" inert={!!codePreview}>
           <div className="fq-model-document">
             <span className="fq-filename">
               <UIIcon name="file" size={14} />
@@ -646,6 +650,8 @@ export function ModelPage({
           </pre>
           <textarea
             ref={editor}
+            inert={!!codePreview}
+            aria-hidden={codePreview ? true : undefined}
             onSelect={(event) => {
               capturePosition(event.currentTarget);
               setSelection({
@@ -759,6 +765,9 @@ export function ModelPage({
                 setFocus(false);
             }}
           />
+          {codePreview && (
+            <LivePythonPreview key={codePreview.id} preview={codePreview} />
+          )}
         </div>
         <div className="fq-editor-status">
           ●{" "}

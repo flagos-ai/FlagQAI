@@ -1476,3 +1476,31 @@
 .fq-preview-gate-details > p {
   margin: 4px 0;
 }
+
+.fq-live-python-preview {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: #25262a;
+  color: #c6cfdd;
+}
+.fq-live-python-preview .fq-editor-status {
+  flex: 0 0 auto;
+  font-family: inherit;
+}
+.fq-live-python-preview .fq-editor-status strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fq-live-python-preview pre {
+  margin: 0;
+  padding: 12px 20px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  font: inherit;
+  tab-size: 4;
+}
