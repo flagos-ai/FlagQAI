@@ -100,13 +100,24 @@ test("Agent completion is required before declaring a recovered task ready", () 
   }
   assert.equal(status(runs, { active: true }).label, "Agent working");
 });
-test("clean first-attempt and interrupted tasks preserve their original result states", () => {
+test("an interrupted Agent turn retains saved results without marking the task complete", () => {
   assert.equal(status([run("ok")]).label, "Experiment ready");
-  assert.equal(
-    status([run("ok")], { outcome: "error" }).label,
-    "Results saved",
-  );
+  const interrupted = status([run("ok")], { outcome: "error" });
+  assert.equal(interrupted.label, "Results saved · task interrupted");
+  assert.equal(interrupted.needsAttention, true);
+  assert.equal(interrupted.settled, false);
+  assert.deepEqual(interrupted.problems, []);
   assert.equal(status([]).label, "No saved result yet");
+});
+
+test("a failed Agent turn with no submitted runs never looks like a successful result", () => {
+  for (const outcome of ["error", "cancelled", "interrupted"]) {
+    const s = status([], { outcome });
+    assert.equal(s.needsAttention, true);
+    assert.equal(s.settled, false);
+    assert.equal(s.label, "Task interrupted · no saved result");
+    assert.deepEqual(s.problems, []);
+  }
 });
 
 test("unknown collection status does not turn completed execution into ready results", () => {
@@ -114,5 +125,14 @@ test("unknown collection status does not turn completed execution into ready res
     run("latest", "completed", { collection_status: undefined }),
   ]);
   assert.equal(s.label, "Checking run progress");
+  assert.equal(s.settled, false);
+});
+
+test("an interrupted turn still shows pending result collection before the terminal summary", () => {
+  const s = status(
+    [run("pending", "completed", { collection_status: "collecting" })],
+    { outcome: "cancelled", savedResults: 0 },
+  );
+  assert.equal(s.label, "Collecting saved results");
   assert.equal(s.settled, false);
 });

@@ -193,7 +193,10 @@ export function AgentExperimentTask({
         </li>
         <li
           className={
-            outputs.length && !collecting && !task.needsAttention && !incomplete
+            outputs.length &&
+            !collecting &&
+            (task.problems.length === 0 || task.recovered) &&
+            !incomplete
               ? "done"
               : collecting
                 ? "current"
@@ -240,7 +243,7 @@ export function AgentExperimentTask({
           </ul>
         </details>
       )}
-      {task.needsAttention && (
+      {task.needsAttention && task.problems.length > 0 && (
         <p>
           Open run details for execution or collection errors. Earlier results
           are retained.

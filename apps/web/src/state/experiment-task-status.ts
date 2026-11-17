@@ -65,7 +65,9 @@ export function experimentTaskStatus({
     latestReady &&
     savedResults > 0 &&
     problems.length > 0;
-  const needsAttention = problems.length > 0 && !recovered;
+  const interrupted =
+    !active && outcome !== undefined && outcome !== "completed";
+  const needsAttention = interrupted || (problems.length > 0 && !recovered);
   const settled =
     !active && !working && !collecting && !incomplete && !needsAttention;
   const label = working
@@ -76,13 +78,17 @@ export function experimentTaskStatus({
         ? "Checking run progress"
         : active
           ? "Agent working"
-          : needsAttention
-            ? "Run needs attention"
-            : savedResults
-              ? outcome === "completed"
-                ? "Experiment ready"
-                : "Results saved"
-              : "No saved result yet";
+          : interrupted
+            ? savedResults
+              ? "Results saved · task interrupted"
+              : "Task interrupted · no saved result"
+            : needsAttention
+              ? "Run needs attention"
+              : savedResults
+                ? outcome === "completed"
+                  ? "Experiment ready"
+                  : "Results saved"
+                : "No saved result yet";
   return {
     working,
     collecting,

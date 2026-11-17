@@ -764,9 +764,11 @@ const backend = {
             }
             if (
               process.env.FQ_E2E_CONTROL_DIR &&
-              ["follow acceptance", "comparison acceptance"].includes(
-                requestText.trim(),
-              )
+              [
+                "follow acceptance",
+                "comparison acceptance",
+                "interrupted comparison acceptance",
+              ].includes(requestText.trim())
             ) {
               const barrier = async (name) => {
                 const deadline = Date.now() + 60000;
@@ -776,7 +778,10 @@ const backend = {
                   await delay(100);
                 }
               };
-              const comparing = requestText.trim() === "comparison acceptance";
+              const interrupted =
+                requestText.trim() === "interrupted comparison acceptance";
+              const comparing =
+                interrupted || requestText.trim() === "comparison acceptance";
               const sourceFolder = await mkdtemp(
                 join(root, ".flagqai-follow-test-"),
               );
@@ -863,6 +868,22 @@ const backend = {
                 "--experiment-id",
                 comparing ? variant.id : run.experiments.at(-1).id,
               ]);
+              if (interrupted) {
+                status = "idle";
+                emit(
+                  {
+                    type: "turn.end",
+                    turn,
+                    reason: {
+                      kind: "error",
+                      message: "Fixture stopped after saving results.",
+                    },
+                    time: Date.now(),
+                  },
+                  { type: "session.status", status },
+                );
+                return;
+              }
               if (comparing) {
                 const presented = await typed("workbench_present_experiment", {
                   experiment_id: artifact.id,
