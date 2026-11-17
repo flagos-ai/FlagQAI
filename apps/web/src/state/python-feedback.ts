@@ -157,6 +157,8 @@ export function pythonRunFeedback({
   return {
     label: "Completed",
     busy: false,
-    message: "Finished without console output.",
+    message: run.logs?.some((log) => log.text.trim())
+      ? "Finished with console output."
+      : "Finished without console output.",
   };
 }

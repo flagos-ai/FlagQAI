@@ -188,6 +188,9 @@ test("missing output and real Python errors are distinct and preserve run histor
   expect(empty.status).toBe("completed");
   expect(empty.experiments).toHaveLength(0);
   await expect(
+    page.getByRole("status", { name: "Python run status", exact: true }),
+  ).toHaveAttribute("title", "Completed · Finished with console output.");
+  await expect(
     page.getByText(/No .fqx files were saved by this run/),
   ).toBeVisible();
   for (const [source, error] of [
