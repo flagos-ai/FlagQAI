@@ -234,6 +234,39 @@ function Questions({
     </section>
   );
 }
+type ReadingPosition = {
+  turn: string;
+  offset: number;
+  workedOpen: boolean;
+  resource: string;
+  cursor: number;
+};
+
+function readPosition(key: string): ReadingPosition | null {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(key) || "null");
+    return saved &&
+      typeof saved.turn === "string" &&
+      Number.isFinite(saved.offset) &&
+      typeof saved.workedOpen === "boolean" &&
+      typeof saved.resource === "string" &&
+      Number.isSafeInteger(saved.cursor)
+      ? saved
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function writePosition(key: string, position: ReadingPosition | null) {
+  try {
+    if (position) sessionStorage.setItem(key, JSON.stringify(position));
+    else sessionStorage.removeItem(key);
+  } catch {
+    // Transcript controls also work when browser storage is unavailable.
+  }
+}
+
 function atLatestOutput(node: HTMLElement) {
   return node.scrollHeight - node.scrollTop - node.clientHeight <= 2;
 }
@@ -263,6 +296,33 @@ export function AgentTranscript({
   const content = useRef<HTMLDivElement>(null);
   const questions = useRef(new Map<number, HTMLDivElement>());
   const follow = useRef(true);
+  const pendingPosition = useRef<ReadingPosition | null>(null);
+  const restoringDetails = useRef<HTMLDetailsElement | null>(null);
+  const session = agent.session;
+  const positionKey = session
+    ? "fq-agent-reading:" +
+      JSON.stringify([session.backendId, session.sessionId, session.cwd])
+    : "";
+  const savePosition = () => {
+    const node = viewport.current;
+    if (!node || !session || pendingPosition.current) return;
+    if (follow.current) {
+      writePosition(positionKey, null);
+      return;
+    }
+    const top = node.getBoundingClientRect().top;
+    const turn = Array.from(
+      node.querySelectorAll<HTMLElement>("[data-reading-turn]"),
+    ).find((element) => element.getBoundingClientRect().bottom > top);
+    if (!turn?.dataset.readingTurn) return;
+    writePosition(positionKey, {
+      turn: turn.dataset.readingTurn,
+      offset: top - turn.getBoundingClientRect().top,
+      workedOpen: !!turn.querySelector(":scope > details.fq-agent-work[open]"),
+      resource: session.id,
+      cursor: agent.view.cursor,
+    });
+  };
   const [pinned, setPinned] = useState<number | null>(null);
   const [away, setAway] = useState(false);
   const measure = useCallback(() => {
@@ -280,15 +340,57 @@ export function AgentTranscript({
     setPinned(current);
   }, []);
   useLayoutEffect(() => {
-    follow.current = true;
+    pendingPosition.current = positionKey ? readPosition(positionKey) : null;
+    restoringDetails.current = null;
+    follow.current = !pendingPosition.current;
     setPinned(null);
     setAway(false);
-  }, [agent.session?.id]);
+  }, [positionKey, session?.id]);
   useLayoutEffect(() => {
     const node = viewport.current;
-    if (follow.current && node) node.scrollTop = node.scrollHeight;
+    if (!node) return;
+    const saved = pendingPosition.current;
+    // Replay cursors belong to a resource binding. A rebound session starts a new stream.
+    if (
+      saved &&
+      agent.view.projected &&
+      (saved.resource !== session?.id || agent.view.cursor >= saved.cursor)
+    ) {
+      const turn = Array.from(
+        node.querySelectorAll<HTMLElement>("[data-reading-turn]"),
+      ).find((element) => element.dataset.readingTurn === saved.turn);
+      pendingPosition.current = null;
+      if (turn) {
+        const worked = turn.querySelector<HTMLDetailsElement>(
+          ":scope > details.fq-agent-work",
+        );
+        if (worked && saved.workedOpen && !worked.open) {
+          restoringDetails.current = worked;
+          worked.open = true;
+        }
+        const offset = Math.max(
+          -node.clientHeight,
+          Math.min(saved.offset, turn.offsetHeight - 1),
+        );
+        node.scrollTop +=
+          turn.getBoundingClientRect().top -
+          node.getBoundingClientRect().top +
+          offset;
+      } else {
+        follow.current = true;
+        writePosition(positionKey, null);
+      }
+    }
+    if (follow.current) node.scrollTop = node.scrollHeight;
     measure();
-  }, [agent.view, agent.pendingDelivery, agent.sending, measure]);
+  }, [
+    agent.view,
+    agent.pendingDelivery,
+    agent.sending,
+    measure,
+    positionKey,
+    session?.id,
+  ]);
   useLayoutEffect(() => {
     const observer = new ResizeObserver(() => {
       const node = viewport.current;
@@ -322,6 +424,7 @@ export function AgentTranscript({
               node.getBoundingClientRect().top -
               12;
             measure();
+            savePosition();
             target.focus({ preventScroll: true });
           }}
         >
@@ -334,8 +437,10 @@ export function AgentTranscript({
         className="fq-agent-thread"
         ref={viewport}
         onScroll={(event) => {
+          if (pendingPosition.current) return;
           follow.current = atLatestOutput(event.currentTarget);
           measure();
+          savePosition();
         }}
         role="log"
         tabIndex={-1}
@@ -408,7 +513,13 @@ export function AgentTranscript({
               />
             );
             return (
-              <div key={turn.id} className="fq-agent-turn">
+              <div
+                key={turn.id}
+                className="fq-agent-turn"
+                data-reading-turn={
+                  turn.rows[0]?.kind === "user" ? turn.rows[0].seq : undefined
+                }
+              >
                 {question.map(renderRow)}
                 <AgentExperimentTask
                   actions={actions}
@@ -439,9 +550,17 @@ export function AgentTranscript({
                       className="fq-agent-work"
                       onToggle={(event) => {
                         const details = event.currentTarget;
+                        if (restoringDetails.current === details) {
+                          restoringDetails.current = null;
+                          return;
+                        }
+                        if (!details.open) {
+                          savePosition();
+                          return;
+                        }
                         const node = viewport.current;
                         const header = details.firstElementChild;
-                        if (!details.open || !node || !header) return;
+                        if (!node || !header) return;
                         const visible = node.getBoundingClientRect();
                         const heading = header.getBoundingClientRect();
                         const previewBottom = Math.min(
@@ -455,6 +574,7 @@ export function AgentTranscript({
                         );
                         if (reveal > 0) node.scrollTop += reveal;
                         measure();
+                        savePosition();
                       }}
                     >
                       <summary
@@ -630,6 +750,7 @@ export function AgentTranscript({
             if (viewport.current)
               viewport.current.scrollTop = viewport.current.scrollHeight;
             measure();
+            savePosition();
             viewport.current?.focus({ preventScroll: true });
           }}
         >
