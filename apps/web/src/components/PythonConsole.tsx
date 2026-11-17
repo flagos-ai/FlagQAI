@@ -414,7 +414,7 @@ export function PythonConsole({
           ))}
         </section>
       )}
-      {!compact && run && <ResearchNextStep run={run} />}
+      {run && <ResearchNextStep run={run} />}
       <div className="fq-python-result-toolbar" hidden={!run}>
         {compact && researchAction}
         {run?.collection_errors?.some((item) => item.file_id) && (

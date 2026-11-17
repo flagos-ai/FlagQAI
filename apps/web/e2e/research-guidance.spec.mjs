@@ -37,6 +37,18 @@ test("next-experiment guidance follows the saved run while editing and refreshin
   const originalRuns = (await history()).filter(({ id }) => !before.has(id));
   expect(originalRuns).toHaveLength(1);
   await expect(guidance).toContainText(originalRuns[0].id.slice(0, 8));
+  const compact = pane.getByRole("button", {
+    name: "Compact Python output",
+    exact: true,
+  });
+  await compact.click();
+  await expect(pane).toHaveClass(/is-compact/);
+  await expect(guidance).toHaveAttribute("open");
+  await summary.scrollIntoViewIfNeeded();
+  await summary.press("Enter");
+  await expect(guidance).not.toHaveAttribute("open");
+  await summary.press("Enter");
+  await expect(question).toBeInViewport();
   const draft = (await editor.inputValue()) + "\n# test a revised draft";
   await editor.fill(draft);
   await expect(summary).toBeVisible();
