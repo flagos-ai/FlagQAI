@@ -19,6 +19,8 @@ from .bridge import WorkspaceBridge, BridgeConflict
 from .python_runs import PythonRuns
 from .experiments import ExperimentImports, MAX_UPLOAD_BYTES
 from .research_packages import ResearchPackages, MAX_PACKAGE
+from .invsqrt_evidence import read_export
+from .research_runs import list_research_runs, read_research_run
 from .reproduction import Reproductions
 from .projects import ProjectConflict
 
@@ -198,6 +200,33 @@ def create_server(settings, service):
                 except (ValueError, TypeError, KeyError, OSError) as error: return self.reply({'error': str(error)}, 400)
             if self.path == '/api/research':
                 return self.reply(research_packages.records())
+            if self.path == '/api/research-runs':
+                try:
+                    return self.reply({'runs': list_research_runs(settings)})
+                except (OSError, ValueError, TypeError, KeyError, ArithmeticError):
+                    return self.reply({'error': 'Cannot read local research records. Check the saved evidence.'}, 409)
+            saved_run = re.fullmatch(
+                r'/api/research-runs/(invsqrt-([a-f0-9]{32}))(?:/files/([a-zA-Z0-9][a-zA-Z0-9._-]{0,127}))?',
+                self.path,
+            )
+            if saved_run:
+                identity, evidence_id, filename = saved_run.groups()
+                try:
+                    if filename is None:
+                        record = read_research_run(settings, identity)
+                        if record is None:
+                            return self.reply({'error': 'Research run not found.'}, 404)
+                        return self.reply({'run': record})
+                    content = read_export(settings, evidence_id, filename)
+                except (OSError, ValueError, TypeError, KeyError, ArithmeticError):
+                    return self.reply({'error': 'Cannot read this research record or export. Check the saved evidence.'}, 409)
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/octet-stream')
+                self.send_header('Content-Disposition', f'attachment; filename="{filename}"')
+                self.send_header('Content-Length', str(len(content)))
+                self.end_headers()
+                self.wfile.write(content)
+                return
             research_match = re.fullmatch(r'/api/research/(research-[a-f0-9]{32})', self.path)
             if research_match:
                 record = research_packages.get(research_match.group(1))
