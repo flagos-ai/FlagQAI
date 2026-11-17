@@ -20,6 +20,25 @@ export function workspaceReducer(
   action: WorkspaceAction,
 ): WorkspaceState {
   let prepared = checkpointProject(state);
+  if (
+    action.type === "open-agent-model" &&
+    action.automatic &&
+    !prepared.agentDraft &&
+    prepared.editorLink?.id !== action.file.id
+  ) {
+    prepared = {
+      ...prepared,
+      agentDraft: {
+        name: prepared.name,
+        source: prepared.source,
+        language: prepared.language || "qasm",
+        undo: prepared.undo,
+        editorLink: prepared.editorLink,
+        pythonStyle: pythonStyleOverride(prepared),
+        projectTab: prepared.activeProjectTab,
+      },
+    };
+  }
   const project = projectTransition(prepared, action);
   if (project) return checkpointProject(project);
   if (
@@ -175,6 +194,60 @@ function reduceWorkspace(
       while (state.models.some((model) => model.name === name))
         name = `${action.model.name} · Agent ${suffix++}`;
       return { ...state, models: [{ ...action.model, name }, ...state.models] };
+    }
+    case "return-agent-draft": {
+      const draft = state.agentDraft;
+      if (!draft) return state;
+      const models =
+        !state.activeProjectTab &&
+        state.source !== state.editorLink?.base &&
+        (state.source !== draft.source || state.language !== draft.language)
+          ? mergeBackupDrafts(state.models, [
+              modelWithPythonStyle(
+                {
+                  name: `Draft · ${state.name}`,
+                  source: state.source,
+                  language: state.language || "qasm",
+                },
+                state,
+              ),
+            ])
+          : state.models;
+      const next = { ...state, models, agentDraft: undefined, execution: null };
+      const tab = state.projectTabs?.find(
+        (item) => item.id === draft.projectTab,
+      );
+      if (tab) {
+        const resumed = projectTransition(next, {
+          type: "project-tab",
+          id: tab.id,
+        })!;
+        return {
+          ...resumed,
+          undo:
+            tab.source === draft.source && !tab.undo.length
+              ? draft.undo
+              : tab.undo,
+        };
+      }
+      const restored: WorkspaceState = {
+        ...next,
+        name: draft.name,
+        source: draft.source,
+        undo: draft.undo,
+        language: draft.language,
+        editorLink: draft.projectTab ? undefined : draft.editorLink,
+        activeProjectTab: undefined,
+        page: "model",
+        error: null,
+      };
+      return {
+        ...restored,
+        pythonStyles:
+          draft.language === "python"
+            ? updatePythonStyles(state, restored, draft.pythonStyle)
+            : state.pythonStyles,
+      };
     }
     case "open-agent-model": {
       // Keep a separate recoverable copy before explicit/followed model navigation.
