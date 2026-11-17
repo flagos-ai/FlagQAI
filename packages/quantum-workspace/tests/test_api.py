@@ -5,12 +5,13 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'local'))
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import json
+import subprocess
 import tempfile
 import threading
 import unittest
 from http.client import HTTPConnection
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from workspace_server.config import WorkspaceSettings
 from workspace_server.http import create_server
@@ -261,6 +262,69 @@ class WorkspaceAPITests(unittest.TestCase):
         self.assertEqual(detail['proposal']['parent'], 'invsqrt-' + failed_id)
         self.assertEqual(detail['proposal']['baseline_parent'], 'invsqrt-' + parent['id'])
         self.assertEqual((failed / 'report.json').read_bytes(), stored)
+
+    def stage_verification_fixture(self):
+        _, parent = self.saved_verifier_fixture()
+        status, body = self.request('/api/research-runs/invsqrt-' + parent['id'] + '/revision', {
+            'request_id': 'stage-review', 'parent_sha256': parent['exports'][-1]['sha256'],
+            'expected_project_revision': 0, 'before': 'X q0', 'after': 'Z q0',
+            'reason': 'Stage candidate for review',
+        })
+        self.assertEqual(status, 200, body)
+        identity = json.loads(body)['research_run']['id']
+        target = '/api/research-runs/' + identity
+        _, body = self.request(target)
+        return target, json.loads(body)['run']['source_sha256']
+
+    def test_candidate_rejection_is_idempotent_and_never_launches(self):
+        target, source = self.stage_verification_fixture()
+        data = {'decision': 'reject', 'source_sha256': source,
+                'expected_project_revision': 0, 'request_id': 'reject-one'}
+        with patch('workspace_server.research_execution.subprocess.Popen') as start:
+            status, body = self.request(target + '/decision', data)
+            self.assertEqual(status, 200, body)
+            self.assertEqual(json.loads(body)['run']['status'], 'rejected')
+            self.assertEqual(self.request(target + '/decision', data), (status, body))
+            self.assertEqual(self.request(target + '/decision', {**data, 'decision': 'verify'})[0], 409)
+            start.assert_not_called()
+
+    def test_verification_retries_attach_to_the_live_lease_and_preserve_interruption(self):
+        target, source = self.stage_verification_fixture()
+        data = {'decision': 'verify', 'source_sha256': source,
+                'expected_project_revision': 0, 'request_id': 'verify-once'}
+        route = target + '/decision'
+        # Test scripts have no trusted digest and must never be executed.
+        self.assertEqual(self.request(route, data)[0], 409)
+        real_popen = subprocess.Popen
+        processes = []
+
+        def hold_lease(*args, **kwargs):
+            process = real_popen(
+                [sys.executable, '-c', 'import time; time.sleep(30)'],
+                pass_fds=kwargs['pass_fds'],
+            )
+            processes.append(process)
+            return process
+
+        with patch('workspace_server.research_execution.pinned_code'), \
+                patch('workspace_server.research_execution.subprocess.Popen', side_effect=hold_lease) as start:
+            self.assertEqual(self.request(route, {**data, 'expected_project_revision': 1})[0], 409)
+            self.assertEqual(self.request(route, {**data, 'source_sha256': 'd' * 64})[0], 409)
+            status, body = self.request(route, data)
+            self.assertEqual(status, 200, body)
+            try:
+                self.assertEqual(json.loads(body)['run']['status'], 'running')
+                self.assertEqual(self.request(route, data), (status, body))
+                self.assertEqual(json.loads(self.request(target)[1])['run']['status'], 'running')
+            finally:
+                for process in processes:
+                    process.terminate()
+                    process.wait(timeout=5)
+            recovered = json.loads(self.request(target)[1])['run']
+            self.assertEqual(recovered['status'], 'interrupted')
+            self.assertIn('interrupted_at', recovered['evidence']['execution'])
+            self.assertEqual(self.request(route, data)[0], 200)
+            start.assert_called_once()
 
     def test_compilation_delegates_to_service(self):
         body = {'source': 'OPENQASM 2.0; qreg q[2];'}

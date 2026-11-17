@@ -93,6 +93,9 @@ def read_report(settings, identity=None, *, allow_current=True):
         raise ValueError('Evidence identity mismatch.')
     if not isinstance(report.get('status'), str) or not isinstance(report.get('created_at'), str):
         raise ValueError('Invalid research record status or date.')
+    if identity and report['status'] == 'running':
+        from .research_recovery import recover_report
+        report = recover_report(path, report)
     variants = report.get('variants', [])
     exports = report.get('exports', [])
     if (not isinstance(variants, list) or

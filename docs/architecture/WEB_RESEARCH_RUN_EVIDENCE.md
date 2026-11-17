@@ -47,3 +47,18 @@ failed attempts can be used as parents for new revisions.
 Staging writes a separate archive and preserves the parent and baseline files.
 The workspace reuses the same candidate ID when the request is retried.
 A staged revision awaits a separate review before verification.
+
+## Verify a reviewed candidate
+
+`POST /api/research-runs/{id}/decision` accepts `verify` and `reject` decisions.
+The body also includes `source_sha256`, `expected_project_revision`, and a
+stable `request_id`. Verification uses the locally selected Python
+environment with Kickmix and executes the pinned InvSqrt verifier. The source,
+baseline, and verifier code digests are checked before execution.
+
+The child process holds a lease independent of the HTTP service. Reopening a
+run attaches to its recorded status. If the lease ends before a final report
+is saved, the run becomes interrupted and can be used as a parent for a new
+revision. Retrying the same review decision returns the recorded run.
+Completed verification binds the verifier output to the new circuit and
+exports a package carrying forward the other saved benchmark members.
