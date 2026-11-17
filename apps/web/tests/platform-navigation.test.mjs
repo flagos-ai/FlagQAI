@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { platformNavigation } from "../src/state/platform-navigation.ts";
+import {
+  platformNavigation,
+  shouldFollowTarget,
+} from "../src/state/platform-navigation.ts";
 import { workspaceReducer as reduce } from "../src/state/reducer.ts";
 import { restoreWorkspace } from "../src/state/persistence.ts";
 const id = "fqx-" + "f".repeat(32);
@@ -27,6 +30,24 @@ const state = () => ({
   source: "unsaved Python draft",
   language: "python",
   undo: ["previous"],
+});
+test("only the visible comparison blocks automatic Python run navigation", () => {
+  const comparison = { left: id, right: "other" };
+  const run = {
+    operation: "python.run",
+    result: { python_run: { id: "running" } },
+  };
+  const create = {
+    operation: "model.create",
+    result: { file: { id: "new.py" } },
+  };
+  assert.equal(shouldFollowTarget({ page: "jobs", comparison }, run), false);
+  assert.equal(shouldFollowTarget({ page: "jobs", comparison }, create), true);
+  assert.equal(shouldFollowTarget({ page: "jobs" }, run), true);
+  assert.equal(
+    shouldFollowTarget({ page: "execution", comparison }, run),
+    true,
+  );
 });
 test("structured comparison resolves both saved records and preserves the unsaved editor", async () => {
   const other = "fqx-" + "a".repeat(32);

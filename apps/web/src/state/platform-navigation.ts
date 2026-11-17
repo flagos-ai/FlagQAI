@@ -10,6 +10,19 @@ type Readers = {
   experiment: (id: string) => Promise<ExperimentImport>;
   job: (id: string) => Promise<QuantumJob>;
 };
+export function shouldFollowTarget(
+  state: Pick<WorkspaceState, "page" | "comparison">,
+  action: PlatformAction,
+) {
+  // Keep a comparison in view when a background run updates. New code can
+  // still open in the editor while Follow Agent is enabled.
+  return !(
+    state.page === "jobs" &&
+    state.comparison &&
+    action.result?.python_run
+  );
+}
+
 // Resolve referenced resources before selecting them. Focus can arrive before
 // Python's background collection has imported the corresponding archive.
 export async function platformNavigation(

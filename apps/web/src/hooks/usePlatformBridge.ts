@@ -1,6 +1,9 @@
 import { readExperiment } from "../api/experiments";
 import { pythonAPI } from "../api/python-runs";
-import { platformNavigation } from "../state/platform-navigation";
+import {
+  platformNavigation,
+  shouldFollowTarget,
+} from "../state/platform-navigation";
 import { quantumAPI } from "../api/quantum-workspace";
 import { useEffect, useRef, useState } from "react";
 import type {
@@ -264,6 +267,7 @@ export function usePlatformBridge(
             record.seq > (baseline.current ?? Infinity) &&
             record.origin !== "ui" &&
             followRef.current &&
+            shouldFollowTarget(current.current, record) &&
             (result?.python_run ||
               result?.program ||
               result?.job ||
@@ -284,16 +288,14 @@ export function usePlatformBridge(
               target = record;
           }
         }
-        if (
-          target &&
-          !(
-            current.current.comparison &&
-            (target.result?.python_run || target.operation === "model.create")
-          )
-        )
+        const selected = target;
+        if (selected)
           await openRef.current(
-            target,
-            () => !controller.signal.aborted && followRef.current,
+            selected,
+            () =>
+              !controller.signal.aborted &&
+              followRef.current &&
+              shouldFollowTarget(current.current, selected),
           );
         if (records.length)
           setActions((previous) => {
