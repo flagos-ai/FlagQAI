@@ -48,6 +48,7 @@ export function JobsLibrary({
           <option value="running">Running</option>
           <option value="queued">Queued</option>
           <option value="completed">Completed</option>
+          <option value="review">Review required</option>
           <option value="failed">Failed</option>
         </select>
       </div>

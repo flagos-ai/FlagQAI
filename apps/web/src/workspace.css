@@ -7103,6 +7103,25 @@ body,
 .fq-project-baseline li {
   margin: 4px 0;
 }
+.fq-candidate-revision {
+  margin: 12px 0;
+}
+.fq-candidate-revision form,
+.fq-candidate-revision label {
+  display: grid;
+  gap: 6px;
+}
+.fq-candidate-revision form {
+  gap: 10px;
+  max-width: 640px;
+}
+.fq-candidate-revision textarea {
+  min-height: 64px;
+  resize: vertical;
+}
+.fq-candidate-revision button[type="submit"] {
+  justify-self: start;
+}
 .fq-jobs-list h3 {
   padding-top: 10px;
   padding-bottom: 5px;

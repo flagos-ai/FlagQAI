@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { researchRunsAPI, type ResearchRun } from "../api/research-runs";
 import { ResearchBaseline } from "./ResearchBaseline";
+import {
+  ResearchCandidateDiff,
+  ResearchCandidateRevision,
+} from "./ResearchCandidateRevision";
 
 function metric(value: string | number | null, digits: number | null) {
   if (value == null) return "Unavailable";
@@ -45,6 +49,18 @@ export function ResearchRunDetails({
   const ratio = run?.comparison.cost_ratio;
   const change =
     ratio && Number.isFinite(ratio) && ratio > 0 ? (1 - 1 / ratio) * 100 : null;
+  const baseline = run?.project.baseline;
+  const sourceHash = run?.source_sha256;
+  const canRevise =
+    run?.status === "completed"
+      ? run.exports.some((item) => item.name === "candidate.kmx")
+      : !!run?.proposal &&
+        ["failed", "interrupted", "rejected"].includes(run.status);
+  const reload = () => {
+    setRun(undefined);
+    setError("");
+    setRevision((value) => value + 1);
+  };
   return (
     <section
       className="fq-content-pad fq-research-run"
@@ -71,7 +87,9 @@ export function ResearchRunDetails({
           <header>
             <small>{run.project.name}</small>
             <h2>{run.title}</h2>
-            <span className="fq-research-status">{run.status}</span>
+            <span className="fq-research-status">
+              {run.status === "review" ? "Review required" : run.status}
+            </span>
             {" · "}
             <time dateTime={run.created_at}>
               {new Date(run.created_at).toLocaleString()}
@@ -134,16 +152,13 @@ export function ResearchRunDetails({
               ))}
             </nav>
           )}
-          {run.project.baseline && (
+          <ResearchCandidateDiff run={run} onOpen={onOpen} />
+          {baseline && (
             <ResearchBaseline
               run={run}
-              baseline={run.project.baseline}
+              baseline={baseline}
               onOpen={onOpen}
-              onReload={() => {
-                setRun(undefined);
-                setError("");
-                setRevision((value) => value + 1);
-              }}
+              onReload={reload}
               onChange={(baseline) =>
                 setRun(
                   (current) =>
@@ -157,6 +172,16 @@ export function ResearchRunDetails({
                     },
                 )
               }
+            />
+          )}
+          {baseline && sourceHash && canRevise && (
+            <ResearchCandidateRevision
+              key={sourceHash}
+              run={run}
+              sourceHash={sourceHash}
+              projectRevision={baseline.revision}
+              onOpen={onOpen}
+              onReload={reload}
             />
           )}
           <details

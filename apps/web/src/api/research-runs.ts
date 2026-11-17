@@ -31,6 +31,15 @@ export type BaselineDecision = {
   request_id: string;
 };
 
+export type CandidateRevision = {
+  before: string;
+  after: string;
+  reason: string;
+  request_id: string;
+  parent_sha256: string;
+  expected_project_revision: number;
+};
+
 export type ResearchRun = ResearchRunSummary & {
   project: ResearchRunSummary["project"] & { baseline?: ProjectBaseline };
   is_project_baseline?: boolean;
@@ -46,11 +55,27 @@ export type ResearchRun = ResearchRunSummary & {
   scope: string | null;
   error?: string | null;
   source_sha256?: string | null;
+  proposal?: {
+    parent: string;
+    baseline_parent?: string;
+    project_revision?: number;
+    source_sha256: string;
+    diff?: string;
+  } | null;
   evidence: unknown;
   exports: { name: string; label: string; sha256: string }[];
 };
 
 const endpoint = "/api/research-runs";
+
+export class ResearchRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+  }
+}
 
 async function request<T>(path: string, options: RequestInit): Promise<T> {
   const response = await fetch(endpoint + path, {
@@ -58,7 +83,11 @@ async function request<T>(path: string, options: RequestInit): Promise<T> {
     ...options,
   });
   const result = await response.json();
-  if (!response.ok) throw Error(result?.error || "Cannot read saved research.");
+  if (!response.ok)
+    throw new ResearchRequestError(
+      result?.error || "Cannot complete the research request.",
+      response.status,
+    );
   return result;
 }
 
@@ -74,6 +103,15 @@ export const researchRunsAPI = {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(decision),
+      },
+    ),
+  revise: (id: string, revision: CandidateRevision) =>
+    request<{ research_run: { id: string } }>(
+      `/${encodeURIComponent(id)}/revision`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(revision),
       },
     ),
   file: (id: string, name: string) =>
