@@ -3035,6 +3035,17 @@ body,
   font-size: 16px;
   color: #dbe9f4;
 }
+.fq-agent-jump-latest[data-unread]::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #8fc5ed;
+  box-shadow: 0 0 0 2px #35383d;
+}
 .fq-agent-pinned-question:hover,
 .fq-agent-jump-latest:hover {
   background: #41454c;

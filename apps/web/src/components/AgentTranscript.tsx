@@ -325,10 +325,14 @@ export function AgentTranscript({
   };
   const [pinned, setPinned] = useState<number | null>(null);
   const [away, setAway] = useState(false);
+  const [unreadReply, setUnreadReply] = useState(false);
+  const previousReply = useRef<SessionViewRow | null | undefined>(undefined);
   const measure = useCallback(() => {
     const node = viewport.current;
     if (!node) return;
-    setAway(!atLatestOutput(node));
+    const latest = atLatestOutput(node);
+    setAway(!latest);
+    if (latest) setUnreadReply(false);
     const top = node.getBoundingClientRect().top;
     let current: number | null = null;
     // Keep the question belonging to the response being read, including older turns.
@@ -345,11 +349,35 @@ export function AgentTranscript({
     follow.current = !pendingPosition.current;
     setPinned(null);
     setAway(false);
+    setUnreadReply(false);
+    previousReply.current = undefined;
   }, [positionKey, session?.id]);
   useLayoutEffect(() => {
     const node = viewport.current;
     if (!node) return;
     const saved = pendingPosition.current;
+    const { projected, order, rows } = agent.view;
+    if (projected) {
+      let latestReply: SessionViewRow | null = null;
+      for (let index = order.length - 1; index >= 0; index--) {
+        const row = rows[order[index]];
+        if (row?.kind === "assistant" && row.text.trim()) {
+          latestReply = row;
+          break;
+        }
+      }
+      const previous = previousReply.current;
+      if (
+        !saved &&
+        !follow.current &&
+        previous !== undefined &&
+        latestReply &&
+        (previous?.id !== latestReply.id || previous.text !== latestReply.text)
+      ) {
+        setUnreadReply(true);
+      }
+      previousReply.current = latestReply;
+    }
     // Replay cursors belong to a resource binding. A rebound session starts a new stream.
     if (
       saved &&
@@ -744,7 +772,9 @@ export function AgentTranscript({
         <button
           className="fq-agent-jump-latest"
           aria-label="Jump to latest output"
-          title="Latest output"
+          title={unreadReply ? "New reply" : "Latest output"}
+          aria-description={unreadReply ? "New reply available" : undefined}
+          data-unread={unreadReply || undefined}
           onClick={() => {
             follow.current = true;
             if (viewport.current)
