@@ -744,7 +744,7 @@ export function AgentPanel({
               {attachments.map((item) => (
                 <span className="fq-attachment-chip" key={item.id}>
                   <button
-                    title="Preview attached source"
+                    title={"Preview attached source · " + item.name}
                     onClick={() => setPreview(item)}
                   >
                     <span aria-hidden="true">&lt;/&gt;</span> {item.name}
@@ -882,7 +882,11 @@ export function AgentPanel({
             }}
             placeholder="Ask FlagQAI about your quantum work…"
           />
-          <div className="fq-agent-composer-actions">
+          <div
+            className="fq-agent-composer-actions"
+            role="group"
+            aria-label="Message actions"
+          >
             <button
               className="fq-attach-reference"
               aria-label="Attach code reference"
@@ -973,7 +977,11 @@ export function AgentPanel({
           </div>
         </div>
         {ready && bridge.error && <small role="alert">{bridge.error}</small>}
-        <div className="fq-agent-draft-meta">
+        <div
+          className="fq-agent-draft-meta"
+          role="group"
+          aria-label="Conversation controls"
+        >
           <AgentContextUsage
             view={agent.view}
             onCompact={() => void agent.compact()}
