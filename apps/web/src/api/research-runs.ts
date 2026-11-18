@@ -49,6 +49,14 @@ export const RESEARCH_RUNS_CHANGED = "fq-research-runs-changed";
 export type ResearchRun = ResearchRunSummary & {
   project: ResearchRunSummary["project"] & { baseline?: ProjectBaseline };
   is_project_baseline?: boolean;
+  current_comparison?: {
+    baseline_run_id: string;
+    baseline_source_sha256: string;
+    candidate_circuit_sha256: string;
+    baseline_cost: number;
+    candidate_cost: number;
+    cost_delta: number;
+  } | null;
   comparison: {
     columns: string[];
     rows: {

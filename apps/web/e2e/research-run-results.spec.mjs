@@ -51,6 +51,7 @@ async function saveVerifiedRun(
       status: "completed",
       created_at: "2026-11-05T00:00:00Z",
       scope: "Local verification fixture",
+      settings: { shots_per_x: 64, salt: "" },
       provenance: {
         verifier_sha256: sha256(verifier),
         metric_sha256: sha256(verifier),
@@ -250,6 +251,9 @@ test("Jobs confirms baseline decisions, resolves stale windows, and preserves a 
 
     await page.reload();
     await expect(baseline(page)).toContainText("revision 2");
+    await expect(
+      page.getByLabel("Current baseline comparison", { exact: true }),
+    ).toContainText("+1");
     await baseline(page)
       .getByRole("button", { name: "Restore this version" })
       .click();
