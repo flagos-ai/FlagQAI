@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import {
   RESEARCH_RUNS_CHANGED,
+  hasActiveResearchTasks,
   researchRunsAPI,
   type ResearchRun,
 } from "../api/research-runs";
+import { ResearchTeam } from "./ResearchTeam";
 import { ResearchBaseline } from "./ResearchBaseline";
 import { ResearchCandidateDecision } from "./ResearchCandidateDecision";
 import {
@@ -31,18 +33,24 @@ export function ResearchRunDetails({
   const [error, setError] = useState("");
   const [revision, setRevision] = useState(0);
   const [showEvidence, setShowEvidence] = useState(false);
+  const [teamOpenId, setTeamOpenId] = useState<string>();
+  const followTeam = !!run && teamOpenId === run.id;
   const running = run?.status === "running";
   useEffect(() => {
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout>;
-    let follow = running;
+    let follow = running || followTeam;
+    let runWasRunning = running;
     const load = async () => {
       try {
         const { run } = await researchRunsAPI.read(id, controller.signal);
         if (!controller.signal.aborted) {
-          if (follow && run.status !== "running")
+          if (runWasRunning && run.status !== "running")
             window.dispatchEvent(new Event(RESEARCH_RUNS_CHANGED));
-          follow = run.status === "running";
+          runWasRunning = run.status === "running";
+          follow =
+            runWasRunning ||
+            (followTeam && hasActiveResearchTasks(run.coordination));
           setRun(run);
           setError("");
         }
@@ -63,7 +71,7 @@ export function ResearchRunDetails({
       controller.abort();
       clearTimeout(timer);
     };
-  }, [id, revision, running]);
+  }, [id, revision, running, followTeam]);
   const ratio = run?.comparison.cost_ratio;
   const change =
     ratio && Number.isFinite(ratio) && ratio > 0 ? (1 - 1 / ratio) * 100 : null;
@@ -222,6 +230,13 @@ export function ResearchRunDetails({
               onReload={reload}
             />
           )}
+          <ResearchTeam
+            key={run.id}
+            run={run}
+            onOpen={onOpen}
+            open={followTeam}
+            onOpenChange={(open) => setTeamOpenId(open ? run.id : undefined)}
+          />
           <details
             onToggle={(event) => setShowEvidence(event.currentTarget.open)}
           >
