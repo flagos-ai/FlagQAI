@@ -1,3 +1,5 @@
+import { AgentResearchOutcome } from "./AgentResearchOutcome";
+import { researchDeliveries } from "../state/research-delivery";
 import { researchTurnsFromProgress } from "../state/research-turns";
 import { iterationQuestion } from "../state/qaoa-iteration";
 import { AgentExperimentTask } from "./AgentExperimentTask";
@@ -573,6 +575,7 @@ export function AgentTranscript({
                     ?.seq,
                 ),
             );
+            const deliveries = researchDeliveries(actions);
             const workspaceActivity = (
               <AgentWorkspaceActions
                 actions={actions}
@@ -590,6 +593,21 @@ export function AgentTranscript({
                 }
               >
                 {question.map(renderRow)}
+                {!!deliveries.length && (
+                  <AgentResearchOutcome
+                    key={deliveries.at(-1)}
+                    id={deliveries.at(-1)!}
+                    earlier={deliveries.slice(0, -1)}
+                    goal={
+                      splitWorkspaceContext(
+                        turn.rows.find((row) => row.kind === "user")?.text ||
+                          "",
+                      ).text
+                    }
+                    onOpen={bridge.openResearch}
+                    onPrepare={onPrepare}
+                  />
+                )}
                 <AgentExperimentTask
                   actions={actions}
                   active={turn.active}

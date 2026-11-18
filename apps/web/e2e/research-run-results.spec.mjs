@@ -1224,3 +1224,208 @@ test("Agent research presentation follows only confirmed saved targets and prese
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test("Agent outcome uses saved evidence, retains failures and prepares only an unsent iteration", async ({
+  page,
+}, testInfo) => {
+  const { cwd } = await (await page.request.get("/api/agent")).json();
+  expect(basename(cwd)).toMatch(/^flagqai-ui-test-/);
+  const root = join(cwd, "invsqrt"),
+    id = randomUUID().replaceAll("-", ""),
+    failedId = randomUUID().replaceAll("-", "");
+  const saved = join(root, id),
+    failed = join(root, failedId);
+  await mkdir(saved, { recursive: true });
+  await mkdir(failed, { recursive: true });
+  const network = `http://127.0.0.1:${process.env.FQ_TEST_PROXY_PORT}/__fixture/network`;
+  const submissions = async () =>
+    (await (await page.request.get(network)).json()).submissionCount;
+  const jobs = async () =>
+    (await (await page.request.get("/api/jobs")).json()).map((item) => item.id);
+  const runs = async () =>
+    (await (await page.request.get("/api/python/runs")).json()).map(
+      (item) => item.id,
+    );
+  const beforeJobs = await jobs(),
+    beforeRuns = await runs();
+  try {
+    await saveVerifiedRun(saved, id, "Saved resource comparison", 180);
+    const reportBefore = await readFile(join(saved, "report.json"), "utf8");
+    const sourceHash = sha256(await readFile(join(saved, "candidate.kmx")));
+    await writeFile(
+      join(failed, "candidate.kmx"),
+      await readFile(join(saved, "candidate.kmx")),
+    );
+    await writeFile(
+      join(failed, "report.json"),
+      JSON.stringify({
+        id: failedId,
+        task: "Failed iteration",
+        status: "failed",
+        created_at: "2026-11-06T00:00:00Z",
+        error: "Recorded verifier failure",
+        proposal: { source_sha256: sourceHash, parent: "invsqrt-" + id },
+      }),
+    );
+    await page.goto("/#model");
+    const editor = page.getByRole("textbox", {
+      name: "Quantum model code editor",
+    });
+    const draft = "# Keep the editor draft while reviewing Agent evidence\n";
+    await editor.fill(draft);
+    const agent = page.getByRole("button", {
+      name: "FlagQAI Agent",
+      exact: true,
+    });
+    if ((await agent.getAttribute("aria-expanded")) !== "true")
+      await agent.click();
+    await page
+      .getByRole("button", { name: "Connect Agent", exact: true })
+      .click();
+    await expect(
+      page.getByRole("status", { name: "Connected", exact: true }),
+    ).toBeVisible();
+    await page.getByRole("switch", { name: /Follow Agent/ }).setChecked(false);
+    const chat = page.getByRole("textbox", {
+      name: "Message FlagQAI",
+      exact: true,
+    });
+    await chat.fill("Summarize the saved research evidence.");
+    const published = page.waitForRequest(
+      (request) =>
+        request.url().endsWith("/api/workspace/context") &&
+        request.method() === "POST" &&
+        typeof request.postDataJSON()?.turnSeq === "number",
+    );
+    const before = await submissions();
+    await page
+      .getByRole("button", { name: "Send message", exact: true })
+      .click();
+    const context = (await published).postDataJSON();
+    await expect.poll(submissions).toBe(before + 1);
+    await expect(page.locator(".fq-agent-work").last()).toBeVisible();
+    await chat.fill("Preserve this unsent follow-up.");
+    const present = async (target) => {
+      const response = await page.request.post("/api/workspace/actions", {
+        data: {
+          client: context.client,
+          session: context.session,
+          operation: "research.present",
+          run_id: "invsqrt-" + target,
+          request_id: randomUUID(),
+        },
+      });
+      expect(response.ok(), await response.text()).toBe(true);
+    };
+    await present(id);
+    const card = page.getByRole("region", {
+      name: "Research outcome",
+      exact: true,
+    });
+    await expect(card).toContainText("Verified · lower resource cost");
+    await expect(card).toContainText("200 → 180");
+    await expect(card).toContainText("Archived baseline");
+    await expect(card).toContainText(sourceHash.slice(0, 12));
+    expect(
+      await card.evaluate(
+        (element) =>
+          !!(
+            element.compareDocumentPosition(
+              element.parentElement.querySelector(".fq-agent-work"),
+            ) & Node.DOCUMENT_POSITION_FOLLOWING
+          ),
+      ),
+    ).toBe(true);
+    await expect(
+      card.getByRole("button", {
+        name: /Accept and verify|Adopt verified candidate|Restore this version/,
+      }),
+    ).toHaveCount(0);
+    await expect(page).toHaveURL(/#model$/);
+    await page.screenshot({
+      path: testInfo.outputPath("agent-research-outcome.png"),
+      fullPage: true,
+    });
+    // A stale or mismatched response cannot authorize a new iteration.
+    const endpoint = "/api/research-runs/invsqrt-" + id;
+    const real = await (await page.request.get(endpoint)).json();
+    await page.route("**" + endpoint, (route) =>
+      route.fulfill({
+        json: { run: { ...real.run, id: "invsqrt-" + failedId } },
+      }),
+    );
+    await page.evaluate(() =>
+      window.dispatchEvent(new Event("fq-research-runs-changed")),
+    );
+    await expect(card.getByRole("alert")).toContainText(
+      "identity did not match",
+    );
+    await expect(card).toContainText("Last confirmed record");
+    await expect(
+      card.getByRole("button", { name: "Continue iteration", exact: true }),
+    ).toBeDisabled();
+    await page.unroute("**" + endpoint);
+    await card.getByRole("button", { name: "Reload research result" }).click();
+    await expect(card.getByRole("alert")).toHaveCount(0);
+    await expect(
+      card.getByRole("button", { name: "Continue iteration", exact: true }),
+    ).toBeEnabled();
+    await present(failedId);
+    await expect(card).toContainText("Verification failed");
+    await card.getByText("Verification error", { exact: true }).click();
+    await expect(card).toContainText("Recorded verifier failure");
+    await chat.fill("x".repeat(6000));
+    await card
+      .getByRole("button", { name: "Continue iteration", exact: true })
+      .click();
+    await expect(card.getByRole("alert")).toContainText(
+      "nothing has been replaced",
+    );
+    await expect(chat).toHaveValue("x".repeat(6000));
+    await expect(
+      card.getByRole("button", { name: "Continue iteration", exact: true }),
+    ).toBeEnabled();
+    await chat.fill("Preserve this unsent follow-up.");
+    await card
+      .getByRole("button", { name: "Continue iteration", exact: true })
+      .click();
+    await expect(chat).toHaveValue(
+      new RegExp(
+        "^Preserve this unsent follow-up\\.\\n\\nContinue this quantum research iteration",
+      ),
+    );
+    await expect(chat).toHaveValue(new RegExp("invsqrt-" + failedId));
+    await expect(chat).toHaveValue(new RegExp(sourceHash));
+    const prepared = await chat.inputValue();
+    await expect(
+      card.getByRole("button", { name: "Continue iteration", exact: true }),
+    ).toBeDisabled();
+    await card
+      .getByText("Earlier research records · 1", { exact: true })
+      .click();
+    await card
+      .getByRole("button", {
+        name: ("invsqrt-" + id).slice(0, 20),
+        exact: true,
+      })
+      .click();
+    await expect(page).toHaveURL(/#jobs$/);
+    await expect(
+      page.getByRole("region", { name: "Research run", exact: true }),
+    ).toContainText("10.0000% lower");
+    await page.getByRole("button", { name: "MODEL", exact: true }).click();
+    await expect(editor).toHaveValue(draft);
+    await page.reload();
+    await expect(card).toContainText("Verification failed");
+    await expect(chat).toHaveValue(prepared);
+    await expect(editor).toHaveValue(draft);
+    expect(await submissions()).toBe(before + 1);
+    expect(await jobs()).toEqual(beforeJobs);
+    expect(await runs()).toEqual(beforeRuns);
+    expect(await readFile(join(saved, "report.json"), "utf8")).toBe(
+      reportBefore,
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

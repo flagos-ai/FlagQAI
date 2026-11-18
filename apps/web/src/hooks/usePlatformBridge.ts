@@ -59,6 +59,8 @@ export function usePlatformBridge(
   const followRef = useRef(follow);
   followRef.current = follow;
   const session = agent.session?.sessionId;
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
   const turnSeq = agent.view.lastUserSeq;
   const open = async (
     action: PlatformAction,
@@ -109,6 +111,17 @@ export function usePlatformBridge(
     dispatch({ type: "python-run", id });
     dispatch({ type: "language", language: "python" });
     dispatch({ type: "navigate", page: "model" });
+    dispatch({ type: "agent", open: true });
+  };
+  const openResearch = async (id: string) => {
+    if (!/^invsqrt-[a-f0-9]{32}$/.test(id))
+      throw Error("Invalid research run identity.");
+    const record = await researchRunsAPI.read(id, new AbortController().signal);
+    if (record.run.id !== id)
+      throw Error("Research run identity did not match.");
+    if (sessionRef.current !== session)
+      throw Error("Agent session changed. Open this record again.");
+    dispatch({ type: "research-run", id });
     dispatch({ type: "agent", open: true });
   };
   const openCircuit = async (id: string) => {
@@ -365,6 +378,7 @@ export function usePlatformBridge(
     setFollow,
     open,
     inspectRun,
+    openResearch,
     openCircuit,
     compare,
     controls:
