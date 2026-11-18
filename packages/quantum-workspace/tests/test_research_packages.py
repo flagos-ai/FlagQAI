@@ -7,6 +7,7 @@ import sys
 import tempfile
 import unittest
 import uuid
+from types import SimpleNamespace
 from unittest.mock import patch
 import zipfile
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'local'))
@@ -36,6 +37,34 @@ def rewrite(raw, mutate):
 
 
 class ResearchPackageTest(unittest.TestCase):
+    def test_prepared_export_survives_reload_and_refuses_corruption_or_symlinks(self):
+        research, runs, files = fixture()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); settings = WorkspaceSettings(root, root / 'jobs.sqlite3')
+            artifacts = root / 'artifacts'; artifacts.mkdir()
+            for identity, data in files.items(): (artifacts / identity).write_bytes(data)
+            experiments = SimpleNamespace(file=lambda identity: artifacts / identity, get=lambda identity: None)
+            python_runs = SimpleNamespace(get=lambda identity: runs.get(identity))
+            packages = ResearchPackages(settings, experiments, python_runs)
+            prepared = packages.prepare_export(['original-run'], 'Shor baseline and variant')
+            restored = ResearchPackages(settings, experiments, python_runs)
+            raw = restored.export_file(prepared['id'])
+            self.assertEqual(sha256(raw).hexdigest(), prepared['sha256'])
+            metadata, saved_runs, entries = read_package(raw)
+            self.assertEqual(saved_runs['original-run']['source'], runs['original-run']['source'])
+            self.assertEqual(metadata['goal'], 'Shor baseline and variant')
+            for ref in runs['original-run']['experiments']:
+                self.assertEqual(entries['artifacts/' + ref['id'] + '.fqx'], files[ref['id']])
+            path = restored.root / 'exports' / (prepared['id'] + '.zip')
+            path.write_bytes(b'corrupt')
+            with self.assertRaises(ValueError): restored.export_file(prepared['id'])
+            path.unlink(); path.symlink_to(artifacts / next(iter(files)))
+            with self.assertRaises((OSError, ValueError)): restored.export_file(prepared['id'])
+            for invalid in ([], ['../escape'], ['original-run', 'original-run'], ['missing']):
+                with self.assertRaises(ValueError): packages.prepare_export(invalid, 'goal')
+            runs['original-run']['status'] = 'running'
+            with self.assertRaises(ValueError): packages.prepare_export(['original-run'], 'goal')
+
     def test_round_trip_preserves_source_identity_artifacts_goal_and_adoption(self):
         research, runs, files = fixture()
         metadata, restored, entries = read_package(make_package(research, runs, files))

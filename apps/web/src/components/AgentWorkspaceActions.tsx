@@ -95,21 +95,24 @@ function WorkspaceActionCard({
   const result = action.result,
     program = result?.program;
   const job = result?.job && jobs.find((item) => item.id === result.job!.id);
-  const label = action.operation.startsWith("python.")
-    ? "Python execution"
-    : action.operation === "compile"
-      ? "Circuit compiled"
-      : action.operation === "run"
-        ? "Execution"
-        : action.operation === "model.create"
-          ? "Model created"
-          : action.operation === "model.share"
-            ? "Editor linked"
-            : action.operation === "experiment.compare"
-              ? "Results compared"
-              : action.operation === "focus"
-                ? "Page change"
-                : "Workbench action";
+  const label =
+    action.operation === "research.export"
+      ? "Research package ready"
+      : action.operation.startsWith("python.")
+        ? "Python execution"
+        : action.operation === "compile"
+          ? "Circuit compiled"
+          : action.operation === "run"
+            ? "Execution"
+            : action.operation === "model.create"
+              ? "Model created"
+              : action.operation === "model.share"
+                ? "Editor linked"
+                : action.operation === "experiment.compare"
+                  ? "Results compared"
+                  : action.operation === "focus"
+                    ? "Page change"
+                    : "Workbench action";
   return (
     <div className={"fq-workspace-artifact " + action.status}>
       <div>
@@ -155,6 +158,16 @@ function WorkspaceActionCard({
         </p>
       )}
       {action.error && <p className="fq-progress-error">{action.error}</p>}
+      {action.status === "completed" &&
+        result?.export &&
+        /^[a-f0-9]{64}$/.test(result.export.id) && (
+          <a
+            href={`/api/research/exports/${result.export.id}/file`}
+            download="quantum-research.zip"
+          >
+            Download research package ↗
+          </a>
+        )}
       {action.status === "completed" &&
         (result?.python_run ||
           program ||

@@ -68,6 +68,20 @@ class BridgeTests(unittest.TestCase):
         self.bridge.contexts['client-1']['updated_at']=0
         with self.assertRaises(BridgeConflict): self.bridge.context('client-1')
         self.assertEqual(self.adapter.calls,[])
+    def test_research_package_preparation_is_journaled_once_across_bridge_restart(self):
+        calls = []
+        packages = SimpleNamespace(prepare_export=lambda ids, goal: calls.append((ids, goal)) or {'id': 'a' * 64})
+        self.bridge.research_packages = packages
+        result = self.action('research.export', 'export-once', run_ids=['saved-run'], goal='QAOA')
+        restarted = WorkspaceBridge(self.settings, self.service, research_packages=packages)
+        restarted.publish(self.bridge.contexts['client-1'])
+        self.bridge = restarted
+        self.assertEqual(self.action('research.export', 'export-once', run_ids=['saved-run'], goal='QAOA'), result)
+        self.assertEqual(calls, [(['saved-run'], 'QAOA')])
+        with self.assertRaises(BridgeConflict):
+            self.action('research.export', 'export-once', run_ids=['different'], goal='QAOA')
+        self.assertEqual(self.adapter.calls, [])
+
     def test_new_models_never_overwrite_an_existing_shared_file(self):
         first=self.action('model.create','create-1',source=SOURCE)['file']
         second=self.action('model.create','create-2',source=SOURCE)['file']

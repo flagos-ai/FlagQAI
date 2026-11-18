@@ -5,6 +5,7 @@ from hashlib import sha256
 from io import BytesIO
 import json
 import math
+import os
 from pathlib import Path
 import re
 import stat
@@ -217,6 +218,49 @@ class ResearchPackages:
 
     def records(self):
         return [{key: value.get(key) for key in ('id', 'name', 'imported_at', 'run_count')} for value in self.store.list()]
+
+    def prepare_export(self, identities, goal):
+        if (not isinstance(identities, list) or not 1 <= len(identities) <= 16
+                or any(not isinstance(identity, str) or not ID.fullmatch(identity) for identity in identities)
+                or len(set(identities)) != len(identities)):
+            raise ValueError('Select 1–16 unique saved run IDs.')
+        if not isinstance(goal, str) or not 0 < len(goal) <= 4000:
+            raise ValueError('Provide a research goal of at most 4000 characters.')
+        baseline = self.python_runs.get(identities[0])
+        if not baseline: raise ValueError('The baseline run is unavailable.')
+        research = {'schema':'flagqai.research-record.v1', 'root_run':baseline['id'],
+            'root_source_sha256':baseline['source_hash'], 'goal':goal,
+            'runs':[{'id':identity} for identity in identities],
+            'turns':[{'goal':goal, 'runs':identities}], 'notices':[], 'adopted':None}
+        content = self.export({'research':research})
+        digest = sha256(content).hexdigest()
+        directory = self.root / 'exports'
+        directory.mkdir(exist_ok=True)
+        path = directory / (digest + '.zip')
+        # Publish a complete file atomically, including after process interruption.
+        with tempfile.NamedTemporaryFile(dir=directory, delete=False) as output:
+            temporary = Path(output.name)
+            try:
+                output.write(content)
+                output.flush()
+                os.fsync(output.fileno())
+                os.replace(temporary, path)
+            finally:
+                temporary.unlink(missing_ok=True)
+        return {'id':digest, 'sha256':digest, 'bytes':len(content), 'runs':identities,
+            'filename':'quantum-research.zip', 'scope':'Recorded code, logs, SDK experiments and retained verification history; not arbitrary temporary files.'}
+
+    def export_file(self, identity):
+        if not HASH.fullmatch(str(identity)): raise ValueError('Invalid research export ID.')
+        path = self.root / 'exports' / (identity + '.zip')
+        with os.fdopen(os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK), 'rb') as source:
+            info = os.fstat(source.fileno())
+            if not stat.S_ISREG(info.st_mode): raise ValueError('Research export must be a regular file.')
+            if info.st_size > MAX_PACKAGE: raise ValueError('Research export exceeds the size limit.')
+            content = source.read(MAX_PACKAGE + 1)
+        if len(content) > MAX_PACKAGE: raise ValueError('Research export exceeds the size limit.')
+        if sha256(content).hexdigest() != identity: raise ValueError('Saved export integrity check failed.')
+        return content
 
     def export(self, request):
         reports, verification_runs = [], {}

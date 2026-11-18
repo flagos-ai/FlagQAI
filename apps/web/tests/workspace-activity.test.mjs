@@ -107,3 +107,31 @@ test("collapsed earlier activity does not mount old cards or expose their output
   assert.doesNotMatch(html, /saved-model-0|saved-model-1</);
   assert.match(html, /saved-model-11/);
 });
+
+test("research package actions expose a local download only after successful preparation", () => {
+  const render = (status, id) =>
+    renderToStaticMarkup(
+      React.createElement(AgentWorkspaceActions, {
+        actions: [
+          {
+            id: "export-once",
+            operation: "research.export",
+            status,
+            result: { export: { id } },
+          },
+        ],
+        jobs: [],
+        onOpen() {},
+      }),
+    );
+  const html = render("completed", "a".repeat(64));
+  assert.match(html, /Research package ready/);
+  assert.match(html, /Download research package/);
+  assert.match(
+    html,
+    new RegExp(`/api/research/exports/${"a".repeat(64)}/file`),
+  );
+  assert.doesNotMatch(render("failed", "a".repeat(64)), /href=/);
+  assert.doesNotMatch(render("running", "a".repeat(64)), /href=/);
+  assert.doesNotMatch(render("completed", "../unsafe"), /href=/);
+});

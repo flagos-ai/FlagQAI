@@ -51,6 +51,17 @@ try {
     shared = true
     assert.equal((await inspect()).id, 'exact.py')
     assert.deepEqual(currentCalls, ['status', 'draft.read', 'status', 'model.read'])
+    const digest = 'b'.repeat(64)
+    const delivery = createWorkbenchTools(() => binding, '/workspace', async (url, init) => {
+      if (url.endsWith('/api/agent')) return new Response(JSON.stringify({ cwd: '/workspace' }))
+      const body = JSON.parse(init.body)
+      assert.equal(body.operation, 'research.export')
+      assert.deepEqual(body.run_ids, ['saved-run'])
+      assert.equal(body.request_id, 'same-package')
+      return new Response(JSON.stringify({ export: { id: digest, sha256: digest, bytes: 100 } }))
+    }).find(tool => tool.name === 'workbench_export_research')
+    const exported = await delivery.execute({ run_ids: ['saved-run'], goal: 'QAOA', request_id: 'same-package' }, { signal: new AbortController().signal })
+    assert.equal(exported.download_url, 'http://127.0.0.1:1/api/research/exports/' + digest + '/file')
     console.log('Relocated research tools: saved status, metrics, versions, compact/full reads and explicit presentation passed.')
   `], { cwd: relocated, stdio: 'inherit', timeout: 60000 })
 } finally {

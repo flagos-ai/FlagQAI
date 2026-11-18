@@ -23,6 +23,7 @@ export type PlatformAction = {
     job_id?: string;
     comparison?: { left: string; right: string };
     research_run?: { id: string };
+    export?: { id: string; sha256: string; bytes: number; runs: string[] };
   };
 };
 async function request<T>(

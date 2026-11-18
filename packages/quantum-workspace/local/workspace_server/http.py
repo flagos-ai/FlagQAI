@@ -38,7 +38,7 @@ def create_server(settings, service):
     python_runs = PythonRuns(settings, service, experiments)
     research_packages = ResearchPackages(settings, experiments, python_runs)
     reproductions = Reproductions(settings, research_packages, python_runs, experiments, environments)
-    bridge = WorkspaceBridge(settings, service, python_runs)
+    bridge = WorkspaceBridge(settings, service, python_runs, research_packages)
     class WorkspaceHandler(SimpleHTTPRequestHandler):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, directory=str(settings.web_root), **kwargs)
@@ -226,6 +226,21 @@ def create_server(settings, service):
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/octet-stream')
                 self.send_header('Content-Disposition', f'attachment; filename="{filename}"')
+                self.send_header('Content-Length', str(len(content)))
+                self.end_headers()
+                self.wfile.write(content)
+                return
+            export_match = re.fullmatch(r'/api/research/exports/([a-f0-9]{64})/file', self.path)
+            if export_match:
+                try:
+                    content = research_packages.export_file(export_match.group(1))
+                except FileNotFoundError:
+                    return self.reply({'error': 'Research export not found.'}, 404)
+                except (ValueError, OSError):
+                    return self.reply({'error': 'Cannot read this research export. Check the saved package integrity.'}, 400)
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/zip')
+                self.send_header('Content-Disposition', 'attachment; filename="quantum-research.zip"')
                 self.send_header('Content-Length', str(len(content)))
                 self.end_headers()
                 self.wfile.write(content)
