@@ -51,6 +51,18 @@ export function ResearchRunList({
         .toLowerCase()
         .includes(term),
   );
+  const projects = new Map<
+    string,
+    { name: string; runs: ResearchRunSummary[] }
+  >();
+  for (const run of visible) {
+    const project = projects.get(run.project.id) ?? {
+      name: run.project.name,
+      runs: [],
+    };
+    project.runs.push(run);
+    projects.set(run.project.id, project);
+  }
   if (!visible.length && !error) return empty ?? null;
   return (
     <section aria-label="Research run history">
@@ -66,37 +78,45 @@ export function ResearchRunList({
           </button>
         </p>
       )}
-      {visible.map((run) => {
-        const selected = selectedId === run.id;
-        const date = new Date(run.created_at);
-        return (
-          <div
-            key={run.id}
-            className={"fq-job-row" + (selected ? " selected" : "")}
-          >
-            <button
-              aria-current={selected ? "true" : undefined}
-              aria-label={`Open research run ${run.title} · ${run.id.slice(-8)}`}
-              title={`${run.project.name} · ${date.toLocaleString()} · ${run.id}`}
-              onClick={() => dispatch({ type: "research-run", id: run.id })}
-            >
-              <strong>{run.title}</strong>
-              <span className="fq-job-row-summary">
-                <i className={"fq-job-dot " + run.status} aria-hidden="true" />
-                <span className="fq-research-status">
-                  {run.status === "review" ? "Review required" : run.status}
-                </span>
-                <time dateTime={run.created_at}>
-                  {date.toLocaleDateString([], {
-                    month: "short",
-                    day: "numeric",
-                  })}
-                </time>
-              </span>
-            </button>
-          </div>
-        );
-      })}
+      {[...projects].map(([id, project]) => (
+        <section key={id} aria-label={project.name}>
+          <h4 className="fq-research-project-heading">{project.name}</h4>
+          {project.runs.map((run) => {
+            const selected = selectedId === run.id;
+            const date = new Date(run.created_at);
+            return (
+              <div
+                key={run.id}
+                className={"fq-job-row" + (selected ? " selected" : "")}
+              >
+                <button
+                  aria-current={selected ? "true" : undefined}
+                  aria-label={`Open research run ${run.title} · ${run.id.slice(-8)}`}
+                  title={`${run.project.name} · ${date.toLocaleString()} · ${run.id}`}
+                  onClick={() => dispatch({ type: "research-run", id: run.id })}
+                >
+                  <strong>{run.title}</strong>
+                  <span className="fq-job-row-summary">
+                    <i
+                      className={"fq-job-dot " + run.status}
+                      aria-hidden="true"
+                    />
+                    <span className="fq-research-status">
+                      {run.status === "review" ? "Review required" : run.status}
+                    </span>
+                    <time dateTime={run.created_at}>
+                      {date.toLocaleDateString([], {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </time>
+                  </span>
+                </button>
+              </div>
+            );
+          })}
+        </section>
+      ))}
     </section>
   );
 }
