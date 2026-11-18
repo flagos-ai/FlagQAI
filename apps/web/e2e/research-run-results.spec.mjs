@@ -508,3 +508,228 @@ test("candidate review requires confirmation and follows verification after relo
     await rm(root, { recursive: true });
   }
 });
+
+test("research team traces saved worker evidence without displacing results or drafts", async ({
+  page,
+}, testInfo) => {
+  const environment = await page.request.get("/api/agent");
+  const { cwd } = await environment.json();
+  expect(basename(cwd)).toMatch(/^flagqai-ui-test-/);
+  const root = join(cwd, "invsqrt");
+  const id = randomUUID().replaceAll("-", "");
+  const saved = join(root, id);
+  await mkdir(saved, { recursive: true });
+  const jobsBefore = await (await page.request.get("/api/jobs")).json();
+  const runsBefore = await (await page.request.get("/api/python/runs")).json();
+  const owner = "coordinator-" + id;
+  const client = "trace-client-" + id;
+  const action = async (operation, input) => {
+    const response = await page.request.post("/api/workspace/actions", {
+      data: { client, session: owner, operation, ...input },
+    });
+    expect(response.ok()).toBe(true);
+    return response.json();
+  };
+  const coordinate = (input) => action("research.coordinate", input);
+  try {
+    await saveVerifiedRun(saved, id, "Worker traceability study", 180);
+    expect(
+      (
+        await page.request.post("/api/workspace/context", {
+          data: {
+            client,
+            session: owner,
+            source: "# Test metadata only",
+            name: "Trace fixture",
+            page: "model",
+            dirty: true,
+          },
+        })
+      ).ok(),
+    ).toBe(true);
+    const source = await action("research.inspect", {
+      parent: "invsqrt-" + id,
+    });
+    await coordinate({
+      action: "open",
+      constraints: "Preserve the baseline and drafts.",
+      request_id: "open",
+    });
+    const reserve = (task_id, revision) =>
+      coordinate({
+        action: "reserve",
+        task_id,
+        task: "Explore " + task_id,
+        parent_run_id: source.parent,
+        source_sha256: source.source_sha256,
+        expected_project_revision: 0,
+        expected_constraint_revision: revision,
+        request_id: "reserve-" + task_id,
+      });
+    let state = (await reserve("width", 1)).coordination;
+    await coordinate({
+      action: "claim",
+      task_id: "width",
+      request_id: "claim-width",
+    });
+    await coordinate({
+      action: "observe",
+      task_id: "width",
+      worker_session_id: state.tasks.width.worker_session_id,
+      status: "failed",
+      detail: "Retained local tool failure",
+      native_run_id: "native-run-width",
+      request_id: "failed-width",
+    });
+    await coordinate({
+      action: "evidence",
+      task_id: "width",
+      run_id: source.parent,
+      source_sha256: source.source_sha256,
+      request_id: "link-width",
+    });
+    await coordinate({
+      action: "constraints",
+      constraints: "Prefer lower cost; retain earlier reports.",
+      expected_constraint_revision: 1,
+      request_id: "revise",
+    });
+    state = (await reserve("cost", 2)).coordination;
+    await coordinate({
+      action: "claim",
+      task_id: "cost",
+      request_id: "claim-cost",
+    });
+    await coordinate({
+      action: "observe",
+      task_id: "cost",
+      worker_session_id: state.tasks.cost.worker_session_id,
+      status: "running",
+      request_id: "running-cost",
+    });
+
+    await page.goto("/#model");
+    const editor = page.getByRole("textbox", {
+      name: "Quantum model code editor",
+    });
+    const draft =
+      "# Preserve this working draft while reading worker records.\n";
+    await editor.fill(draft);
+    const agent = page.getByRole("button", {
+      name: "FlagQAI Agent",
+      exact: true,
+    });
+    if ((await agent.getAttribute("aria-expanded")) !== "true")
+      await agent.click();
+    const chat = page.getByRole("textbox", {
+      name: "Message FlagQAI",
+      exact: true,
+    });
+    const chatDraft = "Keep this unsent question while tracing worker records.";
+    await chat.fill(chatDraft);
+    await agent.click();
+    await page.getByRole("button", { name: "JOBS", exact: true }).click();
+    await page
+      .getByRole("region", { name: "Research run history" })
+      .getByRole("button", {
+        name: /^Open research run Worker traceability study/,
+      })
+      .click();
+    const detail = page.getByRole("region", {
+      name: "Research run",
+      exact: true,
+    });
+    const metrics = detail.getByRole("table", {
+      name: "Recorded verification metrics",
+    });
+    const team = detail.locator("details.fq-research-team");
+    await expect(metrics).toBeVisible();
+    await expect(team).not.toHaveAttribute("open", "");
+    await expect(team.locator("section").first()).not.toBeVisible();
+    expect(
+      await metrics.evaluate(
+        (node) =>
+          !!(
+            node.compareDocumentPosition(
+              document.querySelector(".fq-research-team"),
+            ) & Node.DOCUMENT_POSITION_FOLLOWING
+          ),
+      ),
+    ).toBe(true);
+    const openedSnapshot = page.waitForResponse(
+      (response) =>
+        response.url().endsWith("/api/research-runs/invsqrt-" + id) &&
+        response.request().method() === "GET",
+    );
+    await team.locator(":scope > summary").click();
+    const refreshed = await (await openedSnapshot).json();
+    expect(
+      refreshed.run.coordination.find((link) => link.task.id === "cost").task
+        .status,
+    ).toBe("running");
+    await expect(team).toContainText("Explore cost · v1");
+    await expect(team).toContainText("No verification report linked.");
+    await expect(team.locator(".fq-research-status").first()).toHaveText(
+      "running",
+    );
+    await coordinate({
+      action: "observe",
+      task_id: "cost",
+      worker_session_id: state.tasks.cost.worker_session_id,
+      status: "completed",
+      request_id: "completed-cost",
+    });
+    await expect(team.locator(".fq-research-status").first()).toHaveText(
+      "completed",
+      { timeout: 10000 },
+    );
+    await expect(team).toHaveAttribute("open", "");
+    await team.getByText("Earlier task versions · 1", { exact: true }).click();
+    const earlier = team
+      .getByRole("region", { name: "Research task version" })
+      .filter({ hasText: "Explore width" });
+    await expect(earlier).toContainText(
+      "historical evidence under earlier constraints",
+    );
+    await expect(earlier).toContainText(
+      "Code " + source.source_sha256.slice(0, 12),
+    );
+    await earlier
+      .getByText("Task details and history", { exact: true })
+      .click();
+    await expect(earlier).toContainText("Retained local tool failure");
+    await expect(earlier).toContainText("native-run-width");
+    await expect(earlier).toContainText(owner);
+    await expect(
+      metrics.getByRole("cell", { name: "180", exact: true }),
+    ).toBeVisible();
+    await page.screenshot({
+      path: testInfo.outputPath("research-task-traceability.png"),
+      fullPage: true,
+    });
+    await earlier
+      .getByRole("button", { name: "View linked verification" })
+      .click();
+    await expect(metrics).toBeVisible();
+    await page.reload();
+    await expect(metrics).toBeVisible();
+    await expect(team).not.toHaveAttribute("open", "");
+    expect(
+      (await (await page.request.get("/api/jobs")).json()).map(
+        (item) => item.id,
+      ),
+    ).toEqual(jobsBefore.map((item) => item.id));
+    expect(
+      (await (await page.request.get("/api/python/runs")).json()).map(
+        (item) => item.id,
+      ),
+    ).toEqual(runsBefore.map((item) => item.id));
+    await page.getByRole("button", { name: "MODEL", exact: true }).click();
+    await expect(editor).toHaveValue(draft);
+    if ((await agent.getAttribute("aria-expanded")) !== "true")
+      await agent.click();
+    await expect(chat).toHaveValue(chatDraft);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

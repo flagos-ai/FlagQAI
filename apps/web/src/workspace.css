@@ -7837,3 +7837,12 @@ body,
 .fq-comparison-distribution-summary small {
   margin-left: 8px;
 }
+
+.fq-research-team-task {
+  border-block-start: 1px solid var(--border);
+  padding-block: 10px;
+}
+.fq-research-team-task p {
+  margin-block: 6px;
+  overflow-wrap: anywhere;
+}

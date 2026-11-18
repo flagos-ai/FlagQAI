@@ -46,9 +46,53 @@ export type CandidateDecision = Omit<BaselineDecision, "decision"> & {
 
 export const RESEARCH_RUNS_CHANGED = "fq-research-runs-changed";
 
+export type ResearchTask = {
+  id: string;
+  worker_session_id: string;
+  task: string;
+  status: string;
+  task_version?: number;
+  constraint_revision: number;
+  constraints: string;
+  constraints_current: boolean;
+  project_revision: number;
+  source_sha256: string;
+  verifier_sha256: string;
+  parent_run_id: string;
+  previous_task_id?: string;
+  evidence: {
+    run_id: string;
+    source_sha256: string;
+    report_sha256: string;
+    constraints_current: boolean;
+  }[];
+  events: {
+    status: string;
+    at: string;
+    detail: string;
+    native_run_id?: string;
+  }[];
+};
+
+export type ResearchTaskLink = {
+  project_id: string;
+  coordinator_session_id: string;
+  constraint_revision: number;
+  task: ResearchTask;
+};
+
+export function hasActiveResearchTasks(
+  links: ResearchTaskLink[] = [],
+): boolean {
+  return links.some(({ task }) =>
+    ["reserved", "admitting", "running"].includes(task.status),
+  );
+}
+
 export type ResearchRun = ResearchRunSummary & {
   project: ResearchRunSummary["project"] & { baseline?: ProjectBaseline };
   is_project_baseline?: boolean;
+  coordination?: ResearchTaskLink[];
   current_comparison?: {
     baseline_run_id: string;
     baseline_source_sha256: string;
