@@ -770,3 +770,312 @@ test("research team traces saved worker evidence without displacing results or d
     await rm(root, { recursive: true, force: true });
   }
 });
+
+async function constraintStudy(page) {
+  const { cwd } = await (await page.request.get("/api/agent")).json();
+  expect(basename(cwd)).toMatch(/^flagqai-ui-test-/);
+  const root = join(cwd, "invsqrt"),
+    id = randomUUID().replaceAll("-", "");
+  const saved = join(root, id),
+    owner = "review-owner-" + id,
+    client = "review-client-" + id;
+  await mkdir(saved, { recursive: true });
+  await saveVerifiedRun(saved, id, "Constraint review study", 180);
+  expect(
+    (
+      await page.request.post("/api/workspace/context", {
+        data: {
+          client,
+          session: owner,
+          source: "# Isolated review fixture",
+          name: "Review fixture",
+          page: "model",
+          dirty: true,
+        },
+      })
+    ).ok(),
+  ).toBe(true);
+  const coordinate = async (input) => {
+    const response = await page.request.post("/api/workspace/actions", {
+      data: {
+        client,
+        session: owner,
+        operation: "research.coordinate",
+        ...input,
+      },
+    });
+    expect(response.ok()).toBe(true);
+    return (await response.json()).coordination;
+  };
+  await coordinate({
+    action: "open",
+    constraints: "At most 64 qubits; retain the baseline.",
+    request_id: "open",
+  });
+  const hash = sha256(await readFile(join(saved, "candidate.kmx")));
+  for (const task_id of ["width", "cost"]) {
+    const state = await coordinate({
+      action: "reserve",
+      task_id,
+      task: "Explore " + task_id,
+      expected_constraint_revision: 1,
+      expected_project_revision: 0,
+      parent_run_id: "invsqrt-" + id,
+      source_sha256: hash,
+      request_id: "reserve-" + task_id,
+    });
+    await coordinate({
+      action: "claim",
+      task_id,
+      request_id: "claim-" + task_id,
+    });
+    await coordinate({
+      action: "observe",
+      task_id,
+      worker_session_id: state.tasks[task_id].worker_session_id,
+      status: task_id === "width" ? "failed" : "completed",
+      detail: "Retained pre-review outcome",
+      request_id: "end-" + task_id,
+    });
+  }
+  await coordinate({
+    action: "evidence",
+    task_id: "width",
+    run_id: "invsqrt-" + id,
+    source_sha256: hash,
+    request_id: "evidence",
+  });
+  const path = "/api/research-runs/invsqrt-" + id;
+  const open = async (target) => {
+    await target.goto("/#jobs");
+    const agent = target.getByRole("button", {
+      name: "FlagQAI Agent",
+      exact: true,
+    });
+    if ((await agent.getAttribute("aria-expanded")) === "true")
+      await agent.click();
+    const history = target.getByRole("region", {
+      name: "Research run history",
+    });
+    await history
+      .getByRole("button", {
+        name: /^Open research run Constraint review study/,
+      })
+      .click();
+    const team = target.locator("details.fq-research-team");
+    if (!(await team.evaluate((node) => node.open)))
+      await team.locator(":scope > summary").click();
+    const review = team.getByRole("region", {
+      name: "Research coordination",
+      exact: true,
+    });
+    await review.getByText("Update constraints", { exact: true }).click();
+    return {
+      team,
+      review,
+      field: review.getByRole("textbox", {
+        name: "Project constraints",
+        exact: true,
+      }),
+    };
+  };
+  return { root, saved, owner, coordinate, path, open };
+}
+
+test("constraint review preserves newer drafts and recovers a lost confirmation receipt without execution", async ({
+  page,
+}, testInfo) => {
+  const study = await constraintStudy(page);
+  const editorDraft = "# Preserve this editor draft during constraint review\n";
+  const chatDraft = "Keep this unsent question during review.";
+  const newer = "A newer unsaved constraint refinement.";
+  const reportBefore = await readFile(join(study.saved, "report.json"), "utf8");
+  try {
+    await page.goto("/#model");
+    await page
+      .getByRole("textbox", { name: "Quantum model code editor" })
+      .fill(editorDraft);
+    const agent = page.getByRole("button", {
+      name: "FlagQAI Agent",
+      exact: true,
+    });
+    if ((await agent.getAttribute("aria-expanded")) !== "true")
+      await agent.click();
+    await page
+      .getByRole("textbox", { name: "Message FlagQAI", exact: true })
+      .fill(chatDraft);
+    await agent.click();
+    let { team, review, field } = await study.open(page);
+    await field.fill("At most 48 qubits; retain earlier reports.");
+    let release, applied;
+    const gate = new Promise((resolve) => (release = resolve)),
+      submitted = new Promise((resolve) => (applied = resolve));
+    let confirmations = 0;
+    await page.route("**" + study.path + "/coordination", async (route) => {
+      const action = route.request().postDataJSON().action;
+      if (action === "constraints") {
+        const response = await route.fetch();
+        applied();
+        await gate;
+        await route.fulfill({ response });
+      } else if (action === "confirm_plan") {
+        confirmations++;
+        await route.fetch();
+        await route.abort("failed");
+      } else await route.continue();
+    });
+    await review
+      .getByRole("button", { name: "Review adjustment", exact: true })
+      .click();
+    await submitted;
+    await field.fill(newer);
+    release();
+    await expect(field).toHaveValue(newer);
+    await expect(review).toContainText("Earlier evidence is historical.");
+    let state = await study.coordinate({ action: "inspect" });
+    expect(Object.keys(state.tasks)).toHaveLength(2);
+    const proposal = Object.values(state.adjustment_plans).find(
+      (plan) => plan.status === "proposed",
+    );
+    await expect(review).toContainText("Explore width · v1 → v2");
+    await page.screenshot({
+      path: testInfo.outputPath("constraint-adjustment-review.png"),
+      fullPage: true,
+    });
+    await review
+      .getByRole("button", { name: "Confirm new task versions", exact: true })
+      .click();
+    await expect(
+      review.getByRole("button", {
+        name: "Copy continuation request",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(review.getByRole("alert")).toHaveCount(0);
+    expect(confirmations).toBe(1);
+    state = await study.coordinate({ action: "inspect" });
+    expect(Object.keys(state.tasks)).toHaveLength(4);
+    expect(
+      state.history.filter((event) => event.action === "claim"),
+    ).toHaveLength(2);
+    const approved = proposal.changes.map((change) => change.task_id);
+    expect(
+      approved.every(
+        (id) =>
+          state.tasks[id].status === "reserved" &&
+          !state.tasks[id].evidence.length,
+      ),
+    ).toBe(true);
+    expect(state.tasks.width.evidence[0].constraints_current).toBe(false);
+    await page.reload();
+    ({ team, review, field } = await study.open(page));
+    await expect(field).toHaveValue(newer);
+    await page
+      .context()
+      .grantPermissions(["clipboard-read", "clipboard-write"]);
+    await review
+      .getByRole("button", { name: "Copy continuation request", exact: true })
+      .click();
+    await expect(review).toContainText("Continuation request copied.");
+    const continuation = await page.evaluate(() =>
+      navigator.clipboard.readText(),
+    );
+    expect(continuation).toContain(study.owner);
+    expect(continuation).toContain(proposal.id);
+    for (const id of approved) expect(continuation).toContain(id);
+    expect(continuation).not.toContain(newer);
+    expect(
+      (await study.coordinate({ action: "inspect" })).history.filter(
+        (event) => event.action === "claim",
+      ),
+    ).toHaveLength(2);
+    expect(await readFile(join(study.saved, "report.json"), "utf8")).toBe(
+      reportBefore,
+    );
+    await page.getByRole("button", { name: "MODEL", exact: true }).click();
+    await expect(
+      page.getByRole("textbox", { name: "Quantum model code editor" }),
+    ).toHaveValue(editorDraft);
+    if ((await agent.getAttribute("aria-expanded")) !== "true")
+      await agent.click();
+    await expect(
+      page.getByRole("textbox", { name: "Message FlagQAI", exact: true }),
+    ).toHaveValue(chatDraft);
+  } finally {
+    await rm(study.root, { recursive: true, force: true });
+  }
+});
+
+test("constraint review detects stale windows, retains drafts and rejects an obsolete approval", async ({
+  page,
+}) => {
+  const study = await constraintStudy(page);
+  let other;
+  try {
+    const first = await study.open(page);
+    const unsaved = "First window constraint draft.";
+    await first.field.fill(unsaved);
+    other = await page.context().newPage();
+    const second = await study.open(other);
+    await second.field.fill("Second window limits: 48 qubits.");
+    await second.review
+      .getByRole("button", { name: "Review adjustment", exact: true })
+      .click();
+    await expect(
+      second.review.getByRole("button", {
+        name: "Confirm new task versions",
+        exact: true,
+      }),
+    ).toBeVisible();
+    const snapshot = await (await other.request.get(study.path)).json();
+    await other.route("**" + study.path, (route) =>
+      route.fulfill({ json: snapshot }),
+    );
+    await first.review
+      .getByRole("button", { name: "Review adjustment", exact: true })
+      .click();
+    await expect(first.review.getByRole("alert")).toContainText(
+      "constraints changed",
+    );
+    await expect(first.field).toHaveValue(unsaved);
+    await page.reload();
+    await study.open(page);
+    await expect(first.field).toHaveValue(unsaved);
+    await first.review
+      .getByRole("button", { name: "Review against v2", exact: true })
+      .click();
+    await expect(first.field).toHaveValue(unsaved);
+    await first.review
+      .getByRole("button", { name: "Review adjustment", exact: true })
+      .click();
+    await expect(first.review).toContainText(
+      "Adjustment for constraints v3 · proposed",
+    );
+    await first.review
+      .getByRole("button", { name: "Reject adjustment", exact: true })
+      .click();
+    await expect(first.review).toContainText("Adjustment rejected.");
+    await other.route("**" + study.path + "/coordination", async (route) => {
+      await other.unroute("**" + study.path);
+      await route.continue();
+    });
+    await second.review
+      .getByRole("button", { name: "Confirm new task versions", exact: true })
+      .click();
+    await expect(second.review.getByRole("alert")).toContainText(
+      "constraints changed",
+    );
+    const state = await study.coordinate({ action: "inspect" });
+    expect(Object.keys(state.tasks)).toHaveLength(2);
+    expect(
+      Object.values(state.adjustment_plans)
+        .map((plan) => plan.status)
+        .sort(),
+    ).toEqual(["rejected", "superseded"]);
+    expect(state.tasks.width.status).toBe("failed");
+    expect(state.tasks.width.evidence).toHaveLength(1);
+  } finally {
+    await other?.close();
+    await rm(study.root, { recursive: true, force: true });
+  }
+});

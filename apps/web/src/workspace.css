@@ -7846,3 +7846,25 @@ body,
   margin-block: 6px;
   overflow-wrap: anywhere;
 }
+
+.fq-research-constraint-review {
+  margin-block: 10px;
+}
+.fq-research-constraint-review p {
+  margin-block: 6px;
+}
+.fq-research-constraint-review label {
+  display: grid;
+  gap: 6px;
+  margin-block: 8px;
+}
+.fq-research-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block: 8px;
+}
+
+.fq-research-constraint-review textarea {
+  min-height: 72px;
+}
