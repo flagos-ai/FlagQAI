@@ -7122,6 +7122,12 @@ body,
 .fq-candidate-revision button[type="submit"] {
   justify-self: start;
 }
+.fq-candidate-decision {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
 .fq-jobs-list h3 {
   padding-top: 10px;
   padding-bottom: 5px;
