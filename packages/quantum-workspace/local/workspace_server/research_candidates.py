@@ -11,7 +11,7 @@ from .invsqrt_evidence import (
     REPORT_LIMIT, evidence_root, read_report, read_report_export, regular_bytes,
 )
 from .research_baseline import (
-    check_revision, read_baseline, research_control_lock, valid_hash, verified_report_version,
+    check_revision, project_baseline, read_baseline, research_control_lock, valid_hash, verified_report_version,
 )
 
 RUN_ID = re.compile(r'invsqrt-([a-f0-9]{32})')
@@ -40,6 +40,30 @@ def candidate_source(settings, report):
         if digest(raw) == report['proposal']['source_sha256']:
             return raw
     raise ValueError('Choose a verified version or a recorded candidate attempt.')
+
+
+def inspect_candidate_source(settings, identity=None):
+    state = project_baseline(settings)
+    identity = identity or (state['current'] or {}).get('run_id')
+    report = archived_report(settings, identity)
+    raw = candidate_source(settings, report)
+    verifier_source = report
+    source = raw.decode('utf-8')
+    # Prefer the editable arithmetic region in the current InvSqrt adapter.
+    start = source.find('INFO_TAG "@enter:phase_by_bits"')
+    start = max(0, start)
+    end = source.find('INFO_TAG "@exit:phase_by_bits"', start)
+    end = len(source) if end < 0 else end
+    excerpt = source[start:end][:16384]
+    return {
+        'parent': identity, 'source_sha256': digest(raw),
+        'project_revision': state['revision'], 'project_baseline': state['current'],
+        'status': report['status'], 'source_excerpt': excerpt,
+        'verifier_sha256': (verifier_source.get('provenance') or {}).get('verifier_sha256'),
+        'excerpt_start': start, 'source_characters': len(source),
+        'excerpt_truncated': start != 0 or len(excerpt) != len(source),
+        'constraints': 'Propose one unique text replacement. Full verification starts only after user review.',
+    }
 
 
 def baseline_inputs(settings, report):
