@@ -221,6 +221,10 @@ body,
   border-right: 1px solid #171719;
   background: #2b2b2e;
   min-height: 0;
+  gap: 4px;
+  padding: 8px 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 .fq-nav button {
   flex-shrink: 0;
@@ -228,42 +232,43 @@ body,
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  gap: 8px;
+  gap: 5px;
   border: 0;
-  border-radius: 0;
+  border-radius: 8px;
   background: transparent;
-  height: 103px;
-  padding: 8px 3px;
+  width: calc(100% - 12px);
+  margin: 0 6px;
+  min-height: 48px;
+  height: clamp(48px, calc((100dvh - 110px) / 8), 64px);
+  padding: 7px 4px;
   position: relative;
   color: #c6cbd2;
   font-size: 11px;
-  line-height: 1.8;
+  line-height: 16px;
+  font-weight: 450;
   text-align: center;
 }
 .fq-nav button svg {
-  height: 27px;
-  width: 27px;
+  height: 22px;
+  width: 22px;
   flex-shrink: 0;
 }
 .fq-nav button.active {
-  background: #3a4a58;
-  color: #b5deff;
+  background: #ffffff08;
+  color: #ededf1;
 }
 .fq-nav button.active:after {
   content: "";
   position: absolute;
-  right: 0;
-  top: 20px;
-  bottom: 20px;
-  width: 3px;
-  background: #78c8ff;
+  left: 0;
+  top: calc(50% - 7px);
+  width: 2px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--accent);
 }
-.fq-agent-icon {
-  flex-shrink: 0;
-  height: 30px;
-  width: 30px;
-  background: currentColor;
-  mask: url("/assets/flagqai-agent.svg") center/contain no-repeat;
+.fq-nav button:focus-visible {
+  outline-offset: -2px;
 }
 .fq-nav-symbol {
   font-size: 26px;
@@ -897,7 +902,6 @@ body,
     overflow: auto;
   }
   .fq-nav button {
-    height: 90px;
     font-size: 9px;
   }
   .fq-toolbar {
@@ -936,9 +940,6 @@ body,
   height: 28px;
   background: #f4f5f7;
   mask: url("/assets/brand-quantum.svg") center/contain no-repeat;
-}
-.fq-nav button {
-  height: clamp(62px, calc((100dvh - var(--fq-header-height)) / 8), 103px);
 }
 .fq-token-keyword {
   color: #bb9cdf;

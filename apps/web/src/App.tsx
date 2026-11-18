@@ -396,19 +396,20 @@ export default function App() {
           gridTemplateColumns: `92px ${sidebarWidth}px 6px minmax(0,1fr)`,
         }}
       >
-        <nav className="fq-nav">
+        <nav className="fq-nav" aria-label="Research workspace">
           <button
             aria-label="FlagQAI Agent"
             aria-expanded={state.agentOpen}
             className={state.agentOpen ? "active" : ""}
             onClick={() => dispatch({ type: "agent", open: !state.agentOpen })}
           >
-            <span className="fq-agent-icon" />
+            <Icon name="agent" />
             AGENT
           </button>
           {pages.map(([page, label]) => (
             <button
               key={page}
+              aria-current={state.page === page ? "page" : undefined}
               className={state.page === page ? "active" : ""}
               onClick={() => navigate(page)}
             >
@@ -418,11 +419,11 @@ export default function App() {
           ))}
           <div className="push" />
           <button onClick={() => setGuide(true)}>
-            <UIIcon name="book" size={26} />
+            <Icon name="guide" />
             LEARN MORE
           </button>
           <button onClick={() => setGuide(true)}>
-            <UIIcon name="workspace" size={26} />
+            <Icon name="workspace" />
             WORKSPACE
           </button>
         </nav>
