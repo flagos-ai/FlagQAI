@@ -35,7 +35,14 @@ export function createProjectCoordinator(native) {
         constraint_revision: task.constraint_revision, parent_run_id: task.parent_run_id,
         source_sha256: task.source_sha256, project_revision: task.project_revision,
         verifier_sha256: task.verifier_sha256,
-        instruction: 'Preserve the baseline and drafts. Return exact code paths and evidence IDs. Do not adopt or claim validation without an archived verifier report.' });
+        task_version: task.task_version ?? 1, previous_task_id: task.previous_task_id,
+        adjustment_plan_id: task.adjustment_plan_id,
+        historical_evidence: (state.adjustment_plans?.[task.adjustment_plan_id]?.changes.find(change => change.task_id === task.id)?.previous_evidence
+          ?? state.tasks[task.previous_task_id]?.evidence ?? []).map(e => ({
+          run_id: e.run_id, source_sha256: e.source_sha256, report_sha256: e.report_sha256,
+          constraint_revision: e.constraint_revision,
+        })),
+        instruction: 'Preserve the baseline and drafts. Earlier evidence is historical, not verification under revised constraints. Return exact code paths and evidence IDs. Do not adopt or claim validation without an archived verifier report.' });
       const activation = await native.start(task.worker_session_id, task.id, prompt, signal);
       if (activation.childId !== task.worker_session_id) throw new Error('Native worker identity mismatch.');
       // Native parent delivery handles result notification. This callback is only a metadata projection.

@@ -25,6 +25,8 @@ for line in sys.stdin:
         value = json.loads(line)
         if value.get('operation') == 'research.inspect':
             result = source_snapshot(settings, 'invsqrt-' + 'a' * 32)
+        elif value.get('operation') == 'research.user_review':
+            result = team.act('native-parent', value['data'], actor='user')
         else:
             result = team.act('native-parent', value['data'])
         print(json.dumps({'result': result}), flush=True)

@@ -594,16 +594,53 @@ test("research team traces saved worker evidence without displacing results or d
       expected_constraint_revision: 1,
       request_id: "revise",
     });
-    state = (await reserve("cost", 2)).coordination;
+    const reviewed = await page.request.post(
+      "/api/research-runs/" + source.parent + "/coordination",
+      {
+        data: {
+          action: "recommend",
+          coordinator_session_id: owner,
+          expected_constraint_revision: 2,
+          request_id: "propose-cost",
+          adjustments: [
+            {
+              task_id: "width",
+              task: "Explore cost",
+              reason: "Recheck cost under the revised constraints.",
+            },
+          ],
+        },
+      },
+    );
+    expect(reviewed.ok()).toBe(true);
+    const proposal = Object.values(
+      (await reviewed.json()).coordination.adjustment_plans,
+    ).find((plan) => plan.status === "proposed");
+    const confirmed = await page.request.post(
+      "/api/research-runs/" + source.parent + "/coordination",
+      {
+        data: {
+          action: "confirm_plan",
+          coordinator_session_id: owner,
+          expected_constraint_revision: 2,
+          request_id: "confirm-cost",
+          plan_id: proposal.id,
+          plan_sha256: proposal.sha256,
+        },
+      },
+    );
+    expect(confirmed.ok()).toBe(true);
+    state = (await confirmed.json()).coordination;
+    const costTask = state.tasks[proposal.changes[0].task_id];
     await coordinate({
       action: "claim",
-      task_id: "cost",
+      task_id: costTask.id,
       request_id: "claim-cost",
     });
     await coordinate({
       action: "observe",
-      task_id: "cost",
-      worker_session_id: state.tasks.cost.worker_session_id,
+      task_id: costTask.id,
+      worker_session_id: costTask.worker_session_id,
       status: "running",
       request_id: "running-cost",
     });
@@ -664,18 +701,18 @@ test("research team traces saved worker evidence without displacing results or d
     await team.locator(":scope > summary").click();
     const refreshed = await (await openedSnapshot).json();
     expect(
-      refreshed.run.coordination.find((link) => link.task.id === "cost").task
-        .status,
+      refreshed.run.coordination.find((link) => link.task.id === costTask.id)
+        .task.status,
     ).toBe("running");
-    await expect(team).toContainText("Explore cost · v1");
+    await expect(team).toContainText("Explore cost · v2");
     await expect(team).toContainText("No verification report linked.");
     await expect(team.locator(".fq-research-status").first()).toHaveText(
       "running",
     );
     await coordinate({
       action: "observe",
-      task_id: "cost",
-      worker_session_id: state.tasks.cost.worker_session_id,
+      task_id: costTask.id,
+      worker_session_id: costTask.worker_session_id,
       status: "completed",
       request_id: "completed-cost",
     });
