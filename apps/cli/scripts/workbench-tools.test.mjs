@@ -151,3 +151,29 @@ test('SDK inspection uses only the read-only workbench operation for the bound s
   const requests = f.calls.filter(call => call.url.endsWith('/actions'))
   assert.deepEqual(requests.map(call => JSON.parse(call.init.body)), [{ ...binding, operation: 'sdk.inspect' }])
 })
+
+test('research inspection and team control remain workspace/session scoped', async () => {
+  const calls = []
+  let active = binding
+  const coordinator = { control: async (input, action, signal) => action('research.coordinate', input, signal) }
+  const tools = createWorkbenchTools(() => active, '/workspace', async (url, init) => {
+    if (url.endsWith('/api/agent')) return response({ cwd: '/workspace' })
+    const data = JSON.parse(init.body); calls.push(data)
+    return response({ parent: data.parent, coordination: { coordinator_session_id: data.session } })
+  }, coordinator)
+  const inspect = tools.find(tool => tool.name === 'workbench_inspect')
+  const team = tools.find(tool => tool.name === 'workbench_research_team')
+  const signal = new AbortController().signal
+  await inspect.execute({ resource: 'research', id: 'invsqrt-source' }, { signal })
+  assert.equal(calls[0].operation, 'research.inspect')
+  assert.equal(calls[0].parent, 'invsqrt-source')
+  await team.execute({ action: 'inspect' }, { signal })
+  assert.equal(calls[1].session, binding.session)
+  assert.equal(calls[1].client, binding.client)
+  assert.equal(calls[1].operation, 'research.coordinate')
+  assert.ok(!team.parameters.properties.action.enum.includes('claim'))
+  assert.ok(!team.parameters.properties.action.enum.includes('observe'))
+  active = undefined
+  await assert.rejects(team.execute({ action: 'inspect' }, { signal }), /Open the Web workbench/)
+  assert.equal(calls.length, 2)
+})

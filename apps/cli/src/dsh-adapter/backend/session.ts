@@ -32,6 +32,7 @@ import type { ModelRoute } from '../../modelRoute.js'
 import type { HeadlessSessionInteractions } from '../headless-interactions.js'
 import { createNativeSession } from '#flagqai/harness-adapter/native-session'
 import { createWorkbenchTools, workbenchBinding } from '../workbench-tools.js'
+import { createNativeResearchCoordinator } from '../project-coordination.js'
 
 declare module '#flagqai/protocol/agent/capabilities' {
   interface DshNative {
@@ -79,6 +80,7 @@ export function createDshSession(
   } = {},
 ): AgentSession {
   const agent = target.agent
+  let coordination: ReturnType<typeof createNativeResearchCoordinator> | undefined
   const handle = 'handle' in target ? target.handle : target
   let workbench: ReturnType<typeof workbenchBinding>
   let workbenchDisposers: (() => void)[] = []
@@ -103,7 +105,7 @@ export function createDshSession(
         for (const dispose of workbenchDisposers.splice(0)) dispose()
       } else if (!workbenchDisposers.length) {
         try {
-          for (const tool of createWorkbenchTools(() => workbench, agent.session.header.cwd || process.cwd()))
+          for (const tool of createWorkbenchTools(() => workbench, agent.session.header.cwd || process.cwd(), fetch, coordination ??= createNativeResearchCoordinator(agent.ctx, agent)))
             workbenchDisposers.push(agent.ctx.tools.register(tool))
         } catch (error) {
           for (const dispose of workbenchDisposers.splice(0)) dispose()

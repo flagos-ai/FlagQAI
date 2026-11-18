@@ -53,6 +53,7 @@ jobs:
       - run: pnpm --dir apps/cli run verify:installed-agent-resolution
       - run: pnpm --dir apps/cli run verify:project-coordination
       - run: pnpm --dir apps/cli run verify:installed-project-coordination
+      - run: pnpm --dir apps/cli run verify:native-project-coordination
       - run: pnpm --dir apps/cli run verify:message-delivery
       - run: pnpm --dir apps/cli run verify:installed-message-delivery
       - run: pnpm --dir apps/cli run verify:thinking-replay

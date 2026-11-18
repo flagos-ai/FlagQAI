@@ -181,3 +181,30 @@ print(json.dumps(team.act('native-parent', {'action': 'claim', 'request_id': sys
         self.assertEqual(state['tasks']['width']['status'], 'failed')
         self.assertEqual(len(state['tasks']['width']['events']), 1)
         self.assertFalse(self.act('claim', 'reclaim', task_id='width')['claimed'])
+
+    def test_workbench_binding_owns_coordination_and_never_dispatches_compute(self):
+        from unittest.mock import Mock
+        from workspace_server.bridge import WorkspaceBridge, BridgeConflict
+        compute = Mock()
+        bridge = WorkspaceBridge(self.settings, compute)
+        context = dict(client='test-client', session='native-parent', name='Unsaved study',
+                       source='unsaved = True', page='model', dirty=True)
+        bridge.publish(context)
+        def action(operation, **data):
+            return bridge.act(dict(client='test-client', session='native-parent', operation=operation, **data))
+        source = action('research.inspect', parent=self.ids[0])
+        action('research.coordinate', action='reserve', request_id='bridge-reserve', task_id='width',
+               task='Explore width', expected_constraint_revision=1,
+               expected_project_revision=source['project_revision'],
+               source_sha256=source['source_sha256'], parent_run_id=source['parent'])
+        state = action('research.coordinate', action='inspect')['coordination']
+        self.assertEqual(state['coordinator_session_id'], 'native-parent')
+        self.assertEqual(state['tasks']['width']['status'], 'reserved')
+        with self.assertRaisesRegex(ValueError, 'Unsupported coordination action'):
+            action('research.coordinate', action='dispatch', task_id='width', request_id='not-native')
+        bridge.publish({**context, 'session': 'different-session'})
+        with self.assertRaises(BridgeConflict):
+            action('research.coordinate', action='inspect')
+        self.assertEqual(compute.execute.call_count, 0)
+        self.assertEqual(bridge.context('test-client')['source'], context['source'])
+        self.assertTrue(bridge.context('test-client')['dirty'])

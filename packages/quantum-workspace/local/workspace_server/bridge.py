@@ -20,6 +20,7 @@ class BridgeConflict(ValueError):
 
 class WorkspaceBridge:
     def __init__(self, settings, service, python_runs=None):
+        self.settings = settings
         self.root = settings.agent_cwd or settings.web_root.parent
         self.service = service
         self.python_runs = python_runs
@@ -103,6 +104,15 @@ class WorkspaceBridge:
             return self.python_runs.inspect_sdk()
         if operation == 'draft.read':
             return {'name': context['name'], 'source': context['source'], 'source_hash': context['source_hash']}
+        if operation == 'research.inspect':
+            from .research_coordination import source_snapshot
+            return source_snapshot(self.settings, data.get('parent'))
+        if operation == 'research.coordinate':
+            from .research_coordination import ResearchCoordination
+            return ResearchCoordination(self.settings).act(session, {
+                key: value for key, value in data.items()
+                if key not in ('client', 'session', 'port', 'operation')
+            })
         if operation == 'project.inspect':
             if not self.python_runs: raise ValueError('Python runtime unavailable.')
             return self.python_runs.projects.tree(data.get('project_id'))
