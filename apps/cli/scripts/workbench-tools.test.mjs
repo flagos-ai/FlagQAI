@@ -28,6 +28,17 @@ function fixture(handler = () => response({})) {
   const run = (name, args) => tools.find(t => t.name === name).execute(args, { signal: new AbortController().signal })
   return { calls, run }
 }
+test('current model inspection reads the draft or exact shared id without guessing or mutating', async () => {
+  const draft = fixture(body => response(body.operation === 'status' ? {} : { name: 'Unsaved arithmetic', source: 'draft code', source_hash: 'draft-hash' }))
+  const result = await draft.run('workbench_inspect', { resource: 'model' })
+  assert.equal(result.kind, 'browser_draft')
+  assert.equal(result.source, 'draft code')
+  assert.equal(result.id, undefined)
+  assert.deepEqual(draft.calls.filter(c => c.init.body).map(c => JSON.parse(c.init.body).operation), ['status', 'draft.read'])
+  const shared = fixture(body => response(body.operation === 'status' ? { editorFile: 'exact-id.py' } : { id: body.model_id, source: 'saved code', revision: 'version' }))
+  assert.equal((await shared.run('workbench_inspect', { resource: 'model' })).id, 'exact-id.py')
+  assert.deepEqual(shared.calls.filter(c => c.init.body).map(c => JSON.parse(c.init.body).operation), ['status', 'model.read'])
+})
 test('only an exact Web controls suffix for this native session can bind tools', () => {
   assert.deepEqual(workbenchBinding(message(), 'session-1'), binding)
   assert.deepEqual(workbenchBinding(message(['python3', '/checkout/packages/quantum-workspace/workbench.py', '--port', '4188', '--client', 'client-1', '--session', 'session-1']), 'session-1'), binding)
@@ -214,4 +225,21 @@ test('research summaries bound long text and omit baseline report bodies explici
   const mismatch = fixture(() => response({ id: 'another-record' }))
   await assert.rejects(mismatch.run('workbench_inspect', { resource: 'research_run', id, detail: 'full' }), /identity/)
   await assert.rejects(mismatch.run('workbench_present_research_run', { run_id: id, request_id: 'present' }), /identity/)
+})
+
+test('current model inspection stops when the active session changes after status', async () => {
+  let active = binding
+  const operations = []
+  const tools = createWorkbenchTools(() => active, '/workspace', async (url, init) => {
+    if (url.endsWith('/api/agent')) return response({ cwd: '/workspace' })
+    operations.push(JSON.parse(init.body).operation)
+    active = { ...binding, session: 'changed' }
+    return response({ editorFile: 'saved.py' })
+  })
+  await assert.rejects(tools.find(t => t.name === 'workbench_inspect').execute({ resource: 'model' }, { signal: new AbortController().signal }), /context changed/)
+  assert.deepEqual(operations, ['status'])
+  const explicit = fixture(body => response({ id: body.model_id, source: 'specific version' }))
+  assert.equal((await explicit.run('workbench_inspect', { resource: 'model', id: 'chosen.py' })).id, 'chosen.py')
+  assert.deepEqual(explicit.calls.filter(c => c.init.body).map(c => JSON.parse(c.init.body).operation), ['model.read'])
+  await assert.rejects(explicit.run('workbench_inspect', { resource: 'run' }), /requires an id/)
 })

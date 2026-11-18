@@ -68,13 +68,21 @@ export function createWorkbenchTools(
     }
   }
   return [
-    tool('workbench_inspect', 'Read authoritative workbench state, browser draft, shared model, Python run, saved experiment, project, archived research source or installed SDK. workspace identifies the selected Python interpreter; sdk reads its API signatures and documentation without running an experiment. research reads verified-source version metadata; research_run reads saved verification and comparison. Run, experiment and research_run evidence defaults to a compact projection with explicit truncation indicators. Use detail=full when more data is needed, instead of shell inspection, archive extraction or guessing file formats.',
+    tool('workbench_inspect', 'Read authoritative workbench state, browser draft, shared model (omit id for the active editor model or unsaved browser draft), Python run, saved experiment, project, archived research source or installed SDK. workspace identifies the selected Python interpreter; sdk reads its API signatures and documentation without running an experiment. research reads verified-source version metadata; research_run reads saved verification and comparison. Run, experiment and research_run evidence defaults to a compact projection with explicit truncation indicators. Use detail=full when more data is needed, instead of shell inspection, archive extraction or guessing file formats.',
       schema({ resource: { type: 'string', enum: ['workspace', 'sdk', 'draft', 'model', 'run', 'experiment', 'project', 'research', 'research_run'] }, id: string, detail: { type: 'string', enum: ['summary', 'full'] } }, ['resource']),
       async (input, signal) => {
         const operations: Record<string, [string, string]> = { workspace: ['status', ''], sdk: ['sdk.inspect', ''], draft: ['draft.read', ''], model: ['model.read', 'model_id'], run: ['python.read', 'run_id'], experiment: ['experiment.read', 'experiment_id'], project: ['project.inspect', 'project_id'], research: ['research.inspect', 'parent'], research_run: ['research.read', 'run_id'] }
         const [op, key] = operations[input.resource]
-        if (key && !input.id) throw new Error('This resource requires an id.')
         const target = binding()
+        if (input.resource === 'model' && !input.id) {
+          const workspace = await action('status', {}, signal, target)
+          if (!sameBinding(binding(), target)) throw new Error('Workbench context changed before reading the current model.')
+          if (workspace.editorFile)
+            return action('model.read', { model_id: workspace.editorFile }, signal, target)
+          return { ...await action('draft.read', {}, signal, target), kind: 'browser_draft',
+            guidance: 'This draft is not a shared model. Create an independent Python model before running; preserve the draft.' }
+        }
+        if (key && !input.id) throw new Error('This resource requires an id.')
         const record = await action(op, key ? { [key]: input.id } : {}, signal, target)
         if (input.resource === 'research_run' && record.id !== input.id) throw new Error('Saved research identity did not match.')
         if (input.detail === 'full') return record
