@@ -1,3 +1,4 @@
+import { ResearchProjects } from "./ResearchProjects";
 import { UIIcon } from "./UIIcon";
 import { useProjectFolders } from "../hooks/useProjectFolders";
 import { useEffect, useId, useRef, useState } from "react";
@@ -528,6 +529,7 @@ export function ProjectExplorer({
           )}
         </section>
       )}
+      <ResearchProjects dispatch={dispatch} />
     </div>
   );
 }

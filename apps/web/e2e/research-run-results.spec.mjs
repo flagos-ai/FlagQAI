@@ -1429,3 +1429,133 @@ test("Agent outcome uses saved evidence, retains failures and prepares only an u
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test("Model project research history opens the latest attempt without replacing drafts or running code", async ({
+  page,
+}, testInfo) => {
+  const { cwd } = await (await page.request.get("/api/agent")).json();
+  expect(basename(cwd)).toMatch(/^flagqai-ui-test-/);
+  const root = join(cwd, "invsqrt"),
+    id = randomUUID().replaceAll("-", ""),
+    failedId = randomUUID().replaceAll("-", "");
+  const saved = join(root, id),
+    failed = join(root, failedId);
+  await mkdir(saved, { recursive: true });
+  await mkdir(failed, { recursive: true });
+  const jobs = async () =>
+    (await (await page.request.get("/api/jobs")).json()).map((item) => item.id);
+  const runs = async () =>
+    (await (await page.request.get("/api/python/runs")).json()).map(
+      (item) => item.id,
+    );
+  const jobsBefore = await jobs(),
+    runsBefore = await runs();
+  try {
+    await saveVerifiedRun(saved, id, "Verified earlier result", 180);
+    await writeFile(
+      join(failed, "report.json"),
+      JSON.stringify({
+        id: failedId,
+        task: "Latest failed attempt",
+        status: "failed",
+        created_at: "2026-11-06T00:00:00Z",
+        error: "Saved verifier failure",
+      }),
+    );
+    const original = await readFile(join(saved, "report.json"), "utf8");
+    await page.goto("/#model");
+    const editor = page.getByRole("textbox", {
+      name: "Quantum model code editor",
+    });
+    const draft = "# Retain the model when opening workspace research\n";
+    await editor.fill(draft);
+    const agent = page.getByRole("button", {
+      name: "FlagQAI Agent",
+      exact: true,
+    });
+    if ((await agent.getAttribute("aria-expanded")) !== "true")
+      await agent.click();
+    const chat = page.getByRole("textbox", {
+      name: "Message FlagQAI",
+      exact: true,
+    });
+    const chatDraft = "Keep this unsent research question.";
+    await chat.fill(chatDraft);
+    await agent.click();
+    await page
+      .getByRole("button", { name: "Open project workspace", exact: true })
+      .click();
+    const history = page.getByRole("region", {
+      name: "Workspace research history",
+    });
+    const latest = history.getByRole("button", {
+      name: "Open latest research run for InvSqrt compilation study",
+      exact: true,
+    });
+    await expect(latest).toContainText("2 runs · Latest: failed");
+    await expect(latest).toContainText("Latest failed attempt");
+    const endpoint = "/api/research-runs/invsqrt-" + failedId;
+    const actual = await (await page.request.get(endpoint)).json();
+    await page.route("**" + endpoint, (route) =>
+      route.fulfill({ json: { run: { ...actual.run, id: "invsqrt-" + id } } }),
+    );
+    await latest.click();
+    await expect(history.getByRole("alert")).toContainText(
+      "identity did not match",
+    );
+    await expect(page).toHaveURL(/#model$/);
+    await expect(editor).toHaveValue(draft);
+    await page.unroute("**" + endpoint);
+    await page.route("**/api/research-runs", (route) =>
+      route.fulfill({
+        status: 503,
+        json: { error: "Temporarily unavailable" },
+      }),
+    );
+    await history
+      .getByRole("button", { name: "Refresh research history", exact: true })
+      .click();
+    await expect(history).toContainText("Saved list may be out of date");
+    await expect(latest).toBeVisible();
+    await page.unroute("**/api/research-runs");
+    await history
+      .getByRole("button", { name: "Refresh research history", exact: true })
+      .click();
+    await expect(history).not.toContainText("Saved list may be out of date");
+    await latest.click();
+    await expect(page).toHaveURL(/#jobs$/);
+    const detail = page.getByRole("region", {
+      name: "Research run",
+      exact: true,
+    });
+    await expect(detail).toContainText("Saved verifier failure");
+    await page
+      .getByRole("button", {
+        name: /^Open research run Verified earlier result/,
+      })
+      .click();
+    await expect(detail).toContainText("10.0000% lower");
+    await page.getByRole("button", { name: "MODEL", exact: true }).click();
+    await expect(editor).toHaveValue(draft);
+    await expect(latest).toBeVisible();
+    await page.reload();
+    await expect(latest).toContainText("2 runs · Latest: failed");
+    expect(
+      await history.evaluate(
+        (element) => element.scrollWidth <= element.clientWidth + 1,
+      ),
+    ).toBe(true);
+    await page.screenshot({
+      path: testInfo.outputPath("project-research-history.png"),
+      fullPage: true,
+    });
+    await agent.click();
+    await expect(chat).toHaveValue(chatDraft);
+    await expect(editor).toHaveValue(draft);
+    expect(await jobs()).toEqual(jobsBefore);
+    expect(await runs()).toEqual(runsBefore);
+    expect(await readFile(join(saved, "report.json"), "utf8")).toBe(original);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
