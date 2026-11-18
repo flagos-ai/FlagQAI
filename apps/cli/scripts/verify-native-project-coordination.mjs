@@ -138,17 +138,61 @@ try {
   assert.deepEqual(Object.values(restored.tasks).map(task => task.status), ['completed', 'completed']);
   assert.equal(restored.tasks.width.worker_session_id, running.tasks.width.worker_session_id);
   assert.equal(restored.tasks.width.evidence.length, 1);
+  const requestCount = requests.length;
   const changed = await control({ action: 'constraints', constraints: 'At most 48 qubits.', expected_constraint_revision: 1, request_id: 'revise' });
-  assert.ok(Object.values(changed.coordination.tasks).every(task => !task.constraints_current));
+  const plan = Object.values(changed.coordination.adjustment_plans).find(plan => plan.status === 'proposed');
+  assert.equal(plan.changes.length, 2);
+  assert.equal(Object.keys(changed.coordination.tasks).length, 2, 'Suggestions must not create new native tasks before user review.');
+  assert.equal(requests.length, requestCount);
+  const confirmation = { action: 'confirm_plan', plan_id: plan.id, plan_sha256: plan.sha256,
+    expected_constraint_revision: 2, request_id: 'user-confirm-plan' };
+  await assert.rejects(control(confirmation), /explicit user review/);
+  const confirmed = await action('research.user_review', confirmation);
+  await action('research.user_review', confirmation);
+  const nextIds = plan.changes.map(change => change.task_id);
+  assert.equal(Object.keys(confirmed.coordination.tasks).length, 4);
+  assert.equal(requests.length, requestCount, 'User confirmation must not wake a model.');
+  for (const id of nextIds) assert.equal(confirmed.coordination.tasks[id].evidence.length, 0);
+  await Promise.all(nextIds.map(task_id => control({ action: 'dispatch', task_id })));
+  await until(async () => {
+    const current = (await control({ action: 'inspect' })).coordination;
+    return nextIds.every(id => current.tasks[id].status === 'completed');
+  });
+  await parent.whenIdle();
+  assert.equal(requests.filter(request => request.sessionId !== 'native-parent').length, 2);
+  assert.ok(requests.filter(request => request.sessionId !== 'native-parent').every(request => {
+    const text = JSON.stringify(request.messages);
+    return text.includes('At most 48 qubits.') && text.includes('task_version');
+  }));
+  await assert.rejects(control({ action: 'evidence', task_id: nextIds[0], run_id: source.parent,
+    source_sha256: source.source_sha256, request_id: 'historical-report-reuse' }), /Earlier evidence remains historical/);
+  const iterated = (await control({ action: 'inspect' })).coordination;
+  assert.deepEqual(iterated.tasks.width.evidence, restored.tasks.width.evidence.map(item => ({ ...item, constraints_current: false })));
+  assert.ok(nextIds.every(id => !Object.values(running.tasks).some(old => old.worker_session_id === iterated.tasks[id].worker_session_id)));
+  await queue;
+  await ctx.fiber.dispose();
+  await stopLedger();
+  startLedger();
+  await mount(true);
+  await control({ action: 'recover' });
+  await Promise.all(nextIds.map(task_id => control({ action: 'dispatch', task_id })));
+  assert.equal(requests.length, 0, 'Restart after human-confirmed iteration must not resubmit the new versions.');
+  const final = (await control({ action: 'inspect' })).coordination;
+  assert.equal(Object.keys(final.tasks).length, 4);
+  assert.equal(final.adjustment_plans[plan.id].status, 'confirmed');
   await assert.rejects(control({ action: 'evidence', task_id: 'width', run_id: source.parent,
     source_sha256: source.source_sha256, request_id: 'stale-report' }), /constraints changed/);
-  assert.equal(requests.length, 0, 'Metadata changes must not wake any model.');
   assert.equal(await readFile(drafts, 'utf8'), original);
   summary = { native_runtime: '0.2.1-rc.2', workers: 2, paid_model_calls: 0,
+    ...(process.env.FQ_COORDINATION_KEEP_ROOT === '1' ? { acceptance_workspace: root } : {}),
     restart_model_requests: requests.length, worker_ids_preserved: true,
     evidence_restored: true, lost_completion_recovered_from_native_log: true,
     stale_evidence_rejected: true, fixture_drafts_preserved: true,
-    scope: 'Real native sessions with local fixed responses and synthetic verifier reports; not scientific or autonomous research acceptance.' };
+    constraint_adjustment: { initial_workers: 2, new_task_versions: 2,
+      confirmation_did_not_execute: true, native_tool_cannot_confirm: true,
+      previous_evidence_retained: true, historical_evidence_not_relabelled: true,
+      new_workers_executed_with_revised_constraints: true, confirmed_versions_restored_without_dispatch: true },
+    scope: 'Native sessions and durable metadata with local fixed responses and fixture verifier reports; not scientific or autonomous research acceptance.' };
   if (process.env.FQ_COORDINATION_REPORT) await writeFile(process.env.FQ_COORDINATION_REPORT, JSON.stringify(summary, null, 2) + '\n');
   console.log(JSON.stringify(summary, null, 2));
 } finally {

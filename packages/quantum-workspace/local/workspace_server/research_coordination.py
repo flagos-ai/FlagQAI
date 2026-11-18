@@ -50,6 +50,19 @@ def source_snapshot(settings, identity):
             'project_revision': state['revision'], 'verifier_sha256': verifier}
 
 
+def _historical_evidence(state, task):
+    result, seen, ancestors = [], set(), set()
+    while task:
+        if task['id'] in ancestors: raise ValueError('Invalid task lineage cycle.')
+        ancestors.add(task['id'])
+        for item in reversed(task['evidence']):
+            evidence = {key: item[key] for key in ('run_id', 'source_sha256', 'report_sha256')}
+            key = _hash(evidence)
+            if key not in seen: result.append(evidence); seen.add(key)
+        task = state['tasks'].get(task.get('previous_task_id'))
+    return result
+
+
 class ResearchCoordination:
     def __init__(self, settings):
         self.settings = settings
@@ -68,11 +81,89 @@ class ResearchCoordination:
     @staticmethod
     def view(state):
         result = json.loads(json.dumps(state))
+        result.setdefault('adjustment_plans', {})
+        for plan in result['adjustment_plans'].values():
+            plan['constraints_current'] = plan['constraint_revision'] == result['constraint_revision']
         for task in result['tasks'].values():
             task['constraints_current'] = task['constraint_revision'] == result['constraint_revision']
             for evidence in task['evidence']:
                 evidence['constraints_current'] = task['constraints_current']
         return result
+
+    def projects_for_run(self, identity):
+        with closing(sqlite3.connect(self.path)) as db:
+            rows = db.execute('SELECT payload FROM projects ORDER BY owner,project').fetchall()
+        return [self.view(state) for row in rows for state in [json.loads(row[0])]
+                if any(task['parent_run_id'] == identity or any(e['run_id'] == identity for e in task['evidence'])
+                       for task in state['tasks'].values())]
+
+    def recommend(self, state, data):
+        superseded = {task.get('previous_task_id') for task in state['tasks'].values()}
+        eligible = {key: task for key, task in state['tasks'].items()
+                    if key not in superseded and task['constraint_revision'] != state['constraint_revision']}
+        requested = data.get('adjustments')
+        if requested is None:
+            requested = [{'task_id': key, 'task': task['task'],
+                          'reason': 'Recheck this research direction under the revised constraints. Earlier outcomes are historical evidence, not validation of the new task.'}
+                         for key, task in eligible.items()]
+        if not isinstance(requested, list) or not 1 <= len(requested) <= 20:
+            raise ValueError('Choose between one and twenty affected tasks for adjustment.')
+        changes, seen = [], set()
+        for item in requested:
+            if not isinstance(item, dict): raise ValueError('Invalid task adjustment.')
+            identity = _id(item.get('task_id'))
+            if identity not in eligible or identity in seen:
+                raise ValueError('Only distinct latest superseded task versions may be adjusted.')
+            seen.add(identity)
+            old = eligible[identity]
+            historical = _historical_evidence(state, old)
+            parent = old['evidence'][-1]['run_id'] if old['evidence'] else old['parent_run_id']
+            source = source_snapshot(self.settings, parent)
+            changes.append({'previous_task_id': identity,
+                'task_id': identity[:90] + '-v' + str(old.get('task_version', 1) + 1) + '-' + uuid.uuid4().hex[:8],
+                'task_version': old.get('task_version', 1) + 1, 'lineage_id': old.get('lineage_id', identity),
+                'previous_constraints': old['constraints'], 'task': _text(item.get('task'), 'adjusted task'),
+                'reason': _text(item.get('reason'), 'adjustment rationale'),
+                'previous_source_sha256': old['source_sha256'],
+                'previous_evidence': historical,
+                'source': {key: source[key] for key in ('parent', 'source_sha256', 'project_revision', 'verifier_sha256')}})
+        for plan in state.setdefault('adjustment_plans', {}).values():
+            if plan['status'] == 'proposed': plan['status'] = 'superseded'
+        content = {'constraint_revision': state['constraint_revision'], 'constraints': state['constraints'], 'changes': changes}
+        plan = {**content, 'id': str(uuid.uuid4()), 'sha256': _hash(content), 'status': 'proposed',
+                'created_at': datetime.now(timezone.utc).isoformat(),
+                'suggested_by': 'coordinator' if requested is data.get('adjustments') else 'constraint-recheck-template'}
+        state['adjustment_plans'][plan['id']] = plan
+        return plan
+
+    def confirm(self, state, data, actor):
+        if actor != 'user': raise ValueError('Adjustment confirmation requires an explicit user review in Web.')
+        self.check_revision(state, data)
+        plan = state.setdefault('adjustment_plans', {}).get(_id(data.get('plan_id')))
+        if not plan or plan['status'] != 'proposed' or plan['constraint_revision'] != state['constraint_revision']:
+            raise ValueError('Adjustment plan changed. Reload and review the current proposal.')
+        if plan['sha256'] != data.get('plan_sha256'):
+            raise ValueError('The reviewed adjustment plan version changed.')
+        if data.get('action') == 'reject_plan':
+            plan.update(status='rejected', decided_by='user', decided_at=datetime.now(timezone.utc).isoformat())
+            return
+        if len(state['tasks']) + len(plan['changes']) > 100: raise ValueError('Project task limit reached.')
+        previous = {task.get('previous_task_id') for task in state['tasks'].values()}
+        for change in plan['changes']:
+            if change['previous_task_id'] in previous or change['task_id'] in state['tasks']:
+                raise ValueError('A newer task version already exists. Review again.')
+            inspected = source_snapshot(self.settings, change['source']['parent'])
+            if any(inspected[key] != value for key, value in change['source'].items()):
+                raise ValueError('Adjustment source or project baseline changed. Request a fresh proposal.')
+            old = state['tasks'][change['previous_task_id']]
+            evidence = _historical_evidence(state, old)
+            if evidence != change['previous_evidence'] or old['source_sha256'] != change['previous_source_sha256']:
+                raise ValueError('Earlier task evidence changed. Review again.')
+        for change in plan['changes']:
+            state['tasks'][change['task_id']] = _task(change['task_id'], change['task'], state, change['source'],
+                previous_task_id=change['previous_task_id'], task_version=change['task_version'],
+                lineage_id=change['lineage_id'], adjustment_plan_id=plan['id'])
+        plan.update(status='confirmed', decided_by='user', decided_at=datetime.now(timezone.utc).isoformat())
 
     def for_run(self, identity):
         with closing(sqlite3.connect(self.path)) as db:
@@ -105,6 +196,7 @@ class ResearchCoordination:
                 if prior[0] != fingerprint:
                     raise ValueError('Coordination request ID belongs to different input.')
                 result = json.loads(prior[1])
+                result['coordination'] = self.view(result['coordination'])
                 if operation == 'claim': result['claimed'] = False
                 return result
             row = db.execute('SELECT payload FROM projects WHERE owner=? AND project=?', (owner, project)).fetchone()
@@ -114,7 +206,7 @@ class ResearchCoordination:
                     raise ValueError('Project coordination already exists; inspect it first.')
                 state = {'schema': 1, 'project_id': project, 'coordinator_session_id': owner,
                          'constraint_revision': 1, 'constraints': _text(data.get('constraints'), 'constraints'),
-                         'tasks': {}, 'history': []}
+                         'tasks': {}, 'history': [], 'adjustment_plans': {}}
             elif not state:
                 raise ValueError('Open project coordination first.')
             elif operation == 'constraints':
@@ -123,8 +215,18 @@ class ResearchCoordination:
                 if constraints == state['constraints']: raise ValueError('Project constraints have not changed.')
                 state['constraints'] = constraints
                 state['constraint_revision'] += 1
+                for plan in state.setdefault('adjustment_plans', {}).values():
+                    if plan['status'] == 'proposed': plan['status'] = 'superseded'
+                if state['tasks']: self.recommend(state, {})
+            elif operation == 'recommend':
+                self.check_revision(state, data)
+                self.recommend(state, data)
+            elif operation in ('confirm_plan', 'reject_plan'):
+                self.confirm(state, data, actor)
             elif operation == 'reserve':
                 self.check_revision(state, data)
+                if any(task['constraint_revision'] != state['constraint_revision'] for task in state['tasks'].values()):
+                    raise ValueError('Revised constraints require a user-confirmed adjustment plan before replacement task versions can be reserved.')
                 task_id = _id(data.get('task_id'))
                 if task_id in state['tasks']:
                     raise ValueError('Task ID already exists. Inspect it instead of dispatching again.')
@@ -141,6 +243,8 @@ class ResearchCoordination:
                     raise ValueError('Unknown project task.')
                 if operation == 'claim':
                     self.check_revision(state, {'expected_constraint_revision': task['constraint_revision']})
+                    if task.get('adjustment_plan_id') and state.get('adjustment_plans', {}).get(task['adjustment_plan_id'], {}).get('status') != 'confirmed':
+                        raise ValueError('The adjustment plan has not been confirmed.')
                     source = source_snapshot(self.settings, task['parent_run_id'])
                     if source['source_sha256'] != task['source_sha256'] or source['project_revision'] != task['project_revision'] or source['verifier_sha256'] != task['verifier_sha256']:
                         raise ValueError('Task source or project baseline changed before dispatch.')
@@ -171,6 +275,22 @@ class ResearchCoordination:
                     version = verified_version(self.settings, data.get('run_id'))
                     if version['source_sha256'] != data.get('source_sha256'):
                         raise ValueError('Evidence code version changed.')
+                    if task.get('adjustment_plan_id'):
+                        plan = state['adjustment_plans'][task['adjustment_plan_id']]
+                        report = archived_report(self.settings, version['run_id'])
+                        previous_runs = {task['parent_run_id']}
+                        ancestor = task.get('previous_task_id')
+                        while ancestor:
+                            previous_runs.update(item['run_id'] for item in state['tasks'][ancestor]['evidence'])
+                            ancestor = state['tasks'][ancestor].get('previous_task_id')
+                        if version['run_id'] in previous_runs:
+                            raise ValueError('Earlier evidence remains historical. Link a new verification run for this task version.')
+                        try:
+                            created = datetime.fromisoformat(report['created_at'].replace('Z', '+00:00'))
+                            confirmed = datetime.fromisoformat(plan['decided_at'])
+                            if created < confirmed: raise ValueError('Verification predates adjustment confirmation.')
+                        except (KeyError, TypeError, AttributeError):
+                            raise ValueError('A dated verification record is required for the adjusted task.')
                     report = archived_report(self.settings, version['run_id'])
                     if source_snapshot(self.settings, version['run_id'])['verifier_sha256'] != task['verifier_sha256']:
                         raise ValueError('Evidence uses a different verifier version.')

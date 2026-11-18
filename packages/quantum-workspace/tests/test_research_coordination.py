@@ -208,3 +208,180 @@ print(json.dumps(team.act('native-parent', {'action': 'claim', 'request_id': sys
         self.assertEqual(compute.execute.call_count, 0)
         self.assertEqual(bridge.context('test-client')['source'], context['source'])
         self.assertTrue(bridge.context('test-client')['dirty'])
+
+    def change(self):
+        return self.act('constraints', 'change', expected_constraint_revision=1, constraints='At most 48 qubits.')['coordination']
+
+    def confirmation(self, plan, **values):
+        return dict(action='confirm_plan', request_id='confirm-' + plan['id'], plan_id=plan['id'],
+                    plan_sha256=plan['sha256'], expected_constraint_revision=plan['constraint_revision'], **values)
+
+    def test_user_confirmation_is_required_idempotent_and_does_not_execute(self):
+        self.reserve('width'); self.reserve('cost')
+        state = self.change()
+        plan = next(iter(state['adjustment_plans'].values()))
+        self.assertEqual(plan['status'], 'proposed')
+        self.assertEqual(len(state['tasks']), 2)
+        with self.assertRaisesRegex(ValueError, 'explicit user review'):
+            self.team.act('native-parent', self.confirmation(plan))
+        with self.assertRaisesRegex(ValueError, 'user-confirmed'):
+            self.act('reserve', 'bypass', task_id='bypass', expected_constraint_revision=2)
+        def confirm(_): return self.team.act('native-parent', self.confirmation(plan), actor='user')
+        with ThreadPoolExecutor(max_workers=3) as pool: list(pool.map(confirm, range(3)))
+        state = ResearchCoordination(self.settings).read('native-parent')
+        self.assertEqual(len(state['tasks']), 4)
+        self.assertEqual(state['adjustment_plans'][plan['id']]['status'], 'confirmed')
+        new = [task for task in state['tasks'].values() if task.get('previous_task_id')]
+        self.assertEqual({task['previous_task_id'] for task in new}, {'width', 'cost'})
+        self.assertTrue(all(task['status'] == 'reserved' and task['constraint_revision'] == 2 and not task['events'] and not task['evidence'] for task in new))
+        self.assertTrue(all(task['worker_session_id'] != state['tasks'][task['previous_task_id']]['worker_session_id'] for task in new))
+        with self.assertRaisesRegex(ValueError, 'Earlier evidence remains historical'):
+            self.act('evidence', 'reuse', task_id=new[0]['id'], run_id=self.ids[0], source_sha256=sha(self.sources[self.ids[0]]))
+
+    def test_stale_review_cannot_confirm_after_constraint_source_or_plan_change(self):
+        self.reserve()
+        plan = next(iter(self.change()['adjustment_plans'].values()))
+        update_baseline(self.settings, self.ids[1], {
+            'decision': 'adopt', 'request_id': 'updated-baseline',
+            'expected_project_revision': 0, 'source_sha256': sha(self.sources[self.ids[1]]),
+        })
+        with self.assertRaisesRegex(ValueError, 'baseline changed'):
+            self.team.act('native-parent', self.confirmation(plan), actor='user')
+        with self.assertRaisesRegex(ValueError, 'version changed'):
+            self.team.act('native-parent', {**self.confirmation(plan), 'plan_sha256': 'wrong'}, actor='user')
+        state = self.act('recommend', 'fresh-plan', expected_constraint_revision=2,
+            adjustments=[{'task_id': 'width', 'task': 'Prefer lower width over cost', 'reason': 'User prioritizes width'}])['coordination']
+        with self.assertRaisesRegex(ValueError, 'plan changed'):
+            self.team.act('native-parent', self.confirmation(plan), actor='user')
+        current = next(item for item in state['adjustment_plans'].values() if item['status'] == 'proposed')
+        self.act('constraints', 'changed-again', expected_constraint_revision=2, constraints='At most 40 qubits.')
+        with self.assertRaisesRegex(ValueError, 'constraints changed'):
+            self.team.act('native-parent', self.confirmation(current), actor='user')
+        self.assertEqual(len(self.team.read('native-parent')['tasks']), 1)
+
+    def test_rejection_and_failed_task_can_be_revised_without_erasing_history(self):
+        old = self.reserve()['coordination']['tasks']['width']
+        self.act('claim', 'started', task_id='width')
+        self.act('observe', 'failed', task_id='width', worker_session_id=old['worker_session_id'], status='failed', detail='Retain this error')
+        plan = next(iter(self.change()['adjustment_plans'].values()))
+        self.team.act('native-parent', {**self.confirmation(plan), 'action': 'reject_plan'}, actor='user')
+        self.assertEqual(len(self.team.read('native-parent')['tasks']), 1)
+        state = self.act('recommend', 'retry-plan', expected_constraint_revision=2)['coordination']
+        fresh = next(item for item in state['adjustment_plans'].values() if item['status'] == 'proposed')
+        state = self.team.act('native-parent', self.confirmation(fresh), actor='user')['coordination']
+        self.assertEqual(state['tasks']['width']['events'][0]['detail'], 'Retain this error')
+        self.assertEqual(state['tasks']['width']['status'], 'failed')
+        self.assertEqual(len(state['tasks']), 2)
+        self.assertEqual(state['adjustment_plans'][plan['id']]['status'], 'rejected')
+
+    def test_later_versions_retain_ancestor_evidence_without_inheriting_verification(self):
+        self.reserve()
+        self.act('evidence', 'old-report', task_id='width', run_id=self.ids[0], source_sha256=sha(self.sources[self.ids[0]]))
+        plan = next(iter(self.change()['adjustment_plans'].values()))
+        first = self.team.act('native-parent', self.confirmation(plan), actor='user')['coordination']
+        previous_id = plan['changes'][0]['task_id']
+        later = self.act('constraints', 'third-constraints', expected_constraint_revision=2, constraints='At most 40 qubits.')['coordination']
+        current = next(item for item in later['adjustment_plans'].values() if item['status'] == 'proposed')
+        self.assertEqual(current['changes'][0]['previous_task_id'], previous_id)
+        self.assertEqual(len(current['changes'][0]['previous_evidence']), 1)
+        self.assertEqual(current['changes'][0]['source']['source_sha256'], first['tasks']['width']['source_sha256'])
+        accepted = self.team.act('native-parent', self.confirmation(current), actor='user')['coordination']
+        new = accepted['tasks'][current['changes'][0]['task_id']]
+        self.assertEqual(new['task_version'], 3)
+        self.assertEqual(new['evidence'], [])
+        self.assertEqual(accepted['tasks']['width']['evidence'][0]['run_id'], self.ids[0])
+
+    def test_web_review_is_record_bound_and_does_not_expose_dispatch(self):
+        import json
+        import threading
+        from urllib.request import Request, urlopen
+        from urllib.error import HTTPError
+        from workspace_server.config import WorkspaceSettings
+        from workspace_server.http import create_server
+        from workspace_server.job_store import SQLiteJobStore
+        from workspace_server.service import QuantumWorkspaceService
+        import test_bridge as bridge_fixture
+        self.reserve('width'); self.reserve('cost')
+        plan = next(iter(self.change()['adjustment_plans'].values()))
+        settings = WorkspaceSettings(self.root, self.settings.database_path, port=0, agent_cwd=self.root)
+        store = SQLiteJobStore(settings.database_path); store.initialize()
+        compute = bridge_fixture.ScriptedCPU()
+        service = QuantumWorkspaceService(store, compute)
+        server = create_server(settings, service)
+        thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()
+        base = 'http://127.0.0.1:' + str(server.server_port)
+        def post(data):
+            request = Request(base + '/api/research-runs/' + self.ids[0] + '/coordination',
+                data=json.dumps(data).encode(), headers={'Content-Type': 'application/json'})
+            with urlopen(request) as response: return json.load(response)
+        try:
+            with self.assertRaises(HTTPError) as problem:
+                post({**self.confirmation(plan), 'coordinator_session_id': 'foreign'})
+            self.assertEqual(problem.exception.code, 409)
+            with self.assertRaises(HTTPError):
+                post({'action': 'dispatch', 'coordinator_session_id': 'native-parent', 'task_id': 'width'})
+            accepted = post({**self.confirmation(plan), 'coordinator_session_id': 'native-parent'})
+            self.assertEqual(len(accepted['coordination']['tasks']), 4)
+            self.assertEqual(compute.calls, [])
+            with urlopen(base + '/api/research-runs/' + self.ids[0]) as response: run = json.load(response)['run']
+            self.assertEqual(len(run['coordination_projects'][0]['tasks']), 4)
+        finally:
+            server.shutdown(); server.server_close(); thread.join(timeout=5); service.close()
+
+    def test_constraint_changes_before_first_task_do_not_require_nonexistent_review(self):
+        owner = 'empty-project-owner'
+        self.team.act(owner, dict(action='open', request_id='open', constraints='Initial limits'))
+        self.team.act(owner, dict(action='constraints', request_id='revise',
+                                 expected_constraint_revision=1, constraints='Revised initial limits'))
+        for task in ('width', 'cost'):
+            self.team.act(owner, dict(action='reserve', request_id='reserve-' + task, task_id=task,
+                task='Explore ' + task, expected_constraint_revision=2, expected_project_revision=0,
+                parent_run_id=self.ids[0], source_sha256=sha(self.sources[self.ids[0]])))
+        state = self.team.read(owner)
+        self.assertEqual(len(state['tasks']), 2)
+        self.assertEqual(state['adjustment_plans'], {})
+        self.assertTrue(all(task['constraints_current'] for task in state['tasks'].values()))
+
+    def test_adjusted_task_requires_a_new_report_after_confirmation(self):
+        import shutil
+        from datetime import datetime, timezone
+        self.reserve()
+        self.act('evidence', 'old-report', task_id='width', run_id=self.ids[0],
+                 source_sha256=sha(self.sources[self.ids[0]]))
+        plan = next(iter(self.change()['adjustment_plans'].values()))
+        self.team.act('native-parent', self.confirmation(plan), actor='user')
+        identity = 'c' * 32
+        directory = self.root / 'invsqrt' / identity
+        shutil.copytree(self.root / 'invsqrt' / ('a' * 32), directory)
+        report = json.loads((directory / 'report.json').read_text())
+        report['id'] = identity
+        (directory / 'report.json').write_text(json.dumps(report))
+        task_id = plan['changes'][0]['task_id']
+        evidence = dict(task_id=task_id, run_id='invsqrt-' + identity,
+                        source_sha256=sha(self.sources[self.ids[0]]))
+        with self.assertRaisesRegex(ValueError, 'predates adjustment confirmation'):
+            self.act('evidence', 'dated-report', **evidence)
+        report['created_at'] = datetime.now(timezone.utc).isoformat()
+        (directory / 'report.json').write_text(json.dumps(report))
+        self.act('evidence', 'dated-report', **evidence)
+        self.team = ResearchCoordination(self.settings)
+        self.act('evidence', 'dated-report', **evidence)
+        state = self.team.read('native-parent')
+        self.assertEqual(len(state['tasks'][task_id]['evidence']), 1)
+        self.assertTrue(state['tasks'][task_id]['evidence'][0]['constraints_current'])
+        self.assertFalse(state['tasks']['width']['evidence'][0]['constraints_current'])
+        self.assertEqual(state['tasks']['width']['evidence'][0]['run_id'], self.ids[0])
+
+    def test_legacy_receipts_project_the_additive_review_schema_after_reopen(self):
+        import sqlite3
+        with sqlite3.connect(self.team.path) as db:
+            row = db.execute('SELECT result FROM receipts WHERE owner=? AND request=?',
+                             ('native-parent', 'open')).fetchone()
+            receipt = json.loads(row[0])
+            receipt['coordination'].pop('adjustment_plans', None)
+            db.execute('UPDATE receipts SET result=? WHERE owner=? AND request=?',
+                       (json.dumps(receipt), 'native-parent', 'open'))
+        self.team = ResearchCoordination(self.settings)
+        replay = self.act('open', 'open', constraints='At most 64 qubits; preserve the baseline.')
+        self.assertEqual(replay['coordination']['adjustment_plans'], {})
+        self.assertEqual(self.team.read('native-parent')['tasks'], {})

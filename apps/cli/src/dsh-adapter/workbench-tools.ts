@@ -130,11 +130,11 @@ export function createWorkbenchTools(
     tool('workbench_compare_experiments', 'Verify two saved experiments with recorded measurements and display their side-by-side comparison. Preserve each original source and result. Call before claiming that a comparison is displayed.',
       schema({ baseline_id: string, variant_id: string, request_id: string }, ['baseline_id', 'variant_id', 'request_id']),
       (input, signal) => action('experiment.compare', input, signal)),
-    ...(coordination ? [tool('workbench_research_team', 'Coordinate native research workers with durable task IDs and version-bound evidence. Inspect a research source with workbench_inspect(resource=research, id=run ID), open constraints, reserve distinct tasks, then explicitly dispatch. Recover only observes existing native sessions and never resubmits work. Evidence links refer to saved verifier reports; they do not validate or adopt candidates. Preserve the baseline and drafts.',
-      schema({ action: { type: 'string', enum: ['inspect', 'open', 'constraints', 'reserve', 'dispatch', 'recover', 'evidence'] },
+    ...(coordination ? [tool('workbench_research_team', 'Coordinate native research workers with durable task IDs and version-bound evidence. Inspect a research source with workbench_inspect(resource=research, id=run ID), open constraints, reserve distinct tasks, then explicitly dispatch. After constraints change, inspect or recommend an adjustment plan and wait for explicit user confirmation before dispatching new task versions. Do not reserve replacements to bypass review. Recover only observes existing native sessions and never resubmits work. Evidence links refer to saved verifier reports; they do not validate or adopt candidates. Preserve the baseline and drafts.',
+      schema({ action: { type: 'string', enum: ['inspect', 'open', 'constraints', 'recommend', 'reserve', 'dispatch', 'recover', 'evidence'] },
         project_id: string, constraints: { ...string, maxLength: 4000 }, task_id: string,
         task: { ...string, maxLength: 4000 }, parent_run_id: string, source_sha256: string,
-        run_id: string, expected_constraint_revision: { type: 'integer', minimum: 1 },
+        run_id: string, adjustments: { type: 'array', minItems: 1, maxItems: 20, items: schema({ task_id: string, task: { ...string, maxLength: 4000 }, reason: { ...string, maxLength: 4000 } }, ['task_id', 'task', 'reason']) }, expected_constraint_revision: { type: 'integer', minimum: 1 },
         expected_project_revision: { type: 'integer', minimum: 0 }, request_id: string }, ['action']),
       (input, signal) => {
         const target = binding()

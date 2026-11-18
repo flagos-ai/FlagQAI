@@ -304,19 +304,34 @@ def create_server(settings, service):
             if not self.allowed():
                 return self.reply({'error': 'Only local same-origin access is allowed.'}, 403)
             research_action = re.fullmatch(
-                r'/api/research-runs/(invsqrt-[a-f0-9]{32})/(baseline|revision|decision)', self.path,
+                r'/api/research-runs/(invsqrt-[a-f0-9]{32})/(baseline|revision|decision|coordination)', self.path,
             )
             if research_action:
                 identity, action = research_action.groups()
                 try:
                     length = int(self.headers.get('Content-Length', '0'))
-                    limit = 262144 if action == 'revision' else 4096
+                    limit = 262144 if action in ('revision', 'coordination') else 4096
                     if self.headers.get('Content-Type', '').split(';')[0] != 'application/json' or not 0 < length <= limit:
                         raise ValueError('Use bounded JSON for research changes.')
                     data = json.loads(self.rfile.read(length))
                 except (ValueError, TypeError):
                     return self.reply({'error': 'Invalid research change body.'}, 400)
                 try:
+                    if action == 'coordination':
+                        from .research_coordination import ResearchCoordination
+                        if not isinstance(data, dict) or data.get('action') not in ('constraints', 'recommend', 'confirm_plan', 'reject_plan'):
+                            raise ValueError('Only constraint review actions are available here.')
+                        if not read_research_run(settings, identity):
+                            raise ValueError('The selected research record is unavailable.')
+                        coordination = ResearchCoordination(settings)
+                        owner = data.get('coordinator_session_id')
+                        project = data.get('project_id', 'study-invsqrt')
+                        if not any(item['coordinator_session_id'] == owner and item['project_id'] == project
+                                   for item in coordination.projects_for_run(identity)):
+                            raise ValueError('This coordinator is not linked to the selected research record.')
+                        return self.reply(coordination.act(owner, {
+                            key: value for key, value in data.items() if key != 'coordinator_session_id'
+                        }, actor='user'))
                     if action == 'baseline':
                         return self.reply({'baseline': update_baseline(settings, identity, data)})
                     if action == 'decision':

@@ -103,8 +103,11 @@ def read_research_run(settings, identity):
     )
     from .research_coordination import ResearchCoordination
     run['coordination'] = []
+    run['coordination_projects'] = []
     if (settings.database_path.parent / 'research-coordination.sqlite3').exists():
-        run['coordination'] = ResearchCoordination(settings).for_run(identity)
+        coordination = ResearchCoordination(settings)
+        run['coordination'] = coordination.for_run(identity)
+        run['coordination_projects'] = coordination.projects_for_run(identity)
     run['current_comparison'] = None
     if current and report['status'] == 'completed' and not run['is_project_baseline']:
         verified = verified_version(settings, current['run_id'])
