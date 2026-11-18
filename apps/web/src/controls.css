@@ -1507,3 +1507,45 @@
   font: inherit;
   tab-size: 4;
 }
+
+/* Research delivery summarizes saved evidence above the process fold. */
+.fq-research-outcome {
+  margin: 10px 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.fq-research-outcome p {
+  margin: 6px 0;
+}
+.fq-research-outcome small,
+.fq-research-outcome dt {
+  color: var(--muted);
+  font-size: 11px;
+}
+.fq-research-outcome dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+  margin: 10px 0;
+}
+.fq-research-outcome dd {
+  margin: 4px 0 0;
+  font-variant-numeric: tabular-nums;
+}
+.fq-research-outcome-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 4px;
+}
+.fq-workspace .fq-research-outcome button {
+  min-height: 26px;
+  padding: 3px 8px;
+  font-size: 11px;
+}
+.fq-research-outcome details {
+  margin-top: 8px;
+}
