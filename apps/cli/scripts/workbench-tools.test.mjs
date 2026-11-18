@@ -177,3 +177,41 @@ test('research inspection and team control remain workspace/session scoped', asy
   await assert.rejects(team.execute({ action: 'inspect' }, { signal }), /Open the Web workbench/)
   assert.equal(calls.length, 2)
 })
+
+test('research read and presentation retain recorded status, source version and retry identity', async () => {
+  const id = 'invsqrt-' + 'a'.repeat(32)
+  const run = { id, status: 'failed', source_sha256: 'f'.repeat(64), error: 'Recorded verifier failure',
+    comparison: { columns: ['Baseline', 'Candidate'], rows: [{ label: 'Resource cost', values: [200, 180] }] },
+    project: { id: 'study', name: 'Study', baseline: { revision: 2, current: { run_id: id }, history: [{}, {}] } },
+    evidence: { unbounded: 'x'.repeat(100000) }, exports: [{ name: 'candidate.kmx', sha256: 'f'.repeat(64) }] }
+  const { run: call, calls } = fixture(body => response(body.operation === 'research.read' ? run : { research_run: { id }, page: 'jobs' }))
+  const summary = await call('workbench_inspect', { resource: 'research_run', id })
+  assert.equal(summary.status, 'failed')
+  assert.equal(summary.error, 'Recorded verifier failure')
+  assert.equal(summary.source_sha256, run.source_sha256)
+  assert.deepEqual(summary.comparison, run.comparison)
+  assert.equal(summary.project.baseline.history_count, 2)
+  assert.equal(summary.evidence, undefined)
+  assert.match(summary.full_record, /detail="full"/)
+  const full = await call('workbench_inspect', { resource: 'research_run', id, detail: 'full' })
+  assert.deepEqual(full, run)
+  await call('workbench_present_research_run', { run_id: id, request_id: 'same-presentation' })
+  const body = JSON.parse(calls.at(-1).init.body)
+  assert.deepEqual(body, { run_id: id, request_id: 'same-presentation', ...binding, operation: 'research.present' })
+  assert.ok(!calls.some(item => item.init.body && /research\.(verify|propose|adopt)/.test(JSON.parse(item.init.body).operation)))
+})
+
+test('research summaries bound long text and omit baseline report bodies explicitly', async () => {
+  const id = 'invsqrt-' + 'a'.repeat(32)
+  const record = { id, error: 'x'.repeat(5000), project: { baseline: { current: { run_id: id, metrics: { large: 'x'.repeat(50000) } } } } }
+  const { run } = fixture(() => response(record))
+  const summary = await run('workbench_inspect', { resource: 'research_run', id })
+  assert.equal(summary.error.length, 4000)
+  assert.equal(summary.text_truncated, true)
+  assert.equal(summary.project.baseline.current.metrics, undefined)
+  const full = await run('workbench_inspect', { resource: 'research_run', id, detail: 'full' })
+  assert.equal(full.error.length, 5000)
+  const mismatch = fixture(() => response({ id: 'another-record' }))
+  await assert.rejects(mismatch.run('workbench_inspect', { resource: 'research_run', id, detail: 'full' }), /identity/)
+  await assert.rejects(mismatch.run('workbench_present_research_run', { run_id: id, request_id: 'present' }), /identity/)
+})

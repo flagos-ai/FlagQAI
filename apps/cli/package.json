@@ -347,6 +347,7 @@
     "verify:installed-agent-resolution": "node scripts/verify-installed-agent-resolution.mjs",
     "verify:project-coordination": "node --test scripts/project-coordination.test.mjs scripts/native-project-coordination.test.mjs",
     "verify:installed-project-coordination": "node scripts/verify-installed-project-coordination.mjs",
+    "verify:installed-research-presentation": "node scripts/verify-installed-research-presentation.mjs",
     "verify:native-project-coordination": "node scripts/verify-native-project-coordination-profile.mjs",
     "verify:message-delivery": "node --test scripts/message-delivery.test.mjs",
     "verify:installed-message-delivery": "node scripts/verify-installed-message-delivery.mjs",

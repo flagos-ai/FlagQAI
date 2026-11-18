@@ -1079,3 +1079,148 @@ test("constraint review detects stale windows, retains drafts and rejects an obs
     await rm(study.root, { recursive: true, force: true });
   }
 });
+
+test("Agent research presentation follows only confirmed saved targets and preserves both drafts", async ({
+  page,
+}) => {
+  const { cwd } = await (await page.request.get("/api/agent")).json();
+  expect(basename(cwd)).toMatch(/^flagqai-ui-test-/);
+  const root = join(cwd, "invsqrt"),
+    id = randomUUID().replaceAll("-", ""),
+    saved = join(root, id);
+  await mkdir(saved, { recursive: true });
+  const jobsBefore = await (await page.request.get("/api/jobs")).json();
+  const runsBefore = await (await page.request.get("/api/python/runs")).json();
+  try {
+    await saveVerifiedRun(saved, id, "Agent-presented saved study", 180);
+    const reportBefore = await readFile(join(saved, "report.json"), "utf8");
+    await page.goto("/#model");
+    const editor = page.getByRole("textbox", {
+      name: "Quantum model code editor",
+    });
+    const draft = "# Keep the current model when presenting saved research\n";
+    await editor.fill(draft);
+    const agent = page.getByRole("button", {
+      name: "FlagQAI Agent",
+      exact: true,
+    });
+    if ((await agent.getAttribute("aria-expanded")) !== "true")
+      await agent.click();
+    const chat = page.getByRole("textbox", {
+      name: "Message FlagQAI",
+      exact: true,
+    });
+    const chatDraft = "Keep this unsent follow-up question.";
+    await chat.fill(chatDraft);
+    const published = page.waitForRequest(
+      (request) =>
+        request.url().endsWith("/api/workspace/context") &&
+        request.method() === "POST",
+    );
+    const initialEvents = page.waitForResponse((response) =>
+      response.url().includes("/api/workspace/events?"),
+    );
+    await page
+      .getByRole("button", { name: "Connect Agent", exact: true })
+      .click();
+    await expect(
+      page.getByRole("status", { name: "Connected", exact: true }),
+    ).toBeVisible();
+    const context = (await published).postDataJSON();
+    await initialEvents;
+    const follow = page.getByRole("switch", { name: /Follow Agent/ });
+    await follow.setChecked(true);
+    const present = async (request_id) => {
+      const response = await page.request.post("/api/workspace/actions", {
+        data: {
+          client: context.client,
+          session: context.session,
+          operation: "research.present",
+          run_id: "invsqrt-" + id,
+          request_id,
+        },
+      });
+      expect(response.ok()).toBe(true);
+      return response.json();
+    };
+    const presented = await present("present-once-" + id);
+    expect(presented.research_run.id).toBe("invsqrt-" + id);
+    expect(presented.evidence.source_sha256).toBe(
+      sha256(await readFile(join(saved, "candidate.kmx"))),
+    );
+    expect(presented.evidence.status).toBe("completed");
+    await expect(page).toHaveURL(/#jobs$/);
+    const detail = page.getByRole("region", {
+      name: "Research run",
+      exact: true,
+    });
+    await expect(
+      detail.getByRole("table", { name: "Recorded verification metrics" }),
+    ).toBeVisible();
+    await expect(detail).toContainText("10.0000% lower");
+    expect(await present("present-once-" + id)).toEqual(presented);
+    await follow.setChecked(false);
+    await page.getByRole("button", { name: "MODEL", exact: true }).click();
+    let unexpectedReads = 0;
+    page.on("request", (request) => {
+      if (
+        request.method() === "GET" &&
+        request.url().endsWith("/api/research-runs/invsqrt-" + id)
+      )
+        unexpectedReads++;
+    });
+    const received = page.waitForResponse(
+      async (response) =>
+        response.url().includes("/api/workspace/events?") &&
+        (await response.json()).some(
+          (action) =>
+            action.id === "present-with-follow-off-" + id &&
+            action.status === "completed",
+        ),
+    );
+    await present("present-with-follow-off-" + id);
+    await received;
+    await page.evaluate(
+      () =>
+        new Promise((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve)),
+        ),
+    );
+    expect(unexpectedReads).toBe(0);
+    await expect
+      .poll(async () => {
+        const response = await page.request.get(
+          `/api/workspace/events?client=${context.client}&session=${context.session}&after=0`,
+        );
+        return (await response.json()).filter(
+          (action) =>
+            action.operation === "research.present" &&
+            action.status === "completed",
+        ).length;
+      })
+      .toBe(2);
+    await expect(page).toHaveURL(/#model$/);
+    await expect(editor).toHaveValue(draft);
+    await expect(chat).toHaveValue(chatDraft);
+    await page.reload();
+    await expect(editor).toHaveValue(draft);
+    if ((await agent.getAttribute("aria-expanded")) !== "true")
+      await agent.click();
+    await expect(chat).toHaveValue(chatDraft);
+    expect(
+      (await (await page.request.get("/api/jobs")).json()).map(
+        (item) => item.id,
+      ),
+    ).toEqual(jobsBefore.map((item) => item.id));
+    expect(
+      (await (await page.request.get("/api/python/runs")).json()).map(
+        (item) => item.id,
+      ),
+    ).toEqual(runsBefore.map((item) => item.id));
+    expect(await readFile(join(saved, "report.json"), "utf8")).toBe(
+      reportBefore,
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

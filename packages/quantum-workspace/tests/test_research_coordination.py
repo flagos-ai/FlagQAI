@@ -385,3 +385,32 @@ print(json.dumps(team.act('native-parent', {'action': 'claim', 'request_id': sys
         replay = self.act('open', 'open', constraints='At most 64 qubits; preserve the baseline.')
         self.assertEqual(replay['coordination']['adjustment_plans'], {})
         self.assertEqual(self.team.read('native-parent')['tasks'], {})
+
+    def test_research_read_and_present_are_bound_retry_safe_and_do_not_run_compute(self):
+        from unittest.mock import Mock
+        from workspace_server.bridge import WorkspaceBridge, BridgeConflict
+        compute = Mock()
+        bridge = WorkspaceBridge(self.settings, compute)
+        context = dict(client='test-client', session='native-parent', name='Unsaved study',
+                       source='unsaved = True', page='model', dirty=True)
+        bridge.publish(context)
+        def action(operation, **data):
+            return bridge.act(dict(client='test-client', session='native-parent', operation=operation, **data))
+        record = action('research.read', run_id=self.ids[0])
+        self.assertEqual(record['source_sha256'], sha(self.sources[self.ids[0]]))
+        first = action('research.present', run_id=self.ids[0], request_id='present-once')
+        self.assertEqual(action('research.present', run_id=self.ids[0], request_id='present-once'), first)
+        self.assertEqual(first['research_run']['id'], self.ids[0])
+        self.assertEqual(first['page'], 'jobs')
+        self.assertEqual(first['evidence']['source_sha256'], record['source_sha256'])
+        self.assertEqual(first['evidence']['comparison'], record['comparison'])
+        self.assertEqual(len(bridge.events('test-client', 'native-parent', 0)), 1)
+        with self.assertRaises(BridgeConflict):
+            action('research.present', run_id=self.ids[1], request_id='present-once')
+        with self.assertRaises(ValueError):
+            action('research.read', run_id='../outside')
+        bridge.publish({**context, 'session': 'another-owner'})
+        with self.assertRaises(BridgeConflict):
+            action('research.present', run_id=self.ids[0], request_id='foreign-session')
+        self.assertEqual(compute.execute.call_count, 0)
+        self.assertEqual(bridge.context('test-client')['source'], context['source'])

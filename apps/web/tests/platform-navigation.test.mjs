@@ -261,3 +261,53 @@ test("returning to a project tab retains disk changes that arrived while followi
   });
   assert.deepEqual(current.undo, ["on disk"]);
 });
+
+test("saved research targets are read before navigation and preserve drafts and undo", async () => {
+  const id = "invsqrt-" + "a".repeat(32);
+  const before = state();
+  const reads = [];
+  const changes = await platformNavigation(
+    {
+      operation: "research.present",
+      result: { research_run: { id }, page: "jobs" },
+    },
+    before,
+    {
+      research: async (target) => {
+        reads.push(target);
+        return { id: target };
+      },
+      experiment: async () => {
+        throw Error("No circuit inspection");
+      },
+      job: async () => {
+        throw Error("No compute job inspection");
+      },
+    },
+  );
+  const after = changes.reduce(reduce, before);
+  assert.deepEqual(reads, [id]);
+  assert.equal(after.page, "jobs");
+  assert.equal(after.selectedResearchRunId, id);
+  assert.equal(after.source, before.source);
+  assert.deepEqual(after.undo, before.undo);
+  assert.equal(after.editorFile, before.editorFile);
+  await assert.rejects(
+    platformNavigation({ result: { research_run: { id } } }, before, {
+      research: async () => ({ id: "invsqrt-" + "b".repeat(32) }),
+    }),
+    /identity/,
+  );
+  await assert.rejects(
+    platformNavigation(
+      { result: { research_run: { id: "invented" } } },
+      before,
+      {
+        research: async () => {
+          throw Error("Must not read invalid IDs");
+        },
+      },
+    ),
+    /unavailable/,
+  );
+});

@@ -66,3 +66,19 @@ export function experimentEvidence(record: Data, port: number) {
     full_record: 'Use workbench_inspect(resource="experiment", id=experiment_id, detail="full") for all previewed measurements, values, statistics, source and execution-plan fields. The original archive retains data beyond Web preview limits. Counts alone do not establish phase or fidelity.',
   }
 }
+
+export function researchEvidence(record: Data) {
+  const project = object(record.project), baseline = object(project.baseline)
+  const exports = array(record.exports)
+  return {
+    ...pick(record, ['id', 'status', 'source_sha256', 'is_project_baseline', 'comparison', 'current_comparison']),
+    ...Object.fromEntries(['title', 'summary', 'error'].filter(key => record[key] !== undefined).map(key => [key, typeof record[key] === 'string' ? (record[key] as string).slice(0, 4000) : record[key]])),
+    text_truncated: ['title', 'summary', 'error'].some(key => typeof record[key] === 'string' && (record[key] as string).length > 4000),
+    project: { ...pick(project, ['id', 'name']), baseline: {
+      ...pick(baseline, ['revision']), current: baseline.current == null ? null : pick(baseline.current, ['run_id', 'source_sha256', 'circuit_sha256', 'report_sha256']), history_count: array(baseline.history).length,
+    } },
+    exports: exports.slice(0, 32).map(item => pick(item, ['name', 'label', 'sha256'])),
+    exports_truncated: exports.length > 32,
+    full_record: 'Use workbench_inspect(resource="research_run", id=run_id, detail="full") for recorded evidence and task history. Saved status and metrics are evidence; task completion alone is not scientific validation.',
+  }
+}

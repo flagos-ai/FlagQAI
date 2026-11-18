@@ -2,7 +2,7 @@
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { resolve } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
-import { experimentEvidence, runEvidence, runSettled } from './workbench-evidence.js'
+import { experimentEvidence, researchEvidence, runEvidence, runSettled } from './workbench-evidence.js'
 
 type Binding = { port: number; client: string; session: string }
 const sameBinding = (a: Binding | undefined, b: Binding | undefined) => a?.port === b?.port && a?.client === b?.client && a?.session === b?.session
@@ -68,15 +68,17 @@ export function createWorkbenchTools(
     }
   }
   return [
-    tool('workbench_inspect', 'Read authoritative workbench state, browser draft, shared model, Python run, saved experiment, project, archived research source or installed SDK. workspace identifies the selected Python interpreter; sdk reads its API signatures and documentation without running an experiment. Run/experiment evidence defaults to a compact projection with explicit truncation indicators. Use detail=full when more data is needed, instead of shell inspection, archive extraction or guessing file formats.',
-      schema({ resource: { type: 'string', enum: ['workspace', 'sdk', 'draft', 'model', 'run', 'experiment', 'project', 'research'] }, id: string, detail: { type: 'string', enum: ['summary', 'full'] } }, ['resource']),
+    tool('workbench_inspect', 'Read authoritative workbench state, browser draft, shared model, Python run, saved experiment, project, archived research source or installed SDK. workspace identifies the selected Python interpreter; sdk reads its API signatures and documentation without running an experiment. research reads verified-source version metadata; research_run reads saved verification and comparison. Run, experiment and research_run evidence defaults to a compact projection with explicit truncation indicators. Use detail=full when more data is needed, instead of shell inspection, archive extraction or guessing file formats.',
+      schema({ resource: { type: 'string', enum: ['workspace', 'sdk', 'draft', 'model', 'run', 'experiment', 'project', 'research', 'research_run'] }, id: string, detail: { type: 'string', enum: ['summary', 'full'] } }, ['resource']),
       async (input, signal) => {
-        const operations: Record<string, [string, string]> = { workspace: ['status', ''], sdk: ['sdk.inspect', ''], draft: ['draft.read', ''], model: ['model.read', 'model_id'], run: ['python.read', 'run_id'], experiment: ['experiment.read', 'experiment_id'], project: ['project.inspect', 'project_id'], research: ['research.inspect', 'parent'] }
+        const operations: Record<string, [string, string]> = { workspace: ['status', ''], sdk: ['sdk.inspect', ''], draft: ['draft.read', ''], model: ['model.read', 'model_id'], run: ['python.read', 'run_id'], experiment: ['experiment.read', 'experiment_id'], project: ['project.inspect', 'project_id'], research: ['research.inspect', 'parent'], research_run: ['research.read', 'run_id'] }
         const [op, key] = operations[input.resource]
         if (key && !input.id) throw new Error('This resource requires an id.')
         const target = binding()
         const record = await action(op, key ? { [key]: input.id } : {}, signal, target)
+        if (input.resource === 'research_run' && record.id !== input.id) throw new Error('Saved research identity did not match.')
         if (input.detail === 'full') return record
+        if (input.resource === 'research_run') return researchEvidence(record)
         if (input.resource === 'run') return runEvidence(record)
         if (input.resource === 'experiment') return experimentEvidence(record, target!.port)
         return record
@@ -130,6 +132,13 @@ export function createWorkbenchTools(
     tool('workbench_compare_experiments', 'Verify two saved experiments with recorded measurements and display their side-by-side comparison. Preserve each original source and result. Call before claiming that a comparison is displayed.',
       schema({ baseline_id: string, variant_id: string, request_id: string }, ['baseline_id', 'variant_id', 'request_id']),
       (input, signal) => action('experiment.compare', input, signal)),
+    tool('workbench_present_research_run', 'Read and present an existing saved research run in Jobs. Uses actual archived status, resource comparisons and code version; does not execute, verify or adopt a candidate. Follow Agent controls automatic navigation. Reuse request_id for identical retries.',
+      schema({ run_id: string, request_id: string }, ['run_id', 'request_id']),
+      async (input, signal) => {
+        const result = await action('research.present', input, signal)
+        if ((result.research_run as { id?: unknown } | undefined)?.id !== input.run_id) throw new Error('Saved research presentation identity did not match.')
+        return { ...result, next_tool: 'workbench_inspect(resource="research_run", id=run_id)' }
+      }),
     ...(coordination ? [tool('workbench_research_team', 'Coordinate native research workers with durable task IDs and version-bound evidence. Inspect a research source with workbench_inspect(resource=research, id=run ID), open constraints, reserve distinct tasks, then explicitly dispatch. After constraints change, inspect or recommend an adjustment plan and wait for explicit user confirmation before dispatching new task versions. Do not reserve replacements to bypass review. Recover only observes existing native sessions and never resubmits work. Evidence links refer to saved verifier reports; they do not validate or adopt candidates. Preserve the baseline and drafts.',
       schema({ action: { type: 'string', enum: ['inspect', 'open', 'constraints', 'recommend', 'reserve', 'dispatch', 'recover', 'evidence'] },
         project_id: string, constraints: { ...string, maxLength: 4000 }, task_id: string,
