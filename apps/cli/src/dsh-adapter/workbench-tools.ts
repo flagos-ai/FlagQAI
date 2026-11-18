@@ -37,6 +37,7 @@ export function createWorkbenchTools(
   binding: () => Binding | undefined,
   cwd: string,
   request: typeof fetch = fetch,
+  coordination?: ReturnType<typeof import('./project-coordination.js').createNativeResearchCoordinator>,
 ): ToolDefinition[] {
   async function action(operation: string, args: Record<string, unknown>, signal: AbortSignal, target = binding()) {
     signal.throwIfAborted()
@@ -67,10 +68,10 @@ export function createWorkbenchTools(
     }
   }
   return [
-    tool('workbench_inspect', 'Read authoritative workbench state, browser draft, shared model, Python run, saved experiment, project or installed SDK. workspace identifies the selected Python interpreter; sdk reads its API signatures and documentation without running an experiment. Run/experiment evidence defaults to a compact projection with explicit truncation indicators. Use detail=full when more data is needed, instead of shell inspection, archive extraction or guessing file formats.',
-      schema({ resource: { type: 'string', enum: ['workspace', 'sdk', 'draft', 'model', 'run', 'experiment', 'project'] }, id: string, detail: { type: 'string', enum: ['summary', 'full'] } }, ['resource']),
+    tool('workbench_inspect', 'Read authoritative workbench state, browser draft, shared model, Python run, saved experiment, project, archived research source or installed SDK. workspace identifies the selected Python interpreter; sdk reads its API signatures and documentation without running an experiment. Run/experiment evidence defaults to a compact projection with explicit truncation indicators. Use detail=full when more data is needed, instead of shell inspection, archive extraction or guessing file formats.',
+      schema({ resource: { type: 'string', enum: ['workspace', 'sdk', 'draft', 'model', 'run', 'experiment', 'project', 'research'] }, id: string, detail: { type: 'string', enum: ['summary', 'full'] } }, ['resource']),
       async (input, signal) => {
-        const operations: Record<string, [string, string]> = { workspace: ['status', ''], sdk: ['sdk.inspect', ''], draft: ['draft.read', ''], model: ['model.read', 'model_id'], run: ['python.read', 'run_id'], experiment: ['experiment.read', 'experiment_id'], project: ['project.inspect', 'project_id'] }
+        const operations: Record<string, [string, string]> = { workspace: ['status', ''], sdk: ['sdk.inspect', ''], draft: ['draft.read', ''], model: ['model.read', 'model_id'], run: ['python.read', 'run_id'], experiment: ['experiment.read', 'experiment_id'], project: ['project.inspect', 'project_id'], research: ['research.inspect', 'parent'] }
         const [op, key] = operations[input.resource]
         if (key && !input.id) throw new Error('This resource requires an id.')
         const target = binding()
@@ -129,5 +130,15 @@ export function createWorkbenchTools(
     tool('workbench_compare_experiments', 'Verify two saved experiments with recorded measurements and display their side-by-side comparison. Preserve each original source and result. Call before claiming that a comparison is displayed.',
       schema({ baseline_id: string, variant_id: string, request_id: string }, ['baseline_id', 'variant_id', 'request_id']),
       (input, signal) => action('experiment.compare', input, signal)),
+    ...(coordination ? [tool('workbench_research_team', 'Coordinate native research workers with durable task IDs and version-bound evidence. Inspect a research source with workbench_inspect(resource=research, id=run ID), open constraints, reserve distinct tasks, then explicitly dispatch. Recover only observes existing native sessions and never resubmits work. Evidence links refer to saved verifier reports; they do not validate or adopt candidates. Preserve the baseline and drafts.',
+      schema({ action: { type: 'string', enum: ['inspect', 'open', 'constraints', 'reserve', 'dispatch', 'recover', 'evidence'] },
+        project_id: string, constraints: { ...string, maxLength: 4000 }, task_id: string,
+        task: { ...string, maxLength: 4000 }, parent_run_id: string, source_sha256: string,
+        run_id: string, expected_constraint_revision: { type: 'integer', minimum: 1 },
+        expected_project_revision: { type: 'integer', minimum: 0 }, request_id: string }, ['action']),
+      (input, signal) => {
+        const target = binding()
+        return coordination.control(input, (op, args, ownerSignal) => action(op, args, ownerSignal, target), signal)
+      })] : []),
   ]
 }
