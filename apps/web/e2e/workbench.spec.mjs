@@ -1,3 +1,4 @@
+import { openWorkspaceAction } from "./workspace-actions.mjs";
 import { test, expect } from "@playwright/test";
 import { writeFile, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
@@ -4108,7 +4109,7 @@ test("backup draft recovery previews and merges code without replacing live work
 }, testInfo) => {
   const original = "# Exported unsaved work\nprint('saved backup')\n";
   await editor(page).fill(original);
-  await page.getByRole("button", { name: "Backups", exact: true }).click();
+  await openWorkspaceAction(page, "Backups");
   const dialog = page.getByRole("dialog", {
     name: "Workspace backups",
     exact: true,
@@ -4125,7 +4126,7 @@ test("backup draft recovery previews and merges code without replacing live work
     .click();
   await editor(page).fill(draft);
   const beforeRuns = (await get(page, "/api/python/runs")).length;
-  await page.getByRole("button", { name: "Backups", exact: true }).click();
+  await openWorkspaceAction(page, "Backups");
   const file = dialog.getByLabel("Choose workspace backup", { exact: true });
   await file.setInputFiles({
     name: "broken.json",
@@ -5359,9 +5360,7 @@ test("QAOA Max-Cut reference: scripted Agent orchestration, real optimization, c
         return route.abort("blockedbyclient");
       });
       const packagesBefore = (await get(fresh, "/api/research")).length;
-      await fresh
-        .getByRole("button", { name: "Research", exact: true })
-        .click();
+      await openWorkspaceAction(fresh, "Research");
       const library = fresh.getByRole("dialog", {
         name: "Research packages",
         exact: true,
@@ -5467,9 +5466,7 @@ test("QAOA Max-Cut reference: scripted Agent orchestration, real optimization, c
         .click();
       await fresh.reload();
       await expect(editor(fresh)).toHaveValue(cleanDraft);
-      await fresh
-        .getByRole("button", { name: "Research", exact: true })
-        .click();
+      await openWorkspaceAction(fresh, "Research");
       await library
         .getByRole("button", { name: new RegExp(secondImport.id.slice(-8)) })
         .click();
@@ -5597,9 +5594,7 @@ test("QAOA Max-Cut reference: scripted Agent orchestration, real optimization, c
         .click();
       await fresh.reload();
       await expect(editor(fresh)).toHaveValue(cleanDraft);
-      await fresh
-        .getByRole("button", { name: "Research", exact: true })
-        .click();
+      await openWorkspaceAction(fresh, "Research");
       await library
         .getByRole("button", { name: new RegExp(secondImport.id.slice(-8)) })
         .click();
@@ -6342,7 +6337,7 @@ async function maxcutUserJourney(page, testInfo, weighted) {
     await expect(editor(fresh)).toBeVisible();
     const handoffDraft = "# Independent handoff draft\n";
     await editor(fresh).fill(handoffDraft);
-    await fresh.getByRole("button", { name: "Research", exact: true }).click();
+    await openWorkspaceAction(fresh, "Research");
     const library = fresh.getByRole("dialog", {
       name: "Research packages",
       exact: true,
