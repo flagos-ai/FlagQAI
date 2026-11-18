@@ -104,6 +104,14 @@ class WorkspaceBridge:
             return self.python_runs.inspect_sdk()
         if operation == 'draft.read':
             return {'name': context['name'], 'source': context['source'], 'source_hash': context['source_hash']}
+        if operation == 'research.read':
+            from .research_runs import read_research_run
+            identity = data.get('run_id')
+            if not isinstance(identity, str) or not re.fullmatch(r'invsqrt-[a-f0-9]{32}', identity):
+                raise ValueError('Choose an archived research run.')
+            record = read_research_run(self.settings, identity)
+            if not record: raise ValueError('Research run not found.')
+            return record
         if operation == 'research.inspect':
             from .research_coordination import source_snapshot
             return source_snapshot(self.settings, data.get('parent'))
@@ -132,7 +140,7 @@ class WorkspaceBridge:
                 result = (self.python_runs.experiments.get(data.get('job_id')) or {}).get('job')
             if not result: raise ValueError('Job not found.')
             return result
-        if operation not in ('model.create', 'model.share', 'compile', 'run', 'focus', 'python.run', 'python.cancel', 'project.run', 'experiment.compare'):
+        if operation not in ('model.create', 'model.share', 'compile', 'run', 'focus', 'python.run', 'python.cancel', 'project.run', 'experiment.compare', 'research.present'):
             raise ValueError('Unsupported workbench action.')
         key = data.get('request_id')
         if not isinstance(key, str) or not re.fullmatch(r'[a-zA-Z0-9-]{1,128}', key):
@@ -169,6 +177,12 @@ class WorkspaceBridge:
             db.execute('UPDATE deliveries SET outcome=? WHERE id=?', (json.dumps(result), key))
 
     def execute(self, operation, data, context):
+        if operation == 'research.present':
+            # Validate the saved record again before recording a navigation target.
+            record = self.act({'client': context['client'], 'session': context['session'],
+                               'operation': 'research.read', 'run_id': data.get('run_id')})
+            evidence = {key: record.get(key) for key in ('id', 'status', 'source_sha256', 'comparison', 'current_comparison')}
+            return {'research_run': {'id': record['id']}, 'page': 'jobs', 'evidence': evidence}
         if operation == 'project.run':
             if not self.python_runs: raise ValueError('Python runtime unavailable.')
             if data.get('origin') != 'ui' and not data.get('expected_hash'):

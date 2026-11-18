@@ -1,3 +1,4 @@
+import { researchRunsAPI } from "../api/research-runs";
 import { previewCode } from "../state/agent-code-preview";
 import { readExperiment } from "../api/experiments";
 import { pythonAPI } from "../api/python-runs";
@@ -68,7 +69,12 @@ export function usePlatformBridge(
       const changes = await platformNavigation(
         action,
         current.current,
-        { experiment: readExperiment, job: quantumAPI.job },
+        {
+          experiment: readExperiment,
+          job: quantumAPI.job,
+          research: async (id) =>
+            (await researchRunsAPI.read(id, new AbortController().signal)).run,
+        },
         automatic,
       );
       if (allowed()) for (const change of changes) dispatch(change);

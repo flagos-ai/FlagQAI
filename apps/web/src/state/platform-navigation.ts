@@ -9,6 +9,7 @@ import type {
 type Readers = {
   experiment: (id: string) => Promise<ExperimentImport>;
   job: (id: string) => Promise<QuantumJob>;
+  research?: (id: string) => Promise<{ id: string }>;
 };
 export function shouldFollowTarget(
   state: Pick<WorkspaceState, "page" | "comparison">,
@@ -34,6 +35,20 @@ export async function platformNavigation(
   const result = action.result;
   if (!result) return [];
   const changes: WorkspaceAction[] = [];
+  if (result.research_run) {
+    const id = result.research_run.id;
+    if (!/^invsqrt-[a-f0-9]{32}$/.test(id) || !readers.research)
+      throw Error("Saved research target is unavailable.");
+    const record = await readers.research(id);
+    if (record.id !== id)
+      throw Error("Saved research target identity did not match.");
+    return [
+      { type: "research-run", id },
+      { type: "navigate", page: "jobs" },
+      { type: "agent", open: true },
+    ];
+  }
+
   if (result.comparison) {
     const { left, right } = result.comparison;
     if (left === right) throw Error("Choose two distinct saved experiments.");
