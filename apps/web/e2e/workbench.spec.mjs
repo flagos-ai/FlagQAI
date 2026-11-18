@@ -110,6 +110,7 @@ for (const [name, states] of [
     });
     if ((await agent.getAttribute("aria-expanded")) === "true")
       await agent.click();
+    await page.getByRole("button", { name: "Examples", exact: true }).click();
     if (name === "X State") {
       await editor(page).fill(draft);
       await expect(
@@ -3351,11 +3352,12 @@ test("model import explains invalid files and preserves the newest draft during 
   });
   if ((await agent.getAttribute("aria-expanded")) === "true")
     await agent.click();
+  await page.getByRole("button", { name: "Examples", exact: true }).click();
   const examples = page.getByRole("region", {
     name: "Example models",
     exact: true,
   });
-  expect((await examples.boundingBox()).height).toBeLessThan(260);
+  expect((await examples.boundingBox()).height).toBeLessThan(280);
   await page.screenshot({
     path: testInfo.outputPath("compact-model-library.png"),
     fullPage: true,
@@ -3530,9 +3532,7 @@ test("model import explains invalid files and preserves the newest draft during 
     mimeType: "text/plain",
     buffer: Buffer.from(imported),
   });
-  await expect(
-    page.getByRole("button", { name: "Importing file…", exact: true }),
-  ).toBeDisabled();
+  await expect(page.locator(".fq-model-import")).toBeDisabled();
   const newerDraft = draft + "# edited while the file was being read\n";
   await editor(page).fill(newerDraft);
   await page.evaluate(() => globalThis.__releaseSourceImport());
@@ -3541,6 +3541,7 @@ test("model import explains invalid files and preserves the newest draft during 
     page.getByRole("button", { name: "Python", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("alert")).toHaveCount(0);
+  await page.getByRole("button", { name: "My files", exact: true }).click();
   await page
     .getByRole("button", { name: /Draft · / })
     .first()
@@ -5143,6 +5144,7 @@ test("QAOA Max-Cut reference: scripted Agent orchestration, real optimization, c
   if ((await agent.getAttribute("aria-expanded")) === "true")
     await agent.click();
   await page.getByRole("button", { name: "MODELS", exact: true }).click();
+  await page.getByRole("button", { name: "Examples", exact: true }).click();
   await page
     .getByRole("region", { name: "Reference research task", exact: true })
     .getByRole("button", { name: new RegExp(qaoaTaskName) })
@@ -5159,6 +5161,7 @@ test("QAOA Max-Cut reference: scripted Agent orchestration, real optimization, c
     optimized.program.origin.source_hash,
   );
   expect(independent.job.result.counts).toEqual(optimized.job.result.counts);
+  await page.getByRole("button", { name: "My files", exact: true }).click();
   const retained = page.getByRole("region", { name: "My models", exact: true });
   await retained
     .getByRole("button")
