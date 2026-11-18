@@ -60,6 +60,7 @@ export type ResearchTask = {
   verifier_sha256: string;
   parent_run_id: string;
   previous_task_id?: string;
+  adjustment_plan_id?: string;
   evidence: {
     run_id: string;
     source_sha256: string;
@@ -72,6 +73,45 @@ export type ResearchTask = {
     detail: string;
     native_run_id?: string;
   }[];
+};
+
+export type AdjustmentPlan = {
+  id: string;
+  sha256: string;
+  status: "proposed" | "confirmed" | "rejected" | "superseded";
+  constraint_revision: number;
+  constraints: string;
+  constraints_current: boolean;
+  suggested_by: string;
+  decided_by?: string;
+  decided_at?: string;
+  changes: {
+    previous_task_id: string;
+    task_id: string;
+    task_version: number;
+    task: string;
+    reason: string;
+    previous_constraints: string;
+    previous_evidence: {
+      run_id: string;
+      source_sha256: string;
+      report_sha256: string;
+    }[];
+    source: { parent: string; source_sha256: string; project_revision: number };
+  }[];
+};
+export type CoordinationProject = {
+  project_id: string;
+  coordinator_session_id: string;
+  constraint_revision: number;
+  constraints: string;
+  history?: {
+    action: string;
+    request_id: string;
+    constraint_revision: number;
+  }[];
+  tasks: Record<string, ResearchTask>;
+  adjustment_plans: Record<string, AdjustmentPlan>;
 };
 
 export type ResearchTaskLink = {
@@ -93,6 +133,7 @@ export type ResearchRun = ResearchRunSummary & {
   project: ResearchRunSummary["project"] & { baseline?: ProjectBaseline };
   is_project_baseline?: boolean;
   coordination?: ResearchTaskLink[];
+  coordination_projects?: CoordinationProject[];
   current_comparison?: {
     baseline_run_id: string;
     baseline_source_sha256: string;
@@ -150,6 +191,20 @@ async function request<T>(path: string, options: RequestInit): Promise<T> {
 }
 
 export const researchRunsAPI = {
+  coordinate: (
+    id: string,
+    data: Record<string, unknown>,
+    signal?: AbortSignal,
+  ) =>
+    request<{ coordination: CoordinationProject }>(
+      `/${encodeURIComponent(id)}/coordination`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        signal,
+      },
+    ),
   list: (signal: AbortSignal) =>
     request<{ runs: ResearchRunSummary[] }>("", { signal }),
   read: (id: string, signal: AbortSignal) =>

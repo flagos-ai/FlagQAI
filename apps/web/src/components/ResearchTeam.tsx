@@ -1,4 +1,5 @@
 import type { ResearchRun, ResearchTaskLink } from "../api/research-runs";
+import { ResearchConstraintReview } from "./ResearchConstraintReview";
 
 function TaskVersion({
   link,
@@ -99,11 +100,13 @@ export function ResearchTeam({
   run,
   onOpen,
   onOpenChange,
+  onUpdated,
   open,
 }: {
   run: ResearchRun;
   onOpen: (id: string) => void;
   onOpenChange: (open: boolean) => void;
+  onUpdated: () => void;
   open: boolean;
 }) {
   const links = run.coordination || [];
@@ -118,6 +121,14 @@ export function ResearchTeam({
       }}
     >
       <summary>Research team · {links.length} linked tasks</summary>
+      {(run.coordination_projects || []).map((project) => (
+        <ResearchConstraintReview
+          key={project.coordinator_session_id + ":" + project.project_id}
+          project={project}
+          runId={run.id}
+          onUpdated={onUpdated}
+        />
+      ))}
       {links
         .filter((link) => link.task.constraints_current)
         .map((link) => (

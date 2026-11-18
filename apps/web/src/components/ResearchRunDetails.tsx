@@ -50,7 +50,14 @@ export function ResearchRunDetails({
           runWasRunning = run.status === "running";
           follow =
             runWasRunning ||
-            (followTeam && hasActiveResearchTasks(run.coordination));
+            (followTeam &&
+              (hasActiveResearchTasks(run.coordination) ||
+                Object.values(run.coordination_projects || []).some((project) =>
+                  Object.values(project.adjustment_plans).some(
+                    (plan) =>
+                      plan.status === "proposed" && plan.constraints_current,
+                  ),
+                )));
           setRun(run);
           setError("");
         }
@@ -234,6 +241,7 @@ export function ResearchRunDetails({
             key={run.id}
             run={run}
             onOpen={onOpen}
+            onUpdated={() => setRevision((value) => value + 1)}
             open={followTeam}
             onOpenChange={(open) => setTeamOpenId(open ? run.id : undefined)}
           />
