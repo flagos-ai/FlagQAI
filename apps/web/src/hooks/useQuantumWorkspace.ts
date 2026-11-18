@@ -136,8 +136,17 @@ export function useQuantumWorkspace() {
     [state.busy, state.source, state.name, state.language],
   );
   const run = useCallback(async () => {
-    if (state.busy || operation.current || executionSourceBlockedReason(state))
+    if (state.busy || operation.current) return;
+    const blocked =
+      backend.runBlockedReason || executionSourceBlockedReason(state);
+    if (blocked) {
+      dispatch({
+        type: "error",
+        source: state.execution?.source || state.source,
+        message: blocked,
+      });
       return;
+    }
     operation.current = true;
     dispatch({ type: "busy", value: true });
     const source = state.execution?.source || state.source;
@@ -175,7 +184,7 @@ export function useQuantumWorkspace() {
       operation.current = false;
       dispatch({ type: "busy", value: false });
     }
-  }, [state]);
+  }, [state, backend.runBlockedReason]);
   useEffect(() => {
     let live = true;
     let timer: ReturnType<typeof setTimeout>;
