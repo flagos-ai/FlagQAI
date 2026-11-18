@@ -1461,8 +1461,11 @@
   overflow-wrap: anywhere;
 }
 .fq-circuit-sources ul {
-  margin: 4px 0 0;
-  padding-inline-start: 18px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.fq-circuit-source-label {
   color: var(--ui-muted);
 }
 
