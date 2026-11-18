@@ -1,9 +1,5 @@
-import { useEffect, useState } from "react";
-import {
-  RESEARCH_RUNS_CHANGED,
-  researchRunsAPI,
-  type ResearchRunSummary,
-} from "../api/research-runs";
+import { useResearchRuns } from "../hooks/useResearchRuns";
+import type { ResearchRunSummary } from "../api/research-runs";
 import type { WorkspaceAction } from "../contracts/quantum-workspace";
 
 export function ResearchRunList({
@@ -19,30 +15,7 @@ export function ResearchRunList({
   dispatch: React.Dispatch<WorkspaceAction>;
   empty?: React.ReactNode;
 }) {
-  const [runs, setRuns] = useState<ResearchRunSummary[]>([]);
-  const [error, setError] = useState("");
-  const [revision, setRevision] = useState(0);
-  useEffect(() => {
-    const reload = () => setRevision((value) => value + 1);
-    window.addEventListener(RESEARCH_RUNS_CHANGED, reload);
-    return () => window.removeEventListener(RESEARCH_RUNS_CHANGED, reload);
-  }, []);
-  useEffect(() => {
-    const controller = new AbortController();
-    void researchRunsAPI
-      .list(controller.signal)
-      .then(({ runs }) => {
-        if (!controller.signal.aborted) {
-          setRuns(runs);
-          setError("");
-        }
-      })
-      .catch(() => {
-        if (!controller.signal.aborted)
-          setError("Could not load saved research runs.");
-      });
-    return () => controller.abort();
-  }, [revision, selectedId]);
+  const { runs, error, reload } = useResearchRuns(selectedId);
   const term = query.trim().toLowerCase();
   const visible = runs.filter(
     (run) =>
@@ -70,10 +43,7 @@ export function ResearchRunList({
       {error && (
         <p className="fq-jobs-no-match" role="alert">
           {error}{" "}
-          <button
-            className="link"
-            onClick={() => setRevision((value) => value + 1)}
-          >
+          <button className="link" onClick={reload}>
             Retry
           </button>
         </p>

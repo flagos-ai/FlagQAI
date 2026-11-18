@@ -1549,3 +1549,57 @@
 .fq-research-outcome details {
   margin-top: 8px;
 }
+
+/* Workspace research is distinct from the currently opened local folder. */
+.fq-research-projects {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.fq-research-projects header {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: space-between;
+}
+.fq-research-projects h3 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+.fq-workspace .fq-research-projects > button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+  padding: 7px 8px;
+  margin-top: 4px;
+}
+.fq-research-projects > button span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.fq-research-projects > button :is(strong, small) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fq-research-projects strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.fq-research-projects small {
+  font-size: 11px;
+  color: var(--muted);
+}
+.fq-research-projects > button svg {
+  flex-shrink: 0;
+}
+.fq-research-projects [role="alert"] {
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
