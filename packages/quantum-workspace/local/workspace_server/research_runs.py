@@ -2,7 +2,7 @@
 from math import isfinite
 
 from .invsqrt_evidence import evidence_ids, read_report
-from .research_baseline import project_baseline
+from .research_baseline import project_baseline, verified_version
 
 
 def research_run(report, details=False):
@@ -101,4 +101,40 @@ def read_research_run(settings, identity):
         and any(v['name'] == 'candidate' and v['sha256'] == current['circuit_sha256']
                 and v['report_sha256'] == current['report_sha256'] for v in report['variants'])
     )
+    run['current_comparison'] = None
+    if current and report['status'] == 'completed' and not run['is_project_baseline']:
+        verified = verified_version(settings, current['run_id'])
+        if verified != current:
+            raise ValueError('The adopted baseline evidence changed.')
+        baseline_report = read_report(
+            settings, current['run_id'].removeprefix('invsqrt-'), allow_current=False,
+        )
+        run['current_comparison'] = compare_current_baseline(report, baseline_report, current)
     return run
+
+
+def compare_current_baseline(report, baseline_report, current):
+    # Compare runs made under the same recorded verifier settings and code.
+    provenance = report.get('provenance') or {}
+    baseline_provenance = baseline_report.get('provenance') or {}
+    code = ('verifier_sha256', 'metric_sha256')
+    if any(not provenance.get(key) or provenance.get(key) != baseline_provenance.get(key)
+           for key in code):
+        return None
+    settings = report.get('settings')
+    if not isinstance(settings, dict) or settings != baseline_report.get('settings'):
+        return None
+    candidate = next(v for v in report['variants'] if v['name'] == 'candidate')
+    score, baseline_score = candidate['report'].get('score'), current['metrics'].get('score')
+    if (type(score) not in (int, float) or type(baseline_score) not in (int, float)
+            or not isfinite(score) or not isfinite(baseline_score)):
+        return None
+    delta = score - baseline_score
+    if not isfinite(delta):
+        return None
+    return {
+        'baseline_run_id': current['run_id'],
+        'baseline_source_sha256': current['source_sha256'],
+        'candidate_circuit_sha256': candidate['sha256'],
+        'baseline_cost': baseline_score, 'candidate_cost': score, 'cost_delta': delta,
+    }

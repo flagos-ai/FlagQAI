@@ -124,7 +124,26 @@ export function ResearchRunDetails({
                   ? "unchanged"
                   : `${Math.abs(change).toFixed(4)}% ${change > 0 ? "lower" : "higher"}`}
               </strong>{" "}
-              than baseline
+              than this run’s archived baseline
+            </p>
+          )}
+          {run.current_comparison && (
+            <p aria-label="Current baseline comparison">
+              Resource cost difference from{" "}
+              <button
+                className="link"
+                onClick={() => onOpen(run.current_comparison!.baseline_run_id)}
+              >
+                current project baseline
+              </button>
+              {" · "}
+              <strong>
+                {run.current_comparison.cost_delta > 0 ? "+" : ""}
+                {run.current_comparison.cost_delta.toLocaleString("en-US", {
+                  maximumFractionDigits: 4,
+                })}
+              </strong>
+              {" · lower is better"}
             </p>
           )}
           {!!run.comparison.columns.length && (
@@ -190,19 +209,7 @@ export function ResearchRunDetails({
               baseline={baseline}
               onOpen={onOpen}
               onReload={reload}
-              onChange={(baseline) =>
-                setRun(
-                  (current) =>
-                    current && {
-                      ...current,
-                      project: { ...current.project, baseline },
-                      is_project_baseline:
-                        baseline.current?.run_id === current.id &&
-                        baseline.current.source_sha256 ===
-                          current.source_sha256,
-                    },
-                )
-              }
+              onChange={reload}
             />
           )}
           {baseline && sourceHash && canRevise && (

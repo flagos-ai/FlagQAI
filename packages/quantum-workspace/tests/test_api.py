@@ -183,6 +183,29 @@ class WorkspaceAPITests(unittest.TestCase):
         with ThreadPoolExecutor(max_workers=2) as workers:
             self.assertEqual(sorted(workers.map(adopt, records)), [200, 409])
 
+    def test_current_comparison_is_bound_to_adopted_evidence_and_matching_settings(self):
+        first, a = self.saved_verifier_fixture()
+        second, b = self.saved_verifier_fixture('b' * 32)
+        for work, report in [(first, a), (second, b)]:
+            report['settings'] = {'shots_per_x': 64, 'salt': ''}
+            (work / 'report.json').write_text(json.dumps(report))
+        route = '/api/research-runs/invsqrt-'
+        self.assertEqual(self.request(route + a['id'] + '/baseline', {
+            'decision': 'adopt', 'source_sha256': a['exports'][-1]['sha256'],
+            'expected_project_revision': 0, 'request_id': 'first',
+        })[0], 200)
+        run = json.loads(self.request(route + b['id'])[1])['run']
+        comparison = run['current_comparison']
+        self.assertEqual(comparison['baseline_run_id'], 'invsqrt-' + a['id'])
+        self.assertEqual(comparison['baseline_source_sha256'], a['exports'][-1]['sha256'])
+        self.assertEqual(comparison['candidate_circuit_sha256'], b['variants'][1]['sha256'])
+        self.assertEqual(comparison['cost_delta'], 0)
+        b['settings']['salt'] = 'different'
+        (second / 'report.json').write_text(json.dumps(b))
+        self.assertIsNone(json.loads(self.request(route + b['id'])[1])['run']['current_comparison'])
+        (first / 'candidate.kmx').write_bytes(b'changed adopted source')
+        self.assertEqual(self.request(route + b['id'])[0], 409)
+
     def test_baseline_requires_the_reviewed_archived_source(self):
         work, report = self.saved_verifier_fixture()
         url = '/api/research-runs/invsqrt-' + report['id']
