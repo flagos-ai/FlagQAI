@@ -62,6 +62,15 @@ try {
     }).find(tool => tool.name === 'workbench_export_research')
     const exported = await delivery.execute({ run_ids: ['saved-run'], goal: 'QAOA', request_id: 'same-package' }, { signal: new AbortController().signal })
     assert.equal(exported.download_url, 'http://127.0.0.1:1/api/research/exports/' + digest + '/file')
+    await call('workbench_inspect_research', {})
+    assert.equal(calls.at(-1).operation, 'research.candidate.inspect')
+    await call('workbench_propose_research_candidate', {
+      parent: id, parent_sha256: 'f'.repeat(64), expected_project_revision: 2,
+      before: 'X q0', after: 'Z q0', reason: 'Compare one gate', request_id: 'stable-proposal'
+    })
+    assert.equal(calls.at(-1).operation, 'research.propose')
+    assert.equal(calls.at(-1).request_id, 'stable-proposal')
+    assert.equal(calls.some(call => /verify|adopt|execute/.test(call.operation)), false)
     console.log('Relocated research tools: saved status, metrics, versions, compact/full reads and explicit presentation passed.')
   `], { cwd: relocated, stdio: 'inherit', timeout: 60000 })
 } finally {

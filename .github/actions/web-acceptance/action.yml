@@ -45,7 +45,7 @@ runs:
       run: pnpm --dir apps/cli run compile
     - name: Verify session-scoped workbench tools
       shell: bash
-      run: node --test apps/cli/scripts/workbench-tools.test.mjs apps/cli/scripts/source-server-overlay.test.mjs
+      run: node --test apps/cli/scripts/workbench-tools.test.mjs apps/cli/scripts/research-candidate-tools.test.mjs apps/cli/scripts/source-server-overlay.test.mjs
     - name: Install pinned Chromium test browser
       env:
         RUNNER_ENVIRONMENT: ${{ runner.environment }}

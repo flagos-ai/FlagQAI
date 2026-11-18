@@ -106,6 +106,19 @@ class WorkspaceAPITests(unittest.TestCase):
         (work / 'report.json').write_text(json.dumps(report))
         return work, report
 
+    def test_agent_candidate_inspection_is_bounded_generic_and_read_only(self):
+        from workspace_server.research_candidates import inspect_candidate_source
+        work, report = self.saved_verifier_fixture()
+        source = b"X q0 # ordinary saved source\n" * 2000
+        (work / "candidate.kmx").write_bytes(source)
+        report["exports"][-1]["sha256"] = hashlib.sha256(source).hexdigest()
+        (work / "report.json").write_text(json.dumps(report))
+        result = inspect_candidate_source(self.settings, "invsqrt-" + report["id"])
+        self.assertTrue(result["excerpt_truncated"])
+        self.assertLessEqual(len(result["source_excerpt"]), 16384)
+        self.assertEqual(result["source_excerpt"], source.decode()[:16384])
+        self.assertEqual(result["project_revision"], 0)
+
     def test_research_runs_project_archived_evidence_and_preserve_failed_history(self):
         self.assertEqual(json.loads(self.request('/api/research-runs')[1]), {'runs': []})
         work, archived = self.saved_verifier_fixture()

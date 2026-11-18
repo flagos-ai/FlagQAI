@@ -116,6 +116,9 @@ class WorkspaceBridge:
         if operation == 'research.inspect':
             from .research_coordination import source_snapshot
             return source_snapshot(self.settings, data.get('parent'))
+        if operation == 'research.candidate.inspect':
+            from .research_candidates import inspect_candidate_source
+            return inspect_candidate_source(self.settings, data.get('parent'))
         if operation == 'research.coordinate':
             from .research_coordination import ResearchCoordination
             return ResearchCoordination(self.settings).act(session, {
@@ -141,7 +144,7 @@ class WorkspaceBridge:
                 result = (self.python_runs.experiments.get(data.get('job_id')) or {}).get('job')
             if not result: raise ValueError('Job not found.')
             return result
-        if operation not in ('model.create', 'model.share', 'compile', 'run', 'focus', 'python.run', 'python.cancel', 'project.run', 'experiment.compare', 'research.present', 'research.export'):
+        if operation not in ('model.create', 'model.share', 'compile', 'run', 'focus', 'python.run', 'python.cancel', 'project.run', 'experiment.compare', 'research.present', 'research.export', 'research.propose'):
             raise ValueError('Unsupported workbench action.')
         key = data.get('request_id')
         if not isinstance(key, str) or not re.fullmatch(r'[a-zA-Z0-9-]{1,128}', key):
@@ -182,6 +185,12 @@ class WorkspaceBridge:
             if not self.research_packages:
                 raise ValueError('Research export unavailable.')
             return {'export': self.research_packages.prepare_export(data.get('run_ids'), data.get('goal'))}
+        if operation == 'research.propose':
+            from .research_candidates import propose_candidate
+            return propose_candidate(self.settings, data.get('parent'), {
+                key: value for key, value in data.items()
+                if key not in ('client', 'session', 'port', 'operation', 'parent')
+            })
         if operation == 'research.present':
             # Validate the saved record again before recording a navigation target.
             record = self.act({'client': context['client'], 'session': context['session'],

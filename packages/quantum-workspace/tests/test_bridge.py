@@ -81,6 +81,23 @@ class BridgeTests(unittest.TestCase):
         with self.assertRaises(BridgeConflict):
             self.action('research.export', 'export-once', run_ids=['different'], goal='QAOA')
         self.assertEqual(self.adapter.calls, [])
+    def test_research_candidate_inspection_and_proposal_are_idempotent_and_never_execute(self):
+        calls=[]
+        self.bridge.settings = self.settings
+        from workspace_server.research_candidates import inspect_candidate_source
+        with patch('workspace_server.research_candidates.inspect_candidate_source', return_value={'parent':'saved','source_sha256':'a'*64,'project_revision':2,'source_excerpt':'X q0'}) as inspect:
+            self.assertEqual(self.action('research.candidate.inspect','inspect',parent='saved')['source_excerpt'],'X q0')
+            inspect.assert_called_once_with(self.settings,'saved')
+        self.bridge.settings = self.settings
+        candidate={'research_run':{'id':'invsqrt-'+'c'*32}}
+        with patch('workspace_server.research_candidates.propose_candidate', side_effect=lambda settings,parent,data: calls.append((parent,data)) or candidate):
+            result=self.action('research.propose','proposal',parent='invsqrt-'+'a'*32,expected_project_revision=2,parent_sha256='a'*64,before='X q0',after='Z q0',reason='One gate',)
+            self.assertEqual(result,candidate)
+            self.action('research.propose','proposal',parent='invsqrt-'+'a'*32,expected_project_revision=2,parent_sha256='a'*64,before='X q0',after='Z q0',reason='One gate')
+            self.assertEqual(len(calls),1)
+            with self.assertRaises(BridgeConflict):
+                self.action('research.propose','proposal',parent='invsqrt-'+'a'*32,expected_project_revision=2,parent_sha256='a'*64,before='X q0',after='H q0',reason='Changed')
+        self.assertEqual(self.adapter.calls,[])
 
     def test_new_models_never_overwrite_an_existing_shared_file(self):
         first=self.action('model.create','create-1',source=SOURCE)['file']

@@ -137,6 +137,13 @@ export function createWorkbenchTools(
         const focus = await action('focus', { page: input.view === 'circuit' ? 'program' : 'jobs', program_id: input.experiment_id, ...(input.view === 'result' ? { job_id: input.experiment_id } : {}), request_id: input.request_id }, signal, target)
         return { ...focus, evidence: experimentEvidence(record, target!.port) }
       }),
+    tool('workbench_inspect_research', 'Inspect an archived candidate source before proposing an edit. Omit parent to inspect the adopted project baseline. Returns the exact parent ID, source hash, project revision and a bounded editable excerpt. This neither verifies nor executes anything.',
+      schema({ parent: string }, []),
+      (input, signal) => action('research.candidate.inspect', input, signal)),
+    tool('workbench_propose_research_candidate', 'Stage one unique text replacement and scientific rationale against the inspected parent, source hash and project revision. Creates a reviewable proposal only. The user explicitly starts verification in Web. Never starts a Worker, verifies or adopts a candidate; reuse request_id for identical retries.',
+      schema({ parent: string, expected_project_revision: { type: 'integer', minimum: 0 }, parent_sha256: string, before: string, after: { type: 'string', maxLength: 16384 }, reason: string, request_id: string },
+        ['parent', 'expected_project_revision', 'parent_sha256', 'before', 'after', 'reason', 'request_id']),
+      (input, signal) => action('research.propose', input, signal)),
     tool('workbench_compare_experiments', 'Verify two saved experiments with recorded measurements and display their side-by-side comparison. Preserve each original source and result. Call before claiming that a comparison is displayed.',
       schema({ baseline_id: string, variant_id: string, request_id: string }, ['baseline_id', 'variant_id', 'request_id']),
       (input, signal) => action('experiment.compare', input, signal)),
