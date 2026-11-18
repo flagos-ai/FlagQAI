@@ -101,6 +101,10 @@ def read_research_run(settings, identity):
         and any(v['name'] == 'candidate' and v['sha256'] == current['circuit_sha256']
                 and v['report_sha256'] == current['report_sha256'] for v in report['variants'])
     )
+    from .research_coordination import ResearchCoordination
+    run['coordination'] = []
+    if (settings.database_path.parent / 'research-coordination.sqlite3').exists():
+        run['coordination'] = ResearchCoordination(settings).for_run(identity)
     run['current_comparison'] = None
     if current and report['status'] == 'completed' and not run['is_project_baseline']:
         verified = verified_version(settings, current['run_id'])
