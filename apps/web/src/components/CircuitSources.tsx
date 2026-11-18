@@ -17,10 +17,10 @@ export function CircuitSources({
       className="fq-circuit-sources"
       aria-label="Compiler source attribution"
     >
-      <strong>
+      <small className="fq-circuit-source-label">
         {sources.length > 1 ? "Combined compiler sources" : "Compiler source"}
-      </strong>
-      <ul>
+      </small>
+      <ul role="list">
         {sources.map((source) => (
           <li key={source.id}>
             {source.operation || source.label || source.id}
