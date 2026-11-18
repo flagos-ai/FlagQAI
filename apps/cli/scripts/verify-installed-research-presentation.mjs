@@ -35,6 +35,22 @@ try {
     await call('workbench_present_research_run', { run_id: id, request_id: 'stable-presentation' })
     assert.equal(calls.at(-1).request_id, 'stable-presentation')
     assert.deepEqual(calls.map(call => call.operation), ['research.read', 'research.read', 'research.present'])
+    let shared = false
+    const currentCalls = []
+    const current = createWorkbenchTools(() => binding, '/workspace', async (url, init) => {
+      if (url.endsWith('/api/agent')) return new Response(JSON.stringify({ cwd: '/workspace' }))
+      const body = JSON.parse(init.body); currentCalls.push(body.operation)
+      const value = body.operation === 'status' ? (shared ? { editorFile: 'exact.py' } : {})
+        : body.operation === 'model.read' ? { id: body.model_id, source: 'saved source' }
+        : { source: 'unsaved draft', source_hash: 'draft-hash' }
+      return new Response(JSON.stringify(value))
+    }).find(tool => tool.name === 'workbench_inspect')
+    const inspect = () => current.execute({ resource: 'model' }, { signal: new AbortController().signal })
+    const draft = await inspect()
+    assert.equal(draft.kind, 'browser_draft'); assert.equal(draft.source, 'unsaved draft')
+    shared = true
+    assert.equal((await inspect()).id, 'exact.py')
+    assert.deepEqual(currentCalls, ['status', 'draft.read', 'status', 'model.read'])
     console.log('Relocated research tools: saved status, metrics, versions, compact/full reads and explicit presentation passed.')
   `], { cwd: relocated, stdio: 'inherit', timeout: 60000 })
 } finally {
