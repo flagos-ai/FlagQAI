@@ -51,6 +51,21 @@ class WorkspaceAPITests(unittest.TestCase):
         conn.close()
         return result.status, response
 
+    def test_prepared_research_export_download_uses_digest_route_and_integrity_reader(self):
+        from workspace_server.research_packages import ResearchPackages
+        digest = 'a' * 64
+        with patch.object(ResearchPackages, 'export_file', return_value=b'archive') as read:
+            status, raw = self.request('/api/research/exports/' + digest + '/file')
+            self.assertEqual((status, raw), (200, b'archive'))
+            read.assert_called_once_with(digest)
+        with patch.object(ResearchPackages, 'export_file', side_effect=FileNotFoundError):
+            self.assertEqual(self.request('/api/research/exports/' + digest + '/file')[0], 404)
+        with patch.object(ResearchPackages, 'export_file', side_effect=ValueError('corrupt')):
+            status, raw = self.request('/api/research/exports/' + digest + '/file')
+            self.assertEqual(status, 400)
+            self.assertIn(b'integrity', raw)
+        self.assertEqual(self.request('/api/research/exports/' + digest + '/file', origin='https://foreign.test')[0], 403)
+
     def test_existing_static_health_and_jobs_contracts(self):
         self.assertEqual(self.request('/')[1], b'workspace')
         self.assertEqual(json.loads(self.request('/api/jobs')[1]), [])

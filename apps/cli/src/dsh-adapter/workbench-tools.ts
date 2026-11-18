@@ -147,6 +147,15 @@ export function createWorkbenchTools(
         if ((result.research_run as { id?: unknown } | undefined)?.id !== input.run_id) throw new Error('Saved research presentation identity did not match.')
         return { ...result, next_tool: 'workbench_inspect(resource="research_run", id=run_id)' }
       }),
+    tool('workbench_export_research', 'Prepare a downloadable research ZIP from actual completed or failed saved runs. Includes exact source snapshots, retained logs, .fqx artifacts and existing verification history. Does not execute code. Use this to deliver a package; files written only inside a temporary Python task are not automatically downloadable.',
+      schema({ run_ids: { type: 'array', minItems: 1, maxItems: 16, uniqueItems: true, items: string }, goal: { ...string, maxLength: 4000 }, request_id: string }, ['run_ids', 'goal', 'request_id']),
+      async (input, signal) => {
+        const target = binding()
+        const result = await action('research.export', input, signal, target)
+        const exported = result.export as { id?: string } | undefined
+        if (!exported?.id || !/^[a-f0-9]{64}$/.test(exported.id)) throw new Error('Research export returned an invalid identity.')
+        return { ...exported, download_url: `http://127.0.0.1:${target!.port}/api/research/exports/${exported.id}/file` }
+      }),
     ...(coordination ? [tool('workbench_research_team', 'Coordinate native research workers with durable task IDs and version-bound evidence. Inspect a research source with workbench_inspect(resource=research, id=run ID), open constraints, reserve distinct tasks, then explicitly dispatch. After constraints change, inspect or recommend an adjustment plan and wait for explicit user confirmation before dispatching new task versions. Do not reserve replacements to bypass review. Recover only observes existing native sessions and never resubmits work. Evidence links refer to saved verifier reports; they do not validate or adopt candidates. Preserve the baseline and drafts.',
       schema({ action: { type: 'string', enum: ['inspect', 'open', 'constraints', 'recommend', 'reserve', 'dispatch', 'recover', 'evidence'] },
         project_id: string, constraints: { ...string, maxLength: 4000 }, task_id: string,

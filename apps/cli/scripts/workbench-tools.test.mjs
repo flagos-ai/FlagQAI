@@ -243,3 +243,13 @@ test('current model inspection stops when the active session changes after statu
   assert.deepEqual(explicit.calls.filter(c => c.init.body).map(c => JSON.parse(c.init.body).operation), ['model.read'])
   await assert.rejects(explicit.run('workbench_inspect', { resource: 'run' }), /requires an id/)
 })
+
+test('research package export returns only a validated local download identity', async () => {
+  const digest = 'a'.repeat(64)
+  const f = fixture(() => response({ export: { id: digest, sha256: digest, bytes: 123 } }))
+  const exported = await f.run('workbench_export_research', { run_ids: ['saved-run'], goal: 'QAOA', request_id: 'export-once' })
+  assert.equal(exported.download_url, `http://127.0.0.1:4188/api/research/exports/${digest}/file`)
+  assert.deepEqual(JSON.parse(f.calls.at(-1).init.body), { run_ids: ['saved-run'], goal: 'QAOA', request_id: 'export-once', ...binding, operation: 'research.export' })
+  const invalid = fixture(() => response({ export: { id: '../unsafe' } }))
+  await assert.rejects(invalid.run('workbench_export_research', {}), /invalid identity/)
+})

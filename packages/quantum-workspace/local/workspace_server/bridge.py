@@ -19,11 +19,12 @@ class BridgeConflict(ValueError):
 
 
 class WorkspaceBridge:
-    def __init__(self, settings, service, python_runs=None):
+    def __init__(self, settings, service, python_runs=None, research_packages=None):
         self.settings = settings
         self.root = settings.agent_cwd or settings.web_root.parent
         self.service = service
         self.python_runs = python_runs
+        self.research_packages = research_packages
         self.path = settings.database_path.with_suffix('.bridge.sqlite3')
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.lock = threading.RLock()
@@ -140,7 +141,7 @@ class WorkspaceBridge:
                 result = (self.python_runs.experiments.get(data.get('job_id')) or {}).get('job')
             if not result: raise ValueError('Job not found.')
             return result
-        if operation not in ('model.create', 'model.share', 'compile', 'run', 'focus', 'python.run', 'python.cancel', 'project.run', 'experiment.compare', 'research.present'):
+        if operation not in ('model.create', 'model.share', 'compile', 'run', 'focus', 'python.run', 'python.cancel', 'project.run', 'experiment.compare', 'research.present', 'research.export'):
             raise ValueError('Unsupported workbench action.')
         key = data.get('request_id')
         if not isinstance(key, str) or not re.fullmatch(r'[a-zA-Z0-9-]{1,128}', key):
@@ -177,6 +178,10 @@ class WorkspaceBridge:
             db.execute('UPDATE deliveries SET outcome=? WHERE id=?', (json.dumps(result), key))
 
     def execute(self, operation, data, context):
+        if operation == 'research.export':
+            if not self.research_packages:
+                raise ValueError('Research export unavailable.')
+            return {'export': self.research_packages.prepare_export(data.get('run_ids'), data.get('goal'))}
         if operation == 'research.present':
             # Validate the saved record again before recording a navigation target.
             record = self.act({'client': context['client'], 'session': context['session'],
