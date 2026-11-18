@@ -1,3 +1,4 @@
+import { ToolbarMenu } from "./components/ToolbarMenu";
 import { ComputeEnvironment } from "./components/ComputeEnvironment";
 import { ResearchPackages } from "./components/ResearchPackages";
 import { ExecutionBackend } from "./components/ExecutionBackend";
@@ -361,12 +362,14 @@ export default function App() {
         >
           <span className="fq-brand">FlagQuantum</span>
         </a>
-        <button className="fq-header-guide" onClick={() => setGuide(true)}>
-          User Guide ↗
-        </button>
-        <WorkspaceBackups state={state} dispatch={dispatch} />
-        <ResearchPackages dispatch={dispatch} />
-        <ComputeEnvironment backend={backend} />
+        <div className="fq-header-tools">
+          <ComputeEnvironment backend={backend} />
+          <ToolbarMenu label="Workspace actions">
+            <ResearchPackages dispatch={dispatch} />
+            <WorkspaceBackups state={state} dispatch={dispatch} />
+            <button onClick={() => setGuide(true)}>User Guide ↗</button>
+          </ToolbarMenu>
+        </div>
         <div className="fq-header-partners" aria-label="BAAI and FlagOS">
           <img
             className="fq-partner-baai"
