@@ -59,6 +59,10 @@ def main():
                     time.sleep(0.1)
                 assert result['status'] == 'completed', result
                 assert result['collection_status'] == 'completed', result
+                check = result['notebook_environment']
+                assert check['status'] == 'ready'
+                assert check['source_hash'] == result['project']['snapshot_hash']
+                assert check['research_executed'] is False
                 saved = next(item for item in result['experiments']
                              if item['filename'] == 'last-observed-run.fqx')
                 archive = runs.experiments.file(saved['id'])
@@ -67,10 +71,24 @@ def main():
                 replay = fq.run(loaded.program)
                 torch.testing.assert_close(replay.statevector(), loaded.result.statevector(), atol=1e-10, rtol=0)
                 assert len(runs.store.list()) == 1
+                # Re-check edited code against the same real SDK; a missing
+                # dependency must be rejected before another run is queued.
+                entry = runs.projects.read(copy['project']['id'], copy['file']['path'])
+                changed = runs.projects.write(copy['project']['id'], entry['path'],
+                    'import definitely_missing_notebook_acceptance_dependency\n' + entry['source'], entry['revision'])
+                try:
+                    runs.submit_project({'project_id': copy['project']['id'], 'entry': entry['path']})
+                except ValueError as error:
+                    assert 'definitely_missing_notebook_acceptance_dependency' in str(error)
+                else:
+                    raise AssertionError('Missing dependency was not blocked')
+                assert len(runs.store.list()) == 1
+                assert runs.projects.read(copy['project']['id'], entry['path'])['source'] == changed['source']
                 report['workflows'].append({'path': slug, 'status': result['status'],
                     'notebook_sha256': item['notebookSha256'], 'bundle_sha256': item['bundleSha256'],
                     'project_hash': result['project']['disk_hash'],
                     'elapsed_seconds': result['elapsed_seconds'], 'saved_circuit_replay': True,
+                    'environment_checked_before_submission': True, 'missing_dependency_blocked': True,
                     'stdout': ''.join(log['text'] for log in result['logs'] if log['stream'] == 'stdout')})
             finally:
                 runs.close()

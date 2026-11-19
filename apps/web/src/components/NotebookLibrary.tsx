@@ -11,6 +11,7 @@ import { AgentMarkdown } from "./AgentMarkdown";
 import { CodeExample } from "./CodeExample";
 import { Modal } from "./Modal";
 import { CloseButton } from "./CloseButton";
+import { projectsAPI, type NotebookEnvironment } from "../api/projects";
 
 const featured = [
   "community/basic_examples/superposition",
@@ -29,6 +30,41 @@ export function NotebookLibrary({
   const [document, setDocument] = useState<NotebookDocument>();
   const [error, setError] = useState("");
   const [creating, setCreating] = useState(false);
+  const [environment, setEnvironment] = useState<NotebookEnvironment>();
+  const [checking, setChecking] = useState(false);
+  const checkRequest = useRef<AbortController | undefined>(undefined);
+  useEffect(() => {
+    const invalidate = () => {
+      checkRequest.current?.abort();
+      setEnvironment(undefined);
+      setChecking(false);
+    };
+    invalidate();
+    window.addEventListener("fq-compute-environment-changed", invalidate);
+    return () => {
+      invalidate();
+      window.removeEventListener("fq-compute-environment-changed", invalidate);
+    };
+  }, [selected]);
+  const check = async () => {
+    if (!selected || checking) return;
+    const controller = new AbortController();
+    checkRequest.current = controller;
+    setChecking(true);
+    setEnvironment(undefined);
+    setError("");
+    try {
+      const value = await projectsAPI.checkNotebook(
+        selected.id,
+        controller.signal,
+      );
+      if (!controller.signal.aborted) setEnvironment(value);
+    } catch (problem) {
+      if (!controller.signal.aborted) setError(String(problem));
+    } finally {
+      if (!controller.signal.aborted) setChecking(false);
+    }
+  };
   const request = useRef(crypto.randomUUID().replaceAll("-", ""));
   const lock = useRef(false);
   useEffect(() => {
@@ -144,13 +180,71 @@ export function NotebookLibrary({
           </div>
           {error && <p role="alert">{error}</p>}
           <div className="fq-notebook-pages">
+            <div className="fq-notebook-environment">
+              <button disabled={checking} onClick={() => void check()}>
+                {checking ? "Checking environment…" : "Check environment"}
+              </button>
+              <span role="status" aria-label="Notebook environment status">
+                {environment
+                  ? {
+                      ready: "Required imports and SDK APIs available",
+                      sdk_incompatible: "SDK incompatible",
+                      missing_dependencies: "Dependencies missing",
+                      unavailable: "Environment check unavailable",
+                    }[environment.status]
+                  : "Current environment not checked"}
+              </span>
+              {environment && (
+                <details open={environment.status !== "ready"}>
+                  <summary>
+                    {environment.status === "ready"
+                      ? "Check details"
+                      : "Prepare environment"}
+                  </summary>
+                  <p>
+                    {environment.transport} · Python{" "}
+                    {environment.runtime?.python || "unknown"} · SDK{" "}
+                    {environment.runtime?.sdk_version || "unknown"} ·{" "}
+                    {environment.timeout_seconds}s run limit
+                  </p>
+                  {environment.error && <p>{environment.error}</p>}
+                  {[
+                    ...(environment.incompatible_sdk || []),
+                    ...(environment.missing_dependencies || []),
+                  ].map((item) => (
+                    <p key={item.name}>
+                      <strong>{item.name}</strong>: {item.detail}
+                    </p>
+                  ))}
+                  {environment.notes.map((note) => (
+                    <p key={note}>{note}</p>
+                  ))}
+                  {environment.status !== "ready" && (
+                    <>
+                      <p>{environment.preparation.guidance}</p>
+                      <CodeExample
+                        title="Run manually on the compute host"
+                        code={environment.preparation.commands}
+                        language="plain"
+                      />
+                      {!!environment.preparation.unmapped_imports.length && (
+                        <p>
+                          Check the workflow documentation for:{" "}
+                          {environment.preparation.unmapped_imports.join(", ")}
+                        </p>
+                      )}
+                    </>
+                  )}
+                </details>
+              )}
+            </div>
             <details className="fq-notebook-scope">
               <summary>Scope and environment</summary>
               <p>{selected.scope}</p>
               <p>Imports: {selected.imports.join(", ")}</p>
               <p>
                 Upstream acceptance is historical evidence. Your selected
-                environment has not been verified for this workflow. Creating a
+                environment is checked separately for this workflow. Creating a
                 copy does not execute or install anything; review it, check the
                 compute environment, then run Python explicitly.
               </p>

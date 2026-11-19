@@ -1739,3 +1739,13 @@
 .fq-notebook-scope {
   font-size: 12px;
 }
+.fq-notebook-environment {
+  margin-block: 0 12px;
+  font-size: 12px;
+}
+.fq-notebook-environment > button {
+  margin-right: 10px;
+}
+.fq-notebook-environment > details {
+  margin-top: 8px;
+}
