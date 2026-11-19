@@ -36,6 +36,12 @@ test("Agent task summary names the live step and keeps the finished checklist", 
   await expect(summary).toContainText("Tasks 0/3");
   await expect(summary).toContainText("Inspect circuit");
   await expect(summary).not.toContainText("Review gate semantics");
+  const live = page.locator(".fq-agent-work-live");
+  await expect(live).toBeVisible();
+  await expect(live.locator(".fq-live-activity-summary strong")).toBeVisible();
+  await expect(live.locator(".fq-live-activity-preview")).toContainText(
+    "Inspect circuit",
+  );
   await expect(checklist).not.toHaveAttribute("open");
   await summary.press("Enter");
   await expect(checklist.getByRole("listitem")).toHaveCount(3);

@@ -736,7 +736,12 @@ test("scripted Agent streams tools, survives lost receipt + refresh, and protect
     const work = page.locator(".fq-agent-work-live");
     const summary = work.locator(":scope > summary");
     const tool = work.locator(".fq-cli-tool").first();
-    await expect(summary).toContainText("Work details");
+    await expect(
+      summary.locator(".fq-live-activity-summary strong"),
+    ).toBeVisible();
+    await expect(summary.locator(".fq-live-activity-preview")).not.toHaveText(
+      "",
+    );
     await expect(work).not.toHaveAttribute("open");
     await expect(tool).toBeHidden();
     await summary.press("Enter");
