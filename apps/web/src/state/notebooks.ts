@@ -21,7 +21,8 @@ export function parseNotebook(value: unknown): NotebookDocument {
     throw Error("Unsupported notebook format.");
   for (const cell of notebook.cells) {
     if (
-      !cell || !["markdown", "code", "raw"].includes(cell.cell_type) ||
+      !cell ||
+      !["markdown", "code", "raw"].includes(cell.cell_type) ||
       !(
         typeof cell.source === "string" ||
         (Array.isArray(cell.source) &&

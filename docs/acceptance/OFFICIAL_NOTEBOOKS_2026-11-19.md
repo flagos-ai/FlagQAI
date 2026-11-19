@@ -64,6 +64,9 @@ is a successful execution, not evidence of convergence or a global optimum.
 Browser acceptance checked desktop and narrow reader layouts, no implicit
 execution, a lost copy response followed by retry, refresh with retained scratch
 draft, and explicit Python execution with a source-bound collected artifact.
+The default CI SDK pin predates `synth`; its browser run instead checks the
+explicit missing-module failure with the editable project retained. Set
+`FQ_NOTEBOOK_SDK=compatible` only for the pinned notebook SDK success probe.
 
 Regenerate and validate explicitly with an SDK checkout at the pinned revision:
 
@@ -74,7 +77,8 @@ PYTHONPATH=packages/quantum-workspace/local python -m unittest discover \
 PYTHONPATH=/path/to/pinned-sdk MPLBACKEND=Agg \
   python packages/quantum-workspace/tests/notebook_sdk_acceptance.py
 node apps/web/scripts/build.mjs
-FQ_LOCAL_PYTHON=/path/to/python PYTHONPATH=/path/to/pinned-sdk MPLBACKEND=Agg \
+FQ_NOTEBOOK_SDK=compatible FQ_LOCAL_PYTHON=/path/to/python \
+  PYTHONPATH=/path/to/pinned-sdk MPLBACKEND=Agg \
   node apps/web/scripts/run-e2e.mjs notebooks.spec.mjs
 ```
 

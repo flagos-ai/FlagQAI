@@ -157,7 +157,8 @@ export function NotebookLibrary({
               <p>
                 Runs use the existing 90-second limit. Longer workflows need a
                 local SDK checkout. The saved circuit is the last observed
-                execution; use the workflow output to identify the best candidate.
+                execution; use the workflow output to identify the best
+                candidate.
               </p>
               {selected.unavailableReason && (
                 <p>{selected.unavailableReason}</p>
