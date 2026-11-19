@@ -4,11 +4,9 @@ import re
 from .projects import BUNDLE_LIMIT, FILE_LIMIT, TEXT_LIMIT, ProjectConflict, digest, directory, parts, read_at
 
 
-def create_notebook_project(projects, web_root, identity, request_id):
+def notebook_bundle(web_root, identity):
     if not isinstance(identity, str) or not re.fullmatch(r'[a-f0-9]{24}', identity):
         raise ValueError('Select a catalog notebook.')
-    if not isinstance(request_id, str) or not re.fullmatch(r'[a-f0-9]{32}', request_id):
-        raise ValueError('A notebook copy request identity is required.')
     catalog = json.loads((web_root / 'notebooks/catalog.json').read_text())
     item = next((item for item in catalog['entries'] if item['id'] == identity), None)
     if not item: raise ValueError('Notebook is not in the pinned catalog.')
@@ -28,6 +26,14 @@ def create_notebook_project(projects, web_root, identity, request_id):
     if bundle['entry'] not in files: raise ValueError('Notebook entry is missing.')
     notebook = (web_root / 'notebooks' / (identity + '.ipynb')).read_bytes()
     if digest(notebook) != item['notebookSha256']: raise ValueError('Notebook checksum changed.')
+    return catalog, item, bundle, notebook
+
+
+def create_notebook_project(projects, web_root, identity, request_id):
+    if not isinstance(request_id, str) or not re.fullmatch(r'[a-f0-9]{32}', request_id):
+        raise ValueError('A notebook copy request identity is required.')
+    catalog, item, bundle, notebook = notebook_bundle(web_root, identity)
+    files = bundle['files']
     # Stable request identity makes a lost response retry the same project.
     # Existing files must remain identical: never replace an edited research copy.
     slug = '-'.join(item['path'].split('/')[-2:]).replace('_', '-')

@@ -1,0 +1,42 @@
+{
+  "source_revision": "fb7c05184085f829f282780618014001a3da1714",
+  "sdk_version": "0.4.0",
+  "workflows": [
+    {
+      "path": "community/basic_examples/superposition",
+      "status": "completed",
+      "notebook_sha256": "39ff78ca2ccf8180d4f83134ceae8b57c197e0afe37b91e9f4d5791c95c57448",
+      "bundle_sha256": "d43f9c6264601fb6ad85c4ac4da4f3ce18d489ad8e1f04383a3376e60d01a163",
+      "project_hash": "25cb09fcbe38223304b4dd00ec9d3a3428a495de230022aabd7aeccc8b5f7e4d",
+      "elapsed_seconds": 1.028,
+      "saved_circuit_replay": true,
+      "environment_checked_before_submission": true,
+      "missing_dependency_blocked": true,
+      "stdout": "0: \u2500\u2500\u2500H\u2500\u2500\u2524\n1: \u2500\u2500\u2500H\u2500\u2500\u2524\n2: \u2500\u2500\u2500H\u2500\u2500\u2524\n{(0,): 0.12499999999999994, (1,): 0.12499999999999994, (2,): 0.12499999999999994, (3,): 0.12499999999999994, (4,): 0.12499999999999994, (5,): 0.12499999999999994, (6,): 0.12499999999999994, (7,): 0.12499999999999994}\nSaved last observed fq.run execution; see workflow output for scientific conclusions.\n"
+    },
+    {
+      "path": "algorithms/search_and_optimization/qaoa/overview",
+      "status": "completed",
+      "notebook_sha256": "7b010784554d1dcd127bebf7a894a4565dd3c9850f3b250f158c4e516c683bef",
+      "bundle_sha256": "d10bf13dd87f2e2fb14bf0a8d04f5748cb9c10ef841641cbadd7e6c917b1e9ef",
+      "project_hash": "686008ec617af6b36430245c80820877cd1109ac89e6c5c00cb2050b2843f024",
+      "elapsed_seconds": 37.518,
+      "saved_circuit_replay": true,
+      "environment_checked_before_submission": true,
+      "missing_dependency_blocked": true,
+      "stdout": "section maxcut\ninitial_cost -0.4392273383398925\nfinal_cost -0.6629372924431002\niterations 60\nactual_evaluations 93\nconverged False\nbest_observed_feasible Sample(assignment=(12,), cost=-0.8333333333333334, feasible=True, count=91)\nresources ResourceEstimate(n_qubits=5, used_qubits=5, n_operations=64, operation_counts={'u3': 5, 'cphase': 24, 'rx': 20, 'phase': 15}, max_operation_width=2, depth=25, per_qubit_depth=(25, 25, 24, 24, 22), t_count=0, t_depth=0, channel_count=0, basis='static_instruction_sequence', conversion_identity=None)\nsection knapsack\ninitial_cost -5.791015624999729\nfinal_cost -10.338067362779283\niterations 60\nactual_evaluations 96\nconverged False\nbest_observed_feasible Sample(assignment=(3, 2), cost=-19.0, feasible=True, count=14)\nresources ResourceEstimate(n_qubits=5, used_qubits=5, n_operations=852, operation_counts={'u3': 20, 'rz': 7, 'cphase': 423, 'h': 327, 'cx': 75}, max_operation_width=2, depth=721, per_qubit_depth=(716, 721, 719, 721, 700), t_count=0, t_depth=0, channel_count=0, basis='static_instruction_sequence', conversion_identity=None)\nSaved last observed fq.run execution; see workflow output for scientific conclusions.\n"
+    },
+    {
+      "path": "applications/chemistry/molecule_eigensolver/overview",
+      "status": "completed",
+      "notebook_sha256": "66725a0fba6a4930c881e7892b69542b2c5571cb9f9dad486676c59e8b82b6d4",
+      "bundle_sha256": "eec4af9948d4996ffdf895a2a6a0132b0bf178a676494964844501cdf3c7d4fd",
+      "project_hash": "5e51eb7198bd3a25c70d29c57064ad175225d594e21f647f864765efa697d510",
+      "elapsed_seconds": 1.237,
+      "saved_circuit_replay": true,
+      "environment_checked_before_submission": true,
+      "missing_dependency_blocked": true,
+      "stdout": "Hydrogen distance and basis: 0.735 sto-3g\nShots per Pauli basis and iteration ceiling: 1000000 200\nHardware-efficient resources: ResourceEstimate(n_qubits=4, used_qubits=4, n_operations=35, operation_counts={'rz': 14, 'u3': 10, 'rx': 2, 'cx': 9}, max_operation_width=2, depth=14, per_qubit_depth=(14, 14, 13, 12), t_count=0, t_depth=0, channel_count=0, basis='static_instruction_sequence', conversion_identity=None)\nTapered UCCSD resources: ResourceEstimate(n_qubits=1, used_qubits=1, n_operations=2, operation_counts={'u3': 1, 'rz': 1}, max_operation_width=1, depth=2, per_qubit_depth=(2,), t_count=0, t_depth=0, channel_count=0, basis='static_instruction_sequence', conversion_identity=None)\nOptimizer evaluations, iterations, converged: 63 41 True\nOptimized angle: -0.2270512580871582\nReported finite-shot energy: -1.137855872750651\nExact expectation at that angle: -1.1373009958264562\nFull CI energy: -1.1373060357534144\nSaved last observed fq.run execution; see workflow output for scientific conclusions.\n"
+    }
+  ]
+}

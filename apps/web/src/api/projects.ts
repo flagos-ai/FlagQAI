@@ -24,6 +24,8 @@ async function request<T>(
   return value;
 }
 export const projectsAPI = {
+  checkNotebook: (id: string, signal?: AbortSignal) =>
+    request<NotebookEnvironment>("/notebook/check", { id }, signal),
   notebook: (id: string, requestId: string) =>
     request<{ project: ProjectInfo; file: ProjectFile }>("/notebook", {
       id,
@@ -54,4 +56,22 @@ export const projectsAPI = {
     }),
   artifact: (id: string, path: string) =>
     request<ExperimentImport>("/" + id + "/artifact", { path }),
+};
+
+export type NotebookEnvironment = {
+  status: "ready" | "sdk_incompatible" | "missing_dependencies" | "unavailable";
+  environment_revision: number;
+  transport: string;
+  timeout_seconds: number;
+  source_hash: string;
+  runtime?: { sdk_version?: string; python?: string };
+  incompatible_sdk?: { name: string; detail: string }[];
+  missing_dependencies?: { name: string; detail: string }[];
+  notes: string[];
+  error?: string;
+  preparation: {
+    commands: string;
+    guidance: string;
+    unmapped_imports: string[];
+  };
 };

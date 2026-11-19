@@ -25,7 +25,8 @@ from .research_baseline import update_baseline
 from .research_candidates import propose_candidate
 from .research_execution import decide_candidate
 from .reproduction import Reproductions
-from .notebooks import create_notebook_project
+from .notebooks import create_notebook_project, notebook_bundle
+from .notebook_environment import check_environment
 from .projects import ProjectConflict
 
 
@@ -391,6 +392,10 @@ def create_server(settings, service):
                     if self.headers.get('Content-Type', '').split(';')[0] != 'application/json' or not 0 < length <= 128 * 1024:
                         raise ValueError('Use a bounded JSON project request.')
                     data = json.loads(self.rfile.read(length))
+                    if self.path == '/api/projects/notebook/check':
+                        _, _, bundle, _ = notebook_bundle(settings.web_root, data.get('id'))
+                        report, _ = check_environment(python_runs, bundle['files'], bundle['entry'])
+                        return self.reply(report)
                     if self.path == '/api/projects/notebook':
                         return self.reply(create_notebook_project(python_runs.projects, settings.web_root, data.get('id'), data.get('request_id')))
                     if self.path == '/api/projects': return self.reply(python_runs.projects.open(data.get('path'), data.get('create') is True))

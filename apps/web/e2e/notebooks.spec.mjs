@@ -44,6 +44,21 @@ test("official notebook reading and lost copy receipt preserve drafts and submit
       .first(),
   ).toBeVisible();
   await expect(dialog.locator(".fq-notebook-cell")).not.toHaveCount(0);
+  await dialog
+    .getByRole("button", { name: "Check environment", exact: true })
+    .click();
+  await expect(
+    dialog.getByRole("status", { name: "Notebook environment status" }),
+  ).toHaveText(
+    compatible ? "Required imports and SDK APIs available" : "SDK incompatible",
+    { timeout: 45000 },
+  );
+  if (!compatible) {
+    await expect(
+      dialog.getByText("Prepare environment", { exact: true }),
+    ).toBeVisible();
+    await expect(dialog.getByText(/Use a verified SDK build/)).toBeVisible();
+  }
   expect(await dialog.locator("script, iframe").count()).toBe(0);
   expect(await createdRuns()).toHaveLength(0);
   await page.setViewportSize({ width: 520, height: 700 });
@@ -102,6 +117,16 @@ test("official notebook reading and lost copy receipt preserve drafts and submit
   );
   expect(stored).toBeTruthy();
   await page.getByRole("button", { name: /^(Run Python|Save & run)$/ }).click();
+  if (!compatible) {
+    await expect(
+      page.getByText(
+        /Notebook environment check:.*No research code was executed/,
+      ),
+    ).toBeVisible({ timeout: 45000 });
+    expect(await createdRuns()).toHaveLength(0);
+    await expect(editor(page)).toHaveValue(/runpy.run_module/);
+    return;
+  }
   await expect
     .poll(
       async () => {
@@ -110,7 +135,7 @@ test("official notebook reading and lost copy receipt preserve drafts and submit
       },
       { timeout: 90000 },
     )
-    .toBe(compatible ? "completed" : "failed");
+    .toBe("completed");
   const runs = await createdRuns();
   expect(runs).toHaveLength(1);
   const result = await page.request
@@ -121,19 +146,9 @@ test("official notebook reading and lost copy receipt preserve drafts and submit
       file.path.endsWith("superposition/main.py"),
     ),
   ).toBeTruthy();
-  if (compatible) {
-    expect(
-      result.experiments.some(
-        (file) => file.filename === "last-observed-run.fqx",
-      ),
-    ).toBeTruthy();
-  } else {
-    // The existing CI SDK pin predates synth. Keep its failure explicit and
-    // retain the editable research copy instead of claiming execution success.
-    expect(result.logs.map((log) => log.text).join("")).toMatch(
-      /No module named ['"]flagquantum\.synth['"]/,
-    );
-    expect(result.experiments).toEqual([]);
-    await expect(editor(page)).toHaveValue(/runpy.run_module/);
-  }
+  expect(
+    result.experiments.some(
+      (file) => file.filename === "last-observed-run.fqx",
+    ),
+  ).toBeTruthy();
 });

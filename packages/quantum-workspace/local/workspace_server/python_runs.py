@@ -134,14 +134,26 @@ with tempfile.TemporaryDirectory(prefix='fq-sdk-preflight-') as directory:
     def submit_project(self, data):
         bundle = self.projects.snapshot(data.get('project_id'), data.get('entry'),
             source=data.get('source'), expected_revision=data.get('expected_revision'), expected_hash=data.get('expected_hash'))
+        checked = None
+        if bundle['project']['path'].startswith('notebook-copies/'):
+            from .notebook_environment import check_environment
+            report, selected = check_environment(self, bundle['files'], bundle['entry'])
+            if report['status'] != 'ready':
+                details = [item['name'] for item in report.get('incompatible_sdk', []) + report.get('missing_dependencies', [])]
+                raise ValueError('Notebook environment check: ' + (', '.join(details) or report.get('error', report['status']))
+                                 + '. Select a compatible SDK and install the required dependencies in Compute environment, then retry. No research code was executed.')
+            checked = (selected, report)
         return self.submit({'source': bundle['files'][bundle['entry']],
-                            'name': data.get('name') or bundle['entry']}, bundle=bundle)
+                            'name': data.get('name') or bundle['entry']}, bundle=bundle, checked=checked)
 
-    def submit(self, data, bundle=None):
+    def submit(self, data, bundle=None, checked=None):
         diagnostic = self.validate(data.get('source'))
         # The selected runtime is authoritative for syntax (it may be newer than the host).
         environments = getattr(self.quantum, 'environments', None)
-        if environments:
+        if checked:
+            selected, report = checked
+            environment = {**self.environment(selected), 'configuration_revision': report['environment_revision']}
+        elif environments:
             with environments.lock:
                 selected = environments.snapshot()
                 environment = {**self.environment(selected), 'configuration_revision': environments.revision}
@@ -154,6 +166,8 @@ with tempfile.TemporaryDirectory(prefix='fq-sdk-preflight-') as directory:
                 'source':data['source'], 'source_hash':source_hash(data['source']), 'status':'queued', 'created_at':time.time(), 'logs':[],
                 'experiments':[], 'collection_errors':[], 'collection_status':'pending',
                 'environment':environment}
+            if checked:
+                run['notebook_environment'] = report
             if bundle is not None:
                 run['project'] = bundle['project']
                 inputs = self.settings.database_path.parent / 'python-inputs'
