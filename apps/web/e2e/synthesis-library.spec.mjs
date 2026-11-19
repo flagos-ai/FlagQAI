@@ -18,6 +18,7 @@ test("official synthesis copies preserve drafts and report the selected SDK's ac
   const builderRuns = new Set(
     (await get("/api/python/runs")).map((run) => run.id),
   );
+  await page.getByRole("button", { name: "Examples", exact: true }).click();
   const library = page.getByRole("region", {
     name: "Synthesis examples",
     exact: true,
@@ -77,6 +78,7 @@ test("official synthesis copies preserve drafts and report the selected SDK's ac
     page.getByText("No models match your search.", { exact: false }),
   ).toHaveCount(0);
   await search.fill("");
+  await page.getByRole("button", { name: "My files", exact: true }).click();
   await expect(
     page
       .getByRole("region", { name: "My models", exact: true })

@@ -560,14 +560,26 @@ export default function App() {
           onClose={() => setGuide(false)}
         >
           <header>
-            <h2>From model to measurement.</h2>
+            <h2>From question to reproducible result.</h2>
             <CloseButton label="Close guide" onClick={() => setGuide(false)} />
           </header>
           <ol>
-            <li>Edit or upload OpenQASM or Python in Model.</li>
-            <li>Compile OpenQASM, or Run Python and publish its circuit.</li>
-            <li>Set shots and seed, then run a CPU simulation.</li>
-            <li>Inspect results and export JSON, CSV or a notebook.</li>
+            <li>
+              Open an independent example copy, write Python or import OpenQASM
+              in Model.
+            </li>
+            <li>
+              Run Python with the selected compute environment, or compile a
+              gate-level circuit. Saving or opening code does not run it.
+            </li>
+            <li>
+              Use Execution to run the compiled circuit with the supported
+              backend, shots and seed.
+            </li>
+            <li>
+              Compare saved results in Jobs and export a research package with
+              the code, artifacts and verification history.
+            </li>
           </ol>
           <p>
             Computation uses the configured local adapter. Quantum hardware is

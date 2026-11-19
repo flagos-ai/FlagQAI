@@ -1,7 +1,12 @@
+import { ToolbarMenu } from "./ToolbarMenu";
 import { ModelFolderLibrary } from "./ModelFolderLibrary";
 import { modelFolderTree } from "../state/model-folders";
 import { SynthesisExampleLibrary } from "./SynthesisExampleLibrary";
-import { matchingSynthesisExamples } from "../state/synthesis-catalog";
+import {
+  matchingSynthesisExamples,
+  synthesisExamples,
+  synthesisExampleCopy,
+} from "../state/synthesis-catalog";
 import { qaoaTaskName, qaoaSource } from "../tasks/qaoa-maxcut.mjs";
 import { UIIcon } from "./UIIcon";
 import { CodeExample } from "./CodeExample";
@@ -50,6 +55,15 @@ export function ModelLibrary({
       }
       return "models";
     }),
+    [libraryView, setLibraryView] = useState<"files" | "examples">(() => {
+      try {
+        return localStorage.getItem("fq-model-library-view-v1") === "examples"
+          ? "examples"
+          : "files";
+      } catch {
+        return "files";
+      }
+    }),
     [query, setQuery] = useState(""),
     [prompt, setPrompt] = useState(""),
     [candidate, setCandidate] = useState<Model | null>(null);
@@ -66,6 +80,13 @@ export function ModelLibrary({
   const folderMatches = term
     ? modelFolderTree(models, folders, term)
     : folderPaths;
+  useEffect(() => {
+    try {
+      localStorage.setItem("fq-model-library-view-v1", libraryView);
+    } catch {
+      /* Navigation remains usable without storage. */
+    }
+  }, [libraryView]);
   const clearSearch = () => {
     setQuery("");
     search.current?.focus({ preventScroll: true });
@@ -109,14 +130,55 @@ export function ModelLibrary({
       ) : tab === "models" ? (
         <div className="fq-library-body fq-model-library">
           <div className="fq-model-library-tools">
-            <button
-              className="outline"
-              disabled={busy}
-              onClick={() => upload.current?.click()}
-            >
-              <UIIcon name="upload" size={14} />
-              {importing ? "Importing file…" : "Import model or experiment"}
-            </button>
+            <div className="fq-library-create-row">
+              <ToolbarMenu
+                label="New Model"
+                closeOnSelect
+                trigger={
+                  <>
+                    <UIIcon name="plus" size={14} />
+                    <span>New Model</span>
+                  </>
+                }
+              >
+                <button
+                  onClick={() =>
+                    onSelect({
+                      name: "Untitled Model",
+                      source: examples[0].source,
+                      language: "python",
+                      pythonStyle: "gates",
+                    })
+                  }
+                >
+                  Gate-level circuit
+                </button>
+                <button
+                  onClick={() => {
+                    const starter = synthesisExamples.find(
+                      (item) => item.id === "functions/qft" && item.source,
+                    );
+                    if (starter)
+                      onSelect({
+                        ...synthesisExampleCopy(starter, models),
+                        pythonStyle: "synthesis",
+                      });
+                  }}
+                >
+                  High-level synthesis
+                </button>
+              </ToolbarMenu>
+              <button
+                className="fq-model-import"
+                aria-label="Import model or experiment"
+                title="Import Python / OpenQASM (up to 32 KiB) or .fqx (up to 16 MiB)"
+                disabled={busy || importing}
+                onClick={() => upload.current?.click()}
+              >
+                <UIIcon name="upload" size={14} />
+                <span>{importing ? "Importing…" : "Import"}</span>
+              </button>
+            </div>
             <input
               hidden
               type="file"
@@ -127,12 +189,11 @@ export function ModelLibrary({
                 e.target.value = "";
               }}
             />
-            <small>Python / OpenQASM: up to 32 KiB · .fqx: up to 16 MiB</small>
             <div className="fq-library-search">
               <input
                 ref={search}
                 aria-label="Search models"
-                placeholder="⌕ Search models"
+                placeholder="Search files and examples"
                 value={query}
                 maxLength={128}
                 onKeyDown={(event) => {
@@ -160,6 +221,41 @@ export function ModelLibrary({
               )}
             </div>
           </div>
+          <div
+            className="fq-library-view-switch"
+            role="group"
+            aria-label="Model library view"
+          >
+            <button
+              aria-pressed={libraryView === "files"}
+              onClick={() => {
+                setLibraryView("files");
+                setQuery("");
+              }}
+            >
+              My files
+            </button>
+            <button
+              aria-pressed={libraryView === "examples"}
+              onClick={() => {
+                setLibraryView("examples");
+                setQuery("");
+              }}
+            >
+              Examples
+            </button>
+          </div>
+          {(term || libraryView === "files") &&
+            (!term || folderMatches.length > 0) && (
+              <ModelFolderLibrary
+                models={models}
+                tree={folderMatches}
+                paths={folderPaths}
+                searching={!!term}
+                onSelect={onSelect}
+                dispatch={dispatch}
+              />
+            )}
           {!visibleExamples.length &&
             !folderMatches.length &&
             !synthesisMatches.length &&
@@ -169,85 +265,66 @@ export function ModelLibrary({
                 search.
               </p>
             )}
-          {(!term || visibleExamples.length > 0) && (
-            <section
-              className="fq-model-library-group"
-              aria-label="Example models"
-            >
-              <small className="eyebrow">EXAMPLES</small>
-              {visibleExamples.map((m) => (
-                <button
-                  className="fq-library-card"
-                  key={m.name}
-                  onClick={() => onSelect(openCircuitExample(m))}
+          {(term || libraryView === "examples") && (
+            <>
+              {(!term || visibleExamples.length > 0) && (
+                <section
+                  className="fq-model-library-group"
+                  aria-label="Example models"
                 >
-                  <span className="fq-library-title">
-                    <UIIcon name="file" size={14} />
-                    {m.name}
-                  </span>
-                  <small>
-                    {circuitExampleCaption(m) ??
-                      (m.name.includes("Arithmetic")
-                        ? "Superposition · res = 3x + 2"
-                        : "Python · Quantum circuit")}
-                  </small>
-                </button>
-              ))}
-            </section>
+                  <small className="eyebrow">EXAMPLES</small>
+                  {visibleExamples.map((m) => (
+                    <button
+                      className="fq-library-card"
+                      key={m.name}
+                      onClick={() => onSelect(openCircuitExample(m))}
+                    >
+                      <span className="fq-library-title">
+                        <UIIcon name="file" size={14} />
+                        {m.name}
+                      </span>
+                      <small>
+                        {circuitExampleCaption(m) ??
+                          (m.name.includes("Arithmetic")
+                            ? "Superposition · res = 3x + 2"
+                            : "Python · Quantum circuit")}
+                      </small>
+                    </button>
+                  ))}
+                </section>
+              )}
+              {showReferenceTask && (
+                <section
+                  className="fq-model-library-group"
+                  aria-label="Reference research task"
+                >
+                  <small className="eyebrow">RESEARCH WORKFLOW</small>
+                  <button
+                    className="fq-library-card"
+                    onClick={() =>
+                      onSelect({
+                        name: qaoaTaskName,
+                        source: qaoaSource,
+                        language: "python",
+                      })
+                    }
+                  >
+                    <span className="fq-library-title">
+                      <UIIcon name="circuit" size={14} />
+                      {qaoaTaskName}
+                    </span>
+                    <small>Optimize · Compare · Save and replay</small>
+                  </button>
+                </section>
+              )}
+              <SynthesisExampleLibrary
+                query={query}
+                matches={synthesisMatches}
+                models={models}
+                onSelect={onSelect}
+              />
+            </>
           )}
-          {showReferenceTask && (
-            <section
-              className="fq-model-library-group"
-              aria-label="Reference research task"
-            >
-              <small className="eyebrow">RESEARCH WORKFLOW</small>
-              <button
-                className="fq-library-card"
-                onClick={() =>
-                  onSelect({
-                    name: qaoaTaskName,
-                    source: qaoaSource,
-                    language: "python",
-                  })
-                }
-              >
-                <span className="fq-library-title">
-                  <UIIcon name="circuit" size={14} />
-                  {qaoaTaskName}
-                </span>
-                <small>Optimize · Compare · Save and replay</small>
-              </button>
-            </section>
-          )}
-          {(!term || folderMatches.length > 0) && (
-            <ModelFolderLibrary
-              models={models}
-              tree={folderMatches}
-              paths={folderPaths}
-              searching={!!term}
-              onSelect={onSelect}
-              dispatch={dispatch}
-            />
-          )}
-          <button
-            className="secondary"
-            onClick={() =>
-              onSelect({
-                name: "Untitled Model",
-                source: examples[0].source,
-                language: "python",
-              })
-            }
-          >
-            <UIIcon name="plus" size={14} />
-            New Model
-          </button>
-          <SynthesisExampleLibrary
-            query={query}
-            matches={synthesisMatches}
-            models={models}
-            onSelect={onSelect}
-          />
         </div>
       ) : (
         <div className="fq-library-body fq-template-library">
