@@ -3082,8 +3082,12 @@ test("browser backup failure preserves the last snapshot and exposes recovery wi
   expect(backup.source).toBe(liveDraft);
   expect(backup.schema).toBe("flagqai.quantum-workspace.v1");
   await expect(editor(page)).toHaveValue(liveDraft);
-  await page.evaluate(() => window.__restoreWorkspaceStorage());
-  await notice.getByRole("button", { name: "Retry backup" }).click();
+  // Restore storage and retry in the same browser task so a pending automatic
+  // save cannot remove the recovery button between these two test actions.
+  await notice.getByRole("button", { name: "Retry backup" }).evaluate((button) => {
+    window.__restoreWorkspaceStorage();
+    button.click();
+  });
   await expect(notice).toHaveCount(0);
   await page.reload();
   await expect(editor(page)).toHaveValue(liveDraft);
