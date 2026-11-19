@@ -284,3 +284,37 @@
   border-color: var(--ui-line);
   border-radius: var(--control-radius);
 }
+
+/* Native summaries stay readable while high-frequency raw output stays folded. */
+.fq-workspace.fq-ui-controls .fq-agent-work-live > summary {
+  align-items: flex-start;
+}
+.fq-live-activity-summary {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 4px;
+}
+.fq-live-activity-summary strong {
+  color: var(--ui-text);
+  font-size: 12px;
+  font-weight: 500;
+}
+.fq-live-activity-preview {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--ui-muted);
+}
+.fq-agent-work-live[open] .fq-live-activity-preview {
+  display: none;
+}
+.fq-live-activity-empty {
+  color: var(--ui-muted);
+  font-size: 11px;
+}

@@ -1,3 +1,4 @@
+import { toolPresentation } from "./agent-activity.ts";
 import { transcriptTurns } from "./agent-turns.ts";
 import type { AgentView } from "./agent-view";
 import type {
@@ -172,4 +173,49 @@ export function dockChildren(view: AgentView, roster: SessionSubagentView[]) {
       else children.delete(child.id);
     }
   return [...children.values()];
+}
+
+/** A bounded native-event summary, never an estimate of scientific progress. */
+export function liveActivitySummary(
+  rows: SessionViewRow[],
+  status: string,
+  currentTask?: string,
+) {
+  const task = currentTask ? `Current task · ${currentTask}` : "";
+  const withTask = (detail: string) =>
+    [detail, task].filter(Boolean).join(" · ");
+  if (status !== "Working") return { label: status, detail: "" };
+  const active = [...rows]
+    .reverse()
+    .find(
+      (row) => row.tool && ["running", "pending"].includes(row.tool.status),
+    );
+  if (active?.tool) {
+    const tool = toolPresentation(active.tool);
+    return {
+      label: tool.label,
+      detail: withTask(tool.detail || "Waiting for tool output."),
+    };
+  }
+  const latest = [...rows]
+    .reverse()
+    .find((row) => ["reasoning", "assistant", "tool"].includes(row.kind));
+  const previous = [...rows].reverse().find((row) => row.tool)?.tool;
+  if (previous) {
+    const tool = toolPresentation(previous);
+    const failed =
+      previous.status === "error" ||
+      !!previous.errorText ||
+      (tool.exit !== undefined && tool.exit !== 0);
+    return {
+      label: latest?.kind === "reasoning" ? "Thinking" : "Working",
+      detail: withTask(
+        `Last tool · ${tool.label} · ${failed ? "Failed" : tool.status || "Finished"}${tool.detail ? " · " + tool.detail : ""}`,
+      ),
+    };
+  }
+  return {
+    label: latest?.kind === "reasoning" ? "Thinking" : "Working",
+    detail: task || "No tool activity reported yet. Expand to view details.",
+  };
 }

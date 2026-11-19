@@ -351,3 +351,43 @@ test("live activity uses the running tool, current task or last recorded tool", 
   assert.equal(currentTurnActivity({ active: true, rows: [] }), "");
   assert.equal(currentTurnActivity(undefined), "");
 });
+
+test("live activity names native tools and distinguishes waiting and historical failure", async () => {
+  const { liveActivitySummary } =
+    await import("../src/state/agent-progress.ts");
+  const rows = [
+    {
+      id: 1,
+      kind: "tool",
+      text: "",
+      tool: {
+        name: "workbench_wait_run",
+        status: "running",
+        argsText: '{"run_id":"saved-run"}',
+      },
+    },
+  ];
+  assert.equal(
+    liveActivitySummary(rows, "Working", "Inspect saved run").label,
+    "Wait for result",
+  );
+  assert.match(
+    liveActivitySummary(rows, "Working").detail,
+    /saved-run|Waiting/,
+  );
+  assert.deepEqual(liveActivitySummary(rows, "Reconnecting…"), {
+    label: "Reconnecting…",
+    detail: "",
+  });
+  assert.deepEqual(liveActivitySummary(rows, "Waiting for permission"), {
+    label: "Waiting for permission",
+    detail: "",
+  });
+  rows[0].tool.status = "error";
+  rows.push({ id: 2, kind: "reasoning", text: "Recovering" });
+  const recovery = liveActivitySummary(rows, "Working", "Inspect saved run");
+  assert.equal(recovery.label, "Thinking");
+  assert.match(recovery.detail, /Inspect saved run/);
+  assert.match(recovery.detail, /Last tool .*Failed/);
+  assert.match(liveActivitySummary([], "Working").detail, /No tool activity/);
+});

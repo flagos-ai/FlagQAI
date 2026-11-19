@@ -12,6 +12,7 @@ import {
   progressTurns,
   childRunning,
   currentTurnActivity,
+  liveActivitySummary,
 } from "../state/agent-progress";
 import {
   useCallback,
@@ -565,6 +566,12 @@ export function AgentTranscript({
             const question = turn.visible.filter((row) => row.kind === "user");
             const remaining = turn.visible.filter((row) => row.kind !== "user");
             const duration = workDuration(turn.durationMs);
+            const liveSummary = liveActivitySummary(
+              turn.rows,
+              turn.active ? runStatus : "Running subagents",
+              progress?.todos?.find((item) => item.status === "in_progress")
+                ?.content,
+            );
             const actions = bridge.actions.filter(
               (action) =>
                 action.origin !== "ui" &&
@@ -625,7 +632,8 @@ export function AgentTranscript({
                   researchTurns={researchTurns}
                 />
                 {live && progressPanel}
-                {(workRows.length > 0 ||
+                {(live ||
+                  workRows.length > 0 ||
                   (!live && (hasProgress || actions.length > 0))) && (
                   <details
                     className={
@@ -667,11 +675,23 @@ export function AgentTranscript({
                         follow.current = false;
                       }}
                     >
-                      <span>
-                        {live
-                          ? "Work details"
-                          : "Worked" + (duration ? " for " + duration : "")}
-                      </span>
+                      {live ? (
+                        <span className="fq-live-activity-summary">
+                          <strong>{liveSummary.label}</strong>
+                          {liveSummary.detail && (
+                            <span
+                              className="fq-live-activity-preview"
+                              aria-label="Current activity"
+                            >
+                              {liveSummary.detail}
+                            </span>
+                          )}
+                        </span>
+                      ) : (
+                        <span>
+                          {"Worked" + (duration ? " for " + duration : "")}
+                        </span>
+                      )}
                       <span className="fq-agent-work-count">
                         {turn.toolCount > 0
                           ? `${turn.toolCount} tool ${turn.toolCount === 1 ? "call" : "calls"}`
@@ -694,6 +714,11 @@ export function AgentTranscript({
                     </summary>
                     <div className="fq-agent-work-body">
                       {!live && progressPanel}
+                      {live && !workRows.length && (
+                        <p className="fq-live-activity-empty">
+                          No tool activity reported yet.
+                        </p>
+                      )}
                       {workRows.map(renderRow)}
                       {!live && workspaceActivity}
                     </div>
