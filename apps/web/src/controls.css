@@ -1697,3 +1697,45 @@
 .fq-workspace.fq-ui-controls .fq-toolbar-menu-items > button:hover {
   background: #ffffff0b;
 }
+
+.fq-notebook-reader {
+  display: flex;
+  flex-direction: column;
+  width: min(960px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: hidden;
+}
+.fq-notebook-reader > header,
+.fq-notebook-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.fq-notebook-reader > header {
+  justify-content: space-between;
+}
+.fq-notebook-reader h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.fq-notebook-actions {
+  flex-wrap: wrap;
+  margin-block: 12px;
+}
+.fq-notebook-pages {
+  overflow: auto;
+  min-height: 0;
+  padding-right: 8px;
+}
+.fq-notebook-cell {
+  margin-block: 16px;
+  min-width: 0;
+}
+.fq-notebook-cell pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.fq-notebook-scope {
+  font-size: 12px;
+}
