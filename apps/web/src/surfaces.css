@@ -1,0 +1,286 @@
+/* Shared workbench presentation, inspired by quiet, compact application UIs.
+   Layout, resizers, chart colors and editor/circuit geometry stay with their owners. */
+.fq-workspace.fq-ui-controls :is(.fq-toolbar, .fq-pane-title) {
+  background: var(--ui-panel);
+  border-bottom-color: var(--ui-line);
+  box-shadow: none;
+}
+.fq-workspace.fq-ui-controls .fq-pane-title {
+  letter-spacing: 0.45px;
+  color: var(--ui-muted);
+}
+.fq-workspace.fq-ui-controls
+  :is(.fq-toolbar, .fq-pane-title)
+  button:not(.primary):not(.selected):not([aria-pressed="true"]) {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.fq-workspace.fq-ui-controls
+  :is(.fq-toolbar, .fq-pane-title)
+  button:not(.primary):not(:disabled):hover {
+  background: var(--ui-hover);
+}
+.fq-workspace.fq-ui-controls button:focus-visible {
+  outline: 1px solid #8fc5ed;
+  outline-offset: 2px;
+}
+.fq-workspace.fq-ui-controls button:disabled:hover {
+  background: var(--control-bg);
+  border-color: var(--control-line);
+}
+.fq-workspace.fq-ui-controls
+  :is(.fq-toolbar, .fq-pane-title)
+  button:disabled:hover {
+  background: transparent;
+  border-color: transparent;
+}
+.fq-workspace.fq-ui-controls :is(.fq-language-tabs, .fq-python-output-tabs) {
+  border: 1px solid var(--ui-line);
+  border-radius: var(--control-radius);
+  background: #00000014;
+  box-shadow: none;
+}
+.fq-workspace.fq-ui-controls .fq-language-tabs button[aria-pressed="true"] {
+  background: var(--ui-raised);
+  border-color: var(--ui-line);
+  color: var(--ui-text);
+  box-shadow: 0 1px 2px #0002;
+}
+.fq-workspace.fq-ui-controls
+  :is(.fq-model-library, .fq-settings, .fq-jobs-library) {
+  background: var(--ui-panel);
+}
+.fq-workspace.fq-ui-controls .fq-model-library-tools {
+  background: var(--ui-panel);
+}
+.fq-workspace.fq-ui-controls .fq-library-card:not(.selected):hover,
+.fq-workspace.fq-ui-controls .fq-model-folder-toggle:hover {
+  background: var(--ui-hover);
+}
+.fq-workspace.fq-ui-controls .fq-toolbar-menu-items {
+  border-color: var(--ui-line-strong);
+  border-radius: 9px;
+  background: var(--ui-raised);
+  box-shadow: 0 10px 32px #0005;
+}
+
+/* Jobs read as one list, rather than a stack of unrelated cards. */
+.fq-workspace.fq-ui-controls .fq-jobs-search {
+  gap: 6px;
+}
+.fq-workspace.fq-ui-controls .fq-jobs-search label {
+  background: var(--ui-field);
+}
+.fq-workspace.fq-ui-controls .fq-jobs-list h3 {
+  color: var(--ui-muted);
+  font-size: 10px;
+  letter-spacing: 0.45px;
+}
+.fq-workspace.fq-ui-controls .fq-job-row {
+  border-radius: var(--control-radius);
+}
+.fq-workspace.fq-ui-controls .fq-job-row:not(.selected):hover {
+  background: var(--ui-hover);
+}
+.fq-workspace.fq-ui-controls .fq-job-row.selected {
+  background: var(--ui-selection) !important;
+  border-color: transparent !important;
+  box-shadow: inset 2px 0 var(--accent);
+}
+.fq-workspace.fq-ui-controls .fq-job-row strong {
+  color: var(--ui-text);
+}
+.fq-workspace.fq-ui-controls .fq-job-row :is(small, time) {
+  color: var(--ui-muted);
+}
+.fq-workspace.fq-ui-controls .fq-job-row > button {
+  padding-block: 7px;
+  gap: 3px;
+}
+.fq-workspace.fq-ui-controls .fq-job-metrics dd,
+.fq-workspace.fq-ui-controls .fq-qaoa-metrics dd {
+  font-variant-numeric: tabular-nums;
+}
+.fq-workspace.fq-ui-controls .fq-job-tabs {
+  border-bottom-color: var(--ui-line);
+}
+.fq-workspace.fq-ui-controls .fq-job-tabs button {
+  color: var(--ui-muted);
+  border-radius: 5px 5px 0 0;
+}
+.fq-workspace.fq-ui-controls .fq-job-tabs button[aria-pressed="true"] {
+  color: var(--ui-text);
+  background: var(--ui-hover);
+  border-bottom-color: var(--accent);
+}
+
+/* Flat result surfaces: data gets the emphasis, evidence remains expandable. */
+.fq-workspace.fq-ui-controls
+  :is(.fq-comparison-card, .fq-comparison-findings, .fq-synth-evidence) {
+  background: var(--ui-panel);
+  border: 1px solid var(--ui-line);
+  border-radius: 9px;
+  box-shadow: none;
+}
+.fq-workspace.fq-ui-controls .fq-comparison-card .fq-compare-circuit {
+  background: var(--ui-work);
+}
+.fq-workspace.fq-ui-controls
+  :is(.fq-comparison-findings, .fq-synth-evidence, .fq-research-metric-table)
+  table {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.fq-workspace.fq-ui-controls
+  :is(.fq-comparison-findings, .fq-synth-evidence, .fq-research-metric-table)
+  :is(th, td) {
+  border-bottom-color: var(--ui-line);
+  padding-block: 7px;
+  vertical-align: top;
+}
+.fq-workspace.fq-ui-controls
+  :is(.fq-comparison-findings, .fq-synth-evidence, .fq-research-metric-table)
+  thead
+  th {
+  color: var(--ui-muted);
+  font-size: 11px;
+  font-weight: 500;
+  background: #ffffff02;
+}
+.fq-workspace.fq-ui-controls
+  .fq-research-metric-table
+  td[data-change="better"] {
+  color: var(--ui-positive);
+}
+.fq-workspace.fq-ui-controls .fq-research-metric-table td[data-change="worse"] {
+  color: var(--ui-warning);
+}
+.fq-workspace.fq-ui-controls .fq-research-metric-table td small {
+  color: var(--ui-muted);
+}
+.fq-workspace.fq-ui-controls .fq-research-resources {
+  gap: 0;
+  border-block: 1px solid var(--ui-line);
+}
+.fq-workspace.fq-ui-controls .fq-research-resources > div {
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+/* Configuration is grouped by spacing and separators, not nested boxes. */
+.fq-workspace.fq-ui-controls
+  :is(.fq-execution-more, .fq-execution-advanced, .fq-settings-help) {
+  border-color: var(--ui-line);
+}
+.fq-workspace.fq-ui-controls
+  :is(.fq-execution-more, .fq-execution-advanced, .fq-settings-help)
+  > summary {
+  color: var(--ui-muted);
+  line-height: 1.5;
+}
+.fq-workspace.fq-ui-controls
+  .fq-execution-detail-group
+  + .fq-execution-detail-group {
+  border-top-color: var(--ui-line);
+}
+.fq-workspace.fq-ui-controls .fq-modal {
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.fq-workspace.fq-ui-controls .fq-modal[data-layout="standard"] > header h2 {
+  font-size: 17px;
+  line-height: 24px;
+  font-weight: 550;
+}
+.fq-workspace.fq-ui-controls .fq-modal[data-layout="standard"] > footer {
+  border-top: 1px solid var(--ui-line);
+  padding-top: 12px;
+  gap: 8px;
+}
+.fq-workspace.fq-ui-controls
+  .fq-modal
+  :is(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    select
+  ) {
+  background-color: var(--ui-field);
+  box-shadow: none;
+}
+.fq-workspace.fq-ui-controls .fq-modal :is(input, select):focus-visible {
+  border-color: var(--input-focus-border);
+}
+.fq-workspace.fq-ui-controls .fq-modal fieldset {
+  min-width: 0;
+}
+.fq-workspace.fq-ui-controls .fq-modal label {
+  color: var(--ui-muted);
+}
+.fq-workspace.fq-ui-controls :is(.fq-empty, .fq-jobs-no-match) {
+  color: var(--ui-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fq-workspace.fq-ui-controls :is(button, summary) {
+    transition: none;
+  }
+}
+
+/* Research runs use the same compact row language as ordinary jobs. */
+.fq-workspace.fq-ui-controls .fq-research-run-list {
+  padding: 8px;
+  border-bottom-color: var(--ui-line);
+  max-height: min(32dvh, 250px);
+  overflow-y: auto;
+  flex-shrink: 0;
+  scrollbar-width: thin;
+}
+.fq-workspace.fq-ui-controls .fq-research-run-list h3 {
+  margin: 0 0 4px;
+  padding: 0 8px;
+  color: var(--ui-muted);
+  font-weight: 500;
+}
+.fq-workspace.fq-ui-controls .fq-research-run-list button {
+  padding: 7px 8px;
+  gap: 3px;
+  border: 0;
+  border-radius: var(--control-radius);
+  box-shadow: none;
+}
+.fq-workspace.fq-ui-controls
+  .fq-research-run-list
+  button
+  > :is(strong, span, small) {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.fq-workspace.fq-ui-controls .fq-research-run-list button strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.fq-workspace.fq-ui-controls .fq-research-run-list button.selected {
+  background: var(--ui-selection);
+}
+.fq-workspace.fq-ui-controls .fq-job-distribution {
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--ui-line);
+  border-radius: 0;
+  padding-inline: 0;
+}
+.fq-workspace.fq-ui-controls .fq-research-metric-comparison {
+  background: var(--ui-panel);
+  border-color: var(--ui-line);
+}
+.fq-workspace.fq-ui-controls .fq-job-segment {
+  background: var(--ui-field);
+  border-color: var(--ui-line);
+  border-radius: var(--control-radius);
+}

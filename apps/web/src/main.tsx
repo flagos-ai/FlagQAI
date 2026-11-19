@@ -4,6 +4,7 @@ import App from "./App";
 import "katex/dist/katex.min.css";
 import "./workspace.css";
 import "./controls.css";
+import "./surfaces.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
