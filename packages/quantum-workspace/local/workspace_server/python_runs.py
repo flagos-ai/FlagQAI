@@ -182,6 +182,28 @@ with tempfile.TemporaryDirectory(prefix='fq-sdk-preflight-') as directory:
     def get(self, run_id):
         return self.store.get(run_id)
 
+    def evidence(self, run_id):
+        """Export recorded inputs and observations without reading the live project."""
+        if not isinstance(run_id, str) or not re.fullmatch('[a-f0-9-]{36}', run_id):
+            raise FileNotFoundError('Python task not found.')
+        run = self.get(run_id)
+        if not run:
+            raise FileNotFoundError('Python task not found.')
+        if source_hash(run['source']) != run.get('source_hash'):
+            raise ValueError('Recorded source checksum changed.')
+        inputs = {'entry': 'main.py', 'files': {'main.py': run['source']}}
+        if run.get('project'):
+            path = self.settings.database_path.parent / 'python-inputs' / (run_id + '.json')
+            inputs = json.loads(path.read_text())
+            if (inputs['entry'] != run['project']['entry']
+                    or inputs['files'].get(inputs['entry']) != run['source']
+                    or manifest_hash(inputs['files']) != run['project']['snapshot_hash']):
+                raise ValueError('Recorded project input snapshot checksum changed.')
+        return {'schema': 'flagqai.python-run-evidence.v1', 'run': run, 'inputs': inputs,
+                'scope': 'Recorded source inputs, environment and logs. FQX files are downloaded separately. '
+                         'Import availability and successful execution do not establish scientific correctness. '
+                         'This record is not an independently runnable environment or a verification report.'}
+
     def cancel(self, run_id):
         with self.lock:
             if run_id in self.active: self.active[run_id].set()

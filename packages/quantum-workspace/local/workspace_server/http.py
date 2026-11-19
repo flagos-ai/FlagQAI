@@ -284,6 +284,21 @@ def create_server(settings, service):
                 self.wfile.write(content)
                 return
             if self.path == '/api/python/environment': return self.reply(python_runs.environment())
+            evidence = re.fullmatch(r'/api/python/runs/([a-f0-9-]{36})/evidence', self.path)
+            if evidence:
+                try:
+                    content = json.dumps(python_runs.evidence(evidence.group(1))).encode()
+                except FileNotFoundError:
+                    return self.reply({'error': 'Recorded run inputs are unavailable.'}, 404)
+                except (ValueError, KeyError, TypeError, OSError):
+                    return self.reply({'error': 'Cannot verify recorded run inputs. No code was executed.'}, 409)
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Content-Disposition', 'attachment; filename="run-evidence.json"')
+                self.send_header('Content-Length', str(len(content)))
+                self.end_headers()
+                self.wfile.write(content)
+                return
             if self.path == '/api/python/runs': return self.reply([{key:run.get(key) for key in ('id','name','status','created_at','environment')} for run in python_runs.store.list()])
             if self.path.startswith('/api/python/runs/'):
                 run = python_runs.get(self.path.split('/')[-1])

@@ -1749,3 +1749,19 @@
 .fq-notebook-environment > details {
   margin-top: 8px;
 }
+.fq-run-evidence {
+  margin: 6px 0;
+  font-size: 12px;
+}
+.fq-run-evidence > div {
+  padding: 4px 0;
+  overflow-wrap: anywhere;
+}
+.fq-run-evidence p {
+  margin: 5px 0;
+}
+.fq-run-evidence pre {
+  max-height: 240px;
+  overflow: auto;
+  white-space: pre-wrap;
+}

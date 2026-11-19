@@ -19,6 +19,7 @@ import { CloseButton } from "./CloseButton";
 import { CodeExample } from "./CodeExample";
 import { pythonOutputText } from "../state/python-output";
 import { pythonHistoryLabel, pythonRunTime } from "../state/python-history";
+import { RunEvidence } from "./RunEvidence";
 export function PythonConsole({
   python,
   source,
@@ -332,6 +333,9 @@ export function PythonConsole({
               ? `Saved run · ${run.project?.entry}. Your current file is unchanged.`
               : "Saved project snapshot · Current dependencies have not been verified."}
         </div>
+      )}
+      {run?.project?.path.startsWith("notebook-copies/") && (
+        <RunEvidence key={run.id} run={run} />
       )}
       {!!run?.experiments?.length && (
         <section
