@@ -208,6 +208,11 @@ export default function App() {
     if (state.page === "model")
       return (
         <ModelLibrary
+          onCreateNotebook={async (id, request) => {
+            const result = await projectWorkspace.createNotebook(id, request);
+            if (result) setProjectRequest((value) => value + 1);
+            return result;
+          }}
           projectRequest={projectRequest}
           projectPanel={
             <ProjectExplorer

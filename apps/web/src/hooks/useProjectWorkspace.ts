@@ -145,6 +145,13 @@ export function useProjectWorkspace(
       dispatch({ type: "project-open-file", project, file });
     });
   return {
+    createNotebook: (id: string, requestId: string) =>
+      perform(async () => {
+        const { project, file } = await projectsAPI.notebook(id, requestId);
+        dispatch({ type: "project-select", project });
+        dispatch({ type: "project-open-file", project, file });
+        await refreshRegistry();
+      }),
     registry,
     error: error || refreshError,
     busy,

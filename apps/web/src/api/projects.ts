@@ -24,6 +24,11 @@ async function request<T>(
   return value;
 }
 export const projectsAPI = {
+  notebook: (id: string, requestId: string) =>
+    request<{ project: ProjectInfo; file: ProjectFile }>("/notebook", {
+      id,
+      request_id: requestId,
+    }),
   list: () => request<{ workspace_root: string; projects: ProjectInfo[] }>(""),
   open: (path: string, create = false) =>
     request<ProjectInfo>("", { path, create }),

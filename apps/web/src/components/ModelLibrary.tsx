@@ -1,3 +1,5 @@
+import { matchingNotebooks } from "../state/notebooks";
+import { NotebookLibrary } from "./NotebookLibrary";
 import { ToolbarMenu } from "./ToolbarMenu";
 import { ModelFolderLibrary } from "./ModelFolderLibrary";
 import { modelFolderTree } from "../state/model-folders";
@@ -29,7 +31,12 @@ export function ModelLibrary({
   importing,
   projectPanel,
   projectRequest = 0,
+  onCreateNotebook,
 }: {
+  onCreateNotebook: (
+    id: string,
+    request: string,
+  ) => Promise<boolean | undefined>;
   projectPanel?: React.ReactNode;
   projectRequest?: number;
   busy?: boolean;
@@ -259,6 +266,7 @@ export function ModelLibrary({
           {!visibleExamples.length &&
             !folderMatches.length &&
             !synthesisMatches.length &&
+            !matchingNotebooks(query).length &&
             !showReferenceTask && (
               <p role="status">
                 No models match your search. Try another name or clear the
@@ -317,6 +325,7 @@ export function ModelLibrary({
                   </button>
                 </section>
               )}
+              <NotebookLibrary query={query} onCreate={onCreateNotebook} />
               <SynthesisExampleLibrary
                 query={query}
                 matches={synthesisMatches}
