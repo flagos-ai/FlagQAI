@@ -9,6 +9,20 @@ test("official notebook reading and lost copy receipt preserve drafts and submit
 }) => {
   const compatible = process.env.FQ_NOTEBOOK_SDK === "compatible";
   await page.goto("/#model");
+  const baselineRuns = new Set(
+    (await page.request.get("/api/python/runs").then((r) => r.json())).map(
+      (run) => run.id,
+    ),
+  );
+  const baselineProjects = new Set(
+    (
+      await page.request.get("/api/projects").then((r) => r.json())
+    ).projects.map((project) => project.id),
+  );
+  const createdRuns = async () =>
+    (await page.request.get("/api/python/runs").then((r) => r.json())).filter(
+      (run) => !baselineRuns.has(run.id),
+    );
   await editor(page).fill(draft);
   await page.getByRole("button", { name: "Examples", exact: true }).click();
   await page
@@ -31,9 +45,7 @@ test("official notebook reading and lost copy receipt preserve drafts and submit
   ).toBeVisible();
   await expect(dialog.locator(".fq-notebook-cell")).not.toHaveCount(0);
   expect(await dialog.locator("script, iframe").count()).toBe(0);
-  expect(
-    await page.request.get("/api/python/runs").then((r) => r.json()),
-  ).toHaveLength(0);
+  expect(await createdRuns()).toHaveLength(0);
   await page.setViewportSize({ width: 520, height: 700 });
   const layout = await dialog.evaluate((element) => {
     const rect = element.getBoundingClientRect();
@@ -76,7 +88,10 @@ test("official notebook reading and lost copy receipt preserve drafts and submit
     .get("/api/projects")
     .then((r) => r.json());
   expect(
-    projects.projects.filter((p) => p.path.startsWith("notebook-copies/")),
+    projects.projects.filter(
+      (p) =>
+        !baselineProjects.has(p.id) && p.path.startsWith("notebook-copies/"),
+    ),
   ).toHaveLength(1);
   await page.reload();
   await expect(editor(page)).toHaveValue(/runpy.run_module/);
@@ -90,15 +105,13 @@ test("official notebook reading and lost copy receipt preserve drafts and submit
   await expect
     .poll(
       async () => {
-        const runs = await page.request
-          .get("/api/python/runs")
-          .then((r) => r.json());
+        const runs = await createdRuns();
         return runs[0]?.status;
       },
       { timeout: 90000 },
     )
     .toBe(compatible ? "completed" : "failed");
-  const runs = await page.request.get("/api/python/runs").then((r) => r.json());
+  const runs = await createdRuns();
   expect(runs).toHaveLength(1);
   const result = await page.request
     .get(`/api/python/runs/${runs[0].id}`)
