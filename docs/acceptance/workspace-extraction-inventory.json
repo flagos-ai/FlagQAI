@@ -1,0 +1,2578 @@
+{
+  "schema": "flagqai.workspace-extraction-inventory.v1",
+  "recorded_date": "2026-11-18",
+  "source_branch": "feat/web-macos-native-read-isolation",
+  "integrated_source_commit": "e399dc1a88dd59f830e12009a551acd88632f02f",
+  "original_status_sha256": "2b5756dbec8e460ef0c4b0631123de898890b6ede5df33c6024afb12dc5f08ad",
+  "protected_local_artifacts": 16,
+  "remaining_unclassified_paths": 0,
+  "counts": {
+    "documentation_reconciled": 1,
+    "excluded_prototype": 1,
+    "historical_acceptance_superseded": 21,
+    "integrated_or_superseded": 165,
+    "present_identically": 35,
+    "preserved_local_research": 16,
+    "replaced_by_reviewed_implementation": 11,
+    "retain_portable_review_record": 8
+  },
+  "items": [
+    {
+      "path": "apps/cli/package.json",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/cli/package.json"
+      ],
+      "original_sha256": "72c97f2e08b01d14a3c44ff170dd0dbfb878958c0ef823370ddda08741db89d9"
+    },
+    {
+      "path": "apps/cli/scripts/verify-staged-package.mjs",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/cli/scripts/verify-staged-package.mjs"
+      ],
+      "original_sha256": "6f9a636539593eea7e01bdf41cf6536dbd3811abff379f7bd50a6a15470dfcab"
+    },
+    {
+      "path": "apps/cli/scripts/workbench-tools.test.mjs",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/cli/scripts/workbench-tools.test.mjs"
+      ],
+      "original_sha256": "e421e3d8e35e4c3363d919397d0046303ba5a5f924d998743c39d90ba655b327"
+    },
+    {
+      "path": "apps/cli/src/adapter/ports/channel-settings.ts",
+      "original_status": " M",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "apps/cli/src/adapter/ports/channel-settings.ts"
+      ],
+      "original_sha256": "ec915bb9932288d58f4c1ffaa1524f3f23fe0799ee9d83060d3b325042d31a9e"
+    },
+    {
+      "path": "apps/cli/src/dsh-adapter/backend/session.ts",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/cli/src/dsh-adapter/backend/session.ts"
+      ],
+      "original_sha256": "0af73ceb1a404dfe11e334da28a47d927a96ccb73d5e3d1cda589a49101933a6"
+    },
+    {
+      "path": "apps/cli/src/dsh-adapter/channel/settings-host.ts",
+      "original_status": " M",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "apps/cli/src/dsh-adapter/channel/settings-host.ts"
+      ],
+      "original_sha256": "c5f6264cff36b6f25163d3c17c979d98e0ea2c2b83b6057f5d3181180641a77f"
+    },
+    {
+      "path": "apps/cli/src/dsh-adapter/server-host.ts",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/cli/src/dsh-adapter/server-host.ts"
+      ],
+      "original_sha256": "b84bbd60be95709b8464387da5e83f3fd8e71ba0294c6b5e840d78c181be5062"
+    },
+    {
+      "path": "apps/cli/src/dsh-adapter/task-progress-policy.ts",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/cli/src/dsh-adapter/task-progress-policy.ts"
+      ],
+      "original_sha256": "417b51697aa5df3d27cb20abbfdf233131a4d956b160b52302f9cde1d8162d73"
+    },
+    {
+      "path": "apps/cli/src/dsh-adapter/workbench-tools.ts",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/cli/src/dsh-adapter/workbench-tools.ts"
+      ],
+      "original_sha256": "bc662944143045c4f309234ac1d8706b72dbe79d5c77f2f4d95b45915c95f70c"
+    },
+    {
+      "path": "apps/web/acceptance/product-contract.json",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/acceptance/product-contract.json"
+      ],
+      "original_sha256": "89ace76b7ac640c90e90ce12fb51f63fa354dc31897851dcf62d0d3217c59c77"
+    },
+    {
+      "path": "apps/web/e2e/workbench.spec.mjs",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/e2e/workbench.spec.mjs"
+      ],
+      "original_sha256": "b4b3789a1aab2292c020076d5046ed78c0c62a2abc6779b08da273f77831f593"
+    },
+    {
+      "path": "apps/web/scripts/agent-protocol-fixture.mjs",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/scripts/agent-protocol-fixture.mjs"
+      ],
+      "original_sha256": "3e96ea62dc83fae6c5eb9ed51059d016173b0d83c11df1b7818e44e14fe0e51d"
+    },
+    {
+      "path": "apps/web/scripts/recovery-proxy.mjs",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/scripts/recovery-proxy.mjs"
+      ],
+      "original_sha256": "b4bf092e8cd7c99e78285c46ec33546bfc723e6dfdad81f830b78c3d2e123cd5"
+    },
+    {
+      "path": "apps/web/src/App.tsx",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/App.tsx"
+      ],
+      "original_sha256": "b607f306c308fc51e093f7a6c27d4e32881d6c6fad7b2ae222aca3ee7d0fd034"
+    },
+    {
+      "path": "apps/web/src/api/platform.ts",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/api/platform.ts"
+      ],
+      "original_sha256": "0c91ea351f56d05971630cd901201ba1fb951c1ca3cf4da6aead98653f852d5d"
+    },
+    {
+      "path": "apps/web/src/api/quantum-workspace.ts",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/api/quantum-workspace.ts"
+      ],
+      "original_sha256": "3096868efcb943c066aaebd2899d766504d0166303a6590a2df1ddea9b5b31e0"
+    },
+    {
+      "path": "apps/web/src/components/AgentActivity.tsx",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/AgentActivity.tsx"
+      ],
+      "original_sha256": "32c505cc228aa99ee2f57cce4b96b4d77b9ce5f6350db08a76a4f319c72bfcbe"
+    },
+    {
+      "path": "apps/web/src/components/AgentExperimentTask.tsx",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/AgentExperimentTask.tsx"
+      ],
+      "original_sha256": "d0b554ad9a4c36ce65bb389d56fa8fe13e842d1045c637bffc7c7f02cf46903b"
+    },
+    {
+      "path": "apps/web/src/components/AgentPanel.tsx",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/AgentPanel.tsx"
+      ],
+      "original_sha256": "8e21e5b61c331cacbd16b4d53c04ecbd39f124a3d914bb2711cc7878704a52e3"
+    },
+    {
+      "path": "apps/web/src/components/AgentProgress.tsx",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/AgentProgress.tsx"
+      ],
+      "original_sha256": "2144c04ddba5c43a1d7dc15f1c49cf10ee82693656754257a1108dc3118ae2c3"
+    },
+    {
+      "path": "apps/web/src/components/AgentTranscript.tsx",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/AgentTranscript.tsx"
+      ],
+      "original_sha256": "38b174a50f69f208efb70406832a66e83f891c434411a5c32ec9f3ae2794df38"
+    },
+    {
+      "path": "apps/web/src/components/AgentWorkspaceActions.tsx",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/AgentWorkspaceActions.tsx"
+      ],
+      "original_sha256": "d31a730114ca15d63557af204c59051b1a1966d55119ee66e726408603d84808"
+    },
+    {
+      "path": "apps/web/src/components/CircuitCanvas.tsx",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/CircuitCanvas.tsx"
+      ],
+      "original_sha256": "f85ce89596a8615d5ad764bc85ae4c6809719c537ae5df5800480dee9f3041e0"
+    },
+    {
+      "path": "apps/web/src/components/CircuitModules.tsx",
+      "original_status": " M",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "apps/web/src/components/CircuitModules.tsx"
+      ],
+      "original_sha256": "a0f1a1fae0dfc5f0a9f820e8b424aba046e0487a7bc30b913a230206bfaca34c"
+    },
+    {
+      "path": "apps/web/src/components/EditorSyncBar.tsx",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/EditorSyncBar.tsx"
+      ],
+      "original_sha256": "2ad3bf0a4eddea9d80530634afdc684f9bb09596891571f7c82a90b8940305f1"
+    },
+    {
+      "path": "apps/web/src/components/ExecutionBackend.tsx",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/ExecutionBackend.tsx"
+      ],
+      "original_sha256": "8d416ae29acb1fb4891b42031b3d7695fba81cc3cf7ff58ae610cc4615a7efa9"
+    },
+    {
+      "path": "apps/web/src/components/ExperimentComparison.tsx",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/ExperimentComparison.tsx"
+      ],
+      "original_sha256": "09e9c70853fa949986ca804372a187e26c31bf6f50e05e5ef78b956571f1a616"
+    },
+    {
+      "path": "apps/web/src/components/ExperimentDetails.tsx",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/ExperimentDetails.tsx"
+      ],
+      "original_sha256": "dcd6e537c831708b963bfa2e942106ea6a533c00865ed50d867e4f060b99c138"
+    },
+    {
+      "path": "apps/web/src/components/Icons.tsx",
+      "original_status": " M",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "apps/web/src/components/Icons.tsx"
+      ],
+      "original_sha256": "c76dc27480aae6af7ec4d0d949f07d174a2fe1ca8fca3a0b6d406610e4d9c041"
+    },
+    {
+      "path": "apps/web/src/components/JobsLibrary.tsx",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/JobsLibrary.tsx"
+      ],
+      "original_sha256": "49cee4e1d73240f38a04b1c3bf5f2c6189cb380b291e166aaf995b27ed6a22d1"
+    },
+    {
+      "path": "apps/web/src/components/ModelLibrary.tsx",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/ModelLibrary.tsx"
+      ],
+      "original_sha256": "8adc07f38ed823c32a7683f04a69fd65bd3758938ed4afa683557ff62aec6446"
+    },
+    {
+      "path": "apps/web/src/components/ProjectExplorer.tsx",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/ProjectExplorer.tsx"
+      ],
+      "original_sha256": "d10c81e9c7d906ed353820cdf74fdf4fe39cdca7a0cf6618efd139ea72d7fe45"
+    },
+    {
+      "path": "apps/web/src/components/PythonConsole.tsx",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/PythonConsole.tsx"
+      ],
+      "original_sha256": "bcd98558ba039df6a6a330d0d5b7ec768e5882b3f376cc0848bf14791fb8b7dc"
+    },
+    {
+      "path": "apps/web/src/components/QaoaOutcome.tsx",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/QaoaOutcome.tsx"
+      ],
+      "original_sha256": "21e46567af4f4ebe6fbec4905a731e1a3e03821de23833f2fd34bd390838dd39"
+    },
+    {
+      "path": "apps/web/src/components/UIIcon.tsx",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/UIIcon.tsx"
+      ],
+      "original_sha256": "65e46366630cac2317d84dd15ca1db43cf38d3eb1fd8723cc28cd832484f990e"
+    },
+    {
+      "path": "apps/web/src/contracts/quantum-workspace.ts",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/contracts/quantum-workspace.ts"
+      ],
+      "original_sha256": "1d996bbd6693afc9a8ad9090d3ea21f99fac15d0d9b9970be8ddf895e1a4df30"
+    },
+    {
+      "path": "apps/web/src/controls.css",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/controls.css"
+      ],
+      "original_sha256": "d4dbfa6732f2b8666e70bf0565287cd5bb3cce4732b4a9f7a222b09145dc00d5"
+    },
+    {
+      "path": "apps/web/src/hooks/useAgentConversation.ts",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/hooks/useAgentConversation.ts"
+      ],
+      "original_sha256": "5b4f477a557de0f6639afce44bc5fbf2e01ef10d5348186463a339d55209a2c5"
+    },
+    {
+      "path": "apps/web/src/hooks/useComputeBackend.ts",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/hooks/useComputeBackend.ts"
+      ],
+      "original_sha256": "c7435618b24de44c80caa61b975504c41d4d838124b049797d3388f90569a507"
+    },
+    {
+      "path": "apps/web/src/hooks/usePlatformBridge.ts",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/hooks/usePlatformBridge.ts"
+      ],
+      "original_sha256": "fb2415ee7bf34932fd53178cf4562bf884175f3684242b92372105ad2781db67"
+    },
+    {
+      "path": "apps/web/src/hooks/usePythonWorkspace.ts",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/hooks/usePythonWorkspace.ts"
+      ],
+      "original_sha256": "9563ef85d1f5be512f0d37f0012abff8ae7ed075998d3d255684c74bfd29d6cb"
+    },
+    {
+      "path": "apps/web/src/hooks/useQuantumWorkspace.ts",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/hooks/useQuantumWorkspace.ts"
+      ],
+      "original_sha256": "4e6ab125cc43d7adf1da13a04e631b935e7d1be2fdeb1b7b4038fa28ffde7383"
+    },
+    {
+      "path": "apps/web/src/main.tsx",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/main.tsx"
+      ],
+      "original_sha256": "0a70b1ae338f213bd2ac871769697a02442286d1eb233435b4cd6d5aeee83367"
+    },
+    {
+      "path": "apps/web/src/pages/ExecutionPage.tsx",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/pages/ExecutionPage.tsx"
+      ],
+      "original_sha256": "9d8f9bf4a2bd6ac9ff3004370a10095f4cbe061ff96ddaf3ad6ddf77071bebfd"
+    },
+    {
+      "path": "apps/web/src/pages/JobsPage.tsx",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/pages/JobsPage.tsx"
+      ],
+      "original_sha256": "3d42d9c21b8ab4c0be5ae5cc33c42c0926b906abd2aa6f799bb29f96c4dd0ba0"
+    },
+    {
+      "path": "apps/web/src/pages/ModelPage.tsx",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/pages/ModelPage.tsx"
+      ],
+      "original_sha256": "1d2dd5fd17c631d4712c58f6d8c0b1f02e0907964cb9d63d5f75a80c514c1c5c"
+    },
+    {
+      "path": "apps/web/src/pages/ProgramPage.tsx",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/pages/ProgramPage.tsx"
+      ],
+      "original_sha256": "e4276f9547ca520d3650be992ca6620281c1ead6b64a51371b397cc7c70ef850"
+    },
+    {
+      "path": "apps/web/src/pages/SynthesisPage.tsx",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/pages/SynthesisPage.tsx"
+      ],
+      "original_sha256": "8aba90d91cea088d9ccde2ed45e3db8545028c5596966e6f2749dcb4fb685023"
+    },
+    {
+      "path": "apps/web/src/state/agent-recovery.ts",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/state/agent-recovery.ts"
+      ],
+      "original_sha256": "95014293b1ef190cf4a08cc959f769e44f21b38e8b49126bca3069f3522dfe68"
+    },
+    {
+      "path": "apps/web/src/state/agent-view.ts",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/state/agent-view.ts"
+      ],
+      "original_sha256": "a07448b45fa2c003c9cf5b8317b97ba23aa3ed80de584af74d001e0ac1cb5144"
+    },
+    {
+      "path": "apps/web/src/state/backup-import.ts",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/state/backup-import.ts"
+      ],
+      "original_sha256": "9c856411d4a18fe246678ee3e6eba09639ea12339f50866b5e8bbaf17c385438"
+    },
+    {
+      "path": "apps/web/src/state/compute-backend.ts",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/state/compute-backend.ts"
+      ],
+      "original_sha256": "53381cedcd6ae9056323931d0376d1c4178a2afbf655998bd35e58e9ce02a571"
+    },
+    {
+      "path": "apps/web/src/state/experiment-comparison.ts",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/state/experiment-comparison.ts"
+      ],
+      "original_sha256": "6cb62bd43a5dd78b8472978b200168cb32d8ed208cfe06c29b97eeff319b31f8"
+    },
+    {
+      "path": "apps/web/src/state/experiment-task-status.ts",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/state/experiment-task-status.ts"
+      ],
+      "original_sha256": "6f8377f6325a085a55bae9a1a4a2db9b6c2fb7c9daca19c59e35042c1df1a1f9"
+    },
+    {
+      "path": "apps/web/src/state/persistence.ts",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/state/persistence.ts"
+      ],
+      "original_sha256": "23e84bfde313d5373afc219e0e49e3f3839ecbe3a29241d03c355d21b8ca55de"
+    },
+    {
+      "path": "apps/web/src/state/platform-navigation.ts",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/state/platform-navigation.ts"
+      ],
+      "original_sha256": "bb9dd4111dce780063ea2351e9f875635309f5b561e8c778bff79b021f569a99"
+    },
+    {
+      "path": "apps/web/src/state/python-feedback.ts",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/state/python-feedback.ts"
+      ],
+      "original_sha256": "6a37f96f4ee5ecde227f1818b48b7e4766687d20f1afc7aacca0037c17b800b0"
+    },
+    {
+      "path": "apps/web/src/state/python-templates.ts",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/state/python-templates.ts"
+      ],
+      "original_sha256": "920a86a4e7986aa037fa11900c8c0537a159a2241df3af765a30f44e8ab22ad4"
+    },
+    {
+      "path": "apps/web/src/state/reducer.ts",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/state/reducer.ts"
+      ],
+      "original_sha256": "46ae2b093244ed49827ad14c47b78b508c55ffd962e95459adf305720a755275"
+    },
+    {
+      "path": "apps/web/src/workspace.css",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/workspace.css"
+      ],
+      "original_sha256": "2b9a059d6680ee54f53a702d4a7d6e7e030df3858663c8a49a72c46772bc5b00"
+    },
+    {
+      "path": "apps/web/tests/agent-activity.test.mjs",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/tests/agent-activity.test.mjs"
+      ],
+      "original_sha256": "51843cd5c7c5ada0ff729911d1cfc98fa84f0e482c12e4e66b6777a7b3a68d00"
+    },
+    {
+      "path": "apps/web/tests/agent-progress.test.mjs",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/tests/agent-progress.test.mjs"
+      ],
+      "original_sha256": "d978c88a266efb3698e51490cff8872a3b54312837c2492a19c36402ef95c2c9"
+    },
+    {
+      "path": "apps/web/tests/experiment-comparison.test.mjs",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/tests/experiment-comparison.test.mjs"
+      ],
+      "original_sha256": "43aa05b194de340aeff680aa91d6826a4c30263336daa6f7384ca0029a85db5f"
+    },
+    {
+      "path": "apps/web/tests/experiment-task-status.test.mjs",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/tests/experiment-task-status.test.mjs"
+      ],
+      "original_sha256": "ecbe5a0d5c128eea4db649354e9eb2d327c837589ac4b8301516a0a267cc9990"
+    },
+    {
+      "path": "apps/web/tests/platform-navigation.test.mjs",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/tests/platform-navigation.test.mjs"
+      ],
+      "original_sha256": "ef6fb6136be15891b784e5a748896aa67e2c57d168de2466b3f4f164c198c4b3"
+    },
+    {
+      "path": "apps/web/tests/python-feedback.test.mjs",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/tests/python-feedback.test.mjs"
+      ],
+      "original_sha256": "b9219cd4ed9aa22df02fc13d8ce2c3edcf804818cd49bb44b9dfb2e88bf0691c"
+    },
+    {
+      "path": "apps/web/tests/python-templates.test.mjs",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/tests/python-templates.test.mjs"
+      ],
+      "original_sha256": "eca93bebc511bcdccd1b726048922e1c5cb86ee23ba7dcc834cd7e5122b9fdd8"
+    },
+    {
+      "path": "capabilities/README.md",
+      "original_status": " M",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "capabilities/README.md"
+      ],
+      "original_sha256": "5b3d0941d5eef2d32b544bc702a19ef7b5233402678107abe924a8fc6acd9467"
+    },
+    {
+      "path": "docs/architecture/WEB_AGENT_WORKBENCH.md",
+      "original_status": " M",
+      "disposition": "documentation_reconciled",
+      "reason": "Architecture describes current native owners, coordination, reviewed proposals and immutable package delivery.",
+      "current_owners": [
+        "docs/architecture/WEB_AGENT_WORKBENCH.md"
+      ],
+      "original_sha256": "52d7800de598c73f4dd51d382e0042656f505307cb25ef6973ac689ee43d11e4"
+    },
+    {
+      "path": "docs/architecture/WEB_PRODUCT_ACCEPTANCE.md",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "docs/architecture/WEB_PRODUCT_ACCEPTANCE.md"
+      ],
+      "original_sha256": "1cc49198c86d04145000be8ca9e6e01dd9c1e6b0f780cc31fcf7922bfa7433eb"
+    },
+    {
+      "path": "packages/harness-adapter/agent-resolution.mjs",
+      "original_status": " M",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "packages/harness-adapter/agent-resolution.mjs"
+      ],
+      "original_sha256": "b9488e7f0f7c692ddea50ebfb123132fcab7802ed518cada4c35dd5c0e91e24e"
+    },
+    {
+      "path": "packages/harness-adapter/package.json",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/harness-adapter/package.json"
+      ],
+      "original_sha256": "51dc184cddcde4254884a7ca6f2509950da56252c1f176a4893b16bd739083d2"
+    },
+    {
+      "path": "packages/harness-adapter/provider-manager.d.mts",
+      "original_status": " M",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "packages/harness-adapter/provider-manager.d.mts"
+      ],
+      "original_sha256": "bf0c02b1692f90efd2987ddc67d8ed8bb31a83f53ca9839d85e6245ad2357e8b"
+    },
+    {
+      "path": "packages/harness-adapter/provider-manager.mjs",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/harness-adapter/provider-manager.mjs"
+      ],
+      "original_sha256": "35b5fe54c2f93bcae42713e1d966d266324b92b6ead5d533c0476c3e50a0f59f"
+    },
+    {
+      "path": "packages/quantum-workspace/domain/circuit-tree.mjs",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/domain/circuit-tree.mjs"
+      ],
+      "original_sha256": "2b35c2765b9f1fbcc09dc93af598accc7fb435d8f3d444df415dd12348fad3e6"
+    },
+    {
+      "path": "packages/quantum-workspace/local/flagquantum_adapter/remote_worker.py",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/local/flagquantum_adapter/remote_worker.py"
+      ],
+      "original_sha256": "c935f9face619796f87690685a61b70332531cdda206aa8747078fa8b57e932b"
+    },
+    {
+      "path": "packages/quantum-workspace/local/flagquantum_adapter/ssh_cpu.py",
+      "original_status": " M",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "packages/quantum-workspace/local/flagquantum_adapter/ssh_cpu.py"
+      ],
+      "original_sha256": "7d6cc50e2bf5a9049d738cf707f92f972fcd8c1c19281cdb7ee72f6160b225db"
+    },
+    {
+      "path": "packages/quantum-workspace/local/workspace_server/bridge.py",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/local/workspace_server/bridge.py"
+      ],
+      "original_sha256": "ba2d3f6be843a08c666c17c1d7f504a955666868b4faee79a72fde3ac547fb0b"
+    },
+    {
+      "path": "packages/quantum-workspace/local/workspace_server/config.py",
+      "original_status": " M",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "packages/quantum-workspace/local/workspace_server/config.py"
+      ],
+      "original_sha256": "57fe6d3aaf1fe4ff956ae3cfcc6a6cff3c218079a5a80faef8e0f658257985fd"
+    },
+    {
+      "path": "packages/quantum-workspace/local/workspace_server/experiment_worker.py",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/local/workspace_server/experiment_worker.py"
+      ],
+      "original_sha256": "3151ce715f1a6f32b32c94103cfae50a23f2789f82d4c65b5fc1edad5431410a"
+    },
+    {
+      "path": "packages/quantum-workspace/local/workspace_server/experiments.py",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/local/workspace_server/experiments.py"
+      ],
+      "original_sha256": "86c9c0afb7b69bd6dd17f108ababd59e3bf95bf30a762995b3bf6f4f6518dbe3"
+    },
+    {
+      "path": "packages/quantum-workspace/local/workspace_server/http.py",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/local/workspace_server/http.py"
+      ],
+      "original_sha256": "014424508d37ce8dda78300e56588f2ed4e6c5a46acb0c1dc4dabee9d6695039"
+    },
+    {
+      "path": "packages/quantum-workspace/local/workspace_server/python_publish.py",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/local/workspace_server/python_publish.py"
+      ],
+      "original_sha256": "3673721ddff7380e5217185d6bc3360333885c76b54226cce08e854ab1cb9d65"
+    },
+    {
+      "path": "packages/quantum-workspace/local/workspace_server/python_runs.py",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/local/workspace_server/python_runs.py"
+      ],
+      "original_sha256": "6c1cff37971da267a25b6bd028fe8cf332e6da134d6d671a566d3796e22b0afa"
+    },
+    {
+      "path": "packages/quantum-workspace/local/workspace_server/python_worker.py",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/local/workspace_server/python_worker.py"
+      ],
+      "original_sha256": "782bdf7f741c2978c05dbb4b80c35f8a2d1e13fadafeaa4dab4b7981d6d5ab30"
+    },
+    {
+      "path": "packages/quantum-workspace/local/workspace_server/reproduction.py",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/local/workspace_server/reproduction.py"
+      ],
+      "original_sha256": "267ca73bc151133a8e9311de80e1379b4a79d09a86ac2287486132a2c83f164f"
+    },
+    {
+      "path": "packages/quantum-workspace/local/workspace_server/research_packages.py",
+      "original_status": " M",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "packages/quantum-workspace/local/workspace_server/research_packages.py"
+      ],
+      "original_sha256": "79b23dc97d2c3b727ff8c71c3d1744e10c3c9fa129a23827de0f68a870659620"
+    },
+    {
+      "path": "packages/quantum-workspace/local/workspace_server/runtime_facts.py",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/local/workspace_server/runtime_facts.py"
+      ],
+      "original_sha256": "071630d7773becba8418caec735677c60d76d74cdc6c695cacff8c821523b0d2"
+    },
+    {
+      "path": "packages/quantum-workspace/local/workspace_server/service.py",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/local/workspace_server/service.py"
+      ],
+      "original_sha256": "e2982060463cdc01ced54c232db02390981f56ef0ad8359f57c7a5a280097722"
+    },
+    {
+      "path": "packages/quantum-workspace/tests/test_agent_proxy.py",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/tests/test_agent_proxy.py"
+      ],
+      "original_sha256": "72c2c5c42e9b0c564a7e05c7dfac87266d7e2c94c1aad382216f316792e0fc8e"
+    },
+    {
+      "path": "packages/quantum-workspace/tests/test_api.py",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/tests/test_api.py"
+      ],
+      "original_sha256": "9b514c85fc3d9ca3837a840ff26dc6952c4756528a6b693f8ec41acb67a13c9b"
+    },
+    {
+      "path": "packages/quantum-workspace/tests/test_bridge.py",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/tests/test_bridge.py"
+      ],
+      "original_sha256": "f8ec2517aea53e7fd6410118c992ee2898b2cf895fa4636cffe19e85b4a06633"
+    },
+    {
+      "path": "packages/quantum-workspace/tests/test_experiments.py",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/tests/test_experiments.py"
+      ],
+      "original_sha256": "a458acdefd377975ee1b3af7a546e94473600ebcf22ba9518189e7f5790b4a04"
+    },
+    {
+      "path": "packages/quantum-workspace/tests/test_python_runs.py",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/tests/test_python_runs.py"
+      ],
+      "original_sha256": "a8c48656c0cb698b1807288a91d4e6f69c2c8931ee2b03c7f5edd87bee3b9024"
+    },
+    {
+      "path": "packages/quantum-workspace/tests/test_research_packages.py",
+      "original_status": " M",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "packages/quantum-workspace/tests/test_research_packages.py"
+      ],
+      "original_sha256": "c900a0fb9c1be6401301f4865bdfc31b508ed44738162c9d0144340eaef9d532"
+    },
+    {
+      "path": "packages/sdk/index.d.ts",
+      "original_status": " M",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "packages/sdk/index.d.ts"
+      ],
+      "original_sha256": "d9efd269c04ea0a704e9298cd5d5b12fd1240312c5b9e99546438b6445da349b"
+    },
+    {
+      "path": "packages/sdk/index.mjs",
+      "original_status": " M",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "packages/sdk/index.mjs"
+      ],
+      "original_sha256": "9c4fabda1c999ef5c05c6938da8f948dfea34e26a73f15bbfad0614fdc15d510"
+    },
+    {
+      "path": "packages/server/index.mjs",
+      "original_status": " M",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/server/index.mjs"
+      ],
+      "original_sha256": "6f2a6238f6358657b673c5f9a7359f1f467b1b10118598663ca94fe537097d3b"
+    },
+    {
+      "path": "apps/cli/scripts/agent-resolution.test.mjs",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/cli/scripts/agent-resolution.test.mjs"
+      ],
+      "original_sha256": "790cdf4c2b6430937d5afbbc26058194eb39157f055a4b6a3e2319fa4c42c6dd"
+    },
+    {
+      "path": "apps/cli/scripts/project-coordination.test.mjs",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/cli/scripts/project-coordination.test.mjs"
+      ],
+      "original_sha256": "33514d757fc6665b15122c1230d62adc4d1743b7d7984682a9f46d6861220a33"
+    },
+    {
+      "path": "apps/cli/scripts/verify-deepseek-history.ts",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/cli/scripts/verify-deepseek-history.ts"
+      ],
+      "original_sha256": "3b368df55d314d8e702757292f911331198bfcdfaa7398d1e4cb40bb8bbeb807"
+    },
+    {
+      "path": "apps/cli/scripts/verify-native-project-coordination.mjs",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/cli/scripts/verify-native-project-coordination.mjs"
+      ],
+      "original_sha256": "99da0e25a75551ed738efb7e1b5dd419f671424a2159bdd14cd0ec8d43d820d3"
+    },
+    {
+      "path": "apps/cli/scripts/verify-thinking-replay.mjs",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/cli/scripts/verify-thinking-replay.mjs"
+      ],
+      "original_sha256": "561d2360b1a09e415d3abef541b730afe15e2a1643e255f9a0540e35e5704f89"
+    },
+    {
+      "path": "apps/cli/src/dsh-adapter/compat/deepseekReplay.ts",
+      "original_status": "??",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "apps/cli/src/dsh-adapter/compat/deepseekReplay.ts"
+      ],
+      "original_sha256": "77cf7bd42a32085905784f6bdd1dadbc0b73d2df64c84acbc7e62d0ce447053d"
+    },
+    {
+      "path": "apps/cli/src/dsh-adapter/compat/deepseekStream.ts",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/cli/src/dsh-adapter/compat/deepseekStream.ts"
+      ],
+      "original_sha256": "60c04710fd3c47e83d4c3759ac58a4f52600fd61bf3edc2992938c713a8ee4e4"
+    },
+    {
+      "path": "apps/cli/src/dsh-adapter/project-coordination.ts",
+      "original_status": "??",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "apps/cli/src/dsh-adapter/project-coordination.ts"
+      ],
+      "original_sha256": "64751613fb00541bf53fc9e65c8cf23a6dbe4685c87c71b10f44336efb31bc7c"
+    },
+    {
+      "path": "apps/web/e2e/synthesis-iteration.spec.mjs",
+      "original_status": "??",
+      "disposition": "replaced_by_reviewed_implementation",
+      "reason": "The capability is retained through current owners and focused tests; the older component or monolithic fixture is not imported.",
+      "current_owners": [
+        "apps/web/e2e/synthesis-evidence.spec.mjs"
+      ],
+      "original_sha256": "ffc56051ba8b02109c23e0fc64844cc7f16f29ccaecd556f0ee3b3bac45370c1"
+    },
+    {
+      "path": "apps/web/e2e/synthesis-library.spec.mjs",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/e2e/synthesis-library.spec.mjs"
+      ],
+      "original_sha256": "a283b229da75e9d5f47465e0fcc0ef1768e37fbd11ed2cd773f42bd9ec0e73f3"
+    },
+    {
+      "path": "apps/web/public/examples/synthesis/acceptance.json",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/public/examples/synthesis/acceptance.json"
+      ],
+      "original_sha256": "e3df9dc36e4e0c9a00158b5489471a027b6e7f8df14b90f7d52b9c57c1bb5696"
+    },
+    {
+      "path": "apps/web/public/licenses/flagquantum-examples/CLASSIQ_LICENSE.txt",
+      "original_status": "??",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "apps/web/public/licenses/flagquantum-examples/CLASSIQ_LICENSE.txt"
+      ],
+      "original_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0"
+    },
+    {
+      "path": "apps/web/public/licenses/flagquantum-examples/LICENSE",
+      "original_status": "??",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "apps/web/public/licenses/flagquantum-examples/LICENSE"
+      ],
+      "original_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    {
+      "path": "apps/web/public/licenses/flagquantum-examples/NOTICE.txt",
+      "original_status": "??",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "apps/web/public/licenses/flagquantum-examples/NOTICE.txt"
+      ],
+      "original_sha256": "a05c3866aefb9dd85a71c595e9b111004910ffade7e47c7ec52766757c319b50"
+    },
+    {
+      "path": "apps/web/scripts/synthesis-catalog/generate.py",
+      "original_status": "??",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "apps/web/scripts/synthesis-catalog/generate.py"
+      ],
+      "original_sha256": "528b75db64153ba9e8ff8c1cf5e70fc21864dd9104dbb5c32efcdab978521d32"
+    },
+    {
+      "path": "apps/web/scripts/synthesis-catalog/selection.json",
+      "original_status": "??",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "apps/web/scripts/synthesis-catalog/selection.json"
+      ],
+      "original_sha256": "161f22a805ec2f831303efe95eeaec73e76915dab698e961465ed086b3d3abe7"
+    },
+    {
+      "path": "apps/web/scripts/synthesis-catalog/verify.py",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/scripts/synthesis-catalog/verify.py"
+      ],
+      "original_sha256": "f5bf9284878dc8d9233d595429c40935bccdd72b828ab35107b0d3640388cc96"
+    },
+    {
+      "path": "apps/web/src/api/research-runs.ts",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/api/research-runs.ts"
+      ],
+      "original_sha256": "ec1fcebe7e79baeb1d386a4deeda8d6b886cb3318d92279af6feae2a49d2e922"
+    },
+    {
+      "path": "apps/web/src/components/AgentResearchOutcome.tsx",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/AgentResearchOutcome.tsx"
+      ],
+      "original_sha256": "decc1e3f7d70442fce6a286a80931f9cf4de74ee59cb7486f840ea6093688256"
+    },
+    {
+      "path": "apps/web/src/components/AgentRunActivity.tsx",
+      "original_status": "??",
+      "disposition": "replaced_by_reviewed_implementation",
+      "reason": "The capability is retained through current owners and focused tests; the older component or monolithic fixture is not imported.",
+      "current_owners": [
+        "apps/web/src/components/AgentTranscript.tsx",
+        "apps/web/src/state/agent-progress.ts"
+      ],
+      "original_sha256": "0ddcd847d64e6bd00d60d982450bdfa7d17b6e9b0bf239fb32c073e536bdc34c"
+    },
+    {
+      "path": "apps/web/src/components/CircuitSources.tsx",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/CircuitSources.tsx"
+      ],
+      "original_sha256": "f81e4f8d3d99acaa5677af680156079dd835a52a260185e2e775d8971cc157de"
+    },
+    {
+      "path": "apps/web/src/components/ComparisonFindings.tsx",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/ComparisonFindings.tsx"
+      ],
+      "original_sha256": "1b3f97de293f0b79790f4bbdc4f87e6bdda312d800d2227aade9d1aa669da7d8"
+    },
+    {
+      "path": "apps/web/src/components/ComputeEnvironment.tsx",
+      "original_status": "??",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "apps/web/src/components/ComputeEnvironment.tsx"
+      ],
+      "original_sha256": "e1f3d325671aeaed3c604d0a5f8f2e01924f9bff1422357decbb134054792762"
+    },
+    {
+      "path": "apps/web/src/components/ExecutionCircuit.tsx",
+      "original_status": "??",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "apps/web/src/components/ExecutionCircuit.tsx"
+      ],
+      "original_sha256": "d3b3d5fa59098e58cb66c6e2cd79f9c37b0c1007bdf1421edf231141b7140e92"
+    },
+    {
+      "path": "apps/web/src/components/ExecutionConfiguration.tsx",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/ExecutionConfiguration.tsx"
+      ],
+      "original_sha256": "01bb4237e1e6d18a781445835c2673d3c6d8c2c520b2953eaaa7927cfc07d375"
+    },
+    {
+      "path": "apps/web/src/components/ModelFolderLibrary.tsx",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/ModelFolderLibrary.tsx"
+      ],
+      "original_sha256": "1dd3527131dd50b7849fa0c0a6b21d142e5f423cb9f4b936f59c8af72e782ccc"
+    },
+    {
+      "path": "apps/web/src/components/ResearchMetricComparison.tsx",
+      "original_status": "??",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "apps/web/src/components/ResearchMetricComparison.tsx"
+      ],
+      "original_sha256": "fe7e2dcbf1e77920fac211ba1b6dd83376e9b5b2b2cf2c474b8721d4829757e0"
+    },
+    {
+      "path": "apps/web/src/components/ResearchNextStep.tsx",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/ResearchNextStep.tsx"
+      ],
+      "original_sha256": "5183032a5d7189533ae37c43746571a19c4fef434f0e2e081f6c2cb58f543b32"
+    },
+    {
+      "path": "apps/web/src/components/ResearchProjects.tsx",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/ResearchProjects.tsx"
+      ],
+      "original_sha256": "bbd75974dcba2500bb3173aa368b5265b675ca172b1f8e5ead3494a06d79fb68"
+    },
+    {
+      "path": "apps/web/src/components/ResearchRunDetails.tsx",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/ResearchRunDetails.tsx"
+      ],
+      "original_sha256": "78b11dd624736e6d204ce2bcdf951e9a2efa4199136cf048506e68cd4e69c8d6"
+    },
+    {
+      "path": "apps/web/src/components/ResearchRunList.tsx",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/ResearchRunList.tsx"
+      ],
+      "original_sha256": "61d42fcebe6cbfc4441378ff7f8c0883b229210f41e350589e03acb0a18354d8"
+    },
+    {
+      "path": "apps/web/src/components/ResearchTeam.tsx",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/ResearchTeam.tsx"
+      ],
+      "original_sha256": "d65bf809a4315fc5e3d088a4ede23e7c0b6b314bc41c6a5d57b085d375b47a14"
+    },
+    {
+      "path": "apps/web/src/components/SavedStateResult.tsx",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/SavedStateResult.tsx"
+      ],
+      "original_sha256": "cef17688adb5e0915f10d3258cf7da071cde6a73f75ae6b94742b51c4548f43f"
+    },
+    {
+      "path": "apps/web/src/components/ScientificSynthesis.tsx",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/ScientificSynthesis.tsx"
+      ],
+      "original_sha256": "1d3b3fa77afc232a2b4e13d65f47e034921b4ff6a7394ea91095621b038e452e"
+    },
+    {
+      "path": "apps/web/src/components/SynthesisEvidence.tsx",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/SynthesisEvidence.tsx"
+      ],
+      "original_sha256": "cfd1868b9a64302516a27f5ddc49e96f2b7b648ed03a5e4ae255614bf5f98c7f"
+    },
+    {
+      "path": "apps/web/src/components/SynthesisExampleLibrary.tsx",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/SynthesisExampleLibrary.tsx"
+      ],
+      "original_sha256": "9035096dfaaf39eb30cbeb35cdde57d830968e4359d28a040422c03a11d8ac38"
+    },
+    {
+      "path": "apps/web/src/components/SynthesisIteration.tsx",
+      "original_status": "??",
+      "disposition": "replaced_by_reviewed_implementation",
+      "reason": "The capability is retained through current owners and focused tests; the older component or monolithic fixture is not imported.",
+      "current_owners": [
+        "apps/web/src/pages/SynthesisPage.tsx",
+        "apps/web/src/state/synthesis-evidence.ts",
+        "apps/web/e2e/synthesis-evidence.spec.mjs"
+      ],
+      "original_sha256": "b936870ad682627b0a0b38c3f202a63c2c704c6b205d21b9f78c610e62b2fe4c"
+    },
+    {
+      "path": "apps/web/src/components/ToolbarMenu.tsx",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/components/ToolbarMenu.tsx"
+      ],
+      "original_sha256": "fd4538ca1a97cda91c70188a21a1caced7f091e792b0337b8b0b0912e9d4ca75"
+    },
+    {
+      "path": "apps/web/src/data/synthesis-acceptance.json",
+      "original_status": "??",
+      "disposition": "replaced_by_reviewed_implementation",
+      "reason": "The capability is retained through current owners and focused tests; the older component or monolithic fixture is not imported.",
+      "current_owners": [
+        "apps/web/public/examples/synthesis/acceptance.json"
+      ],
+      "original_sha256": "7da7459dc0a670e5b3c820693a5d5cde2ec91ae8e7db0207dea7a86ef9de2958"
+    },
+    {
+      "path": "apps/web/src/data/synthesis-catalog.json",
+      "original_status": "??",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "apps/web/src/data/synthesis-catalog.json"
+      ],
+      "original_sha256": "4908893a727a8babe26c85084a4562380732df478a33d9e65855ad25d7155e24"
+    },
+    {
+      "path": "apps/web/src/hooks/useResearchRuns.ts",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/hooks/useResearchRuns.ts"
+      ],
+      "original_sha256": "987c64ab4fade4eb95c486787bce6e07c507f378ad5d39cd10b883772ffb3cd9"
+    },
+    {
+      "path": "apps/web/src/navigation.css",
+      "original_status": "??",
+      "disposition": "replaced_by_reviewed_implementation",
+      "reason": "The capability is retained through current owners and focused tests; the older component or monolithic fixture is not imported.",
+      "current_owners": [
+        "apps/web/src/workspace.css",
+        "apps/web/e2e/navigation-rail.spec.mjs"
+      ],
+      "original_sha256": "5b3a26b1af9bb51efb3cfbc8b08a2d81ad35a9e8775d5d55b29ef6c27a8b3fee"
+    },
+    {
+      "path": "apps/web/src/state/agent-code-preview.ts",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/state/agent-code-preview.ts"
+      ],
+      "original_sha256": "85adcbcc40b731fa2f4b11ad51c656a75175d4a7cf4c0d633e862e079dc6c951"
+    },
+    {
+      "path": "apps/web/src/state/agent-failure.ts",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/state/agent-failure.ts"
+      ],
+      "original_sha256": "7619ac0b594103817d883930c82f6ada10080e35bc32685c08ccbbb0205dd995"
+    },
+    {
+      "path": "apps/web/src/state/execution-profile.ts",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/state/execution-profile.ts"
+      ],
+      "original_sha256": "7ccc1b85a6ca79e68f7658e0d1df8be9b236b0d9c112996f26c2d8c7996db9e1"
+    },
+    {
+      "path": "apps/web/src/state/execution-source.ts",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/state/execution-source.ts"
+      ],
+      "original_sha256": "d6dc6c8b3de6c93ba06e730326743e0697ac0dbbdb1c9c6fbaeb35c14e902ac1"
+    },
+    {
+      "path": "apps/web/src/state/model-folders.ts",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/state/model-folders.ts"
+      ],
+      "original_sha256": "c8698cc29bba980446b3d69506e968e16c68f994f9d17ac2235385af703c49c5"
+    },
+    {
+      "path": "apps/web/src/state/python-style.ts",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/state/python-style.ts"
+      ],
+      "original_sha256": "05e6a14cd37d4c0864577c03fa93b10e11d1c6126bdd2eb2ec151d2d1eefca3c"
+    },
+    {
+      "path": "apps/web/src/state/qpu-hardware.ts",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/state/qpu-hardware.ts"
+      ],
+      "original_sha256": "58ebec933d646b64a4673fd24a5f22d051befd9ad6082659923a42f947946b5c"
+    },
+    {
+      "path": "apps/web/src/state/research-coordination.ts",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/state/research-coordination.ts"
+      ],
+      "original_sha256": "3d67906e8921fac27fc21360855b9f9b86e969740206a8b8fb1321607935c773"
+    },
+    {
+      "path": "apps/web/src/state/research-delivery.ts",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/state/research-delivery.ts"
+      ],
+      "original_sha256": "29f85fc2751103fef6f351bdf874fb0bca245d5d4dee346e86a8a0fb7248ca93"
+    },
+    {
+      "path": "apps/web/src/state/research-guidance.ts",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/state/research-guidance.ts"
+      ],
+      "original_sha256": "0938ba41a809deffda95dd41c7181d03b1c92caba9f4dd1a3344beff43074ccd"
+    },
+    {
+      "path": "apps/web/src/state/research-result.ts",
+      "original_status": "??",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "apps/web/src/state/research-result.ts"
+      ],
+      "original_sha256": "af6a765d554cdddef3926564a8b3dbb99495550302c0542a6b7ea0fa949fffbc"
+    },
+    {
+      "path": "apps/web/src/state/saved-state.ts",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/state/saved-state.ts"
+      ],
+      "original_sha256": "25a918893478006ce76018b89b3369ab10531c6f283fa07d8068e0fa89b7c922"
+    },
+    {
+      "path": "apps/web/src/state/ssh-command.ts",
+      "original_status": "??",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "apps/web/src/state/ssh-command.ts"
+      ],
+      "original_sha256": "b67e33718ec6d02dae4b0440ce790d4d2a4860413a65590303d06d344a370618"
+    },
+    {
+      "path": "apps/web/src/state/synthesis-catalog.ts",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/state/synthesis-catalog.ts"
+      ],
+      "original_sha256": "f0101c7c4aa77f4bb8fa6e410a47d49bbcae400269bed76fed08254bf60054de"
+    },
+    {
+      "path": "apps/web/src/state/synthesis-evidence.ts",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/state/synthesis-evidence.ts"
+      ],
+      "original_sha256": "6509c58b7f6c9df3386631679859b755b2cf5fb95ff7a84467c7dade69636853"
+    },
+    {
+      "path": "apps/web/src/surfaces.css",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/surfaces.css"
+      ],
+      "original_sha256": "c014c6ebb9a1d0f92aa44f5d53c349debecc478fd665e25a05f4b378094670de"
+    },
+    {
+      "path": "apps/web/src/tasks/scientific-synthesis.mjs",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/src/tasks/scientific-synthesis.mjs"
+      ],
+      "original_sha256": "61a70d07335ce82b7b0042ae25841f5862e1930255c434cea367ddb172c045ee"
+    },
+    {
+      "path": "apps/web/src/tasks/synth-arithmetic.mjs",
+      "original_status": "??",
+      "disposition": "replaced_by_reviewed_implementation",
+      "reason": "The capability is retained through current owners and focused tests; the older component or monolithic fixture is not imported.",
+      "current_owners": [
+        "apps/web/src/state/synthesis-catalog.ts",
+        "apps/web/public/examples/synthesis/acceptance.json"
+      ],
+      "original_sha256": "6b9f3000490b31e45f92fa04939e53202f002e6f88cdc37884e232e5a68b6593"
+    },
+    {
+      "path": "apps/web/src/tasks/synth-optimization.mjs",
+      "original_status": "??",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "apps/web/src/tasks/synth-optimization.mjs"
+      ],
+      "original_sha256": "144c1add2640cfb9a63060f5d5d82a81f7509a940223e9bc7aa86ec3b505afd0"
+    },
+    {
+      "path": "apps/web/tests/agent-code-preview.test.mjs",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/tests/agent-code-preview.test.mjs"
+      ],
+      "original_sha256": "3886b2dee87996ff02223856cbf915220e793dffc8584c034327b2a098bd1514"
+    },
+    {
+      "path": "apps/web/tests/agent-failure.test.mjs",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/tests/agent-failure.test.mjs"
+      ],
+      "original_sha256": "13d0562ae2898c37ffe457630bc649e222a33d29892ab569ad7430637ee82ffe"
+    },
+    {
+      "path": "apps/web/tests/circuit-hierarchy.test.mjs",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/tests/circuit-hierarchy.test.mjs"
+      ],
+      "original_sha256": "2246af6f13038330a0aa472d9af047ef395be5369a35669dc802ba5a9c8e1367"
+    },
+    {
+      "path": "apps/web/tests/execution-circuit.test.mjs",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/tests/execution-circuit.test.mjs"
+      ],
+      "original_sha256": "4523d95f60b856cfab058b206968a0eb218f8905b25790281aa86181997409ac"
+    },
+    {
+      "path": "apps/web/tests/execution-profile.test.mjs",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/tests/execution-profile.test.mjs"
+      ],
+      "original_sha256": "5c691a9eef44f89bbb121e69a312373e49da7dfe1c635ea405fbf1a69a2a4385"
+    },
+    {
+      "path": "apps/web/tests/model-folders.test.mjs",
+      "original_status": "??",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "apps/web/tests/model-folders.test.mjs"
+      ],
+      "original_sha256": "82d2b4e2c6c6229f4a03b90053b3540281af1e4bdfdd521f501ae0ac1019c147"
+    },
+    {
+      "path": "apps/web/tests/python-style.test.mjs",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/tests/python-style.test.mjs"
+      ],
+      "original_sha256": "c8d8dad34894a18defb7820afb51af75e51273e688c23576151668a2aeae1233"
+    },
+    {
+      "path": "apps/web/tests/qpu-hardware.test.mjs",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/tests/qpu-hardware.test.mjs"
+      ],
+      "original_sha256": "26c795eaea9cfe5024f288589e0b6ea403801c8853980b76fe7d4664cc7149c2"
+    },
+    {
+      "path": "apps/web/tests/research-coordination.test.mjs",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/tests/research-coordination.test.mjs"
+      ],
+      "original_sha256": "3a7ace246c2c450feeec8065c85cd240b06d8c2750f338ba2de11803f5f780ec"
+    },
+    {
+      "path": "apps/web/tests/research-delivery.test.mjs",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/tests/research-delivery.test.mjs"
+      ],
+      "original_sha256": "8a39c59d27638373b3ac5f9082a8e73f166c10805157944ff295f551b4a60988"
+    },
+    {
+      "path": "apps/web/tests/research-guidance.test.mjs",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/tests/research-guidance.test.mjs"
+      ],
+      "original_sha256": "db104c2e064875b2ebc5957b1e712c3d8e0c8dbcdf3bc291c7f46668bcbb2d26"
+    },
+    {
+      "path": "apps/web/tests/research-result.test.mjs",
+      "original_status": "??",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "apps/web/tests/research-result.test.mjs"
+      ],
+      "original_sha256": "bba18debac4697a0dbe28b014833f21f350ba6f85ce0f5544041caae0a7b4cc3"
+    },
+    {
+      "path": "apps/web/tests/saved-state.test.mjs",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/tests/saved-state.test.mjs"
+      ],
+      "original_sha256": "73ea74013cf23c1a410fc8b9505aac97a03290fd4c0b71845df9435ddae2bca9"
+    },
+    {
+      "path": "apps/web/tests/scientific-synthesis.test.mjs",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/tests/scientific-synthesis.test.mjs"
+      ],
+      "original_sha256": "2203638fb643aad43c74c622830660e97e66cfb42d5d06de0c18f30a56f54916"
+    },
+    {
+      "path": "apps/web/tests/ssh-command.test.mjs",
+      "original_status": "??",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "apps/web/tests/ssh-command.test.mjs"
+      ],
+      "original_sha256": "43b25cf5aba660aa3ec70cf526a69627bb080f88f2f704b8d741c6c2aabbb1ca"
+    },
+    {
+      "path": "apps/web/tests/synthesis-catalog.test.mjs",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/tests/synthesis-catalog.test.mjs"
+      ],
+      "original_sha256": "8790a849ff40b6f081ef7ba5784d8583b6ece7d25ba272b4f9bfd30c15dd90fa"
+    },
+    {
+      "path": "apps/web/tests/synthesis-evidence.test.mjs",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "apps/web/tests/synthesis-evidence.test.mjs"
+      ],
+      "original_sha256": "a96f0273e213d20edaf24c0f5f39cc5bf9d787e3eddfab9c7a1ac550522b2560"
+    },
+    {
+      "path": "apps/web/tests/synthesis-source.test.mjs",
+      "original_status": "??",
+      "disposition": "replaced_by_reviewed_implementation",
+      "reason": "The capability is retained through current owners and focused tests; the older component or monolithic fixture is not imported.",
+      "current_owners": [
+        "apps/web/tests/synthesis-catalog.test.mjs",
+        "apps/web/tests/synthesis-evidence.test.mjs"
+      ],
+      "original_sha256": "7aa71ca64fbafdbeb15167dcef117154b0218deb474e9241b6110e69d36d86af"
+    },
+    {
+      "path": "capabilities/DOMAIN_SCOPE.md",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "capabilities/DOMAIN_SCOPE.md"
+      ],
+      "original_sha256": "1e9deb7d05848232ce2f14c591311ba7616722eeecc849bbd777442a6d10645b"
+    },
+    {
+      "path": "capabilities/KNOWLEDGE_PLAN.md",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "capabilities/KNOWLEDGE_PLAN.md"
+      ],
+      "original_sha256": "ee3e2e410de4f235fd1bc28f26d63f4711f730fd329cdb5e0d19c41dec8b8a60"
+    },
+    {
+      "path": "docs/acceptance/CIRCUIT_HIERARCHY_2026-11-10.md",
+      "original_status": "??",
+      "disposition": "historical_acceptance_superseded",
+      "reason": "Earlier dirty-workspace observations are superseded by focused reviewed acceptance reports. Do not copy historical claims as evidence for the final code.",
+      "current_owners": [
+        "docs/acceptance/WORKSPACE_EXTRACTION_2026-11-18.md"
+      ],
+      "original_sha256": "2451227303826bd74183108da1126a67af563d110ccca08ab9503c68fefbc7f3"
+    },
+    {
+      "path": "docs/acceptance/CLEAN_SYNTHESIS_EXAMPLES_2026-11-13.md",
+      "original_status": "??",
+      "disposition": "historical_acceptance_superseded",
+      "reason": "Earlier dirty-workspace observations are superseded by focused reviewed acceptance reports. Do not copy historical claims as evidence for the final code.",
+      "current_owners": [
+        "docs/acceptance/WORKSPACE_EXTRACTION_2026-11-18.md"
+      ],
+      "original_sha256": "25f5910d4622c7c230bb0efcd8d5868807bdffe66c10dde9ed99c5ad917ee4e4"
+    },
+    {
+      "path": "docs/acceptance/COMPACT_NAVIGATION_2026-11-12.md",
+      "original_status": "??",
+      "disposition": "historical_acceptance_superseded",
+      "reason": "Earlier dirty-workspace observations are superseded by focused reviewed acceptance reports. Do not copy historical claims as evidence for the final code.",
+      "current_owners": [
+        "docs/acceptance/WORKSPACE_EXTRACTION_2026-11-18.md"
+      ],
+      "original_sha256": "ec82ee8465e37714ffa53c07334bcf71b77e90e4c7c6a5ff443b3a05edbbe2b1"
+    },
+    {
+      "path": "docs/acceptance/COMPARISON_PREVIEW_2026-11-13.md",
+      "original_status": "??",
+      "disposition": "historical_acceptance_superseded",
+      "reason": "Earlier dirty-workspace observations are superseded by focused reviewed acceptance reports. Do not copy historical claims as evidence for the final code.",
+      "current_owners": [
+        "docs/acceptance/WORKSPACE_EXTRACTION_2026-11-18.md"
+      ],
+      "original_sha256": "b3aa17a5df2c84b61fd37676e3e43230daa3fef2bdef28df146c6849345fe653"
+    },
+    {
+      "path": "docs/acceptance/COMPARISON_SUMMARY_2026-11-13.md",
+      "original_status": "??",
+      "disposition": "historical_acceptance_superseded",
+      "reason": "Earlier dirty-workspace observations are superseded by focused reviewed acceptance reports. Do not copy historical claims as evidence for the final code.",
+      "current_owners": [
+        "docs/acceptance/WORKSPACE_EXTRACTION_2026-11-18.md"
+      ],
+      "original_sha256": "c61d19548a818e650624e4fab4ca343ae0016d91534294f3346734b9327c8cd6"
+    },
+    {
+      "path": "docs/acceptance/COMPOSER_PROFILE_2026-11-12.md",
+      "original_status": "??",
+      "disposition": "historical_acceptance_superseded",
+      "reason": "Earlier dirty-workspace observations are superseded by focused reviewed acceptance reports. Do not copy historical claims as evidence for the final code.",
+      "current_owners": [
+        "docs/acceptance/WORKSPACE_EXTRACTION_2026-11-18.md"
+      ],
+      "original_sha256": "97d28b0b028f67bd8301ee63ef7f44b692a887b9ced66c8a5ad6d04e9c2c1001"
+    },
+    {
+      "path": "docs/acceptance/COMPUTE_ENVIRONMENT_2026-11-10.md",
+      "original_status": "??",
+      "disposition": "historical_acceptance_superseded",
+      "reason": "Earlier dirty-workspace observations are superseded by focused reviewed acceptance reports. Do not copy historical claims as evidence for the final code.",
+      "current_owners": [
+        "docs/acceptance/WORKSPACE_EXTRACTION_2026-11-18.md"
+      ],
+      "original_sha256": "41c0c634fb247fa6ae15d2cf77f750327574080723754faf5c9d6b1c45d427bb"
+    },
+    {
+      "path": "docs/acceptance/EXECUTION_TARGETS_2026-11-10.md",
+      "original_status": "??",
+      "disposition": "historical_acceptance_superseded",
+      "reason": "Earlier dirty-workspace observations are superseded by focused reviewed acceptance reports. Do not copy historical claims as evidence for the final code.",
+      "current_owners": [
+        "docs/acceptance/WORKSPACE_EXTRACTION_2026-11-18.md"
+      ],
+      "original_sha256": "b9f09a960e67a8d09c4b486961d4030f057ed472b533ff3007b65602deb55de6"
+    },
+    {
+      "path": "docs/acceptance/INVSQRT_SCRATCH_REUSE_2026-11-05.md",
+      "original_status": "??",
+      "disposition": "historical_acceptance_superseded",
+      "reason": "Earlier dirty-workspace observations are superseded by focused reviewed acceptance reports. Do not copy historical claims as evidence for the final code.",
+      "current_owners": [
+        "docs/acceptance/WORKSPACE_EXTRACTION_2026-11-18.md"
+      ],
+      "original_sha256": "5451d62cff4259871086e7cd4a01a5971705edc131d59f597b775c1c1ca39d86"
+    },
+    {
+      "path": "docs/acceptance/MODEL_LIBRARY_NAVIGATION_2026-11-13.md",
+      "original_status": "??",
+      "disposition": "historical_acceptance_superseded",
+      "reason": "Earlier dirty-workspace observations are superseded by focused reviewed acceptance reports. Do not copy historical claims as evidence for the final code.",
+      "current_owners": [
+        "docs/acceptance/WORKSPACE_EXTRACTION_2026-11-18.md"
+      ],
+      "original_sha256": "97b799e6c70508365cf6313333779f2c638a9dfa29b1b8e70a8a4e856efba142"
+    },
+    {
+      "path": "docs/acceptance/RESEARCH_LEARNING_GUIDANCE_2026-11-13.md",
+      "original_status": "??",
+      "disposition": "historical_acceptance_superseded",
+      "reason": "Earlier dirty-workspace observations are superseded by focused reviewed acceptance reports. Do not copy historical claims as evidence for the final code.",
+      "current_owners": [
+        "docs/acceptance/WORKSPACE_EXTRACTION_2026-11-18.md"
+      ],
+      "original_sha256": "0cc01cd2c3b6bea626315233d7276c4ea9adde0b4b52ccbcaf29403bdc8166c7"
+    },
+    {
+      "path": "docs/acceptance/RESEARCH_METRICS_2026-11-05.md",
+      "original_status": "??",
+      "disposition": "historical_acceptance_superseded",
+      "reason": "Earlier dirty-workspace observations are superseded by focused reviewed acceptance reports. Do not copy historical claims as evidence for the final code.",
+      "current_owners": [
+        "docs/acceptance/WORKSPACE_EXTRACTION_2026-11-18.md"
+      ],
+      "original_sha256": "1fa6c0b5db3b86c0a985882a29fbc3339d3614f1762380c9cece8559852fb512"
+    },
+    {
+      "path": "docs/acceptance/RESEARCH_NEXT_STEP_2026-11-13.md",
+      "original_status": "??",
+      "disposition": "historical_acceptance_superseded",
+      "reason": "Earlier dirty-workspace observations are superseded by focused reviewed acceptance reports. Do not copy historical claims as evidence for the final code.",
+      "current_owners": [
+        "docs/acceptance/WORKSPACE_EXTRACTION_2026-11-18.md"
+      ],
+      "original_sha256": "bc6d5b3388720c1d768b1c91df164af4cf981a30730f6f063fd7e5260781eff8"
+    },
+    {
+      "path": "docs/acceptance/RESULT_DISPLAY_2026-11-10.md",
+      "original_status": "??",
+      "disposition": "historical_acceptance_superseded",
+      "reason": "Earlier dirty-workspace observations are superseded by focused reviewed acceptance reports. Do not copy historical claims as evidence for the final code.",
+      "current_owners": [
+        "docs/acceptance/WORKSPACE_EXTRACTION_2026-11-18.md"
+      ],
+      "original_sha256": "863634a4f0c7ddb823cb54c4e85aa802c5b184d008487fcbd28002114697ad01"
+    },
+    {
+      "path": "docs/acceptance/SCIENTIFIC_SYNTHESIS_2026-11-10.md",
+      "original_status": "??",
+      "disposition": "historical_acceptance_superseded",
+      "reason": "Earlier dirty-workspace observations are superseded by focused reviewed acceptance reports. Do not copy historical claims as evidence for the final code.",
+      "current_owners": [
+        "docs/acceptance/WORKSPACE_EXTRACTION_2026-11-18.md"
+      ],
+      "original_sha256": "0f42cbb0d2443a5ee214669f4126f05362f5c9c24796f118fc39ab27fab247fb"
+    },
+    {
+      "path": "docs/acceptance/SYNTHESIS_ITERATION_2026-11-11.md",
+      "original_status": "??",
+      "disposition": "historical_acceptance_superseded",
+      "reason": "Earlier dirty-workspace observations are superseded by focused reviewed acceptance reports. Do not copy historical claims as evidence for the final code.",
+      "current_owners": [
+        "docs/acceptance/WORKSPACE_EXTRACTION_2026-11-18.md"
+      ],
+      "original_sha256": "53c6bc5eb2b768ce050e500bfee4c39d6ae4ea531c425c9cb60c0535b8a3ca35"
+    },
+    {
+      "path": "docs/acceptance/SYNTHESIS_LIBRARY_2026-11-13.md",
+      "original_status": "??",
+      "disposition": "historical_acceptance_superseded",
+      "reason": "Earlier dirty-workspace observations are superseded by focused reviewed acceptance reports. Do not copy historical claims as evidence for the final code.",
+      "current_owners": [
+        "docs/acceptance/WORKSPACE_EXTRACTION_2026-11-18.md"
+      ],
+      "original_sha256": "94d0fb01db00a07dd483d4a0716f3114a112a04b5750bf2e3f6c9fb27276bef1"
+    },
+    {
+      "path": "docs/acceptance/SYNTH_WORKFLOW_2026-11-10.md",
+      "original_status": "??",
+      "disposition": "historical_acceptance_superseded",
+      "reason": "Earlier dirty-workspace observations are superseded by focused reviewed acceptance reports. Do not copy historical claims as evidence for the final code.",
+      "current_owners": [
+        "docs/acceptance/WORKSPACE_EXTRACTION_2026-11-18.md"
+      ],
+      "original_sha256": "b2275b272d6f541d2a00e4359d01f46670e746bee268a833509cf241f9da66ec"
+    },
+    {
+      "path": "docs/acceptance/TOKEN_LIMIT_2026-11-12.md",
+      "original_status": "??",
+      "disposition": "historical_acceptance_superseded",
+      "reason": "Earlier dirty-workspace observations are superseded by focused reviewed acceptance reports. Do not copy historical claims as evidence for the final code.",
+      "current_owners": [
+        "docs/acceptance/WORKSPACE_EXTRACTION_2026-11-18.md"
+      ],
+      "original_sha256": "be535e809591d72f870cd1493ef6eeedb39ac4f8f9895872a25111bfba085069"
+    },
+    {
+      "path": "docs/acceptance/TOOL_ACTIVITY_2026-11-12.md",
+      "original_status": "??",
+      "disposition": "historical_acceptance_superseded",
+      "reason": "Earlier dirty-workspace observations are superseded by focused reviewed acceptance reports. Do not copy historical claims as evidence for the final code.",
+      "current_owners": [
+        "docs/acceptance/WORKSPACE_EXTRACTION_2026-11-18.md"
+      ],
+      "original_sha256": "02d397c8f8fa445e21560bb0e1591b578b2a2a7685d49d50f96a7c155f150f5d"
+    },
+    {
+      "path": "docs/acceptance/UI_CONSISTENCY_2026-11-12.md",
+      "original_status": "??",
+      "disposition": "historical_acceptance_superseded",
+      "reason": "Earlier dirty-workspace observations are superseded by focused reviewed acceptance reports. Do not copy historical claims as evidence for the final code.",
+      "current_owners": [
+        "docs/acceptance/WORKSPACE_EXTRACTION_2026-11-18.md"
+      ],
+      "original_sha256": "033a7c26e006ed0608815d568411980f3319c5e440b65a2a746a76a2efac6f81"
+    },
+    {
+      "path": "docs/acceptance/researcher-review/FINDINGS_2026-11-05.md",
+      "original_status": "??",
+      "disposition": "retain_portable_review_record",
+      "reason": "Keep repository-relative evidence references and honest trial status; do not restore personal absolute paths from the original workspace.",
+      "current_owners": [
+        "docs/acceptance/researcher-review/FINDINGS_2026-11-05.md"
+      ],
+      "original_sha256": "a7cdb1b6a970a37213f3d5059a9e6f9d57ce158c6a44644bb84df8722d5f09bb"
+    },
+    {
+      "path": "docs/acceptance/researcher-review/QC-01-2026-11-05.md",
+      "original_status": "??",
+      "disposition": "retain_portable_review_record",
+      "reason": "Keep repository-relative evidence references and honest trial status; do not restore personal absolute paths from the original workspace.",
+      "current_owners": [
+        "docs/acceptance/researcher-review/QC-01-2026-11-05.md"
+      ],
+      "original_sha256": "7c1a21cb374f60ae962663bc786e47cffac555dd7e4100d4def11ac448d1ea1e"
+    },
+    {
+      "path": "docs/acceptance/researcher-review/QCH-01-2026-11-05.md",
+      "original_status": "??",
+      "disposition": "retain_portable_review_record",
+      "reason": "Keep repository-relative evidence references and honest trial status; do not restore personal absolute paths from the original workspace.",
+      "current_owners": [
+        "docs/acceptance/researcher-review/QCH-01-2026-11-05.md"
+      ],
+      "original_sha256": "bd242e462490854151a534066ebff4ebb1e6ca8acd1bb3770edda97c4d9b3480"
+    },
+    {
+      "path": "docs/acceptance/researcher-review/QD-01-2026-11-05.md",
+      "original_status": "??",
+      "disposition": "retain_portable_review_record",
+      "reason": "Keep repository-relative evidence references and honest trial status; do not restore personal absolute paths from the original workspace.",
+      "current_owners": [
+        "docs/acceptance/researcher-review/QD-01-2026-11-05.md"
+      ],
+      "original_sha256": "60333d68f735b0a76c676def342288e027852b4d097c039b45083deb57072223"
+    },
+    {
+      "path": "docs/acceptance/researcher-review/QEC-01-2026-11-05.md",
+      "original_status": "??",
+      "disposition": "retain_portable_review_record",
+      "reason": "Keep repository-relative evidence references and honest trial status; do not restore personal absolute paths from the original workspace.",
+      "current_owners": [
+        "docs/acceptance/researcher-review/QEC-01-2026-11-05.md"
+      ],
+      "original_sha256": "dbfffa6b56116722b74ea68ba9b42a959e48ca54a968159e20076245c70afc61"
+    },
+    {
+      "path": "docs/acceptance/researcher-review/QI-01-2026-11-05.md",
+      "original_status": "??",
+      "disposition": "retain_portable_review_record",
+      "reason": "Keep repository-relative evidence references and honest trial status; do not restore personal absolute paths from the original workspace.",
+      "current_owners": [
+        "docs/acceptance/researcher-review/QI-01-2026-11-05.md"
+      ],
+      "original_sha256": "6179798c61cb0230c47019bc087a7f32370517bc411b5063972474034f096be5"
+    },
+    {
+      "path": "docs/acceptance/researcher-review/README.md",
+      "original_status": "??",
+      "disposition": "retain_portable_review_record",
+      "reason": "Keep repository-relative evidence references and honest trial status; do not restore personal absolute paths from the original workspace.",
+      "current_owners": [
+        "docs/acceptance/researcher-review/README.md"
+      ],
+      "original_sha256": "1ae564bfbd6f6dcee1e438b5143dad6e463a0a9e9294946ec989ab458e099ac0"
+    },
+    {
+      "path": "docs/acceptance/researcher-review/REVIEW_GUIDE.md",
+      "original_status": "??",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "docs/acceptance/researcher-review/REVIEW_GUIDE.md"
+      ],
+      "original_sha256": "cda6002e95ee628b8b8418f9c46c85586ed0812cec10f14d1e92de99f5d8467e"
+    },
+    {
+      "path": "docs/acceptance/researcher-review/REVIEW_RECORD_TEMPLATE.md",
+      "original_status": "??",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "docs/acceptance/researcher-review/REVIEW_RECORD_TEMPLATE.md"
+      ],
+      "original_sha256": "403739a93f6a4215daabf0505a38c1dfd93dff5d9c6ed8accdc84625fe2578d1"
+    },
+    {
+      "path": "docs/acceptance/researcher-review/TASK_CARDS.md",
+      "original_status": "??",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "docs/acceptance/researcher-review/TASK_CARDS.md"
+      ],
+      "original_sha256": "f9a18958d486043ee12610283a894f34d4f108b393863c08b79494c2b382f291"
+    },
+    {
+      "path": "docs/acceptance/researcher-review/review-register.json",
+      "original_status": "??",
+      "disposition": "retain_portable_review_record",
+      "reason": "Keep repository-relative evidence references and honest trial status; do not restore personal absolute paths from the original workspace.",
+      "current_owners": [
+        "docs/acceptance/researcher-review/review-register.json"
+      ],
+      "original_sha256": "cba41ce68e8f01d8c4e952db357823c52f985436fabd9137dba4156415b3673b"
+    },
+    {
+      "path": "packages/harness-adapter/project-coordination.d.mts",
+      "original_status": "??",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "packages/harness-adapter/project-coordination.d.mts"
+      ],
+      "original_sha256": "013dba4d4cc5b1effa3d95dae04c436b5ebdf2c0d3bc8d8d2e8e2c1e980b76c2"
+    },
+    {
+      "path": "packages/harness-adapter/project-coordination.mjs",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/harness-adapter/project-coordination.mjs"
+      ],
+      "original_sha256": "50e3361905e65c52b7fb8aaa02899b1e568304accfc1435eb3c0bb5f1ab66d77"
+    },
+    {
+      "path": "packages/quantum-workspace/local/research_candidate_worker.py",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/local/research_candidate_worker.py"
+      ],
+      "original_sha256": "9fe9bc8f298532062f15de8c7d88dc0f543eaaad5cd0e722cd0eec92c6cd6f43"
+    },
+    {
+      "path": "packages/quantum-workspace/local/workspace_server/compute_environments.py",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/local/workspace_server/compute_environments.py"
+      ],
+      "original_sha256": "53733b7f4af5c9b0348403b158e44eeeaf60f738eb5d60aa5b5f6505d3f9f304"
+    },
+    {
+      "path": "packages/quantum-workspace/local/workspace_server/execution_capabilities.py",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/local/workspace_server/execution_capabilities.py"
+      ],
+      "original_sha256": "880d7107bcb48180595243dbec81032235a51a5eaaa0332ad40901ba1502f6c3"
+    },
+    {
+      "path": "packages/quantum-workspace/local/workspace_server/execution_profiles.py",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/local/workspace_server/execution_profiles.py"
+      ],
+      "original_sha256": "33814bde09d68eca10732e01fb31a6e119e08cd3cb5b30ad8afd4e6f7bd8a4d8"
+    },
+    {
+      "path": "packages/quantum-workspace/local/workspace_server/invsqrt_evidence.py",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/local/workspace_server/invsqrt_evidence.py"
+      ],
+      "original_sha256": "1d7fcf74895b4280da86391b32f3c981c02f81074f3dab059ae0b57ead2af954"
+    },
+    {
+      "path": "packages/quantum-workspace/local/workspace_server/research_baseline.py",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/local/workspace_server/research_baseline.py"
+      ],
+      "original_sha256": "fa87e85cca71ff9a097d25167d252ff39d837eaf66107ef7a92a7fc5372d5408"
+    },
+    {
+      "path": "packages/quantum-workspace/local/workspace_server/research_candidates.py",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/local/workspace_server/research_candidates.py"
+      ],
+      "original_sha256": "c52ffc29cde0878435dbaf7e4d1b2c4e6b4e3379b44e51a9849366e6000c7bf9"
+    },
+    {
+      "path": "packages/quantum-workspace/local/workspace_server/research_coordination.py",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/local/workspace_server/research_coordination.py"
+      ],
+      "original_sha256": "449b987b610c037f8d50233920828f45bbff2d7d40188360185a368b1ece03fe"
+    },
+    {
+      "path": "packages/quantum-workspace/local/workspace_server/research_recovery.py",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/local/workspace_server/research_recovery.py"
+      ],
+      "original_sha256": "1dd130d0b5feb794feb4d595b8ee7599c3107f7876d652df8d8c8b0467e7d1ad"
+    },
+    {
+      "path": "packages/quantum-workspace/local/workspace_server/research_results.py",
+      "original_status": "??",
+      "disposition": "present_identically",
+      "reason": "Original bytes are present in the reviewed extraction chain.",
+      "current_owners": [
+        "packages/quantum-workspace/local/workspace_server/research_results.py"
+      ],
+      "original_sha256": "48f8dfa0328131e7d966efc1056ce24228d8315255a3459edbbb35b911dd7222"
+    },
+    {
+      "path": "packages/quantum-workspace/local/workspace_server/research_runs.py",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/local/workspace_server/research_runs.py"
+      ],
+      "original_sha256": "e38c129e446387b5f1d41ef5896b0e212d108266cb220b961edc5f33207da7f1"
+    },
+    {
+      "path": "packages/quantum-workspace/local/workspace_server/sdk_inspection.py",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/local/workspace_server/sdk_inspection.py"
+      ],
+      "original_sha256": "52ba41ca7210f0aec32c2d1757f68491c2c6778c980ab651d38bfb06dcce065b"
+    },
+    {
+      "path": "packages/quantum-workspace/local/workspace_server/synthesis_projection.py",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/local/workspace_server/synthesis_projection.py"
+      ],
+      "original_sha256": "9f9ea3572c59a650a80266d02a17ef3c2774571f659c467a898e189e8f3a8fd4"
+    },
+    {
+      "path": "packages/quantum-workspace/scripts/reproduce_invsqrt.py",
+      "original_status": "??",
+      "disposition": "excluded_prototype",
+      "reason": "Historical one-off official-data recorder requiring external competition data and metric code. It is not the reviewed production verifier; retain the original experiment rather than import an untested competing execution path.",
+      "current_owners": [
+        "packages/quantum-workspace/local/workspace_server/research_execution.py",
+        "packages/quantum-workspace/local/research_candidate_worker.py"
+      ],
+      "original_sha256": "bc486d7f1ce72a470ed2f9b2b3e6511830f28a0f7f0ec93de443685beee8b020"
+    },
+    {
+      "path": "packages/quantum-workspace/scripts/research-coordination-fixture.py",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/scripts/research-coordination-fixture.py"
+      ],
+      "original_sha256": "c7c547afbe7117a0611045aa571b46509fe63a9da88351477566ec374b507303"
+    },
+    {
+      "path": "packages/quantum-workspace/scripts/reuse_scratch.py",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/scripts/reuse_scratch.py"
+      ],
+      "original_sha256": "e0066fc743a53d8abf44ae86c4d8874c41bcd2f72e0c60b8cca684a1b8b4a547"
+    },
+    {
+      "path": "packages/quantum-workspace/tests/test_compute_environments.py",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/tests/test_compute_environments.py"
+      ],
+      "original_sha256": "320d804d450fd287773b4005c9076f6a2248e6883683f06675c40ed5286dddb2"
+    },
+    {
+      "path": "packages/quantum-workspace/tests/test_execution_capabilities.py",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/tests/test_execution_capabilities.py"
+      ],
+      "original_sha256": "dacd27fa756413eebbc8761fd4ad74273e19d1ba69aec715c5242f52d755ac1b"
+    },
+    {
+      "path": "packages/quantum-workspace/tests/test_execution_profiles.py",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/tests/test_execution_profiles.py"
+      ],
+      "original_sha256": "c7154d5e5d2fe9416b5fc2bb2305d4a75bf30deeb5fe0eed682d6f3d5037257b"
+    },
+    {
+      "path": "packages/quantum-workspace/tests/test_invsqrt_evidence.py",
+      "original_status": "??",
+      "disposition": "replaced_by_reviewed_implementation",
+      "reason": "The capability is retained through current owners and focused tests; the older component or monolithic fixture is not imported.",
+      "current_owners": [
+        "packages/quantum-workspace/tests/test_api.py",
+        "packages/quantum-workspace/tests/test_research_candidate_worker.py"
+      ],
+      "original_sha256": "c7e040857983ccc512a8c16c01326420d05357a2722958a774a4cdb0ca174de0"
+    },
+    {
+      "path": "packages/quantum-workspace/tests/test_research_baseline.py",
+      "original_status": "??",
+      "disposition": "replaced_by_reviewed_implementation",
+      "reason": "The capability is retained through current owners and focused tests; the older component or monolithic fixture is not imported.",
+      "current_owners": [
+        "packages/quantum-workspace/tests/test_api.py"
+      ],
+      "original_sha256": "6864eae7600e7ef0a51c1cdd7463c04fee8c3110d9cf8cf1b82ede3051746f2f"
+    },
+    {
+      "path": "packages/quantum-workspace/tests/test_research_candidates.py",
+      "original_status": "??",
+      "disposition": "replaced_by_reviewed_implementation",
+      "reason": "The capability is retained through current owners and focused tests; the older component or monolithic fixture is not imported.",
+      "current_owners": [
+        "packages/quantum-workspace/tests/test_api.py"
+      ],
+      "original_sha256": "27bf1f96c8fc828e75491b8fd1f085ac4af5814da152874f9430aa07bd789b7c"
+    },
+    {
+      "path": "packages/quantum-workspace/tests/test_research_coordination.py",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/tests/test_research_coordination.py"
+      ],
+      "original_sha256": "05bb65797a3cbb484f2d38d9177be5da3c083ff9d420907a664f177356e30034"
+    },
+    {
+      "path": "packages/quantum-workspace/tests/test_research_results.py",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/tests/test_research_results.py"
+      ],
+      "original_sha256": "7ae61c75e5273f27564cb1a1fee653d84c68ab3929d97f1105af76c76b727bbf"
+    },
+    {
+      "path": "packages/quantum-workspace/tests/test_scratch_reuse.py",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/tests/test_scratch_reuse.py"
+      ],
+      "original_sha256": "71041dd77c8d66e1f2e0a2f948f651716d6cfcfd0a5ac429658a41faa29cdaaf"
+    },
+    {
+      "path": "packages/quantum-workspace/tests/test_synthesis_preflight.py",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/tests/test_synthesis_preflight.py"
+      ],
+      "original_sha256": "5e11217470982976e1e3d0963e721cf992790e8e6b52d8d620b47d854dd8d4da"
+    },
+    {
+      "path": "packages/quantum-workspace/tests/test_synthesis_projection.py",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/quantum-workspace/tests/test_synthesis_projection.py"
+      ],
+      "original_sha256": "ba8967afa2a0eafb83756222634be9ef78593943f8343f74c1b801c868d4f166"
+    },
+    {
+      "path": "packages/quantum-workspace/tests/test_synthesis_workflow.py",
+      "original_status": "??",
+      "disposition": "replaced_by_reviewed_implementation",
+      "reason": "The capability is retained through current owners and focused tests; the older component or monolithic fixture is not imported.",
+      "current_owners": [
+        "packages/quantum-workspace/tests/test_synthesis_preflight.py",
+        "packages/quantum-workspace/tests/test_synthesis_projection.py"
+      ],
+      "original_sha256": "b73f994958472eae375de231d54bca21e870e751bbd1fdb50763bbae58b43d2e"
+    },
+    {
+      "path": "packages/server/message-delivery-store.mjs",
+      "original_status": "??",
+      "disposition": "integrated_or_superseded",
+      "reason": "Current extraction retains the capability with reviewed APIs, stricter identity/revision and path guards, focused coverage or current presentation owners. A byte difference is not an unsubmitted feature.",
+      "current_owners": [
+        "packages/server/message-delivery-store.mjs"
+      ],
+      "original_sha256": "928699a6c1a3cc9f9e2d8a50b6e79abfe4a9869ba87b8772d2f49a2f6d28865b"
+    },
+    {
+      "path": "restored_synthesis_draft.py",
+      "original_status": "??",
+      "disposition": "preserved_local_research",
+      "reason": "Private working draft or generated research artifact; intentionally retained outside source control.",
+      "current_owners": [],
+      "original_sha256": "2020b98949e9543994b0281c9171e32381de36bfa18b6c7f848301012916ef07"
+    },
+    {
+      "path": "shor15_baseline.fqx",
+      "original_status": "??",
+      "disposition": "preserved_local_research",
+      "reason": "Private working draft or generated research artifact; intentionally retained outside source control.",
+      "current_owners": [],
+      "original_sha256": "a1555316fbe065a21f35baf664310222948215bac7979900cecf9661a9d2b00c"
+    },
+    {
+      "path": "shor15_experiment.py",
+      "original_status": "??",
+      "disposition": "preserved_local_research",
+      "reason": "Private working draft or generated research artifact; intentionally retained outside source control.",
+      "current_owners": [],
+      "original_sha256": "ddda15cb9c48810adfb4a3a78b83512fbdf5619d0bc638ff21c26f80cc13f856"
+    },
+    {
+      "path": "shor15_research_package/SHA256SUMS.txt",
+      "original_status": "??",
+      "disposition": "preserved_local_research",
+      "reason": "Private working draft or generated research artifact; intentionally retained outside source control.",
+      "current_owners": [],
+      "original_sha256": "92c2cdf79b5b26c3f30277282369b81ec8bedecfe43533c18660ce6759c28e98"
+    },
+    {
+      "path": "shor15_research_package/WORKBENCH_RUN.md",
+      "original_status": "??",
+      "disposition": "preserved_local_research",
+      "reason": "Private working draft or generated research artifact; intentionally retained outside source control.",
+      "current_owners": [],
+      "original_sha256": "2824eb4183711a1533e50a5ba0932f6e38b7334f95e57faf88072f38a943b0e0"
+    },
+    {
+      "path": "shor15_research_package/shor15_baseline_m4.fqx",
+      "original_status": "??",
+      "disposition": "preserved_local_research",
+      "reason": "Private working draft or generated research artifact; intentionally retained outside source control.",
+      "current_owners": [],
+      "original_sha256": "a1555316fbe065a21f35baf664310222948215bac7979900cecf9661a9d2b00c"
+    },
+    {
+      "path": "shor15_research_package/shor15_baseline_m4_circuit.txt",
+      "original_status": "??",
+      "disposition": "preserved_local_research",
+      "reason": "Private working draft or generated research artifact; intentionally retained outside source control.",
+      "current_owners": [],
+      "original_sha256": "2e7788a541933d67c37394cb585b10a262e51ef1b16d66d10d855e839e444746"
+    },
+    {
+      "path": "shor15_research_package/shor15_experiment.py",
+      "original_status": "??",
+      "disposition": "preserved_local_research",
+      "reason": "Private working draft or generated research artifact; intentionally retained outside source control.",
+      "current_owners": [],
+      "original_sha256": "ddda15cb9c48810adfb4a3a78b83512fbdf5619d0bc638ff21c26f80cc13f856"
+    },
+    {
+      "path": "shor15_research_package/shor15_report.md",
+      "original_status": "??",
+      "disposition": "preserved_local_research",
+      "reason": "Private working draft or generated research artifact; intentionally retained outside source control.",
+      "current_owners": [],
+      "original_sha256": "a1e495a4683e761d50bd55c39283186dd2bc3e321b9575e0836ae82aff7d2404"
+    },
+    {
+      "path": "shor15_research_package/shor15_research_package.zip",
+      "original_status": "??",
+      "disposition": "preserved_local_research",
+      "reason": "Private working draft or generated research artifact; intentionally retained outside source control.",
+      "current_owners": [],
+      "original_sha256": "566f558121c46fe300dcfa61719145d0159fe6c8972450ad886ef5aaab9d6677"
+    },
+    {
+      "path": "shor15_research_package/shor15_results.json",
+      "original_status": "??",
+      "disposition": "preserved_local_research",
+      "reason": "Private working draft or generated research artifact; intentionally retained outside source control.",
+      "current_owners": [],
+      "original_sha256": "1fb4fe30ce618dda9505aa5ff3c8c84a73b446511f2fd8b1dfde6600348dad28"
+    },
+    {
+      "path": "shor15_research_package/shor15_threshold_m2.fqx",
+      "original_status": "??",
+      "disposition": "preserved_local_research",
+      "reason": "Private working draft or generated research artifact; intentionally retained outside source control.",
+      "current_owners": [],
+      "original_sha256": "a86339b878d0064658b1cf7d469cbfe1b5e8e5736215af35e1431843c151cbad"
+    },
+    {
+      "path": "shor15_research_package/shor15_threshold_m2_circuit.txt",
+      "original_status": "??",
+      "disposition": "preserved_local_research",
+      "reason": "Private working draft or generated research artifact; intentionally retained outside source control.",
+      "current_owners": [],
+      "original_sha256": "fc09939175f8ca7fa3dea41765e90358b1752224216eee1403cc99aa08005446"
+    },
+    {
+      "path": "shor15_research_package/shor15_variant_m1.fqx",
+      "original_status": "??",
+      "disposition": "preserved_local_research",
+      "reason": "Private working draft or generated research artifact; intentionally retained outside source control.",
+      "current_owners": [],
+      "original_sha256": "3c0051050e3be9922cf450f71011939c347b7f51aaeb50a44a5db31c2b0d8775"
+    },
+    {
+      "path": "shor15_research_package/shor15_variant_m1_circuit.txt",
+      "original_status": "??",
+      "disposition": "preserved_local_research",
+      "reason": "Private working draft or generated research artifact; intentionally retained outside source control.",
+      "current_owners": [],
+      "original_sha256": "fedc9ba07853087aed82528c2fe1330940f00e37c883c0e51e69914a818e2920"
+    },
+    {
+      "path": "shor15_variant.fqx",
+      "original_status": "??",
+      "disposition": "preserved_local_research",
+      "reason": "Private working draft or generated research artifact; intentionally retained outside source control.",
+      "current_owners": [],
+      "original_sha256": "3c0051050e3be9922cf450f71011939c347b7f51aaeb50a44a5db31c2b0d8775"
+    }
+  ]
+}
