@@ -1,3 +1,8 @@
+import { notebookExamples } from "./state/notebooks";
+import {
+  notebookContext,
+  type NotebookContext,
+} from "./state/notebook-context";
 import { ToolbarMenu } from "./components/ToolbarMenu";
 import { ComputeEnvironment } from "./components/ComputeEnvironment";
 import { ResearchPackages } from "./components/ResearchPackages";
@@ -59,23 +64,6 @@ export default function App() {
     [sidebarWidth, setSidebarWidth] = usePanelSize("sidebar", 280, 170, 480),
     [guide, setGuide] = useState(false),
     [uploadError, setUploadError] = useState("");
-  const bridge = usePlatformBridge(state, dispatch, agent);
-  const researchTurns = useMemo(
-    () =>
-      researchTurnsFromProgress(progressTurns(agent.view, []), bridge.actions),
-    [agent.view, bridge.actions],
-  );
-  const latest = useRef(state);
-  latest.current = state;
-  useEffect(() => {
-    setActionContext(
-      bridge.ready && bridge.session
-        ? { client: bridge.client, session: bridge.session }
-        : undefined,
-    );
-  }, [bridge.ready, bridge.client, bridge.session]);
-  const editorSync = useEditorSync(state, dispatch);
-  const projectWorkspace = useProjectWorkspace(state, dispatch);
   const [notebookEditor, setNotebookEditor] = useState<{
     active: boolean;
     id?: string;
@@ -92,6 +80,38 @@ export default function App() {
       return { active: false };
     }
   });
+  const [notebookSnapshot, setNotebookSnapshot] = useState<NotebookContext>();
+  const activeNotebook = useMemo(() => {
+    if (state.page !== "model" || !notebookEditor.active) return undefined;
+    const entry =
+      notebookExamples.find((item) => item.id === notebookEditor.id) ||
+      notebookExamples.find(
+        (item) => item.path === "community/basic_examples/superposition",
+      )!;
+    const id = /^import:[a-f0-9]{32}$/.test(notebookEditor.id || "")
+      ? notebookEditor.id!
+      : entry.id;
+    return notebookSnapshot?.id === id
+      ? notebookSnapshot
+      : notebookContext(id, entry.id === id ? entry.title : id, []);
+  }, [state.page, notebookEditor, notebookSnapshot]);
+  const bridge = usePlatformBridge(state, dispatch, agent, activeNotebook);
+  const researchTurns = useMemo(
+    () =>
+      researchTurnsFromProgress(progressTurns(agent.view, []), bridge.actions),
+    [agent.view, bridge.actions],
+  );
+  const latest = useRef(state);
+  latest.current = state;
+  useEffect(() => {
+    setActionContext(
+      bridge.ready && bridge.session
+        ? { client: bridge.client, session: bridge.session }
+        : undefined,
+    );
+  }, [bridge.ready, bridge.client, bridge.session]);
+  const editorSync = useEditorSync(state, dispatch);
+  const projectWorkspace = useProjectWorkspace(state, dispatch);
   useEffect(() => {
     try {
       localStorage.setItem(
@@ -179,6 +199,7 @@ export default function App() {
     if (state.agentOpen)
       return (
         <AgentPanel
+          notebook={activeNotebook}
           language={state.page === "program" ? "qasm" : state.language}
           agent={agent}
           bridge={bridge}
@@ -499,6 +520,7 @@ export default function App() {
           {state.page === "model" && (
             <ModelPage
               notebookEditor={notebookEditor}
+              onNotebookContextChange={setNotebookSnapshot}
               onNotebookEditorChange={setNotebookEditor}
               codePreview={bridge.liveCode}
               onFindFile={() => setQuickOpen(true)}

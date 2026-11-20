@@ -1,3 +1,4 @@
+import type { NotebookContext } from "../state/notebook-context";
 import { NotebookWorkspace } from "../components/NotebookWorkspace";
 import { notebookExamples } from "../state/notebooks";
 import {
@@ -50,6 +51,7 @@ export function ModelPage({
   codePreview,
   notebookEditor,
   onNotebookEditorChange,
+  onNotebookContextChange,
   state,
   dispatch,
   compile,
@@ -64,6 +66,7 @@ export function ModelPage({
   research,
 }: {
   notebookEditor: { active: boolean; id?: string };
+  onNotebookContextChange: (value: NotebookContext) => void;
   onNotebookEditorChange: (value: { active: boolean; id?: string }) => void;
   projectWorkspace: ProjectWorkspace;
   onOpenProject: () => void;
@@ -482,6 +485,7 @@ export function ModelPage({
           <NotebookWorkspace
             key={notebookId}
             notebookId={notebookId}
+            onContextChange={onNotebookContextChange}
             onImport={(id) => onNotebookEditorChange({ active: true, id })}
           />
         )}

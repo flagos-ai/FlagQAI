@@ -1,3 +1,7 @@
+import {
+  notebookGuidance,
+  type NotebookContext,
+} from "../state/notebook-context";
 import { researchRunsAPI } from "../api/research-runs";
 import { previewCode } from "../state/agent-code-preview";
 import { readExperiment } from "../api/experiments";
@@ -19,6 +23,7 @@ export function usePlatformBridge(
   state: WorkspaceState,
   dispatch: React.Dispatch<WorkspaceAction>,
   agent: AgentConversation,
+  notebook?: NotebookContext,
 ) {
   const [client] = useState(() => {
     try {
@@ -49,6 +54,17 @@ export function usePlatformBridge(
     }
   }, [follow]);
   const [ready, setReady] = useState(false);
+  const documentKey = JSON.stringify([
+    state.page,
+    notebook?.id,
+    notebook?.source,
+    state.name,
+    state.source,
+    state.language,
+    state.editorLink?.id,
+  ]);
+  const [publishedDocument, setPublishedDocument] = useState("");
+  const contextReady = ready && publishedDocument === documentKey;
   const [error, setError] = useState("");
   const [backend, setBackend] = useState("");
   const [adapterPath, setAdapterPath] = useState(
@@ -151,17 +167,21 @@ export function usePlatformBridge(
             client,
             session,
             page: snapshot.page,
-            language: snapshot.language || "qasm",
-            name: snapshot.name,
-            source: snapshot.source,
-            editorFile: snapshot.editorLink?.id,
+            language: notebook ? "notebook" : snapshot.language || "qasm",
+            name: notebook ? notebook.title.slice(0, 200) : snapshot.name,
+            source: notebook ? notebook.source : snapshot.source,
+            notebookId: notebook?.id,
+            editorFile: notebook ? undefined : snapshot.editorLink?.id,
             selectedProgramId: snapshot.selectedProgramId,
             selectedJobId: snapshot.selectedJobId,
             shots: snapshot.shots,
             seed: snapshot.seed,
-            dirty: !snapshot.models.some(
-              (m) => m.name === snapshot.name && m.source === snapshot.source,
-            ),
+            dirty: notebook
+              ? notebook.dirty
+              : !snapshot.models.some(
+                  (m) =>
+                    m.name === snapshot.name && m.source === snapshot.source,
+                ),
             turnSeq,
           },
           controller.signal,
@@ -185,6 +205,7 @@ export function usePlatformBridge(
           }
           baseline.current = watermark;
         }
+        setPublishedDocument(documentKey);
         setReady(true);
         setError("");
         setBackend(result.backend.transport + " · " + result.backend.backend);
@@ -213,6 +234,8 @@ export function usePlatformBridge(
     session,
     agent.phase,
     client,
+    notebook,
+    documentKey,
     state.source,
     state.language,
     state.name,
@@ -369,7 +392,7 @@ export function usePlatformBridge(
   return {
     client,
     session,
-    ready,
+    ready: contextReady,
     error,
     backend,
     actions,
@@ -382,7 +405,7 @@ export function usePlatformBridge(
     openCircuit,
     compare,
     controls:
-      ready && session
+      contextReady && session
         ? {
             schema: "flagqai.workspace-controls.v1",
             command: [
@@ -397,21 +420,26 @@ export function usePlatformBridge(
             ],
             followAgent: follow,
             page: state.page,
-            language: state.language || "qasm",
-            model: state.name,
-            project: projectContext
-              ? {
-                  id: projectContext.id,
-                  path: projectContext.path,
-                  root: projectContext.root,
-                  entry: state.editorLink?.project?.path,
-                  snapshot_hash: projectContext.snapshot_hash,
-                }
-              : undefined,
-            sharedModelId: state.editorLink?.id,
-            dirty: !state.models.some(
-              (m) => m.name === state.name && m.source === state.source,
-            ),
+            language: notebook ? "notebook" : state.language || "qasm",
+            model: notebook ? notebook.title : state.name,
+            notebookId: notebook?.id,
+            activeDocumentGuidance: notebook ? notebookGuidance : undefined,
+            project:
+              !notebook && projectContext
+                ? {
+                    id: projectContext.id,
+                    path: projectContext.path,
+                    root: projectContext.root,
+                    entry: state.editorLink?.project?.path,
+                    snapshot_hash: projectContext.snapshot_hash,
+                  }
+                : undefined,
+            sharedModelId: notebook ? undefined : state.editorLink?.id,
+            dirty: notebook
+              ? notebook.dirty
+              : !state.models.some(
+                  (m) => m.name === state.name && m.source === state.source,
+                ),
             backend,
             preferredTools: [
               "workbench_inspect",

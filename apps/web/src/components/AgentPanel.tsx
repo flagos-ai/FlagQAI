@@ -1,3 +1,7 @@
+import {
+  notebookAttachment,
+  type NotebookContext,
+} from "../state/notebook-context";
 import { qaoaTaskPrompt } from "../tasks/qaoa-maxcut.mjs";
 import { UIIcon } from "./UIIcon";
 import { agentRunStatus } from "../state/agent-run-status";
@@ -99,6 +103,7 @@ function TaskIcon({ name }: { name: string }) {
 export function AgentPanel({
   name,
   source,
+  notebook,
   contextLabel = "CURRENT MODEL",
   language = "qasm",
   agent,
@@ -114,6 +119,7 @@ export function AgentPanel({
 }: {
   name: string;
   source: string;
+  notebook?: NotebookContext;
   contextLabel?: string;
   language?: "qasm" | "python";
   agent: AgentConversation;
@@ -224,17 +230,21 @@ export function AgentPanel({
   }, [pendingRepair, attachments.length]);
   const mention = referenceQuery(draft, caret);
   const candidates = [
-    {
-      id: "current",
-      name: name + (language === "python" ? ".py" : ".qasm"),
-      language,
-      source,
-      kind:
-        contextLabel === "CURRENT PROGRAM"
-          ? ("program" as const)
-          : ("model" as const),
-      workspaceFile: editorFile,
-    },
+    ...(notebook
+      ? [notebookAttachment(notebook)]
+      : [
+          {
+            id: "current",
+            name: name + (language === "python" ? ".py" : ".qasm"),
+            language,
+            source,
+            kind:
+              contextLabel === "CURRENT PROGRAM"
+                ? ("program" as const)
+                : ("model" as const),
+            workspaceFile: editorFile,
+          },
+        ]),
     ...references,
   ];
   const matches = candidates
@@ -375,7 +385,17 @@ export function AgentPanel({
     const submitted = draft;
     const snapshot = attachments;
     const text = platformMessage(
-      attachmentMessage(submitted, snapshot),
+      attachmentMessage(
+        submitted,
+        notebook
+          ? [
+              notebookAttachment(notebook),
+              ...snapshot.filter(
+                (item) => item.id !== "notebook-" + notebook.id,
+              ),
+            ]
+          : snapshot,
+      ),
       bridge.controls,
     );
     if (await agent.send(text, submitted)) {

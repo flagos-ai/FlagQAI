@@ -1,3 +1,7 @@
+import {
+  notebookContext,
+  type NotebookContext,
+} from "../state/notebook-context";
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import {
   notebookSessions,
@@ -87,8 +91,10 @@ function Output({ output }: { output: CellOutput }) {
 export function NotebookWorkspace({
   notebookId,
   onImport,
+  onContextChange,
 }: {
   notebookId: string;
+  onContextChange?: (value: NotebookContext) => void;
   onImport: (id: string) => void;
 }) {
   const [seed] = useState(() => initial(notebookId));
@@ -196,6 +202,17 @@ export function NotebookWorkspace({
       window.clearInterval(timer);
     };
   }, [session?.kernel, !!session, seed.id, pending]);
+  useEffect(() => {
+    onContextChange?.(
+      notebookContext(
+        notebookId,
+        session?.title || notebookId,
+        cells,
+        session,
+        error,
+      ),
+    );
+  }, [notebookId, cells, session, error, onContextChange]);
   const active = session?.kernel === "busy";
   async function save() {
     if (!session) throw Error("Notebook is not connected yet.");

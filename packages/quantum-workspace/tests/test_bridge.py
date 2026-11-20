@@ -60,6 +60,20 @@ class BridgeTests(unittest.TestCase):
         self.assertTrue(all(item['turn_seq']==5 for item in events))
         self.assertEqual(self.bridge.events('client-1','other-session',0),[])
         with self.assertRaises(BridgeConflict): self.action('run','run',program_id=compiled['program']['id'],shots=2048)
+    def test_notebook_context_does_not_share_a_hidden_python_model(self):
+        self.bridge.publish({**self.context, 'language': 'notebook', 'name': 'Cooling-system optimization',
+                             'source': '{"cells": [{"source": "capacity = 42"}]}', 'notebookId': 'cooling'})
+        status = self.action('status', 'notebook-status')
+        draft = self.action('draft.read', 'notebook-draft')
+        self.assertEqual(status['language'], 'notebook')
+        self.assertEqual(draft['notebookId'], 'cooling')
+        self.assertIn('capacity = 42', draft['source'])
+        with self.assertRaisesRegex(BridgeConflict, 'notebook snapshot'):
+            self.action('model.share', 'share-notebook', expected_hash=draft['source_hash'])
+        self.assertEqual(self.adapter.calls, [])
+        self.bridge.publish({**self.context, 'language': 'python'})
+        self.assertEqual(self.action('draft.read', 'python-draft')['source'], SOURCE)
+
     def test_context_switch_expiry_and_path_escape_fail_closed(self):
         with self.assertRaises(ValueError): self.action('model.read','bad',model_id='../../AGENTS.md')
         with self.assertRaises(BridgeConflict): self.action('model.share','wrong-hash',expected_hash='old')

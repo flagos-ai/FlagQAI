@@ -3,7 +3,7 @@ export type AgentAttachment = {
   id: string;
   name: string;
   source: string;
-  kind: "model" | "program";
+  kind: "model" | "program" | "notebook";
   language?: "qasm" | "python";
   workspaceFile?: string;
   selection?: { startLine: number; endLine: number };
@@ -51,7 +51,7 @@ export function restoreAttachments(raw: string | null): AgentAttachment[] {
               typeof item.id === "string" &&
               typeof item.name === "string" &&
               typeof item.source === "string" &&
-              ["model", "program"].includes(item.kind),
+              ["model", "program", "notebook"].includes(item.kind),
           )
           .slice(0, 4)
           .map(attachmentSnapshot)
@@ -64,7 +64,12 @@ export function attachmentMessage(text: string, items: AgentAttachment[]) {
   if (!items.length) return text;
   const encoded = items.map((item) => ({
     ...attachmentSnapshot(item),
-    format: item.language === "python" ? "Python" : "OpenQASM",
+    format:
+      item.kind === "notebook"
+        ? "Notebook"
+        : item.language === "python"
+          ? "Python"
+          : "OpenQASM",
     ...(item.workspaceFile
       ? {
           editingGuidance:

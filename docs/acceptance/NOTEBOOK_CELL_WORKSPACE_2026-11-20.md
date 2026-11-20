@@ -135,3 +135,31 @@ Existing kernels need an explicit restart before their next cell execution can
 seed newly supplied helpers. Restart does not execute cells or remove saved
 source, outputs or workspace artifacts; in-memory Python variables are reset.
 No paid model calls were made.
+
+## Active Notebook Agent context
+
+The active Notebook now supplies the Agent's send-time source snapshot and the
+native workspace bridge context, instead of the hidden Python/QASM model. Each
+message captures the title, Notebook/session identity, saved revision, unsaved
+cell sources, kernel state, and bounded execution summaries. Per-cell output
+provenance records whether the source and kernel still match. Imported outputs
+are not presented as execution evidence. Large sources and omitted cells are
+explicitly marked; image payloads are excluded from the prompt.
+
+Notebook snapshots use a distinct document language and cannot be shared as an
+executable Python/QASM model. Switching documents waits for the bridge to publish
+the matching context before enabling Send. Previously sent and pending messages
+retain their original snapshots. This does not add Agent cell editing or cell
+execution tools; users still execute cells through the Notebook workspace.
+
+- A Chromium regression keeps a Shor source in the hidden editor, opens Cooling,
+  edits an unsaved cell and inspects the actual outgoing message. Cooling and its
+  current source are included; Shor and its linked file are absent.
+- Switching Notebooks, refreshing and returning to Python preserves Notebook,
+  Python and chat drafts. The pending message remains unchanged and no Notebook
+  execution is submitted. Notebook sessions are scripted in this context test;
+  no scientific execution or live model response is claimed.
+- 320 frontend tests and 13 bridge tests passed, including Notebook context
+  inspection and rejection of sharing a snapshot as executable source.
+- TypeScript, production build and staged package surface verification passed
+  (2,671 files / 32 entry targets). No paid model calls were made.
