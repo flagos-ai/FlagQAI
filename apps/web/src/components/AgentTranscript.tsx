@@ -146,14 +146,18 @@ function Questions({
     request.questions.map(() => ({ selected: [] as string[], custom: "" })),
   );
   return (
-    <section className="fq-agent-interaction">
+    <section className="fq-agent-interaction fq-agent-question">
       <h3>Input needed</h3>
       {request.questions.map((question, index) => (
         <fieldset key={index}>
           <legend>{question.question}</legend>
           {question.detail && <p>{question.detail}</p>}
           {question.options.map((option) => (
-            <label key={option.label}>
+            <label
+              className="fq-agent-question-option"
+              data-selected={answers[index].selected.includes(option.label)}
+              key={option.label}
+            >
               <input
                 type={question.multiSelect ? "checkbox" : "radio"}
                 name={request.requestId + "-" + index}
@@ -178,7 +182,7 @@ function Questions({
                 }
               />
               <span>
-                {option.label}
+                <strong>{option.label}</strong>
                 {option.description && <small>{option.description}</small>}
               </span>
             </label>
@@ -218,6 +222,7 @@ function Questions({
           Cancel
         </button>
         <button
+          className="primary"
           disabled={
             !!agent.answering ||
             agent.phase !== "connected" ||
