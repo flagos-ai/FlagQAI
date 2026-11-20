@@ -74,3 +74,77 @@ test("inline follow-up accepts with Right Arrow without sending or replacing dra
   await expect(editor).toHaveValue("# preserved research draft");
   expect(sent).toHaveLength(3);
 });
+
+test("recommended follow-up preserves conversation scope despite an unrelated editor and refresh", async ({
+  page,
+}) => {
+  await page.goto("/#model");
+  const toggle = page.getByRole("button", {
+    name: "FlagQAI Agent",
+    exact: true,
+  });
+  if ((await toggle.getAttribute("aria-expanded")) !== "true")
+    await toggle.click();
+  await page
+    .getByRole("button", { name: "Connect Agent", exact: true })
+    .click();
+  await expect(
+    page.getByRole("status", { name: "Connected", exact: true }),
+  ).toBeVisible();
+  const editor = page.getByRole("textbox", {
+    name: "Quantum model code editor",
+  });
+  const composer = page.getByRole("textbox", {
+    name: "Message FlagQAI",
+    exact: true,
+  });
+  await editor.fill(
+    "# Shor readout is unrelated to this conversation\nprint(15)",
+  );
+  await composer.fill(
+    "transcript scroll acceptance\n请讨论 Cooling-system optimization 的 synth 资源开销",
+  );
+  await page.getByRole("button", { name: "Send message", exact: true }).click();
+  await expect(composer).toHaveAttribute("data-follow-up", "true");
+  await expect(composer).toHaveAttribute("placeholder", /^承接你上一条回答，/);
+  await composer.press("ArrowRight");
+  const question = await composer.inputValue();
+  await page.reload();
+  await expect(
+    page.getByRole("status", { name: "Connected", exact: true }),
+  ).toBeVisible();
+  await expect(composer).toHaveValue(question);
+  await editor.fill("# Another unrelated unsaved Shor draft\nprint(21)");
+  const sent = [];
+  await page.route("**/messages", async (route) => {
+    sent.push(route.request().postDataJSON());
+    await route.abort("connectionfailed");
+  });
+  await page.getByRole("button", { name: "Send message", exact: true }).click();
+  await expect.poll(() => sent.length).toBe(1);
+  const text = sent[0].text;
+  const marker = "\n\n<workspace_controls>\n";
+  const controls = JSON.parse(
+    text.slice(
+      text.lastIndexOf(marker) + marker.length,
+      -"\n</workspace_controls>".length,
+    ),
+  );
+  expect(controls.conversationFollowUp.scope).toBe("previous-answer");
+  expect(controls.conversationFollowUp.userRowId).toEqual(expect.any(Number));
+  expect(controls.conversationFollowUp.assistantRowId).toEqual(
+    expect.any(Number),
+  );
+  expect(controls.conversationFollowUp.guidance).toContain(
+    "Do not substitute the currently open editor",
+  );
+  expect(controls.activeDocumentGuidance).toContain("ambient UI state");
+  expect(text).not.toContain("<workspace_context>");
+  expect(text).not.toContain("print(21)");
+  expect(text).not.toContain("print(15)");
+  expect(text.slice(0, text.indexOf(marker))).toBe(question);
+  await expect(composer).toHaveValue(question);
+  await expect(editor).toHaveValue(
+    "# Another unrelated unsaved Shor draft\nprint(21)",
+  );
+});

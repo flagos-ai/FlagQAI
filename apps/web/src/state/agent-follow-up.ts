@@ -80,10 +80,45 @@ export function agentFollowUp(view: AgentView) {
       ? "如何把刚才的思路变成一个可验证的研究步骤？"
       : "How can we turn that into a concrete, verifiable research step?";
   }
-  if (question.trim() === prompt) {
+  const prefix = chinese
+    ? "承接你上一条回答，"
+    : "Following up on your previous answer: ";
+  if (question.trim() === prompt || question.trim() === prefix + prompt) {
     prompt = chinese
       ? "这个方案有哪些假设和局限，应该如何检查？"
       : "What assumptions and limitations should we check in this approach?";
   }
-  return { key: `${user.id}:${reply.id}:${reply.text}`, prompt };
+  // Keep the target visible in the editable text, including after draft recovery.
+  prompt = prefix + prompt;
+  return {
+    key: `${user.id}:${reply.id}`,
+    prompt,
+    userRowId: user.id,
+    assistantRowId: reply.id,
+  };
+}
+
+export function followUpMessageControls<T extends object>(
+  controls: T | undefined,
+  followUp: ReturnType<typeof agentFollowUp>,
+  text: string,
+  hasAttachments: boolean,
+) {
+  if (
+    !controls ||
+    !followUp ||
+    text.trim() !== followUp.prompt ||
+    hasAttachments
+  )
+    return controls;
+  return {
+    ...controls,
+    conversationFollowUp: {
+      userRowId: followUp.userRowId,
+      assistantRowId: followUp.assistantRowId,
+      scope: "previous-answer",
+      guidance:
+        "This question continues the specified preceding exchange in this session. Resolve its subject from that answer and the artifacts it discussed. No editor source is attached. Do not substitute the currently open editor, model or notebook as the subject. Ask for clarification if the previous answer does not establish the target.",
+    },
+  };
 }

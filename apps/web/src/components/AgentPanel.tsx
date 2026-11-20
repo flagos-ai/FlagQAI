@@ -5,7 +5,10 @@ import {
 import { qaoaTaskPrompt } from "../tasks/qaoa-maxcut.mjs";
 import { UIIcon } from "./UIIcon";
 import { agentRunStatus } from "../state/agent-run-status";
-import { agentFollowUp } from "../state/agent-follow-up";
+import {
+  agentFollowUp,
+  followUpMessageControls,
+} from "../state/agent-follow-up";
 import type { PlatformBridge } from "../hooks/usePlatformBridge";
 import type { QuantumJob } from "../contracts/quantum-workspace";
 import {
@@ -388,7 +391,12 @@ export function AgentPanel({
     const snapshot = attachments;
     const text = platformMessage(
       attachmentMessage(submitted, snapshot),
-      bridge.controls,
+      followUpMessageControls(
+        bridge.controls,
+        followUp,
+        submitted,
+        snapshot.length > 0,
+      ),
     );
     if (await agent.send(text, submitted)) {
       setDraft((current) => (current === submitted ? "" : current));

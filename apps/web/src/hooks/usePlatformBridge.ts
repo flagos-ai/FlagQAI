@@ -2,6 +2,7 @@ import {
   notebookGuidance,
   type NotebookContext,
 } from "../state/notebook-context";
+import { conversationScopeGuidance } from "../state/agent-attachments";
 import { researchRunsAPI } from "../api/research-runs";
 import { previewCode } from "../state/agent-code-preview";
 import { readExperiment } from "../api/experiments";
@@ -423,7 +424,9 @@ export function usePlatformBridge(
             language: notebook ? "notebook" : state.language || "qasm",
             model: notebook ? notebook.title : state.name,
             notebookId: notebook?.id,
-            activeDocumentGuidance: notebook ? notebookGuidance : undefined,
+            activeDocumentGuidance:
+              conversationScopeGuidance +
+              (notebook ? " " + notebookGuidance : ""),
             project:
               !notebook && projectContext
                 ? {
@@ -450,7 +453,7 @@ export function usePlatformBridge(
               "workbench_compare_experiments",
             ],
             toolGuidance:
-              "When these native tools are available, call them directly instead of reading platform implementation or constructing shell commands. Run with the managed SDK, inspect actual saved artifacts, and finish by presenting the circuit and result or the requested comparison. The command adapter below remains a fallback for older runtimes and project/QASM operations.",
+              "For requests that require tools, prefer these native tools over reading platform implementation or constructing shell commands. Answer conversational questions from the conversation without unnecessary tool calls. For requested execution, run with the managed SDK, inspect actual saved artifacts, and finish by presenting the circuit and result or the requested comparison. The command adapter below remains a fallback for older runtimes and project/QASM operations.",
             usage:
               'Projects: when project metadata is present, edit actual files under the displayed project root using native file tools; project.inspect --project-id ID returns input hashes and paths, and project.run --project-id ID --entry PATH --expected-hash HASH executes a frozen multi-file snapshot. Never overwrite an unsaved browser draft; disk changes are reviewed independently. Python: use model.create --language python for .py files; python.run --model-id ID --revision REV submits Python; python.read --run-id ID retrieves live logs, collection_errors and experiments references; experiment.read --experiment-id ID reads a saved circuit and its recorded result; python.cancel --run-id ID stops it. Use fq.save("result.fqx", result.plan, result=result) to save actual SDK experiments. Files are automatically collected only from this fresh task directory; multiple files are supported. Check collection_status and collection_errors separately from Python exit status. Never send Python to compile or QASM run. Use the native shell tool with this command prefix and --request-id UUID before mutating operations. For visible workflow milestones, use focus --page model, focus --page program --program-id ID, or focus --page jobs --job-id ID after verifying the target. Focus follows only when the user enables Follow Agent. status reads current state; draft.read reads the browser snapshot; model.share --expected-hash HASH creates a linked file safely; model.create --source-file WORKSPACE_FILE --name NAME creates a new model; model.read --model-id ID returns revision and path; compile --model-id ID --revision REV returns program.id; run --program-id ID --shots N --seed N returns job.id; job.read --job-id ID returns real status/results. Reuse request IDs for retries. Do not overwrite a browser draft. Do not claim success before receiving an actual result. Compute backend is shown explicitly; never substitute a manual simulation.',
           }

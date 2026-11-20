@@ -99,6 +99,9 @@ export function consumeAttachments(
   return current.filter((item) => !submitted.includes(item));
 }
 
+export const conversationScopeGuidance =
+  "The visible editor, document name, project and selected resources are ambient UI state, not an attachment or an instruction to discuss them. Resolve follow-up questions against the preceding conversation and its referenced artifacts, not whichever document is currently open. Do not inspect, analyze or run the editor code merely because it is visible. Use it when the user explicitly asks about the current document or attaches a code reference. If the conversation leaves the target ambiguous, ask which artifact they mean instead of assuming the editor is the target.";
+
 export function platformMessage(text: string, controls: unknown) {
   return controls
     ? text +

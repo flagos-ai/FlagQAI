@@ -110,3 +110,55 @@ test("code, quotations and attachments cannot override user prose language", () 
       /[\u3400-\u9fff]/,
     );
 });
+
+test("recommended questions identify the preceding answer without attaching editor code", async () => {
+  const { followUpMessageControls } =
+    await import("../src/state/agent-follow-up.ts");
+  const view = completed(
+    "请解释 Cooling-system 的资源估算",
+    "Its synthesis resources include qubits.",
+  );
+  const suggestion = agentFollowUp(view);
+  assert.match(suggestion.prompt, /^承接你上一条回答，/);
+  const controls = {
+    schema: "flagqai.workspace-controls.v1",
+    command: [],
+    model: "Shor readout",
+  };
+  const scoped = followUpMessageControls(
+    controls,
+    suggestion,
+    suggestion.prompt,
+    false,
+  );
+  assert.deepEqual(
+    { ...scoped.conversationFollowUp, guidance: undefined },
+    {
+      userRowId: 1,
+      assistantRowId: 2,
+      scope: "previous-answer",
+      guidance: undefined,
+    },
+  );
+  assert.match(
+    scoped.conversationFollowUp.guidance,
+    /No editor source is attached/,
+  );
+  assert.equal(controls.conversationFollowUp, undefined);
+  assert.equal(
+    followUpMessageControls(controls, suggestion, suggestion.prompt, true),
+    controls,
+  );
+  assert.equal(
+    followUpMessageControls(controls, suggestion, "Explain the editor", false),
+    controls,
+  );
+  assert.equal(
+    followUpMessageControls(undefined, suggestion, suggestion.prompt, false),
+    undefined,
+  );
+  assert.equal(
+    followUpMessageControls(controls, null, suggestion.prompt, false),
+    controls,
+  );
+});
