@@ -1,5 +1,14 @@
 import type { ProjectRun } from "../contracts/quantum-workspace";
 import type { ProgramSnapshot } from "../contracts/quantum-workspace";
+export type RunEnvironmentChecks = {
+  checks: (import("./projects").NotebookEnvironment & {
+    id: string;
+    checked_at: number;
+    same_service_session: boolean;
+    same_environment_selection: boolean;
+  })[];
+  scope: string;
+};
 export type PythonRun = {
   notebook_environment?: import("./projects").NotebookEnvironment;
   project?: ProjectRun;
@@ -81,6 +90,18 @@ async function request<T>(
   return data;
 }
 export const pythonAPI = {
+  environmentChecks: (id: string, signal?: AbortSignal) =>
+    request<RunEnvironmentChecks>(
+      "runs/" + encodeURIComponent(id) + "/environment-checks",
+      undefined,
+      signal,
+    ),
+  recheckEnvironment: (id: string, signal?: AbortSignal) =>
+    request<RunEnvironmentChecks>(
+      "runs/" + encodeURIComponent(id) + "/environment-checks",
+      {},
+      signal,
+    ),
   run: (source: string, name: string) =>
     request<PythonRun>("runs", { source, name }),
   read: (id: string, signal?: AbortSignal) =>

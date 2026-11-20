@@ -168,6 +168,29 @@ test("official notebook reading and lost copy receipt preserve drafts and submit
   expect(Object.keys(downloaded.inputs.files).sort()).toEqual(
     result.project.files.map((file) => file.path).sort(),
   );
+  const checks = evidence.getByRole("region", {
+    name: "Recorded input environment checks",
+  });
+  await expect(checks).toContainText("No later environment check recorded");
+  await checks
+    .getByRole("button", {
+      name: "Recheck environment",
+    })
+    .click();
+  await expect(checks.getByRole("status")).toHaveText(
+    /Required imports and SDK APIs available.*checked this service session/,
+    { timeout: 45000 },
+  );
+  const checkedRecord = await page.request
+    .get(`/api/python/runs/${result.id}/evidence`)
+    .then((r) => r.json());
+  expect(checkedRecord.environment_checks).toHaveLength(1);
+  expect(checkedRecord.environment_checks[0].source_hash).toBe(
+    result.project.snapshot_hash,
+  );
+  expect(checkedRecord.environment_checks[0].research_executed).toBe(false);
+  expect(checkedRecord.run).toEqual(downloaded.run);
+  expect(await createdRuns()).toHaveLength(1);
   await page.reload();
   await expect(editor(page)).toHaveValue(/runpy.run_module/);
   await page
@@ -178,6 +201,14 @@ test("official notebook reading and lost copy receipt preserve drafts and submit
   await expect(page.locator(".fq-run-evidence").first()).toContainText(
     result.project.snapshot_hash.slice(0, 12),
   );
+  const restoredChecks = page.getByRole("region", {
+    name: "Recorded input environment checks",
+  });
+  await expect(restoredChecks).toContainText("checked this service session");
+  await restoredChecks
+    .getByText("Environment check history · 1", { exact: true })
+    .click();
+  await expect(restoredChecks).toContainText("ready · local");
   expect(await createdRuns()).toHaveLength(1);
   expect(
     await page.evaluate(() =>
@@ -204,6 +235,11 @@ test("official notebook reading and lost copy receipt preserve drafts and submit
       exact: true,
     }),
   ).toBeVisible();
+  const savedChecks = resultEvidence.getByRole("region", {
+    name: "Recorded input environment checks",
+  });
+  await expect(savedChecks).toContainText("checked this service session");
+  await savedChecks.scrollIntoViewIfNeeded();
   await page.screenshot({
     path: "test-results/notebook-run-evidence.png",
     fullPage: true,

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { pythonAPI, type PythonRun } from "../api/python-runs";
 import { experimentFileURL } from "../api/experiments";
 import { CodeExample } from "./CodeExample";
+import { RecordedEnvironmentChecks } from "./RecordedEnvironmentChecks";
 
 /** Read the original run; never restore an editor or submit another execution. */
 export function RunEvidence({
@@ -81,6 +82,13 @@ export function RunEvidence({
                     : "No notebook environment check recorded for this run."}{" "}
                 Execution and file collection are not scientific validation.
               </p>
+              <RecordedEnvironmentChecks
+                key={value.id}
+                runId={value.id}
+                running={
+                  value.status === "queued" || value.status === "running"
+                }
+              />
               <a
                 href={`/api/python/runs/${encodeURIComponent(value.id)}/evidence`}
                 download="run-evidence.json"

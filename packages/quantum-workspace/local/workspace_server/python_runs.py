@@ -39,6 +39,8 @@ class PythonRuns:
         self.experiments = experiments or ExperimentImports(settings)
         self.store = SQLiteJobStore(settings.database_path.with_suffix('.python.sqlite3'))
         self.store.initialize()
+        self.checks_store = SQLiteJobStore(settings.database_path.with_suffix('.python-checks.sqlite3'))
+        self.checks_store.initialize()
         # No worker survives this service instance. Settle interrupted collection
         # without rerunning code or discarding known execution facts and logs.
         for run in self.store.list(limit=None):
@@ -51,6 +53,7 @@ class PythonRuns:
         self.active = {}
         self.recollecting = set()
         self.preflight_lock = threading.Lock()
+        self.instance_id = str(uuid.uuid4())
         self.projects = Projects(settings)
 
     @staticmethod
@@ -200,6 +203,7 @@ with tempfile.TemporaryDirectory(prefix='fq-sdk-preflight-') as directory:
                     or manifest_hash(inputs['files']) != run['project']['snapshot_hash']):
                 raise ValueError('Recorded project input snapshot checksum changed.')
         return {'schema': 'flagqai.python-run-evidence.v1', 'run': run, 'inputs': inputs,
+                'environment_checks': self.recorded_environment_checks(run_id),
                 'scope': 'Recorded source inputs, environment and logs. FQX files are downloaded separately. '
                          'Import availability and successful execution do not establish scientific correctness. '
                          'This record is not an independently runnable environment or a verification report.'}
@@ -210,6 +214,30 @@ with tempfile.TemporaryDirectory(prefix='fq-sdk-preflight-') as directory:
         result = self.get(run_id)
         if not result: raise ValueError('Python task not found.')
         return result
+
+    def environment_checks(self, run_id, *, check=False):
+        """Check frozen inputs explicitly; never restore a project or submit code."""
+        from .notebook_environment import check_environment, selection
+        evidence = self.evidence(run_id)
+        run = evidence['run']
+        if check:
+            if run['status'] in ('queued', 'running'):
+                raise ValueError('Wait for this run to finish before checking its recorded inputs.')
+            inputs = evidence['inputs']
+            report, _ = check_environment(self, inputs['files'], inputs['entry'])
+            report.update(id=str(uuid.uuid4()), run_id=run_id, checked_at=time.time(), service_instance=self.instance_id)
+            # Independent append-only observations cannot overwrite concurrent
+            # artifact collection, execution facts, logs or original preflight.
+            self.checks_store.put(report)
+        _, revision = selection(self)
+        return {'checks': [{**item, 'same_service_session': item.get('service_instance') == self.instance_id,
+                            'same_environment_selection': (item.get('service_instance') == self.instance_id
+                                and item.get('environment_revision') == revision)}
+                           for item in self.recorded_environment_checks(run_id)],
+                'scope': 'Import/API observations only. No research code executed or installed; no scientific result verified.'}
+
+    def recorded_environment_checks(self, run_id):
+        return [item for item in self.checks_store.list(limit=None) if item.get('run_id') == run_id]
 
     def collection_file(self, run_id, file_id):
         if not isinstance(file_id, str) or not re.fullmatch('[a-f0-9]{64}', file_id):
