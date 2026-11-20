@@ -258,6 +258,7 @@ test("Notebook renders readable Markdown and editable highlighted Python", async
     }),
   ).toBeVisible();
   await expect(markdown.getByRole("textbox")).toHaveCount(0);
+  await page.screenshot({ path: "/private/tmp/flagqai-modern-notebook.png" });
   await markdown
     .getByRole("button", { name: "Edit markdown cell 2", exact: true })
     .click();
@@ -297,6 +298,7 @@ test("Notebook renders readable Markdown and editable highlighted Python", async
   await expect(cell.locator(".fq-token-keyword").first()).toHaveText("import");
   await expect(cell.locator(".fq-token-string")).toHaveText("'ready'");
   await expect(cell.locator(".fq-token-number")).toHaveText("42");
+  await expect(cell.locator(".fq-notebook-line-numbers span")).toHaveCount(6);
   expect(
     await cell
       .locator(".fq-token-keyword")
@@ -336,6 +338,13 @@ test("Notebook renders readable Markdown and editable highlighted Python", async
         .evaluate((element) => getComputedStyle(element).transform),
     )
     .toBe("matrix(1, 0, 0, 1, -160, -120)");
+  await expect
+    .poll(async () =>
+      cell
+        .locator(".fq-notebook-line-numbers > div")
+        .evaluate((element) => getComputedStyle(element).transform),
+    )
+    .toBe("matrix(1, 0, 0, 1, 0, -120)");
   const geometry = await cell.locator("textarea").evaluate((element) => {
     const input = getComputedStyle(element),
       paint = getComputedStyle(element.previousElementSibling);
@@ -591,6 +600,9 @@ test("cooling notebook imports its complete bundled companion project", async ({
     name: "Notebook workspace",
     exact: true,
   });
+  await expect(
+    workspace.getByRole("button", { name: "Run all", exact: true }),
+  ).toBeEnabled();
   const cells = workspace.locator(".fq-notebook-edit-cell");
   let imported = false;
   for (let index = 0; index < (await cells.count()); index++) {
@@ -654,6 +666,15 @@ test("notebook output images fit without cropping or distorting", async ({
     { width: 1000, height: 700 },
   ]) {
     await page.setViewportSize(viewport);
+    const commands = workspace.getByRole("toolbar", {
+      name: "Notebook commands",
+      exact: true,
+    });
+    expect(
+      await commands.evaluate(
+        (element) => element.scrollWidth <= element.clientWidth + 1,
+      ),
+    ).toBe(true);
     for (let i = 0; i < 2; i++) {
       const box = await images.nth(i).evaluate((image) => {
         const rect = image.getBoundingClientRect();
@@ -662,7 +683,10 @@ test("notebook output images fit without cropping or distorting", async ({
           width: rect.width,
           height: rect.height,
           ratio: image.naturalWidth / image.naturalHeight,
-          available: parent.clientWidth - 28,
+          available:
+            parent.clientWidth -
+            parseFloat(getComputedStyle(parent).paddingLeft) -
+            parseFloat(getComputedStyle(parent).paddingRight),
         };
       });
       expect(box.width).toBeLessThanOrEqual(box.available + 1);

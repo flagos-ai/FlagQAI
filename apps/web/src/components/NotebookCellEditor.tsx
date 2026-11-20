@@ -211,6 +211,15 @@ export function NotebookCellEditor({
       )}
       <div className={"fq-notebook-source " + (python ? "is-python" : "")}>
         {python && (
+          <div className="fq-notebook-line-numbers" aria-hidden="true">
+            <div style={{ transform: `translateY(${-scroll.top}px)` }}>
+              {source.split("\n").map((_, index) => (
+                <span key={index}>{index + 1}</span>
+              ))}
+            </div>
+          </div>
+        )}
+        {python && (
           <pre aria-hidden="true">
             <code
               style={{

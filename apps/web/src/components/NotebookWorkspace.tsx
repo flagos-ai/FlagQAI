@@ -18,6 +18,7 @@ import {
 } from "../state/notebook-editing";
 import { NotebookCellEditor } from "./NotebookCellEditor";
 import { AgentMarkdown } from "./AgentMarkdown";
+import { UIIcon } from "./UIIcon";
 
 const uuid = () => crypto.randomUUID().replaceAll("-", "");
 const storageKey = (id: string) => "fq-notebook-workspace-v1:" + id;
@@ -92,9 +93,11 @@ export function NotebookWorkspace({
   notebookId,
   onImport,
   onContextChange,
+  onReference,
 }: {
   notebookId: string;
   onContextChange?: (value: NotebookContext) => void;
+  onReference?: () => void;
   onImport: (id: string) => void;
 }) {
   const [seed] = useState(() => initial(notebookId));
@@ -214,6 +217,8 @@ export function NotebookWorkspace({
     );
   }, [notebookId, cells, session, error, onContextChange]);
   const active = session?.kernel === "busy";
+  const dirty =
+    !!session && JSON.stringify(cells) !== JSON.stringify(session.cells);
   async function save() {
     if (!session) throw Error("Notebook is not connected yet.");
     const value = await notebookSessions.save(
@@ -378,74 +383,134 @@ export function NotebookWorkspace({
     >
       <div className="fq-notebook-topbar">
         <header>
-          <div>
+          <div className="fq-notebook-document-icon">
+            <UIIcon name="book" size={20} />
+          </div>
+          <div className="fq-notebook-document-title">
             <h2>{session?.title || "Notebook workspace"}</h2>
-            <small>
-              Editable research copy · Python kernel{" "}
-              {session?.kernel || "connecting"}
-            </small>
+            <div className="fq-notebook-document-meta">
+              <span>{cells.length} cells</span>
+              <span className="fq-notebook-save-state" data-dirty={dirty}>
+                {session
+                  ? dirty
+                    ? "Local changes"
+                    : "Saved copy"
+                  : "Connecting…"}
+              </span>
+              <span
+                className="fq-notebook-kernel"
+                data-kernel={session?.kernel || "connecting"}
+              >
+                <span className="fq-notebook-status-dot" aria-hidden="true" />
+                Python · {session?.kernel || "connecting"}
+              </span>
+            </div>
           </div>
         </header>
-        <div className="fq-notebook-actions">
-          <button
-            disabled={!history.past.length}
-            onClick={() => edit({ type: "undo" })}
-            title="Undo edit (Ctrl/Cmd+Z)"
-          >
-            Undo
-          </button>
-          <button
-            disabled={!history.future.length}
-            onClick={() => edit({ type: "redo" })}
-            title="Redo edit (Ctrl/Cmd+Shift+Z)"
-          >
-            Redo
-          </button>
-          <button
-            className="primary"
-            disabled={!session || busy || active || !!pending}
-            onClick={() =>
-              void run(
-                cells.filter((c) => c.cell_type === "code").map((c) => c.id),
-              )
-            }
-          >
-            Run all
-          </button>
-          <button
-            disabled={!session || busy || !!pending}
-            onClick={() =>
-              void act(async () => {
-                await save();
-              })
-            }
-          >
-            Save notebook
-          </button>
-          <button
-            disabled={!active || busy}
-            onClick={() =>
-              void act(async () => {
-                setSession(
-                  await notebookSessions.control(seed.id, "interrupt"),
-                );
-              })
-            }
-          >
-            Interrupt
-          </button>
-          <button
-            disabled={!session || active || busy || !!pending}
-            onClick={() =>
-              void act(async () => {
-                setSession(await notebookSessions.control(seed.id, "restart"));
-              })
-            }
-          >
-            Restart kernel
-          </button>
+        <div
+          className="fq-notebook-actions"
+          role="toolbar"
+          aria-label="Notebook commands"
+        >
+          <div className="fq-notebook-command-group">
+            <button
+              disabled={!history.past.length}
+              onClick={() => edit({ type: "undo" })}
+              title="Undo edit (Ctrl/Cmd+Z)"
+              aria-label="Undo"
+              className="fq-notebook-icon-button"
+            >
+              <UIIcon name="undo" />
+            </button>
+            <button
+              disabled={!history.future.length}
+              onClick={() => edit({ type: "redo" })}
+              title="Redo edit (Ctrl/Cmd+Shift+Z)"
+              aria-label="Redo"
+              className="fq-notebook-icon-button"
+            >
+              <UIIcon name="redo" />
+            </button>
+          </div>
+          <div className="fq-notebook-command-group">
+            <button
+              className="primary"
+              disabled={!session || busy || active || !!pending}
+              onClick={() =>
+                void run(
+                  cells.filter((c) => c.cell_type === "code").map((c) => c.id),
+                )
+              }
+            >
+              <UIIcon name="play" size={14} />
+              Run all
+            </button>
+            <button
+              disabled={!session || busy || !!pending}
+              aria-label="Save notebook"
+              title="Save notebook"
+              onClick={() =>
+                void act(async () => {
+                  await save();
+                })
+              }
+            >
+              <UIIcon name="save" size={14} />
+              <span className="fq-notebook-save-label">Save</span>
+            </button>
+          </div>
+          <div className="fq-notebook-command-group">
+            <button
+              disabled={!active || busy}
+              aria-label="Interrupt"
+              title="Interrupt execution"
+              onClick={() =>
+                void act(async () => {
+                  setSession(
+                    await notebookSessions.control(seed.id, "interrupt"),
+                  );
+                })
+              }
+            >
+              <UIIcon name="stop" size={14} />
+              <span className="fq-notebook-command-label">Interrupt</span>
+            </button>
+            <button
+              disabled={!session || active || busy || !!pending}
+              aria-label="Restart kernel"
+              title="Restart kernel"
+              onClick={() =>
+                void act(async () => {
+                  setSession(
+                    await notebookSessions.control(seed.id, "restart"),
+                  );
+                })
+              }
+            >
+              <UIIcon name="refresh" size={14} />
+              <span className="fq-notebook-command-label">Restart kernel</span>
+            </button>
+          </div>
+          {onReference && (
+            <button
+              className="fq-notebook-reference"
+              aria-label="Reference in chat ↗"
+              title="Attach a snapshot to your next message without sending it"
+              disabled={!session}
+              onClick={onReference}
+            >
+              <UIIcon name="arrow" size={14} />
+              <span>Reference</span>
+            </button>
+          )}
           <details className="fq-notebook-menu">
-            <summary aria-label="Notebook file and shortcuts">More</summary>
+            <summary
+              aria-label="Notebook file and shortcuts"
+              title="Notebook file and shortcuts"
+            >
+              <UIIcon name="more" />
+              <span>More</span>
+            </summary>
             <div>
               <button onClick={download}>Download .ipynb</button>
               <button
@@ -466,7 +531,9 @@ export function NotebookWorkspace({
                 Ctrl/Cmd+Z: undo edit
               </p>
               <small>
-                Import creates an independent copy. Local support files are not
+                Cells share a Python kernel. Double-click Markdown to edit.
+                Previous output is retained and marked when code changes. Import
+                creates an independent copy. Local support files are not
                 included.
               </small>
             </div>
@@ -485,12 +552,12 @@ export function NotebookWorkspace({
           />
         </div>
       </div>
-      <p className="fq-notebook-hint" role="status">
-        {session?.kernel === "stopped"
-          ? "Kernel stopped · Run prerequisite cells to restore variables."
-          : "Shared Python kernel · Shift+Enter to run · Markdown: double-click to edit."}{" "}
-        Previous output is retained and marked when code changes.
-      </p>
+      {session?.kernel === "stopped" && (
+        <p className="fq-notebook-hint" role="status">
+          <UIIcon name="refresh" size={14} />
+          Kernel stopped · Run prerequisite cells to restore variables.
+        </p>
+      )}
       {storageError && <p role="alert">{storageError}</p>}
       {error && <p role="alert">{error}</p>}
       {error.includes("changed in another window") && (
@@ -626,7 +693,7 @@ export function NotebookWorkspace({
                     disabled={busy || active || !!pending || !session}
                     onClick={() => void run([cell.id])}
                   >
-                    <span aria-hidden="true">▶</span>
+                    <UIIcon name="play" size={14} />
                   </button>
                 )}
                 {cell.cell_type === "markdown" && (
@@ -642,7 +709,12 @@ export function NotebookWorkspace({
                   </button>
                 )}
                 <details className="fq-notebook-menu">
-                  <summary aria-label={`Cell ${index + 1} actions`}>⋯</summary>
+                  <summary
+                    aria-label={`Cell ${index + 1} actions`}
+                    title="Cell actions"
+                  >
+                    <UIIcon name="more" size={16} />
+                  </summary>
                   <div
                     onClick={(event) => {
                       if ((event.target as HTMLElement).closest("button"))
@@ -766,7 +838,7 @@ export function NotebookWorkspace({
                     update(copy);
                   }}
                 >
-                  ↑
+                  <UIIcon name="moveUp" size={14} />
                 </button>
                 <button
                   title="Delete cell"
@@ -774,7 +846,7 @@ export function NotebookWorkspace({
                   disabled={cells.length === 1 || active}
                   onClick={() => update(cells.filter((c) => c.id !== cell.id))}
                 >
-                  ×
+                  <UIIcon name="trash" size={14} />
                 </button>
               </div>
               {cell.cell_type === "markdown" && editingMarkdown !== cell.id ? (
@@ -832,16 +904,27 @@ export function NotebookWorkspace({
                   className="fq-notebook-cell-output"
                   aria-label={`Output cell ${index + 1}`}
                 >
-                  {output.map((output, i) => (
-                    <Output key={i} output={output} />
-                  ))}
-                  {last?.run.error && <p role="alert">{last.run.error}</p>}
+                  <div className="fq-notebook-output-heading">
+                    <UIIcon name="arrow" size={13} />
+                    <span>Output</span>
+                  </div>
+                  <div className="fq-notebook-output-body">
+                    {output.map((output, i) => (
+                      <div className="fq-notebook-output-item" key={i}>
+                        <Output output={output} />
+                      </div>
+                    ))}
+                    {last?.run.error && <p role="alert">{last.run.error}</p>}
+                  </div>
                 </div>
               )}
             </section>
           );
         })}
-        <div className="fq-notebook-actions">
+        <div
+          className="fq-notebook-actions fq-notebook-add-cells"
+          aria-label="Add notebook cells"
+        >
           <button
             onClick={() =>
               update([...cells, { id: uuid(), cell_type: "code", source: "" }])
@@ -860,15 +943,34 @@ export function NotebookWorkspace({
           </button>
         </div>
         {!!session?.runs.length && (
-          <details>
-            <summary>Execution history · {session.runs.length}</summary>
-            {session.runs.map((run) => (
-              <p key={run.id}>
-                {run.status} · {run.cells.length} cells · revision{" "}
-                {run.revision.slice(0, 8)}
-                {run.error && ` · ${run.error}`}
-              </p>
-            ))}
+          <details className="fq-notebook-history">
+            <summary>
+              <UIIcon name="clock" size={15} />
+              <span>Execution history · {session.runs.length}</span>
+            </summary>
+            <div className="fq-notebook-history-list">
+              {session.runs.map((run) => (
+                <div className="fq-notebook-history-row" key={run.id}>
+                  <span
+                    className="fq-notebook-status-badge"
+                    data-tone={run.status}
+                  >
+                    <span
+                      className="fq-notebook-status-dot"
+                      aria-hidden="true"
+                    />
+                    {run.status}
+                  </span>
+                  <span>{run.cells.length} cells</span>
+                  <span className="fq-notebook-revision">
+                    revision {run.revision.slice(0, 8)}
+                  </span>
+                  {run.error && (
+                    <p className="fq-notebook-error">{run.error}</p>
+                  )}
+                </div>
+              ))}
+            </div>
           </details>
         )}
       </div>

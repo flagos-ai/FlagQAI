@@ -352,16 +352,20 @@ export function ModelPage({
         data-notebook={notebookEditor.active}
       >
         <div className="fq-pane-title">
-          MODEL EDITOR
-          <button
-            className="fq-control-icon"
-            aria-label="Find in code"
-            title="Find in code (⌘F / Ctrl+F)"
-            disabled={notebookEditor.active}
-            onClick={openFind}
-          >
-            <UIIcon name="code" size={14} />
-          </button>
+          <span className="fq-editor-mode-label">
+            {notebookEditor.active ? "NOTEBOOK" : "MODEL EDITOR"}
+          </span>
+          {!notebookEditor.active && (
+            <button
+              className="fq-control-icon"
+              aria-label="Find in code"
+              title="Find in code (⌘F / Ctrl+F)"
+              disabled={notebookEditor.active}
+              onClick={openFind}
+            >
+              <UIIcon name="code" size={14} />
+            </button>
+          )}
           <button
             className="fq-project-open"
             aria-label="Open project workspace"
@@ -465,13 +469,15 @@ export function ModelPage({
               <option value="synthesis">{pythonStyleLabels.synthesis}</option>
             </select>
           )}
-          <button
-            className="fq-selection-action"
-            title="Attach a snapshot to your next message without sending it"
-            onClick={onReferenceDocument}
-          >
-            Reference in chat ↗
-          </button>
+          {!notebookEditor.active && (
+            <button
+              className="fq-selection-action"
+              title="Attach a snapshot to your next message without sending it"
+              onClick={onReferenceDocument}
+            >
+              Reference in chat ↗
+            </button>
+          )}
           {!notebookEditor.active && selection.end > selection.start && (
             <button
               className="fq-selection-action"
@@ -495,6 +501,7 @@ export function ModelPage({
             key={notebookId}
             notebookId={notebookId}
             onContextChange={onNotebookContextChange}
+            onReference={onReferenceDocument}
             onImport={(id) => onNotebookEditorChange({ active: true, id })}
           />
         )}

@@ -166,3 +166,26 @@ execution tools; users still execute cells through the Notebook workspace.
   inspection and rejection of sharing a snapshot as executable source.
 - TypeScript, production build and staged package surface verification passed
   (2,671 files / 32 entry targets). No paid model calls were made.
+
+
+## Notebook document design
+
+The Notebook workspace now uses a document header with cell count, saved-copy or
+local-change state, and an explicit Python kernel indicator. Commands are grouped
+by editing, execution and kernel control; file operations and shortcut guidance
+remain in More. Reference stages a snapshot in chat without sending a message.
+Narrow panes use labeled icon controls and wrapping document navigation.
+
+Rendered Markdown follows a continuous document rhythm with quiet cell controls.
+Code cells use a consistent surface, synchronized line numbers and syntax paint,
+and a single subtle focus border. Textarea selection, IME input, shortcuts and
+vertical resizing are unchanged. Outputs remain attached to their source cell,
+with a separate output heading, bounded scrolling, vertical resizing and fitted
+images. Earlier-code and earlier-kernel provenance remains visible. Execution
+history retains all receipts and errors in expandable rows.
+
+Acceptance covers the real local IPython kernel, Markdown editing, syntax and
+line-number scroll alignment, completion and parameter help, partial execution,
+independent imports, refresh and receipt recovery, draft retention, explicit chat
+references, provenance and image fitting at wide and narrow viewport sizes.
+No paid model calls are used.
