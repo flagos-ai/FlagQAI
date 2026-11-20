@@ -1,5 +1,32 @@
 import { splitWorkspaceContext, type AgentView } from "./agent-view.ts";
 
+function questionLanguage(message: string): "zh" | "en" | undefined {
+  const prose = splitWorkspaceContext(message)
+    .text.replace(
+      /(^|\n)[ \t]*(`{3,}|~{3,})[^\n]*\n[\s\S]*?(?:\n[ \t]*\2[^\n]*(?=\n|$)|$)/g,
+      " ",
+    )
+    .replace(/^\s*>.*$/gm, " ")
+    .replace(/`[^`\n]*`|https?:\/\/\S+|"[^"\n]*"|“[^”\n]*”|「[^」\n]*」/g, " ")
+    .split("\n")
+    .filter(
+      (line) =>
+        !/^\s*(?:#|\/\/|from\s+\S+\s+import\b|import\s|(?:async\s+)?def\s|class\s|\w+(?:\.\w+)*\s*(?:=(?!=)|\())/.test(
+          line,
+        ),
+    )
+    .join(" ")
+    .trim();
+  if (/[\u3400-\u9fff]/.test(prose)) return "zh";
+  if (
+    /^(?:do|ok(?:ay)?|yes|no|continue|go(?: ahead)?|next|please|thanks?|sure|run(?: it)?|fix(?: it)?)[.!?…\s]*$/i.test(
+      prose,
+    )
+  )
+    return;
+  if (/[a-z]{2,}/i.test(prose)) return "en";
+}
+
 // Local suggestions use only the latest exchange; they never submit a model request.
 export function agentFollowUp(view: AgentView) {
   if (
@@ -22,7 +49,14 @@ export function agentFollowUp(view: AgentView) {
   const outcome = view.turnTimings?.[user.seq ?? user.id]?.outcome;
   if (outcome && outcome !== "completed") return null;
   const question = splitWorkspaceContext(user.text).text;
-  const chinese = /[\u3400-\u9fff]/.test(question);
+  // Follow the latest user prose, inheriting its language for code-only messages
+  // and short acknowledgements. Assistant output never selects the language.
+  const language = [...rows]
+    .reverse()
+    .filter((row) => row.kind === "user")
+    .map((row) => questionLanguage(row.text))
+    .find((value) => value !== undefined);
+  const chinese = language === "zh";
   const context = (question + "\n" + reply.text).slice(0, 16000);
   let prompt: string;
   if (/error|failed|traceback|报错|失败|异常/i.test(context)) {

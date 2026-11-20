@@ -56,4 +56,21 @@ test("inline follow-up accepts with Right Arrow without sending or replacing dra
   await expect(composer).toHaveValue("");
   expect(sent).toHaveLength(1);
   await page.screenshot({ path: "test-results/agent-follow-up-dismissed.png" });
+  await composer.fill("transcript scroll acceptance\n请解释这个电路的结果");
+  await page.getByRole("button", { name: "Send message", exact: true }).click();
+  await expect(composer).toHaveAttribute("data-follow-up", "true");
+  await expect(composer).toHaveAttribute("placeholder", /[\u3400-\u9fff]/);
+  await page.reload();
+  await expect(composer).toHaveAttribute("placeholder", /[\u3400-\u9fff]/);
+  await composer.press("ArrowRight");
+  await expect(composer).toHaveValue(/[\u3400-\u9fff]/);
+  expect(sent).toHaveLength(2);
+  await composer.fill(
+    "transcript scroll acceptance\nExplain the results in detail",
+  );
+  await page.getByRole("button", { name: "Send message", exact: true }).click();
+  await expect(composer).toHaveAttribute("data-follow-up", "true");
+  await expect(composer).not.toHaveAttribute("placeholder", /[\u3400-\u9fff]/);
+  await expect(editor).toHaveValue("# preserved research draft");
+  expect(sent).toHaveLength(3);
 });
