@@ -7,6 +7,7 @@ import {
   type CellOutput,
   type ExecuteCells,
 } from "../api/notebook-sessions";
+import { NotebookCellEditor } from "./NotebookCellEditor";
 import { AgentMarkdown } from "./AgentMarkdown";
 
 const uuid = () => crypto.randomUUID().replaceAll("-", "");
@@ -69,6 +70,7 @@ export function NotebookWorkspace({ notebookId }: { notebookId: string }) {
   const [pending, setPending] = useState<ExecuteCells | undefined>(
     seed.pending,
   );
+  const [editingMarkdown, setEditingMarkdown] = useState<string>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const lock = useRef(false);
@@ -264,64 +266,68 @@ export function NotebookWorkspace({ notebookId }: { notebookId: string }) {
       className="fq-notebook-reader fq-notebook-workspace fq-notebook-inline"
       aria-label="Notebook workspace"
     >
-      <header>
-        <div>
-          <h2>{session?.title || "Notebook workspace"}</h2>
-          <small>
-            Editable research copy · Python kernel{" "}
-            {session?.kernel || "connecting"}
-          </small>
+      <div className="fq-notebook-topbar">
+        <header>
+          <div>
+            <h2>{session?.title || "Notebook workspace"}</h2>
+            <small>
+              Editable research copy · Python kernel{" "}
+              {session?.kernel || "connecting"}
+            </small>
+          </div>
+        </header>
+        <div className="fq-notebook-actions">
+          <button
+            className="primary"
+            disabled={!session || busy || active || !!pending}
+            onClick={() =>
+              void run(
+                cells.filter((c) => c.cell_type === "code").map((c) => c.id),
+              )
+            }
+          >
+            Run all
+          </button>
+          <button
+            disabled={!session || busy || !!pending}
+            onClick={() =>
+              void act(async () => {
+                await save();
+              })
+            }
+          >
+            Save notebook
+          </button>
+          <button
+            disabled={!active || busy}
+            onClick={() =>
+              void act(async () => {
+                setSession(
+                  await notebookSessions.control(seed.id, "interrupt"),
+                );
+              })
+            }
+          >
+            Interrupt
+          </button>
+          <button
+            disabled={!session || active || busy || !!pending}
+            onClick={() =>
+              void act(async () => {
+                setSession(await notebookSessions.control(seed.id, "restart"));
+              })
+            }
+          >
+            Restart kernel
+          </button>
+          <button onClick={download}>Download .ipynb</button>
         </div>
-      </header>
-      <div className="fq-notebook-actions">
-        <button
-          className="primary"
-          disabled={!session || busy || active || !!pending}
-          onClick={() =>
-            void run(
-              cells.filter((c) => c.cell_type === "code").map((c) => c.id),
-            )
-          }
-        >
-          Run all
-        </button>
-        <button
-          disabled={!session || busy || !!pending}
-          onClick={() =>
-            void act(async () => {
-              await save();
-            })
-          }
-        >
-          Save notebook
-        </button>
-        <button
-          disabled={!active || busy}
-          onClick={() =>
-            void act(async () => {
-              setSession(await notebookSessions.control(seed.id, "interrupt"));
-            })
-          }
-        >
-          Interrupt
-        </button>
-        <button
-          disabled={!session || active || busy || !!pending}
-          onClick={() =>
-            void act(async () => {
-              setSession(await notebookSessions.control(seed.id, "restart"));
-            })
-          }
-        >
-          Restart kernel
-        </button>
-        <button onClick={download}>Download .ipynb</button>
       </div>
       <p className="fq-notebook-hint" role="status">
         {session?.kernel === "stopped"
-          ? "Kernel stopped. Variables are not retained after restart; run prerequisite cells explicitly."
-          : "Cells share variables in this kernel. Shift+Enter runs the selected code cell."}{" "}
-        Output is retained; changed code is marked.
+          ? "Kernel stopped · Run prerequisite cells to restore variables."
+          : "Shared Python kernel · Shift+Enter to run · Markdown: double-click to edit."}{" "}
+        Previous output is retained and marked when code changes.
       </p>
       {storageError && <p role="alert">{storageError}</p>}
       {error && <p role="alert">{error}</p>}
@@ -378,6 +384,8 @@ export function NotebookWorkspace({ notebookId }: { notebookId: string }) {
             <section
               className="fq-notebook-edit-cell"
               key={cell.id}
+              data-cell-type={cell.cell_type}
+              data-status={last?.status}
               aria-label={`${cell.cell_type} cell ${index + 1}`}
             >
               <div className="fq-notebook-cell-toolbar">
@@ -397,13 +405,28 @@ export function NotebookWorkspace({ notebookId }: { notebookId: string }) {
                 </span>
                 {cell.cell_type === "code" && (
                   <button
+                    aria-label={`Run cell ${index + 1}`}
+                    title="Run cell (Shift+Enter)"
                     disabled={busy || active || !!pending || !session}
                     onClick={() => void run([cell.id])}
                   >
-                    Run cell {index + 1}
+                    <span aria-hidden="true">▶</span>
+                  </button>
+                )}
+                {cell.cell_type === "markdown" && (
+                  <button
+                    aria-label={`${editingMarkdown === cell.id ? "Render" : "Edit"} markdown cell ${index + 1}`}
+                    onClick={() =>
+                      setEditingMarkdown(
+                        editingMarkdown === cell.id ? undefined : cell.id,
+                      )
+                    }
+                  >
+                    {editingMarkdown === cell.id ? "Done" : "Edit"}
                   </button>
                 )}
                 <button
+                  title="Move cell up"
                   aria-label={`Move cell ${index + 1} up`}
                   disabled={!index || active}
                   onClick={() => {
@@ -418,42 +441,56 @@ export function NotebookWorkspace({ notebookId }: { notebookId: string }) {
                   ↑
                 </button>
                 <button
+                  title="Delete cell"
                   aria-label={`Delete cell ${index + 1}`}
                   disabled={cells.length === 1 || active}
                   onClick={() => update(cells.filter((c) => c.id !== cell.id))}
                 >
-                  Delete
+                  ×
                 </button>
               </div>
-              <textarea
-                aria-label={`Edit ${cell.cell_type} cell ${index + 1}`}
-                spellCheck={false}
-                value={cell.source}
-                rows={Math.min(20, Math.max(3, cell.source.split("\n").length))}
-                onChange={(event) =>
-                  update(
-                    cells.map((c) =>
-                      c.id === cell.id
-                        ? { ...c, source: event.target.value }
-                        : c,
-                    ),
-                  )
-                }
-                onKeyDown={(event) => {
-                  if (
-                    event.key === "Enter" &&
-                    event.shiftKey &&
-                    cell.cell_type === "code"
-                  ) {
-                    event.preventDefault();
-                    if (!busy) void run([cell.id]);
+              {cell.cell_type === "markdown" && editingMarkdown !== cell.id ? (
+                <div
+                  className="fq-notebook-markdown-preview"
+                  tabIndex={0}
+                  aria-label={`Markdown cell ${index + 1} preview`}
+                  title="Double-click to edit Markdown"
+                  onDoubleClick={() => setEditingMarkdown(cell.id)}
+                  onKeyDown={(event) => {
+                    if (event.nativeEvent.isComposing) return;
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      setEditingMarkdown(cell.id);
+                    }
+                  }}
+                >
+                  <AgentMarkdown
+                    text={
+                      cell.source ||
+                      "*Empty Markdown cell — select Edit to write.*"
+                    }
+                  />
+                </div>
+              ) : (
+                <NotebookCellEditor
+                  source={cell.source}
+                  label={`Edit ${cell.cell_type} cell ${index + 1}`}
+                  python={cell.cell_type === "code"}
+                  onChange={(source) =>
+                    update(
+                      cells.map((value) =>
+                        value.id === cell.id ? { ...value, source } : value,
+                      ),
+                    )
                   }
-                }}
-              />
-              {cell.cell_type === "markdown" && (
-                <AgentMarkdown text={cell.source} />
+                  onRun={() => {
+                    if (cell.cell_type === "markdown")
+                      setEditingMarkdown(undefined);
+                    else if (!busy) void run([cell.id]);
+                  }}
+                />
               )}
-              {last && (
+              {last && (last.outputs.length > 0 || last.run.error) && (
                 <div
                   className="fq-notebook-cell-output"
                   aria-label={`Output cell ${index + 1}`}
@@ -476,12 +513,11 @@ export function NotebookWorkspace({ notebookId }: { notebookId: string }) {
             + Code cell
           </button>
           <button
-            onClick={() =>
-              update([
-                ...cells,
-                { id: uuid(), cell_type: "markdown", source: "" },
-              ])
-            }
+            onClick={() => {
+              const id = uuid();
+              update([...cells, { id, cell_type: "markdown", source: "" }]);
+              setEditingMarkdown(id);
+            }}
           >
             + Markdown cell
           </button>

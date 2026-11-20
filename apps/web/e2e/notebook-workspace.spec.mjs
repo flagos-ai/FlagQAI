@@ -230,3 +230,129 @@ test("Notebook tab uses the main editor and keeps all drafts when switching mode
     fullPage: true,
   });
 });
+
+test("Notebook renders readable Markdown and editable highlighted Python", async ({
+  page,
+}) => {
+  await page.goto("/#model");
+  await page
+    .getByRole("group", { name: "Source language" })
+    .getByRole("button", { name: "Notebook", exact: true })
+    .click();
+  const notebook = page.getByRole("region", {
+    name: "Notebook workspace",
+    exact: true,
+  });
+  await expect(
+    notebook.getByRole("button", { name: "Run all", exact: true }),
+  ).toBeEnabled();
+  const markdown = notebook.getByRole("region", {
+    name: "markdown cell 2",
+    exact: true,
+  });
+  await expect(
+    markdown.getByRole("heading", {
+      name: "Superposition in native FlagQuantum",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(markdown.getByRole("textbox")).toHaveCount(0);
+  await markdown
+    .getByRole("button", { name: "Edit markdown cell 2", exact: true })
+    .click();
+  const text = markdown.getByRole("textbox");
+  await text.fill(
+    "# Research notebook\n\nA **verified result** with *careful analysis*.\n\n- Local execution\n- Saved evidence",
+  );
+  await expect(markdown.getByRole("heading")).toHaveCount(0);
+  await text.press("ControlOrMeta+End");
+  await markdown.getByRole("button", { name: "Bold", exact: true }).click();
+  await expect(text).toHaveValue(/Saved evidence\*\*text\*\*$/);
+  await text.press("Shift+Enter");
+  await expect(markdown.getByRole("textbox")).toHaveCount(0);
+  await expect(
+    markdown.getByRole("heading", { name: "Research notebook" }),
+  ).toBeVisible();
+  await expect(markdown.locator("strong").first()).toHaveText(
+    "verified result",
+  );
+  await expect(markdown.locator("em")).toHaveText("careful analysis");
+  await expect(markdown.getByRole("listitem")).toHaveCount(2);
+  await markdown
+    .getByLabel("Markdown cell 2 preview", { exact: true })
+    .dblclick();
+  await expect(text).toHaveValue(/A \*\*verified result\*\*/);
+  await markdown
+    .getByRole("button", { name: "Render markdown cell 2" })
+    .click();
+  const code = notebook.getByLabel("Edit code cell 1", { exact: true });
+  await code.fill(
+    "import flagquantum as fq\n\ndef experiment():\n    return 42\n\nprint('ready') # local result",
+  );
+  const cell = notebook.getByRole("region", {
+    name: "code cell 1",
+    exact: true,
+  });
+  await expect(cell.locator(".fq-token-keyword").first()).toHaveText("import");
+  await expect(cell.locator(".fq-token-string")).toHaveText("'ready'");
+  await expect(cell.locator(".fq-token-number")).toHaveText("42");
+  expect(
+    await cell
+      .locator(".fq-token-keyword")
+      .first()
+      .evaluate((element) => getComputedStyle(element).color),
+  ).not.toBe(
+    await cell
+      .locator(".fq-token-string")
+      .evaluate((element) => getComputedStyle(element).color),
+  );
+  await code.press("ControlOrMeta+A");
+  await code.press("ArrowLeft");
+  await code.press("Tab");
+  await expect(code).toHaveValue(/^    import/);
+  await code.press("Shift+Tab");
+  await expect(code).toHaveValue(/^import/);
+  await code.press("ControlOrMeta+/");
+  await expect(code).toHaveValue(/^# import/);
+  await code.press("ControlOrMeta+/");
+  await expect(code).toHaveValue(/^import/);
+  const highlightedSource = await code.inputValue();
+  await code.fill(
+    Array.from(
+      { length: 35 },
+      (_, i) => `print("row ${i} ${"long output ".repeat(30)}")`,
+    ).join("\n"),
+  );
+  await code.evaluate((element) => {
+    element.scrollTop = 120;
+    element.scrollLeft = 160;
+    element.dispatchEvent(new Event("scroll", { bubbles: true }));
+  });
+  await expect
+    .poll(async () =>
+      cell
+        .locator("pre > code")
+        .evaluate((element) => getComputedStyle(element).transform),
+    )
+    .toBe("matrix(1, 0, 0, 1, -160, -120)");
+  const geometry = await cell.locator("textarea").evaluate((element) => {
+    const input = getComputedStyle(element),
+      paint = getComputedStyle(element.previousElementSibling);
+    return [
+      input.fontFamily === paint.fontFamily,
+      input.fontSize === paint.fontSize,
+      input.lineHeight === paint.lineHeight,
+      input.padding === paint.padding,
+    ];
+  });
+  expect(geometry).toEqual([true, true, true, true]);
+  await code.fill(highlightedSource);
+  await code.press("ControlOrMeta+A");
+  await code.press("ArrowLeft");
+  // Editing and formatting must not start the kernel or create executions.
+  await expect(notebook).not.toContainText("Execution history");
+  await page.screenshot({
+    path: "test-results/notebook-polished-editor.png",
+    fullPage: true,
+  });
+});

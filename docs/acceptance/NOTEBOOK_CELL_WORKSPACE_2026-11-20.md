@@ -23,6 +23,15 @@ and isolated macOS execution are not supported by this workspace yet.
 ## Interaction and persistence
 
 - Edit code and Markdown cells; add, reorder, delete and vertically resize them.
+- Markdown initially renders as a document with headings, bold, emphasis, lists
+  and math. Edit or double-click to show its source; Done or Shift+Enter returns
+  to rendering, without displaying duplicate source and preview. Its edit toolbar
+  inserts bold, italic, heading and inline-code markup at the native selection.
+- Code cells show Python syntax colors while preserving native textarea
+  selection, IME input and vertical resizing. Tab/Shift+Tab indent and dedent;
+  Ctrl+/ or Cmd+/ toggles comments. Highlight layers follow both scroll axes;
+  forced-color mode uses native text instead. Cell actions and notebook controls
+  use compact toolbars, and empty execution output panels are omitted.
 - Run one code cell with its button or Shift+Enter. Run all executes code cells
   in document order, stopping at the first error. Variables persist between runs
   in the same real IPython kernel.
