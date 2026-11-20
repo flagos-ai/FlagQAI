@@ -284,6 +284,14 @@ def create_server(settings, service):
                 self.wfile.write(content)
                 return
             if self.path == '/api/python/environment': return self.reply(python_runs.environment())
+            environment_checks = re.fullmatch(r'/api/python/runs/([a-f0-9-]{36})/environment-checks', self.path)
+            if environment_checks:
+                try:
+                    return self.reply(python_runs.environment_checks(environment_checks.group(1)))
+                except FileNotFoundError:
+                    return self.reply({'error': 'Recorded run inputs are unavailable.'}, 404)
+                except (ValueError, KeyError, TypeError, OSError):
+                    return self.reply({'error': 'Cannot verify recorded run inputs. No code was executed.'}, 409)
             evidence = re.fullmatch(r'/api/python/runs/([a-f0-9-]{36})/evidence', self.path)
             if evidence:
                 try:
@@ -436,7 +444,7 @@ def create_server(settings, service):
                     return self.reply({'error': str(error)}, 400)
                 except OSError:
                     return self.reply({'error': 'Cannot store experiment. Check the local SDK runtime and disk access.'}, 503)
-            if self.path in ('/api/python/check', '/api/python/runs') or re.fullmatch(r'/api/python/runs/[a-f0-9-]{36}/(?:cancel|collect)', self.path):
+            if self.path in ('/api/python/check', '/api/python/runs') or re.fullmatch(r'/api/python/runs/[a-f0-9-]{36}/(?:cancel|collect|environment-checks)', self.path):
                 try:
                     length = int(self.headers.get('Content-Length', '0'))
                     if self.headers.get('Content-Type','').split(';')[0] != 'application/json' or not 0 < length <= 256*1024: raise ValueError('Use a bounded JSON request.')
@@ -444,7 +452,10 @@ def create_server(settings, service):
                     if self.path == '/api/python/check': return self.reply({'diagnostic':python_runs.validate(data.get('source'))})
                     if self.path.endswith('/cancel'): return self.reply(python_runs.cancel(self.path.split('/')[-2]))
                     if self.path.endswith('/collect'): return self.reply(python_runs.recollect(self.path.split('/')[-2]))
+                    if self.path.endswith('/environment-checks'): return self.reply(python_runs.environment_checks(self.path.split('/')[-2], check=True))
                     return self.reply(python_runs.submit(data), 202)
+                except FileNotFoundError: return self.reply({'error': 'Recorded run inputs are unavailable.'}, 404)
+                except KeyError: return self.reply({'error': 'Cannot verify recorded inputs. No code was executed.'}, 409)
                 except (ValueError, TypeError, AttributeError) as error: return self.reply({'error':str(error)}, 400)
                 except OSError: return self.reply({'error':'Cannot read retained experiments. Check local disk access.'}, 503)
             if self.path in ('/api/workspace/context', '/api/workspace/actions'):
