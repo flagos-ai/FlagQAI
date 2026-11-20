@@ -189,3 +189,17 @@ line-number scroll alignment, completion and parameter help, partial execution,
 independent imports, refresh and receipt recovery, draft retention, explicit chat
 references, provenance and image fitting at wide and narrow viewport sizes.
 No paid model calls are used.
+
+### Compact document header
+
+The document identity and command groups share a row when the Notebook pane has
+enough room. The header wraps according to pane width, so manually resized panes
+remain usable. Secondary command labels collapse to icons in narrower panes;
+accessible names and tooltips retain the full command names. Long document titles
+truncate with their full name available on hover. No commands were removed.
+
+Chromium acceptance checks the single-row header at a 1,920 px viewport, with a
+maximum height of 64 px, and checks command overflow and output fitting at 1,440
+and 1,000 px. All 10 Notebook browser scenarios and 320 frontend tests passed,
+along with TypeScript, production build and staged package surface verification.
+No paid model calls were made.

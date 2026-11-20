@@ -2164,26 +2164,28 @@
 .fq-notebook-topbar {
   flex-shrink: 0;
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 14px clamp(12px, 3cqw, 32px) 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  padding: 8px clamp(12px, 3cqw, 32px);
   border-bottom: 1px solid var(--ui-line);
   background: #26282c;
   z-index: 5;
 }
 .fq-notebook-topbar > header {
   display: flex;
+  flex: 1 1 250px;
   align-items: center;
-  gap: 12px;
+  gap: 9px;
   min-width: 0;
 }
 .fq-notebook-document-icon {
   display: grid;
   place-items: center;
-  flex: 0 0 36px;
-  height: 36px;
+  flex: 0 0 30px;
+  height: 30px;
   border: 1px solid var(--ui-line);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--ui-hover);
   color: #b9c9dd;
 }
@@ -2197,7 +2199,9 @@
   line-height: 1.5;
   font-weight: 600;
   letter-spacing: -0.15px;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .fq-notebook-document-meta {
   display: flex;
@@ -2231,6 +2235,7 @@
 }
 .fq-notebook-topbar .fq-notebook-actions {
   margin: 0;
+  max-width: 100%;
   gap: 8px;
 }
 .fq-notebook-command-group {
@@ -2265,9 +2270,6 @@
 .fq-workspace.fq-ui-controls .fq-notebook-topbar .fq-notebook-icon-button {
   width: 30px;
   padding: 5px;
-}
-.fq-notebook-topbar > .fq-notebook-actions > .fq-notebook-reference {
-  margin-left: auto;
 }
 .fq-notebook-topbar > .fq-notebook-actions > .fq-notebook-menu {
   flex-shrink: 0;
@@ -2360,8 +2362,10 @@
   line-height: 1.6;
   overflow-wrap: anywhere;
 }
-@container (max-width: 660px) {
-  .fq-notebook-command-label {
+@container (max-width: 1000px) {
+  .fq-notebook-command-label,
+  .fq-notebook-reference > span,
+  .fq-notebook-topbar .fq-notebook-menu > summary > span {
     display: none;
   }
   .fq-notebook-command-group + .fq-notebook-command-group {

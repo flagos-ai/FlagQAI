@@ -387,7 +387,9 @@ export function NotebookWorkspace({
             <UIIcon name="book" size={20} />
           </div>
           <div className="fq-notebook-document-title">
-            <h2>{session?.title || "Notebook workspace"}</h2>
+            <h2 title={session?.title || "Notebook workspace"}>
+              {session?.title || "Notebook workspace"}
+            </h2>
             <div className="fq-notebook-document-meta">
               <span>{cells.length} cells</span>
               <span className="fq-notebook-save-state" data-dirty={dirty}>

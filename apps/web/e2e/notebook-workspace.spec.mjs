@@ -662,6 +662,7 @@ test("notebook output images fit without cropping or distorting", async ({
   const images = cell.getByRole("img", { name: "Cell output" });
   await expect(images).toHaveCount(2, { timeout: 45000 });
   for (const viewport of [
+    { width: 1920, height: 1000 },
     { width: 1440, height: 1000 },
     { width: 1000, height: 700 },
   ]) {
@@ -675,6 +676,32 @@ test("notebook output images fit without cropping or distorting", async ({
         (element) => element.scrollWidth <= element.clientWidth + 1,
       ),
     ).toBe(true);
+    const layout = await workspace
+      .locator(".fq-notebook-topbar")
+      .evaluate((bar) => {
+        const header = bar.querySelector("header").getBoundingClientRect();
+        const commands = bar
+          .querySelector('[role="toolbar"]')
+          .getBoundingClientRect();
+        const rect = bar.getBoundingClientRect();
+        return {
+          width: rect.width,
+          height: rect.height,
+          centerDifference: Math.abs(
+            (header.top + header.bottom) / 2 -
+              (commands.top + commands.bottom) / 2,
+          ),
+          fits: bar.scrollWidth <= bar.clientWidth + 1,
+        };
+      });
+    expect(layout.fits).toBe(true);
+    if (viewport.width === 1920) {
+      expect(layout.centerDifference).toBeLessThan(2);
+      expect(layout.height).toBeLessThanOrEqual(64);
+      await page.screenshot({
+        path: "test-results/notebook-compact-header.png",
+      });
+    }
     for (let i = 0; i < 2; i++) {
       const box = await images.nth(i).evaluate((image) => {
         const rect = image.getBoundingClientRect();
