@@ -30,7 +30,7 @@ import {
 import { changedLines } from "../state/code-diff";
 import { PythonConsole } from "../components/PythonConsole";
 import type { PythonWorkspace } from "../hooks/usePythonWorkspace";
-import { codeTokens } from "../state/code-tokens";
+import { codeTokens, codeTokenLines } from "../state/code-tokens";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { lintOpenQASM } from "../../../../packages/quantum-workspace/domain/model-lint.mjs";
 import { EditorSyncBar } from "../components/EditorSyncBar";
@@ -237,6 +237,11 @@ export function ModelPage({
   );
   const errors = diagnostics.filter((d) => d.severity === "error"),
     lines = state.source.split("\n");
+  const highlightedLines = useMemo(
+    () =>
+      codeTokenLines(codeTokens(state.source, isPython ? "python" : "qasm")),
+    [state.source, isPython],
+  );
   const lineStarts = useMemo(() => {
     let offset = 0;
     return state.source.split("\n").map((line) => {
@@ -708,7 +713,7 @@ export function ModelPage({
               transform: `translate(${-scroll.left}px,${-scroll.top}px)`,
             }}
           >
-            {lines.map((text, i) => (
+            {highlightedLines.map((tokens, i) => (
               <span
                 data-editor-line={i + 1}
                 key={(state.editorLink?.updated || 0) + ":" + i}
@@ -718,7 +723,7 @@ export function ModelPage({
                 ].join(" ")}
               >
                 {markCodeMatch(
-                  codeTokens(text || " ", isPython ? "python" : "qasm"),
+                  tokens.length ? tokens : [{ text: " ", kind: "plain" }],
                   findMatch?.source === state.source
                     ? findMatch.start - lineStarts[i]
                     : -1,

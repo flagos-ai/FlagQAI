@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { lineDiff } from "../state/code-diff";
-import { codeTokens } from "../state/code-tokens";
+import { codeTokens, codeTokenLines } from "../state/code-tokens";
 import type { SourceLanguage } from "../contracts/quantum-workspace";
 export function CodeDiff({
   before,
@@ -18,6 +18,13 @@ export function CodeDiff({
   const [all, setAll] = useState(false);
   const [limit, setLimit] = useState(1000);
   const rows = useMemo(() => lineDiff(before, after), [before, after]);
+  const highlighted = useMemo(
+    () => ({
+      before: codeTokenLines(codeTokens(before, language)),
+      after: codeTokenLines(codeTokens(after, language)),
+    }),
+    [before, after, language],
+  );
   const visible = new Set<number>();
   rows.forEach((row, index) => {
     if (all || row.kind !== "equal")
@@ -80,7 +87,10 @@ export function CodeDiff({
                       : " "}
                 </span>
                 <code>
-                  {codeTokens(row.text || " ", language).map((token, i) => (
+                  {(row.kind === "removed"
+                    ? highlighted.before[row.oldLine! - 1]
+                    : highlighted.after[row.newLine! - 1]
+                  ).map((token, i) => (
                     <span key={i} className={"fq-token-" + token.kind}>
                       {token.text}
                     </span>

@@ -37,3 +37,48 @@ test("numbered snapshots retain blank lines, indentation and exact token text", 
     assert.equal(lines.length, source.split("\n").length);
   }
 });
+
+test("Python docstrings keep code-like prose inside a single string token", () => {
+  for (const delimiter of ['"""', "'''"]) {
+    for (const prefix of ["", "r", "u", "b", "f", "rf", "BR"]) {
+      const doc = `${prefix}${delimiter}Shor readout\n\nfor N = 15: int(bits, 2), gcd(a, N), "quoted" # prose\n${delimiter}`;
+      const source = `${doc}\nfor n in range(2):\n    print(n) # actual comment\n`;
+      const tokens = codeTokens(source, "python");
+      assert.deepEqual(tokens[0], { text: doc, kind: "string" });
+      assert.equal(tokens.map((token) => token.text).join(""), source);
+      assert.ok(
+        tokens.some(
+          (token) => token.kind === "keyword" && token.text === "for",
+        ),
+      );
+      assert.ok(
+        tokens.some(
+          (token) =>
+            token.kind === "comment" && token.text === "# actual comment",
+        ),
+      );
+      const lines = codeTokenLines(tokens);
+      assert.deepEqual(lines[2], [
+        {
+          text: 'for N = 15: int(bits, 2), gcd(a, N), "quoted" # prose',
+          kind: "string",
+        },
+      ]);
+    }
+  }
+});
+
+test("Python strings handle escaped delimiters and unfinished multiline editing", () => {
+  for (const delimiter of ['"""', "'''"]) {
+    const escaped = `${delimiter}a \\${delimiter} for 15\nend${delimiter}`;
+    assert.deepEqual(codeTokens(escaped, "python"), [
+      { text: escaped, kind: "string" },
+    ]);
+    const unfinished = `${delimiter}a\nfor 15\n# still text\n`;
+    assert.deepEqual(codeTokens(unfinished, "python"), [
+      { text: unfinished, kind: "string" },
+    ]);
+    const comment = `# ${delimiter} comment\nprint(1)`;
+    assert.equal(codeTokens(comment, "python")[0].kind, "comment");
+  }
+});

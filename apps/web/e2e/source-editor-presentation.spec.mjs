@@ -117,3 +117,73 @@ test("source editor presentation preserves drafts, geometry and manual output si
     await expect(editor).toHaveValue(source);
   }
 });
+
+test("Python editor retains multiline docstring colors across edits and reload", async ({
+  page,
+}) => {
+  await page.goto("/#model");
+  await page
+    .getByRole("group", { name: "Source language" })
+    .getByRole("button", { name: "Python", exact: true })
+    .click();
+  const editor = page.getByRole("textbox", {
+    name: "Quantum model code editor",
+  });
+  const source =
+    '"""Shor readout\n\nfor N = 15: int(bits, 2), gcd(a, N), "quoted" # prose\n"""\nprint(15)\n';
+  const prose = page.locator('.fq-highlight [data-editor-line="3"]');
+  await editor.fill(source);
+  await expect(prose.locator(".fq-token-string")).toHaveText(
+    'for N = 15: int(bits, 2), gcd(a, N), "quoted" # prose',
+  );
+  await expect(
+    prose.locator(".fq-token-keyword, .fq-token-number, .fq-token-function"),
+  ).toHaveCount(0);
+  await expect(
+    page.locator('.fq-highlight [data-editor-line="5"] .fq-token-function'),
+  ).toHaveText("print");
+  await page.reload();
+  await expect(editor).toHaveValue(source);
+  await expect(prose.locator(".fq-token-string")).toHaveCount(1);
+  await editor.fill('"""Editing\nfor N = 15\n');
+  await expect(
+    page.locator('.fq-highlight [data-editor-line="2"] .fq-token-string'),
+  ).toHaveText("for N = 15");
+  await editor.fill(source);
+  await page.screenshot({
+    path: "test-results/python-multiline-docstring.png",
+  });
+});
+
+test("Notebook docstring prose stays string-colored without executing cells", async ({
+  page,
+}) => {
+  await page.goto("/#model");
+  await page
+    .getByRole("group", { name: "Source language" })
+    .getByRole("button", { name: "Notebook", exact: true })
+    .click();
+  const notebook = page.getByRole("region", {
+    name: "Notebook workspace",
+    exact: true,
+  });
+  const code = notebook.getByLabel("Edit code cell 1", { exact: true });
+  const source = '"""Readout\nfor N = 15: int(bits, 2) # prose\n"""\nprint(15)';
+  await code.fill(source);
+  const cell = notebook.getByRole("region", {
+    name: "code cell 1",
+    exact: true,
+  });
+  await expect(
+    cell.locator(".fq-token-string").filter({ hasText: "for N = 15" }),
+  ).toHaveText('"""Readout\nfor N = 15: int(bits, 2) # prose\n"""');
+  await expect(
+    cell.locator(".fq-token-keyword, .fq-token-comment"),
+  ).toHaveCount(0);
+  await expect(cell.locator(".fq-token-number")).toHaveText("15");
+  await page.reload();
+  await expect(code).toHaveValue(source);
+  await expect(
+    cell.locator(".fq-token-string").filter({ hasText: "for N = 15" }),
+  ).toHaveCount(1);
+});
