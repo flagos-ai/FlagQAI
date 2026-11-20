@@ -25,6 +25,9 @@ runs:
     - name: Install pinned SDK CPU runtime
       shell: bash
       run: python -m pip install --index-url https://download.pytorch.org/whl/cpu -r packages/quantum-workspace/tests/sdk-runtime.txt
+    - name: Install notebook kernel acceptance runtime
+      shell: bash
+      run: python -m pip install -r packages/quantum-workspace/tests/notebook-runtime.txt
     # Web protocol tests exercise the pinned native compaction implementation.
     - run: pnpm cli:install
       shell: bash

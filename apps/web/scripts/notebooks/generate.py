@@ -92,6 +92,24 @@ for notebook in sorted(base.rglob('walkthrough.ipynb')):
     module = provenance['native_entrypoint']
     entry = root.joinpath(*module.split('.')).with_suffix('.py')
     files, imports = closure(entry)
+    # Notebook-only verification cells can import helpers absent from the
+    # companion Python entrypoint. Preserve their pinned import closure too.
+    for cell in document['cells']:
+        if cell['cell_type'] != 'code': continue
+        source = ''.join(cell['source'])
+        source = '\n'.join('pass' if line.lstrip().startswith(('%', '!', '?')) else line for line in source.splitlines())
+        try: tree = ast.parse(source)
+        except SyntaxError: continue  # IPython handles non-Python cell syntax.
+        for node in ast.walk(tree):
+            names = ([alias.name for alias in node.names] if isinstance(node, ast.Import)
+                     else [node.module or ''] if isinstance(node, ast.ImportFrom) else [])
+            for name in names:
+                if name.startswith('examples.'):
+                    helper = root.joinpath(*name.split('.')).with_suffix('.py')
+                    if helper.is_file():
+                        extra_files, extra_imports = closure(helper)
+                        files.update(extra_files)
+                        imports = sorted(set(imports) | set(extra_imports))
     input_hashes = include_inputs(files)
     # Keep executable source unchanged. A small launcher establishes package imports.
     files['run_notebook.py'] = (f'# Official FlagQuantum notebook: {identity}\n# SDK source: {REVISION}\n'

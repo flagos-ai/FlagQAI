@@ -12,6 +12,7 @@ import { CodeExample } from "./CodeExample";
 import { Modal } from "./Modal";
 import { CloseButton } from "./CloseButton";
 import { projectsAPI, type NotebookEnvironment } from "../api/projects";
+import { NotebookWorkspace } from "./NotebookWorkspace";
 
 const featured = [
   "community/basic_examples/superposition",
@@ -32,6 +33,7 @@ export function NotebookLibrary({
   const [creating, setCreating] = useState(false);
   const [environment, setEnvironment] = useState<NotebookEnvironment>();
   const [checking, setChecking] = useState(false);
+  const [workspace, setWorkspace] = useState<string>();
   const checkRequest = useRef<AbortController | undefined>(undefined);
   useEffect(() => {
     const invalidate = () => {
@@ -132,6 +134,13 @@ export function NotebookLibrary({
   };
   return (
     <section className="fq-model-library-group" aria-label="Official notebooks">
+      {workspace && (
+        <NotebookWorkspace
+          key={workspace}
+          notebookId={workspace}
+          onClose={() => setWorkspace(undefined)}
+        />
+      )}
       <details open={query.trim() ? true : undefined}>
         <summary>
           Official notebooks <small>{matches.length}</small>
@@ -161,6 +170,15 @@ export function NotebookLibrary({
             />
           </header>
           <div className="fq-notebook-actions">
+            <button
+              disabled={!document || !!selected.unavailableReason}
+              onClick={() => {
+                setWorkspace(selected.id);
+                setSelected(undefined);
+              }}
+            >
+              Open notebook workspace
+            </button>
             <button
               className="primary"
               disabled={creating || !!selected.unavailableReason || !document}

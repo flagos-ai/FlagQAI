@@ -91,10 +91,11 @@
         "collections",
         "flagquantum",
         "math",
-        "random"
+        "random",
+        "torch"
       ],
       "notebookSha256": "9e88146d4a04f4af317cc62e18ecdacc9ce4b6f7f607907cc56e1e65a53bd26c",
-      "bundleSha256": "aa1943dd147cf96dd19e2f93a581187bc299b51ce6de3cc348bbbd97a6d7b682",
+      "bundleSha256": "2f5a0e12bbe0a96a4a285cda7dd696d287db68eaccefed9014adfd42de97d441",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/algorithms/foundational/bernstein_vazirani"
     },
@@ -108,10 +109,11 @@
         "collections",
         "flagquantum",
         "math",
-        "random"
+        "random",
+        "torch"
       ],
       "notebookSha256": "1ae783f65918c0179aab2297270f8f6de7c19011ac89d8c7c312f86ee3206f7d",
-      "bundleSha256": "4c89468499754d3dea0ce263dd34a17bc40e3ef1891346a3a07974201e6231e2",
+      "bundleSha256": "7983b434f732bc47736b80b0d810c454c6da40392ad13144bdb1ffdd443b5f48",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/algorithms/foundational/deutsch_jozsa"
     },
@@ -905,11 +907,13 @@
         "dataclasses",
         "flagquantum",
         "math",
+        "matplotlib",
+        "networkx",
         "torch",
         "typing"
       ],
       "notebookSha256": "7b010784554d1dcd127bebf7a894a4565dd3c9850f3b250f158c4e516c683bef",
-      "bundleSha256": "d10bf13dd87f2e2fb14bf0a8d04f5748cb9c10ef841641cbadd7e6c917b1e9ef",
+      "bundleSha256": "5dd846ef6c8cc57faa2958215b7dc6c3ad62bcbb1f3e5403261c4c2800f6418c",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/algorithms/search_and_optimization/qaoa/overview"
     },
@@ -1337,10 +1341,12 @@
       "category": "applications",
       "scope": "Complete local FMO Notebook: seven-site physical matrix, declared 35-term Pauli product formula, 20 quantum time points, 100 exact matrix-exponential time points, named populations, timings and comparison plot.",
       "imports": [
-        "flagquantum"
+        "flagquantum",
+        "math",
+        "torch"
       ],
       "notebookSha256": "1c46e1ab2525df1ce32793fb139640e61102ec274c8c3c6cea9203dbf2a89b24",
-      "bundleSha256": "f4a675f7f9177df1c024de04a93817f4abc4d3caa78ff2f89c448bfa1092f4a0",
+      "bundleSha256": "ec26d262ad5e8b2ef384c47b6910869b6120816938761a301cccb4f14c00d7a3",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/applications/chemistry/quantum_walk_fmo"
     },
@@ -1354,10 +1360,11 @@
         "collections",
         "dataclasses",
         "flagquantum",
-        "math"
+        "math",
+        "torch"
       ],
       "notebookSha256": "e4ad83415f86751bba959a818ef730ae9d673bbaa48246e6d96ff4e49353003a",
-      "bundleSha256": "9fec159343c6829b4fa83741d30dc9e84d0f2e3158957ea9f8db7793b6aa09fd",
+      "bundleSha256": "1ac3192376c6f80cd6dfc93da30078ee504b939d357dfa5e2ca430a44ebb5c02",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/applications/chemistry/second_quantized_hamiltonian/overview"
     },
@@ -1870,10 +1877,12 @@
         "flagquantum",
         "itertools",
         "math",
+        "matplotlib",
+        "numpy",
         "torch"
       ],
       "notebookSha256": "801718a7a1bdd7f755eb10861a45629f7e2ebf1e68ec1a6c1e2b4ccab8977480",
-      "bundleSha256": "07ec83e3a1ae93e89cd81218f67147f0ecaffc3dbf9299e62e0cc186052f99ad",
+      "bundleSha256": "6e3aa9a6fb5bd8cc6e5b80ba97f744c96e47fff6b0436af9e3abde8a03e8789c",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/applications/optimization/integer_linear_programming/overview"
     },
@@ -1931,11 +1940,12 @@
         "dataclasses",
         "flagquantum",
         "math",
+        "matplotlib",
         "networkx",
         "torch"
       ],
       "notebookSha256": "d8175433c6a624a4b7d8b824027cb3d3010a5451189906330d27cafaba1f3816",
-      "bundleSha256": "307084e965ff52f0c194eb63dfbe1ebc75f62bbf2a3c6fa42462442ea952ee74",
+      "bundleSha256": "10864d16ccea493830f94891889253d076901f3ba341e75b57c8ab1dd3fb4dac",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/applications/optimization/max_clique/overview"
     },
@@ -1950,11 +1960,12 @@
         "dataclasses",
         "flagquantum",
         "math",
+        "matplotlib",
         "networkx",
         "torch"
       ],
       "notebookSha256": "6cfe7615e934dfc103d67a33bbbf0757ca0f731a28c9fe859f55d10ff2e12a35",
-      "bundleSha256": "c1a87b4c3a2e33246609df64f345cc37385ed672cecf3d8bf2261f4b38f3ce5a",
+      "bundleSha256": "3d7b507467ea25c4343b5e952871bf9385051dc962d712de7d1e17434def5ad3",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/applications/optimization/max_independent_set/overview"
     },
@@ -1970,10 +1981,13 @@
         "dataclasses",
         "flagquantum",
         "math",
+        "matplotlib",
+        "networkx",
+        "numpy",
         "torch"
       ],
       "notebookSha256": "664389b878a40bb4bf78de9ea280e54a575571223b8af7029acde3334406e426",
-      "bundleSha256": "b490dfafcc174e516838850b56936dda462ee3269249d109462726bed790196e",
+      "bundleSha256": "f9d89d9cb36c045f78a996c2973f486be440d32b380f9bd7ed368c9e6eef2d82",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/applications/optimization/max_induced_k_color_subgraph/overview"
     },
@@ -1988,11 +2002,13 @@
         "dataclasses",
         "flagquantum",
         "math",
+        "matplotlib",
         "networkx",
+        "numpy",
         "torch"
       ],
       "notebookSha256": "b28499ff5184431c6700a7c170b72b4d9ae683fc983c729edb6d591cba2f3b6e",
-      "bundleSha256": "babc5c5a407caee88ebbbf8cd846b3aaebf102b497420258e86cd5f0dd44666a",
+      "bundleSha256": "94d0a8c5374ee1bf1c080b384adf5d7e0aa4cee3b08bdd494482ab35ad1732a0",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/applications/optimization/max_k_vertex_cover/overview"
     },
@@ -2008,10 +2024,13 @@
         "dataclasses",
         "flagquantum",
         "math",
+        "matplotlib",
+        "networkx",
+        "numpy",
         "torch"
       ],
       "notebookSha256": "8112efeac91a061c6c017c40598b4599ab949893ead3cabf6534425aa7181a44",
-      "bundleSha256": "6a2d94c0b39f0177da9da4002c38b1f3adfb668bdf53b33aa27137dcf63736cc",
+      "bundleSha256": "707ae2823e1cadddc7f432c475eff2b11af11684c61bed884ca45ba7ec5f356a",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/applications/optimization/min_graph_coloring/overview"
     },
@@ -2133,11 +2152,12 @@
         "dataclasses",
         "flagquantum",
         "math",
+        "matplotlib",
         "numpy",
         "torch"
       ],
       "notebookSha256": "5a153fffe95582d6d3ff8579329565d40f9ef66e698c69deb2b27331d970144d",
-      "bundleSha256": "19efb7fdaa9819fe689f25af95389939690eebd4881b340b8d2accc72e45811b",
+      "bundleSha256": "a0910aa474bce2116f8d9d8b1796aec1028ef9ea04d2dba06abffdd4debf2107",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/applications/optimization/set_partition/overview"
     },
@@ -2466,10 +2486,11 @@
       "category": "community",
       "scope": "Complete local tutorial workflow: composed preparation, synthesis and visualization. Text circuit drawing replaces the upstream cloud viewer. Native execution, analytical state and independent Circuit additionally verify the quantum result.",
       "imports": [
-        "flagquantum"
+        "flagquantum",
+        "torch"
       ],
       "notebookSha256": "39ff78ca2ccf8180d4f83134ceae8b57c197e0afe37b91e9f4d5791c95c57448",
-      "bundleSha256": "d43f9c6264601fb6ad85c4ac4da4f3ce18d489ad8e1f04383a3376e60d01a163",
+      "bundleSha256": "fc7c644a643fc3366df246841253deb56d8361ac53cb620556f0a699db4364c6",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/community/basic_examples/superposition"
     },
@@ -2730,7 +2751,7 @@
         "torch"
       ],
       "notebookSha256": "ea587e87b4fba3b219baa2612fae9a723fc7672a434293d6d5b81b9b1db8cdab",
-      "bundleSha256": "be7802ad92aa1b048378f1b1410326e38f06acb4327d579768e35b50cc43822e",
+      "bundleSha256": "76b99d6ca8a736572f65e3d226cd74aac894bf199eb960f3c4e5721612d0991e",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/community/paper_implementation_project/quantum_algo_for_solving_linear_differential_equations/harmonic_oscillator/overview"
     },
@@ -2788,10 +2809,11 @@
         "math",
         "matplotlib",
         "pathlib",
-        "random"
+        "random",
+        "torch"
       ],
       "notebookSha256": "41092b7d27ecfc37f2a7af37f66785bb6e8078c23c5032831ecdefdc76cec2c5",
-      "bundleSha256": "5aa3ad44ca7907fd2fcdf74e5ca7c4f0602cb349101281a0a8a9bdaa94de33a5",
+      "bundleSha256": "27983e59afc147476211751e4670cb064358fc0aa0119b0d86e180abd08f9112",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/functions/amplitude_amplification/exact_amplitude_amplification"
     },
@@ -2804,10 +2826,11 @@
       "imports": [
         "collections",
         "flagquantum",
-        "random"
+        "random",
+        "torch"
       ],
       "notebookSha256": "01c2edde8b360af554b9ed3467d42efceb860210a5067d75437c3dc9c9fb7a34",
-      "bundleSha256": "2d856d05dc4a3ac566ce8d4af3b45f24998b6f602d7d55da60ee72d4efc6bc7d",
+      "bundleSha256": "944dae1e2db5e5edb1817269e448ea36be0d92c5674aed262a60cfdab56a2698",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/functions/arithmetic/arithmetic_expression/arithmetic_expression_example"
     },
@@ -2820,10 +2843,11 @@
       "imports": [
         "collections",
         "flagquantum",
-        "random"
+        "random",
+        "torch"
       ],
       "notebookSha256": "c6832d18b2cfc1e6e9c2bbe949e0e50a108e71ba7eb704fd05a024090572c5c7",
-      "bundleSha256": "08367c0c04d7eb6b7a8d9132b2a3ac6694d4d34d35c60f72ce32a213623b809d",
+      "bundleSha256": "3a40ad5710f3a4f14969542caf07b02db870f8f93694dca537e07cfe7417c2d2",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/functions/arithmetic/bitwise_and/overview"
     },
@@ -2836,10 +2860,11 @@
       "imports": [
         "collections",
         "flagquantum",
-        "random"
+        "random",
+        "torch"
       ],
       "notebookSha256": "fde57a1545a75d954005ec35e8273b7bea78ab2778ebc8730de345e07b2a0757",
-      "bundleSha256": "533f959f2bf2a4f91f340313d2257280b0b4de5af2190cd722f19a3296230070",
+      "bundleSha256": "9a7da95bed712dbf7ac656d15843e7d6a638e1dad6fb2c7cbb828f052f2cacfd",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/functions/arithmetic/bitwise_invert/bitwise_invert_example"
     },
@@ -2921,10 +2946,11 @@
         "collections",
         "flagquantum",
         "random",
+        "torch",
         "typing"
       ],
       "notebookSha256": "750377a20eda8dae181b0a1aab99b5d8015b68355c24f87265f39fe88531eb98",
-      "bundleSha256": "ee72b6d643404c5e6a1c53f86898f9ecc687a3983b6e9edf1bbdd0216d027e37",
+      "bundleSha256": "7ae899dc860363719586a91f62ed434642bf3b6d504c032c0abc38ac5270182d",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/functions/arithmetic/modular_exp/modular_exp_example"
     },
@@ -2938,10 +2964,11 @@
         "collections",
         "flagquantum",
         "random",
+        "torch",
         "typing"
       ],
       "notebookSha256": "bbd4baa185e8b0fa1fc69a0f75d1eed2e39cb1db1b05662b8de775ebb281abb3",
-      "bundleSha256": "797ec8c03f19c17b170253df713170563a9b35580d4c9cd1fb3c866ffe74cfdc",
+      "bundleSha256": "50d49876b255b1458a6c15a01de2f0f2eb5b1c00bb006a09e7b662a31c7cc1f9",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/functions/arithmetic/modulo/modulo_example"
     },
@@ -3036,10 +3063,11 @@
       "category": "functions",
       "scope": "Complete computational Notebook workflow: define a native quantum function and synthesize it. The native user script additionally executes it and reads named probabilities. Existing independent Circuit acceptance checks complete complex amplitudes, absolute phase, bit order and clean workspace. No cloud, plotting, data or sampling workflow occurs in the reviewed Notebook.",
       "imports": [
-        "flagquantum"
+        "flagquantum",
+        "torch"
       ],
       "notebookSha256": "9227fc1d7b24532dd3d7d1970d71b04b8706699d92767c7d003ca1b3e2dd588d",
-      "bundleSha256": "f9d523619aef9389abddcd8d789b4c1bf851b5ee78dc90f74f5c1e1215195530",
+      "bundleSha256": "0ff3f025117724c3f15c9f0844ef8ece1f102f869cdc2b2ce6a65925c2b5d2c9",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/functions/hadamard_transform"
     },
@@ -3070,10 +3098,12 @@
       "category": "functions",
       "scope": "Complete local single-cell Notebook program construction with explicit finite real parameter specialization; execution and independent-state checks are additional validation.",
       "imports": [
-        "flagquantum"
+        "flagquantum",
+        "math",
+        "torch"
       ],
       "notebookSha256": "0dbd6d1fe370dd8c687ba53d5a2c53ba6fe4cc122c5ff87905c6b8416553fc0c",
-      "bundleSha256": "9a47d1b5e6027133b30306d2c0088d2a0e4c8577012f01cb23fcef3d4d5262c5",
+      "bundleSha256": "008e58afc20fd542c9037af67f114469ff84573058739a93bcac10595788637a",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/functions/hamiltonian_evolution/suzuki_trotter"
     },
@@ -3132,10 +3162,12 @@
       "category": "functions",
       "scope": "Complete local computational Notebook workflow: allocate four qubits, apply QFT and synthesize. Local execution and a Fourier-matrix Circuit comparison additionally verify the program.",
       "imports": [
-        "flagquantum"
+        "flagquantum",
+        "math",
+        "torch"
       ],
       "notebookSha256": "0433976738f729639784271601cf2676a48c687e746462f76264db62951c543b",
-      "bundleSha256": "b8e4f48c4ce6da641758b3d06ab6bc6050aaf59c476036a9d2bc9a9e9d11fcb1",
+      "bundleSha256": "f27d2a7824f0793989002957b3178feb956c58f584a8ae26fc90185f1f4b7ff0",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/functions/qft"
     },
@@ -3183,10 +3215,13 @@
       "category": "functions",
       "scope": "Complete local computational Notebook workflow: reuse and synthesize all nine native gate examples in source order, preserving source parameters. Direct synthesize(qfunc) replaces separate create_model and synthesis calls. Local execution and named probabilities additionally check each program; independent gate Circuit comparisons retain absolute phase. No cloud or hardware result is claimed.",
       "imports": [
-        "flagquantum"
+        "cmath",
+        "flagquantum",
+        "math",
+        "torch"
       ],
       "notebookSha256": "295a16446158dba5784806f80f616ff9b4ae7917ed1e5378c1509203f3d82e8c",
-      "bundleSha256": "99f6a4348a281f43df2e1c0d448c000631de6eaea5c5ee20b9a71ae9b67cafc6",
+      "bundleSha256": "332753bfc2b8bd35e01d99c7265645aa399b91d58331cda3f6550639c8e8bb18",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/functions/standard_gates/overview"
     },
@@ -3197,10 +3232,11 @@
       "category": "functions",
       "scope": "Complete computational Notebook workflow: define a native quantum function and synthesize it. The native user script additionally executes it and reads named probabilities. Existing independent Circuit acceptance checks complete complex amplitudes, absolute phase, bit order and clean workspace. No cloud, plotting, data or sampling workflow occurs in the reviewed Notebook.",
       "imports": [
-        "flagquantum"
+        "flagquantum",
+        "torch"
       ],
       "notebookSha256": "6f8b675fc9b91e1ba1b7aac09640bd36e84746e1d755205925b5112bc123dcfb",
-      "bundleSha256": "2b6dc8f415785538247c17f74ea000f172c0813e7d93944f8b8919ef5021872c",
+      "bundleSha256": "181de020e319067a0d799a38aeca931926867c4d0aadaa85a0901828d7ef1548",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/functions/state_preparation/prepare_bell_state"
     },
@@ -3226,10 +3262,11 @@
       "category": "functions",
       "scope": "Complete computational Notebook workflow: define a native quantum function and synthesize it. The native user script additionally executes it and reads named probabilities. Existing independent Circuit acceptance checks complete complex amplitudes, absolute phase, bit order and clean workspace. No cloud, plotting, data or sampling workflow occurs in the reviewed Notebook.",
       "imports": [
-        "flagquantum"
+        "flagquantum",
+        "torch"
       ],
       "notebookSha256": "d52767e8a12f39ee56291f4b92db31c0ad757b66f20d5eaffd59496739b9a228",
-      "bundleSha256": "f5901f138eb6f0819cbf57b6b2252af1e3a6d17b70d91ef6927ac93ba8f4ad1b",
+      "bundleSha256": "f57f516467be695990fbe32f6ae4c0a02bb95987934ae87ac06c28fcbce6d615",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/functions/state_preparation/prepare_ghz_state"
     },
@@ -3260,10 +3297,11 @@
         "collections",
         "flagquantum",
         "math",
-        "random"
+        "random",
+        "torch"
       ],
       "notebookSha256": "1f006c67168456aad49d87b1eff91355cab03273a6606489fe9e9f25fa56fbaa",
-      "bundleSha256": "bf2bea24a4a1d3fbaf063700bc96f1f386f184634b4c59b25383307f1bc6935c",
+      "bundleSha256": "ddefdce83d83f8ee3cc391e1030c987bb2ebcd0bcfec24c8f1cecdcba5f35760",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/functions/state_preparation/prepare_state_and_amplitudes"
     },
@@ -3274,10 +3312,11 @@
       "category": "functions",
       "scope": "Complete local computational Notebook workflow: define the retained diagonal complex matrix, allocate two qubits, apply the matrix and synthesize. Local execution and independent matrix-Circuit comparison additionally validate the result.",
       "imports": [
-        "flagquantum"
+        "flagquantum",
+        "torch"
       ],
       "notebookSha256": "d18416a77a349937b40514e6f95a63f9469d515da9e126c26f67309a4bd4acbf",
-      "bundleSha256": "7c1c7e9ee270531cd3c2cc61c9a402ed22f6493a835feb0fcb0246206bee25c9",
+      "bundleSha256": "22ec4cb0deadd65df65d864b48219d7c29c66b5e36497abb85a3adc030393fba",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/functions/unitary"
     },
@@ -3350,10 +3389,11 @@
       "category": "tutorials",
       "scope": "Complete local computational Notebook workflow: helper-built two-qubit Bell pair, blank six-qubit exercise and adjacent-CX-chain GHZ solution; native synthesis and text drawing replace cloud viewing. Actual execution and independent Circuit full-state references additionally check all three programs; no remote execution or hardware measurement is claimed.",
       "imports": [
-        "flagquantum"
+        "flagquantum",
+        "torch"
       ],
       "notebookSha256": "f408b34db0d32f9abd03bb6b46c4538777a646a567dda7abc463af6001139445",
-      "bundleSha256": "986bdbfc18cbe0546bf890c28570414f6737572b671bd47049a0ae1e03e73474",
+      "bundleSha256": "b8e651b7ba06a3e25ed2753c89114782ed82ae9717461ad7cc7e8c28b574897e",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/tutorials/basics/entanglement"
     },
@@ -3445,10 +3485,11 @@
       "imports": [
         "collections",
         "flagquantum",
-        "random"
+        "random",
+        "torch"
       ],
       "notebookSha256": "7885ecbd00d6d1434a4e2e4ac8b8fc2cd43df609485f0a2e7fe3a53d9c186081",
-      "bundleSha256": "80b30374bb7b66cc709ba9f8a1bd0ac2c528300c0da6200e11d59bfbf2322254",
+      "bundleSha256": "0946a5f682653a7b462eafd617af6210c647d681be89d8d494d495fed4684056",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/tutorials/basics/prepare_state"
     },
@@ -3532,10 +3573,11 @@
       "imports": [
         "collections",
         "flagquantum",
-        "random"
+        "random",
+        "torch"
       ],
       "notebookSha256": "cac5d0cf38caad34a382713bfb1ca78f4fb2b352f161f38acd252c83dab22a98",
-      "bundleSha256": "9169fd3df1e9be87364c9fe26a4375e27bb91de8d801771f64272da8a631c02a",
+      "bundleSha256": "13a22d26c4f188e4abba0ed4042749422327d7c30e367720ac7d437c4b8803b0",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/tutorials/basics/quantum_programming/classiq_overview_tutorial"
     },
@@ -3638,10 +3680,11 @@
       "scope": "Complete local computational Notebook workflow: the same native arithmetic program synthesized under both width/depth objectives, text drawing and actual width/depth reports. Independent Circuit acceptance checks both objectives; execution and named readout additionally verify the result. No global-optimum or guaranteed resource improvement is claimed.",
       "imports": [
         "flagquantum",
+        "torch",
         "typing"
       ],
       "notebookSha256": "1d2800bd03dad83a57b5b16ccd9146fc1b20a9dfd5345fea4495e8fb202dfdba",
-      "bundleSha256": "149e01f989af8ee1846db47b7bb41c48ed6497a26ffbd7cff1d7af538b0dbefa",
+      "bundleSha256": "5d575cf795cca15e1b4e35681ef3e55d6192ce51e3118405c4f506af78ea9918",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/tutorials/basics/quantum_programming/synthesis_tutorial"
     },
@@ -3729,7 +3772,7 @@
         "torch"
       ],
       "notebookSha256": "56f3d23c59f74c4166b21ea34a8e759fad490d419258b4db0bb9b46f543782e7",
-      "bundleSha256": "ad8c0cfd7a21e3061221d5626f1a49f4b2e677036547c6c0a49fc055b6a86963",
+      "bundleSha256": "67b6fc3c6c2a72352f410d89a1a62c2d0bdd6a115ba3bc75258e5a17b93ab2bd",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/tutorials/technology_demonstrations/approximated_state_preparation"
     },
@@ -3758,10 +3801,11 @@
       "scope": "Complete adapted local Notebook computation: reproduce seed12 and all16 signed amplitudes, synthesize with depth objective and eight-bit ceiling, draw the native circuit and report executed resources. Retained four-bit quantum source counterpart remains separately verified.",
       "imports": [
         "flagquantum",
-        "numpy"
+        "numpy",
+        "torch"
       ],
       "notebookSha256": "78baee190640fd9833f76417ee3471e9c1aacd889e65100fd5a2138b2acaa9e2",
-      "bundleSha256": "8b2326c4862ff2001e14ef1ed201b70d10ec83d56414fc376f4b1d01f5b8ddd7",
+      "bundleSha256": "150413705389a559fd3e834816149ff0bee11673d1fb95663c13ab38438350d1",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management"
     },
@@ -3865,7 +3909,7 @@
         "typing"
       ],
       "notebookSha256": "3c7bedb16b37e5461448b599e00de913d0cfc189b2604fa3a6e85398c00bd318",
-      "bundleSha256": "996bc3f5ba813dd52ad9f90b4bacdf5f354a1ec87a4194a20e721bb9db253373",
+      "bundleSha256": "e4d65f01e7e727a4a653c1205882117c03ebc2b95c8bb19ae9fee16b42340308",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/tutorials/technology_demonstrations/classiq_paper/quantum_walk/classiq_discrete_quantum_walk/overview"
     },

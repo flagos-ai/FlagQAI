@@ -1705,6 +1705,63 @@
   max-height: calc(100dvh - 32px);
   overflow: hidden;
 }
+.fq-notebook-workspace {
+  width: min(1100px, calc(100vw - 24px));
+}
+.fq-notebook-workspace .fq-notebook-actions {
+  gap: 8px;
+  margin-block: 8px;
+}
+.fq-notebook-hint {
+  margin: 2px 0 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.fq-notebook-edit-cell {
+  border: 1px solid var(--border-color, #444);
+  border-radius: 6px;
+  margin: 12px 0;
+  overflow: hidden;
+}
+.fq-notebook-cell-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+.fq-notebook-cell-toolbar > span:nth-child(2) {
+  flex: 1;
+}
+.fq-notebook-edit-cell textarea {
+  min-height: 72px;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  resize: vertical;
+  border: 0;
+  border-radius: 0;
+  padding: 12px;
+  font: 13px/1.6 monospace;
+  background: var(--bg-secondary, #25272b);
+  color: inherit;
+}
+.fq-notebook-cell-output {
+  padding: 0 12px;
+  max-height: 440px;
+  overflow: auto;
+}
+.fq-notebook-cell-output img {
+  max-width: 100%;
+  height: auto;
+}
+.fq-notebook-edit-cell > .fq-agent-markdown {
+  padding: 12px;
+}
+.fq-notebook-error {
+  color: #ed9b9b;
+}
 .fq-notebook-reader > header,
 .fq-notebook-actions {
   display: flex;
