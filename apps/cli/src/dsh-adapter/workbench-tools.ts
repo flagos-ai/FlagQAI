@@ -91,7 +91,7 @@ export function createWorkbenchTools(
         if (input.resource === 'experiment') return experimentEvidence(record, target!.port)
         return record
       }),
-    tool('workbench_create_python', 'Create a new Python model without replacing an unsaved browser draft. Write ordinary FlagQuantum code with fq.save("name.fqx", result.plan, result=result). Returns file.id and file.revision. Keep names and source specific to the task.',
+    tool('workbench_create_python', 'Create a new Python model without replacing an unsaved browser draft. Write ordinary FlagQuantum code with fq.save("name.fqx", result.plan, result=result). Returns file.id and file.revision. Keep names and source specific to the task. For hybrid training, inspect the installed SDK API first: named fq.Module parameters reach the builder as a mapping; rotation gates take qubits before angles (use theta=). Pass training data through inputs, use fixed topology with tensor-valued angles and declare the circuit batch size. Verify finite nonzero gradients, parameter updates, loss, independent readout and the actual baseline; do not invent classical bounds or quantum advantage.',
       schema({ source: { ...string, maxLength: 32768 }, name: { ...string, maxLength: 200 }, request_id: string }, ['source', 'name', 'request_id']),
       (input, signal) => action('model.create', { ...input, language: 'python' }, signal)),
     tool('workbench_run_python', 'Run the exact shared Python model revision using the managed SDK environment. Do not run an unrelated local interpreter or manually simulate. Returns python_run.id; use workbench_wait_run to await execution and collection. Reuse request_id for retries of identical input.',
