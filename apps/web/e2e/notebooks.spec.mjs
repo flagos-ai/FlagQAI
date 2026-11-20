@@ -151,4 +151,62 @@ test("official notebook reading and lost copy receipt preserve drafts and submit
       (file) => file.filename === "last-observed-run.fqx",
     ),
   ).toBeTruthy();
+  const evidence = page.locator(".fq-run-evidence").first();
+  await evidence.getByText("Recorded run evidence", { exact: true }).click();
+  await expect(evidence).toContainText("Required imports and SDK APIs checked");
+  await expect(evidence).toContainText("not scientific validation");
+  await expect(evidence).toContainText(
+    result.project.snapshot_hash.slice(0, 12),
+  );
+  const record = await page.request.get(
+    `/api/python/runs/${result.id}/evidence`,
+  );
+  expect(record.ok()).toBeTruthy();
+  const downloaded = await record.json();
+  expect(downloaded.run.id).toBe(result.id);
+  expect(downloaded.inputs.files[downloaded.inputs.entry]).toBe(result.source);
+  expect(Object.keys(downloaded.inputs.files).sort()).toEqual(
+    result.project.files.map((file) => file.path).sort(),
+  );
+  await page.reload();
+  await expect(editor(page)).toHaveValue(/runpy.run_module/);
+  await page
+    .locator(".fq-run-evidence")
+    .first()
+    .getByText("Recorded run evidence", { exact: true })
+    .click();
+  await expect(page.locator(".fq-run-evidence").first()).toContainText(
+    result.project.snapshot_hash.slice(0, 12),
+  );
+  expect(await createdRuns()).toHaveLength(1);
+  expect(
+    await page.evaluate(() =>
+      Object.values(localStorage).some((value) =>
+        value.includes("Preserve my unsaved research"),
+      ),
+    ),
+  ).toBeTruthy();
+  await page
+    .getByRole("button", { name: "View result ↗", exact: true })
+    .first()
+    .click();
+  await page.getByLabel("Run details and provenance").click();
+  const resultEvidence = page.locator(".fq-run-evidence");
+  await resultEvidence
+    .getByText("Recorded run evidence", { exact: true })
+    .click();
+  await expect(resultEvidence).toContainText(
+    result.project.snapshot_hash.slice(0, 12),
+  );
+  await expect(
+    resultEvidence.getByRole("link", {
+      name: "last-observed-run.fqx",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: "test-results/notebook-run-evidence.png",
+    fullPage: true,
+  });
+  expect(await createdRuns()).toHaveLength(1);
 });

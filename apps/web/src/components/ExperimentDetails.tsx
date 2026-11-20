@@ -1,5 +1,6 @@
 import { experimentFileURL } from "../api/experiments";
 import type { ExperimentInfo } from "../contracts/quantum-workspace";
+import { RunEvidence } from "./RunEvidence";
 
 export function ExperimentDetails({ info }: { info: ExperimentInfo }) {
   return (
@@ -32,6 +33,9 @@ export function ExperimentDetails({ info }: { info: ExperimentInfo }) {
       >
         Download original .fqx ↓
       </a>
+      {info.python_run?.project?.path.startsWith("notebook-copies/") && (
+        <RunEvidence key={info.python_run.id} runId={info.python_run.id} />
+      )}
       <details>
         <summary>Experiment identity and recorded configuration</summary>
         <p>Saved with FlagQuantum {info.producer_version}</p>
