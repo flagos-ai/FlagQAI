@@ -13,7 +13,7 @@ from urllib.error import HTTPError
 from unittest.mock import patch
 
 from workspace_server.config import WorkspaceSettings
-from workspace_server.notebook_environment import check_environment, requirements
+from workspace_server.notebook_environment import check_environment, requirements, preparation
 from workspace_server.python_runs import PythonRuns
 from workspace_server.job_store import SQLiteJobStore
 from workspace_server.service import QuantumWorkspaceService
@@ -74,6 +74,15 @@ class NotebookEnvironmentTests(unittest.TestCase):
         self.assertNotIn('absent_type', found['modules'])
         self.assertNotIn('optional', found['modules'])
         self.assertIn('pkg/helper.py', found['source_files'])
+
+    def test_lazy_chemistry_dependency_is_detected_and_has_install_guidance(self):
+        files = {'run.py': 'from model import regenerate\nregenerate()\n',
+                 'model.py': 'def regenerate():\n from pyscf import gto, scf\n return scf.RHF(gto.M())\n'}
+        required = requirements(files, 'run.py')
+        self.assertIn('pyscf', required['modules'])
+        guide = preparation({'missing_dependencies': [{'name': 'pyscf'}]})
+        self.assertIn('-m pip install pyscf', guide['commands'])
+        self.assertEqual(guide['unmapped_imports'], [])
 
     def test_failed_check_blocks_project_run_before_queue_and_keeps_files(self):
         project = self.runs.projects.open('notebook-copies/test', create=True)

@@ -160,7 +160,7 @@ def check_environment(runs, files, entry):
 
 def preparation(report):
     missing = {item['name'].split('.')[0] for item in report.get('missing_dependencies', [])}
-    known = sorted(missing & {'numpy', 'scipy', 'matplotlib', 'torch'})
+    known = sorted(missing & {'numpy', 'scipy', 'matplotlib', 'torch', 'pyscf'})
     lines = ['# Run manually in a new environment on the selected compute host.',
              'python3 -m venv .venv-notebook',
              '.venv-notebook/bin/python -m pip install /path/to/verified/flagquantum.whl']
