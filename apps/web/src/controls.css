@@ -1771,12 +1771,60 @@
   font-size: 11px;
   color: #a5adba;
 }
-.fq-notebook-cell-toolbar > span:first-child {
-  font-family: ui-monospace, monospace;
-  min-width: 58px;
+.fq-notebook-cell-index {
+  color: var(--ui-muted);
+  font:
+    11px/20px ui-monospace,
+    monospace;
+  font-variant-numeric: tabular-nums;
+  flex: 0 0 auto;
 }
-.fq-notebook-cell-toolbar > span:nth-child(2) {
+.fq-notebook-cell-state {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
   flex: 1;
+  min-width: 0;
+  font-size: 11px;
+  line-height: 18px;
+}
+.fq-notebook-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 6px;
+  border-radius: 5px;
+  background: var(--ui-hover);
+  color: var(--ui-muted);
+  font-weight: 500;
+}
+.fq-notebook-status-dot {
+  width: 5px;
+  height: 5px;
+  flex: 0 0 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.fq-notebook-status-badge[data-tone="completed"] {
+  color: var(--ui-positive);
+  background: color-mix(in srgb, var(--ui-positive) 9%, transparent);
+}
+.fq-notebook-status-badge[data-tone="running"] {
+  color: var(--accent);
+  background: var(--ui-selection);
+}
+.fq-notebook-status-badge:is([data-tone="failed"], [data-tone="error"]) {
+  color: var(--ui-negative);
+  background: color-mix(in srgb, var(--ui-negative) 9%, transparent);
+}
+.fq-notebook-status-badge:is([data-tone="stale"], [data-tone="interrupted"]) {
+  color: var(--ui-warning);
+  background: color-mix(in srgb, var(--ui-warning) 8%, transparent);
+}
+.fq-notebook-output-origin {
+  color: var(--ui-muted);
+  font-size: 10px;
 }
 .fq-workspace.fq-ui-controls .fq-notebook-cell-toolbar > button {
   min-height: 24px;

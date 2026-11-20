@@ -56,7 +56,7 @@ test("IPython cell workspace retains state, receipts, edits and output", async (
     .getByRole("button", { name: "Run cell 2", exact: true })
     .click();
   await expect(workspace).toContainText("cell one ready", { timeout: 45000 });
-  await expect(workspace).toContainText("completed", { timeout: 45000 });
+  await expect(workspace).toContainText(/completed/i, { timeout: 45000 });
   await workspace
     .getByRole("button", { name: "+ Code cell", exact: true })
     .click();
@@ -76,7 +76,7 @@ test("IPython cell workspace retains state, receipts, edits and output", async (
     .getByRole("textbox")
     .last()
     .fill("print('unsaved cell draft')");
-  await expect(workspace).toContainText("Code changed · previous output");
+  await expect(workspace).toContainText(/Code changed\s*Previous output/);
   await page.reload();
   await expect(model).toHaveValue("# untouched model draft\nprint('keep me')");
   await open();
@@ -415,7 +415,7 @@ test("Notebook imports independently, preserves metadata and supports reversible
   await expect(
     workspace.getByRole("heading", { name: "study.ipynb" }),
   ).toBeVisible();
-  await expect(workspace).toContainText("Imported output · not verified here");
+  await expect(workspace).toContainText(/Imported output\s*Not verified here/);
   const cells = workspace.locator(".fq-notebook-edit-cell");
   const count = await cells.count();
   await workspace.getByLabel("Cell 2 actions", { exact: true }).click();
@@ -520,7 +520,7 @@ test("Notebook kernel completion, parameter help and partial runs preserve execu
   await workspace
     .getByRole("button", { name: "Run through this cell", exact: true })
     .click();
-  await expect(workspace).toContainText("completed", { timeout: 45000 });
+  await expect(workspace).toContainText(/completed/i, { timeout: 45000 });
   await expect(workspace).not.toContainText("running");
   const code = workspace.getByRole("textbox", {
     name: "Edit code cell 3",
@@ -604,7 +604,7 @@ test("cooling notebook imports its complete bundled companion project", async ({
       await cell
         .getByRole("button", { name: /^Run cell \d+$/, exact: true })
         .click();
-      await expect(cell).toContainText("completed", { timeout: 45000 });
+      await expect(cell).toContainText(/completed/i, { timeout: 45000 });
       await expect(editor).toHaveValue(source);
       imported = true;
       break;

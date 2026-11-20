@@ -559,22 +559,66 @@ export function NotebookWorkspace({
               aria-label={`${cell.cell_type} cell ${index + 1}`}
             >
               <div className="fq-notebook-cell-toolbar">
-                <span>
+                <span
+                  className="fq-notebook-cell-index"
+                  title={
+                    cell.cell_type === "code" ? "Execution count" : undefined
+                  }
+                  aria-label={
+                    cell.cell_type === "code"
+                      ? `Execution count ${last?.execution_count ?? "not run"}`
+                      : undefined
+                  }
+                >
                   {cell.cell_type === "code"
-                    ? `In [${last?.execution_count ?? " "}]`
+                    ? `[${last?.execution_count ?? "–"}]`
                     : "Markdown"}
                 </span>
-                <span>
-                  {changed
-                    ? "Code changed · previous output"
-                    : !last && imported?.length
-                      ? "Imported output · not verified here"
-                      : last
-                        ? `${last.status}${last.run.kernel_id !== session?.kernel_id ? " · previous kernel" : ""}`
-                        : cell.cell_type === "code"
-                          ? "Not run"
-                          : ""}
-                </span>
+                <div className="fq-notebook-cell-state">
+                  {(cell.cell_type === "code" || last) && (
+                    <span
+                      className="fq-notebook-status-badge"
+                      data-tone={
+                        changed || (!last && imported?.length)
+                          ? "stale"
+                          : last?.status || "idle"
+                      }
+                    >
+                      <span
+                        className="fq-notebook-status-dot"
+                        aria-hidden="true"
+                      />
+                      {changed
+                        ? "Code changed"
+                        : !last && imported?.length
+                          ? "Imported output"
+                          : last
+                            ? last.status.charAt(0).toUpperCase() +
+                              last.status.slice(1)
+                            : "Not run"}
+                    </span>
+                  )}
+                  {(changed ||
+                    (!last && imported?.length) ||
+                    (last && last.run.kernel_id !== session?.kernel_id)) && (
+                    <span
+                      className="fq-notebook-output-origin"
+                      title={
+                        changed
+                          ? "This output was produced by an earlier version of the code."
+                          : !last
+                            ? "Imported output has not been verified in this workspace."
+                            : "This output was produced by a previous kernel. Variables are not available in the current kernel."
+                      }
+                    >
+                      {changed
+                        ? "Previous output"
+                        : !last
+                          ? "Not verified here"
+                          : "Previous kernel"}
+                    </span>
+                  )}
+                </div>
                 {cell.cell_type === "code" && (
                   <button
                     aria-label={`Run cell ${index + 1}`}
