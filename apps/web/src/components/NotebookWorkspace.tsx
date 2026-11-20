@@ -8,8 +8,6 @@ import {
   type ExecuteCells,
 } from "../api/notebook-sessions";
 import { AgentMarkdown } from "./AgentMarkdown";
-import { CloseButton } from "./CloseButton";
-import { Modal } from "./Modal";
 
 const uuid = () => crypto.randomUUID().replaceAll("-", "");
 const storageKey = (id: string) => "fq-notebook-workspace-v1:" + id;
@@ -64,13 +62,7 @@ function Output({ output }: { output: CellOutput }) {
   );
 }
 
-export function NotebookWorkspace({
-  notebookId,
-  onClose,
-}: {
-  notebookId: string;
-  onClose: () => void;
-}) {
+export function NotebookWorkspace({ notebookId }: { notebookId: string }) {
   const [seed] = useState(() => initial(notebookId));
   const [session, setSession] = useState<NotebookSession>();
   const [cells, setCells] = useState<EditableCell[]>(seed.cells || []);
@@ -268,10 +260,9 @@ export function NotebookWorkspace({
     URL.revokeObjectURL(url);
   }
   return (
-    <Modal
-      className="fq-notebook-reader fq-notebook-workspace"
-      label="Notebook workspace"
-      onClose={onClose}
+    <section
+      className="fq-notebook-reader fq-notebook-workspace fq-notebook-inline"
+      aria-label="Notebook workspace"
     >
       <header>
         <div>
@@ -281,7 +272,6 @@ export function NotebookWorkspace({
             {session?.kernel || "connecting"}
           </small>
         </div>
-        <CloseButton label="Close notebook workspace" onClick={onClose} />
       </header>
       <div className="fq-notebook-actions">
         <button
@@ -509,6 +499,6 @@ export function NotebookWorkspace({
           </details>
         )}
       </div>
-    </Modal>
+    </section>
   );
 }

@@ -5,9 +5,9 @@ test("IPython cell workspace retains state, receipts, edits and output", async (
   page,
 }) => {
   await page.goto("/#model");
-  const model = page.getByRole("textbox", {
-    name: "Quantum model code editor",
-  });
+  const model = page.locator(
+    'textarea[aria-label="Quantum model code editor"]',
+  );
   await model.fill("# untouched model draft\nprint('keep me')");
   async function open() {
     await page.getByRole("button", { name: "Examples", exact: true }).click();
@@ -23,7 +23,10 @@ test("IPython cell workspace retains state, receipts, edits and output", async (
       .click();
   }
   await open();
-  const workspace = page.getByRole("dialog", { name: "Notebook workspace" });
+  const workspace = page.getByRole("region", {
+    name: "Notebook workspace",
+    exact: true,
+  });
   await expect(
     workspace.getByRole("button", { name: "Run all", exact: true }),
   ).toBeEnabled();
@@ -147,8 +150,83 @@ test("IPython cell workspace retains state, receipts, edits and output", async (
   await expect(workspace.getByRole("textbox").first()).toHaveValue(
     "# saved in another window",
   );
-  await workspace
-    .getByRole("button", { name: "Close notebook workspace" })
+  await page
+    .getByRole("group", { name: "Source language" })
+    .getByRole("button", { name: "Python", exact: true })
     .click();
   await expect(model).toHaveValue("# untouched model draft\nprint('keep me')");
+});
+
+test("Notebook tab uses the main editor and keeps all drafts when switching modes", async ({
+  page,
+}) => {
+  await page.goto("/#model");
+  const modes = page.getByRole("group", { name: "Source language" });
+  const editor = page.getByRole("textbox", {
+    name: "Quantum model code editor",
+  });
+  await editor.fill("# Python draft remains intact");
+  await modes.getByRole("button", { name: "OpenQASM", exact: true }).click();
+  await editor.fill("// OpenQASM draft remains intact");
+  await modes.getByRole("button", { name: "Notebook", exact: true }).click();
+  const notebook = page.getByRole("region", {
+    name: "Notebook workspace",
+    exact: true,
+  });
+  await expect(notebook).toBeVisible();
+  await expect(editor).not.toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Run Python", exact: true }),
+  ).not.toBeVisible();
+  await expect(
+    notebook.getByRole("button", { name: "Run all", exact: true }),
+  ).toBeEnabled();
+  await notebook
+    .getByRole("textbox")
+    .first()
+    .fill("# independent notebook draft");
+  const selected = await page
+    .getByRole("combobox", { name: "Notebook example" })
+    .inputValue();
+  await modes.getByRole("button", { name: "Python", exact: true }).click();
+  await expect(editor).toHaveValue("# Python draft remains intact");
+  await modes.getByRole("button", { name: "OpenQASM", exact: true }).click();
+  await expect(editor).toHaveValue("// OpenQASM draft remains intact");
+  await modes.getByRole("button", { name: "Notebook", exact: true }).click();
+  await expect(notebook.getByRole("textbox").first()).toHaveValue(
+    "# independent notebook draft",
+  );
+  const picker = page.getByRole("combobox", { name: "Notebook example" });
+  const alternate = await picker
+    .locator("option")
+    .evaluateAll(
+      (options, current) =>
+        options.find((option) => option.value !== current && !option.disabled)
+          .value,
+      selected,
+    );
+  await picker.selectOption(alternate);
+  await expect(
+    notebook.getByRole("button", { name: "Run all", exact: true }),
+  ).toBeEnabled();
+  await notebook.getByRole("textbox").first().fill("# another notebook draft");
+  await picker.selectOption(selected);
+  await expect(notebook.getByRole("textbox").first()).toHaveValue(
+    "# independent notebook draft",
+  );
+  await page.reload();
+  await expect(
+    modes.getByRole("button", { name: "Notebook", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(notebook.getByRole("textbox").first()).toHaveValue(
+    "# independent notebook draft",
+  );
+  await expect(
+    page.getByRole("combobox", { name: "Notebook example" }),
+  ).toHaveValue(selected);
+  await expect(notebook).toContainText("Not run");
+  await page.screenshot({
+    path: "test-results/notebook-main-editor.png",
+    fullPage: true,
+  });
 });

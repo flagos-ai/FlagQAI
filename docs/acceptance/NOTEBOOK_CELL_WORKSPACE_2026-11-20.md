@@ -1,6 +1,13 @@
 # Stateful notebook cell workspace
 
-Open **Model → Examples → Official notebooks**, select a notebook, then choose
+Open **Model → Notebook** beside the Python and OpenQASM controls. The notebook
+occupies the main editor, with the official notebook selector beside the mode
+controls. The last selected notebook and mode survive refresh; switching modes
+or notebooks preserves their independent drafts. Python/OpenQASM controls and
+output panels are hidden while Notebook is selected, and their panel sizes remain
+unchanged. Selecting a model or project file returns to its source editor.
+
+The **Examples → Official notebooks** reader also opens the same main editor via
 **Open notebook workspace**. The reader and existing project-copy workflow remain
 available. Opening a workspace creates a separate editable copy; it does not run
 code or replace the Model editor draft.

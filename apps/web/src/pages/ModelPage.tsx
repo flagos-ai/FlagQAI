@@ -1,3 +1,5 @@
+import { NotebookWorkspace } from "../components/NotebookWorkspace";
+import { notebookExamples } from "../state/notebooks";
 import {
   detectedPythonStyle,
   pythonStyleLabels,
@@ -46,6 +48,8 @@ import type { PlatformBridge } from "../hooks/usePlatformBridge";
 import type { ResearchTurn } from "../state/research-record";
 export function ModelPage({
   codePreview,
+  notebookEditor,
+  onNotebookEditorChange,
   state,
   dispatch,
   compile,
@@ -59,6 +63,8 @@ export function ModelPage({
   backendLabel = "Configured CPU backend",
   research,
 }: {
+  notebookEditor: { active: boolean; id?: string };
+  onNotebookEditorChange: (value: { active: boolean; id?: string }) => void;
   projectWorkspace: ProjectWorkspace;
   onOpenProject: () => void;
   onFindFile: () => void;
@@ -77,6 +83,11 @@ export function ModelPage({
   dispatch: React.Dispatch<WorkspaceAction>;
   compile: (source?: string, name?: string) => Promise<void>;
 }) {
+  const notebookId =
+    notebookExamples.find((item) => item.id === notebookEditor.id)?.id ||
+    notebookExamples.find(
+      (item) => item.path === "community/basic_examples/superposition",
+    )!.id;
   const [reviewRequest, setReviewRequest] = useState<{
     id: string;
     sequence: number;
@@ -323,18 +334,22 @@ export function ModelPage({
       className={"fq-model-workspace " + (focus ? "focused" : "")}
       style={{
         gridTemplateColumns:
-          configuration && !focus
+          configuration && !focus && !notebookEditor.active
             ? `minmax(0,1fr) 6px ${settingsWidth}px`
             : "minmax(0,1fr)",
       }}
     >
-      <section className="fq-model-center">
+      <section
+        className="fq-model-center"
+        data-notebook={notebookEditor.active}
+      >
         <div className="fq-pane-title">
           MODEL EDITOR
           <button
             className="fq-control-icon"
             aria-label="Find in code"
             title="Find in code (⌘F / Ctrl+F)"
+            disabled={notebookEditor.active}
             onClick={openFind}
           >
             <UIIcon name="code" size={14} />
@@ -362,20 +377,62 @@ export function ModelPage({
           >
             <button
               disabled={!!state.activeProjectTab && !isPython}
-              aria-pressed={isPython}
-              onClick={() => dispatch({ type: "language", language: "python" })}
+              aria-pressed={!notebookEditor.active && isPython}
+              onClick={() => {
+                onNotebookEditorChange({ ...notebookEditor, active: false });
+                dispatch({ type: "language", language: "python" });
+              }}
             >
               Python
             </button>{" "}
             <button
               disabled={!!state.activeProjectTab && isPython}
-              aria-pressed={!isPython}
-              onClick={() => dispatch({ type: "language", language: "qasm" })}
+              aria-pressed={!notebookEditor.active && !isPython}
+              onClick={() => {
+                onNotebookEditorChange({ ...notebookEditor, active: false });
+                dispatch({ type: "language", language: "qasm" });
+              }}
             >
               OpenQASM
             </button>
+            <button
+              aria-pressed={notebookEditor.active}
+              onClick={() =>
+                onNotebookEditorChange({ active: true, id: notebookId })
+              }
+            >
+              Notebook
+            </button>
           </div>
-          {isPython && (
+          {notebookEditor.active && (
+            <select
+              className="fq-notebook-picker"
+              aria-label="Notebook example"
+              value={notebookId}
+              onChange={(event) =>
+                onNotebookEditorChange({ active: true, id: event.target.value })
+              }
+            >
+              {Array.from(
+                new Set(notebookExamples.map((item) => item.category)),
+              ).map((category) => (
+                <optgroup key={category} label={category.replaceAll("_", " ")}>
+                  {notebookExamples
+                    .filter((item) => item.category === category)
+                    .map((item) => (
+                      <option
+                        key={item.id}
+                        value={item.id}
+                        disabled={!!item.unavailableReason}
+                      >
+                        {item.title} · {item.path}
+                      </option>
+                    ))}
+                </optgroup>
+              ))}
+            </select>
+          )}
+          {isPython && !notebookEditor.active && (
             <select
               className="fq-python-style"
               aria-label="Python authoring style"
@@ -397,7 +454,7 @@ export function ModelPage({
               <option value="synthesis">{pythonStyleLabels.synthesis}</option>
             </select>
           )}
-          {selection.end > selection.start && (
+          {!notebookEditor.active && selection.end > selection.start && (
             <button
               className="fq-selection-action"
               onMouseDown={(event) => event.preventDefault()}
@@ -415,6 +472,9 @@ export function ModelPage({
             <UIIcon name={focus ? "restore" : "expand"} />
           </button>
         </div>
+        {notebookEditor.active && (
+          <NotebookWorkspace key={notebookId} notebookId={notebookId} />
+        )}
         <ProjectTabs
           state={state}
           dispatch={dispatch}
@@ -884,7 +944,7 @@ export function ModelPage({
           </>
         )}
       </section>
-      {configuration && !focus && (
+      {configuration && !focus && !notebookEditor.active && (
         <>
           <Separator
             label="Resize synthesis configuration"

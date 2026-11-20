@@ -76,6 +76,38 @@ export default function App() {
   }, [bridge.ready, bridge.client, bridge.session]);
   const editorSync = useEditorSync(state, dispatch);
   const projectWorkspace = useProjectWorkspace(state, dispatch);
+  const [notebookEditor, setNotebookEditor] = useState<{
+    active: boolean;
+    id?: string;
+  }>(() => {
+    try {
+      const saved = JSON.parse(
+        localStorage.getItem("fq-notebook-editor-v1") || "null",
+      );
+      return {
+        active: saved?.active === true,
+        id: typeof saved?.id === "string" ? saved.id : undefined,
+      };
+    } catch {
+      return { active: false };
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "fq-notebook-editor-v1",
+        JSON.stringify(notebookEditor),
+      );
+    } catch {
+      /* Keep the editor usable without storage. */
+    }
+  }, [notebookEditor]);
+  const openNotebook = (id: string) => setNotebookEditor({ active: true, id });
+  const openProjectFile = async (path: string) => {
+    const opened = await projectWorkspace.openFile(path);
+    if (opened) setNotebookEditor((value) => ({ ...value, active: false }));
+    return opened;
+  };
   const [projectRequest, setProjectRequest] = useState(0);
   const [quickOpen, setQuickOpen] = useState(false);
   useEffect(() => {
@@ -122,12 +154,14 @@ export default function App() {
       } else {
         const model = await readModelImport(file);
         if (program) await compile(model.source, model.name);
-        else
+        else {
+          setNotebookEditor((value) => ({ ...value, active: false }));
           dispatch({
             type: "model",
             model: { ...model, language: kind },
             preserveDraft: true,
           });
+        }
       }
     } catch (error) {
       setUploadError(
@@ -208,25 +242,30 @@ export default function App() {
     if (state.page === "model")
       return (
         <ModelLibrary
+          onOpenNotebook={openNotebook}
           onCreateNotebook={async (id, request) => {
             const result = await projectWorkspace.createNotebook(id, request);
-            if (result) setProjectRequest((value) => value + 1);
+            if (result) {
+              setNotebookEditor((value) => ({ ...value, active: false }));
+              setProjectRequest((value) => value + 1);
+            }
             return result;
           }}
           projectRequest={projectRequest}
           projectPanel={
             <ProjectExplorer
               state={state}
-              workspace={projectWorkspace}
+              workspace={{ ...projectWorkspace, openFile: openProjectFile }}
               dispatch={dispatch}
             />
           }
           models={state.models}
           folders={state.modelFolders}
           dispatch={dispatch}
-          onSelect={(model) =>
-            dispatch({ type: "model", model, preserveDraft: true })
-          }
+          onSelect={(model) => {
+            setNotebookEditor((value) => ({ ...value, active: false }));
+            dispatch({ type: "model", model, preserveDraft: true });
+          }}
           onUpload={(file) => void upload(file)}
           busy={state.busy || importing}
           importing={importing}
@@ -347,7 +386,7 @@ export default function App() {
         <QuickOpen
           project={state.project}
           activePath={state.editorLink?.project?.path}
-          onOpen={projectWorkspace.openFile}
+          onOpen={openProjectFile}
           workspaceBusy={projectWorkspace.busy}
           error={projectWorkspace.error}
           onClose={() => setQuickOpen(false)}
@@ -459,6 +498,8 @@ export default function App() {
           )}
           {state.page === "model" && (
             <ModelPage
+              notebookEditor={notebookEditor}
+              onNotebookEditorChange={setNotebookEditor}
               codePreview={bridge.liveCode}
               onFindFile={() => setQuickOpen(true)}
               projectWorkspace={projectWorkspace}
