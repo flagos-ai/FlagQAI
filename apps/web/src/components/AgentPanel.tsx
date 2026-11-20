@@ -385,17 +385,7 @@ export function AgentPanel({
     const submitted = draft;
     const snapshot = attachments;
     const text = platformMessage(
-      attachmentMessage(
-        submitted,
-        notebook
-          ? [
-              notebookAttachment(notebook),
-              ...snapshot.filter(
-                (item) => item.id !== "notebook-" + notebook.id,
-              ),
-            ]
-          : snapshot,
-      ),
+      attachmentMessage(submitted, snapshot),
       bridge.controls,
     );
     if (await agent.send(text, submitted)) {

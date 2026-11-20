@@ -61,6 +61,7 @@ export function ModelPage({
   onOpenProject,
   onFindFile,
   onAttachSelection,
+  onReferenceDocument,
   onRepairPython,
   backendLabel = "Configured CPU backend",
   research,
@@ -76,6 +77,7 @@ export function ModelPage({
   backendLabel?: string;
   research?: { turns: ResearchTurn[]; bridge: PlatformBridge };
   onRepairPython: (run: PythonRun) => Promise<void>;
+  onReferenceDocument: () => void;
   onAttachSelection: (
     source: string,
     startLine: number,
@@ -463,6 +465,13 @@ export function ModelPage({
               <option value="synthesis">{pythonStyleLabels.synthesis}</option>
             </select>
           )}
+          <button
+            className="fq-selection-action"
+            title="Attach a snapshot to your next message without sending it"
+            onClick={onReferenceDocument}
+          >
+            Reference in chat ↗
+          </button>
           {!notebookEditor.active && selection.end > selection.start && (
             <button
               className="fq-selection-action"

@@ -138,13 +138,15 @@ No paid model calls were made.
 
 ## Active Notebook Agent context
 
-The active Notebook now supplies the Agent's send-time source snapshot and the
-native workspace bridge context, instead of the hidden Python/QASM model. Each
-message captures the title, Notebook/session identity, saved revision, unsaved
-cell sources, kernel state, and bounded execution summaries. Per-cell output
-provenance records whether the source and kernel still match. Imported outputs
-are not presented as execution evidence. Large sources and omitted cells are
-explicitly marked; image payloads are excluded from the prompt.
+The active Notebook supplies lightweight document identity in message controls.
+Ordinary questions do not automatically attach code. For relevant questions,
+the Agent is directed to inspect the latest draft through the native workspace
+bridge. The bridge retains unsaved cell sources and bounded execution summaries,
+with source/kernel provenance and explicit truncation markers.
+
+The editor toolbar's **Reference in chat** stages a document snapshot for the
+next message without sending it. The existing `@` picker also supports explicit
+Notebook references. Users can remove staged references before sending.
 
 Notebook snapshots use a distinct document language and cannot be shared as an
 executable Python/QASM model. Switching documents waits for the bridge to publish
@@ -154,7 +156,8 @@ execution tools; users still execute cells through the Notebook workspace.
 
 - A Chromium regression keeps a Shor source in the hidden editor, opens Cooling,
   edits an unsaved cell and inspects the actual outgoing message. Cooling and its
-  current source are included; Shor and its linked file are absent.
+  current source are included only after explicit reference; ordinary questions
+  contain identity without a source attachment. Shor and its linked file are absent.
 - Switching Notebooks, refreshing and returning to Python preserves Notebook,
   Python and chat drafts. The pending message remains unchanged and no Notebook
   execution is submitted. Notebook sessions are scripted in this context test;

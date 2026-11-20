@@ -1,6 +1,7 @@
 import { notebookExamples } from "./state/notebooks";
 import {
   notebookContext,
+  notebookAttachment,
   type NotebookContext,
 } from "./state/notebook-context";
 import { ToolbarMenu } from "./components/ToolbarMenu";
@@ -573,6 +574,23 @@ export default function App() {
                   file,
                 });
                 setPendingRepair(request);
+                dispatch({ type: "agent", open: true });
+              }}
+              onReferenceDocument={() => {
+                setPendingAttachment(
+                  activeNotebook
+                    ? notebookAttachment(activeNotebook)
+                    : {
+                        id: "document-" + crypto.randomUUID(),
+                        name:
+                          state.name +
+                          (state.language === "python" ? ".py" : ".qasm"),
+                        source: state.source,
+                        language: state.language,
+                        kind: "model",
+                        workspaceFile: state.editorLink?.path,
+                      },
+                );
                 dispatch({ type: "agent", open: true });
               }}
               onAttachSelection={(source, startLine, endLine) => {
