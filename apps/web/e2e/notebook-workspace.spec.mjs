@@ -617,3 +617,63 @@ test("cooling notebook imports its complete bundled companion project", async ({
     fullPage: true,
   });
 });
+
+test("notebook output images fit without cropping or distorting", async ({
+  page,
+}) => {
+  await page.goto("/#model");
+  await page.getByRole("button", { name: "Examples", exact: true }).click();
+  await page
+    .getByRole("textbox", { name: "Search models" })
+    .fill("superposition");
+  await page
+    .getByRole("region", { name: "Official notebooks" })
+    .getByRole("button", { name: /Superposition in native FlagQuantum/ })
+    .click();
+  await page
+    .getByRole("button", { name: "Open notebook workspace", exact: true })
+    .click();
+  const workspace = page.getByRole("region", {
+    name: "Notebook workspace",
+    exact: true,
+  });
+  await workspace
+    .getByRole("button", { name: "+ Code cell", exact: true })
+    .click();
+  const cell = workspace.locator(".fq-notebook-edit-cell").last();
+  await cell
+    .getByRole("textbox")
+    .fill(
+      "from PIL import Image\nfrom IPython.display import display\ndisplay(Image.new('RGB', (2400, 1400), 'white'))\ndisplay(Image.new('RGB', (800, 2400), 'white'))",
+    );
+  await cell.getByRole("button", { name: /^Run cell \d+$/ }).click();
+  const images = cell.getByRole("img", { name: "Cell output" });
+  await expect(images).toHaveCount(2, { timeout: 45000 });
+  for (const viewport of [
+    { width: 1440, height: 1000 },
+    { width: 1000, height: 700 },
+  ]) {
+    await page.setViewportSize(viewport);
+    for (let i = 0; i < 2; i++) {
+      const box = await images.nth(i).evaluate((image) => {
+        const rect = image.getBoundingClientRect();
+        const parent = image.parentElement;
+        return {
+          width: rect.width,
+          height: rect.height,
+          ratio: image.naturalWidth / image.naturalHeight,
+          available: parent.clientWidth - 28,
+        };
+      });
+      expect(box.width).toBeLessThanOrEqual(box.available + 1);
+      expect(box.height).toBeLessThanOrEqual(
+        Math.min(380, viewport.height / 2) + 1,
+      );
+      expect(Math.abs(box.width / box.height - box.ratio)).toBeLessThan(0.01);
+    }
+  }
+  await page.screenshot({
+    path: "test-results/notebook-output-fit.png",
+    fullPage: true,
+  });
+});

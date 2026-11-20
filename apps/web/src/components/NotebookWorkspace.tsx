@@ -62,12 +62,13 @@ function Output({ output }: { output: CellOutput }) {
           src={"data:image/png;base64," + data["image/png"]}
         />
       )}
-      {typeof data["image/jpeg"] === "string" && (
-        <img
-          alt="Cell output"
-          src={"data:image/jpeg;base64," + data["image/jpeg"]}
-        />
-      )}
+      {typeof data["image/png"] !== "string" &&
+        typeof data["image/jpeg"] === "string" && (
+          <img
+            alt="Cell output"
+            src={"data:image/jpeg;base64," + data["image/jpeg"]}
+          />
+        )}
       {(typeof data["text/plain"] === "string" ||
         Array.isArray(data["text/plain"])) && (
         <pre>

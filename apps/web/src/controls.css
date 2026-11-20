@@ -1931,8 +1931,13 @@
   overflow-wrap: anywhere;
 }
 .fq-notebook-cell-output img {
-  max-width: 100%;
+  display: block;
+  width: auto;
   height: auto;
+  max-width: 100%;
+  max-height: min(380px, 50vh);
+  margin-inline: auto;
+  object-fit: contain;
 }
 .fq-notebook-error {
   color: #ed9b9b;
