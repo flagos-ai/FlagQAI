@@ -1,5 +1,6 @@
 import type { NotebookContext } from "../state/notebook-context";
 import { NotebookWorkspace } from "../components/NotebookWorkspace";
+import { NotebookPicker } from "../components/NotebookPicker";
 import { notebookExamples } from "../state/notebooks";
 import {
   detectedPythonStyle,
@@ -417,35 +418,10 @@ export function ModelPage({
             </button>
           </div>
           {notebookEditor.active && (
-            <select
-              className="fq-notebook-picker"
-              aria-label="Notebook example"
+            <NotebookPicker
               value={notebookId}
-              onChange={(event) =>
-                onNotebookEditorChange({ active: true, id: event.target.value })
-              }
-            >
-              {notebookId.startsWith("import:") && (
-                <option value={notebookId}>Imported notebook</option>
-              )}
-              {Array.from(
-                new Set(notebookExamples.map((item) => item.category)),
-              ).map((category) => (
-                <optgroup key={category} label={category.replaceAll("_", " ")}>
-                  {notebookExamples
-                    .filter((item) => item.category === category)
-                    .map((item) => (
-                      <option
-                        key={item.id}
-                        value={item.id}
-                        disabled={!!item.unavailableReason}
-                      >
-                        {item.title} · {item.path}
-                      </option>
-                    ))}
-                </optgroup>
-              ))}
-            </select>
+              onChange={(id) => onNotebookEditorChange({ active: true, id })}
+            />
           )}
           {isPython && !notebookEditor.active && (
             <select

@@ -1,3 +1,4 @@
+import { chooseNotebook } from "./notebook-picker.mjs";
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 const catalog = JSON.parse(
@@ -123,15 +124,11 @@ for (const explicitReference of [false, true]) {
     expect(sent[0].text).not.toContain("Shor");
     const original = sent[0].text;
     await composer.fill("Keep this chat draft");
-    await page
-      .getByRole("combobox", { name: "Notebook example" })
-      .selectOption(other.id);
+    await chooseNotebook(page, other.id);
     await expect.poll(() => publications.at(-1)?.notebookId).toBe(other.id);
     await page.reload();
     await expect(composer).toHaveValue("Keep this chat draft");
-    await page
-      .getByRole("combobox", { name: "Notebook example" })
-      .selectOption(cooling.id);
+    await chooseNotebook(page, cooling.id);
     await expect(workspace.getByRole("textbox").first()).toHaveValue(
       "cooling_capacity = 43 # unsaved",
     );

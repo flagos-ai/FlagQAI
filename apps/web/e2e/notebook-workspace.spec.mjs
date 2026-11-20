@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
+import { chooseNotebook } from "./notebook-picker.mjs";
 
 test("IPython cell workspace retains state, receipts, edits and output", async ({
   page,
@@ -187,8 +188,8 @@ test("Notebook tab uses the main editor and keeps all drafts when switching mode
     .first()
     .fill("# independent notebook draft");
   const selected = await page
-    .getByRole("combobox", { name: "Notebook example" })
-    .inputValue();
+    .getByRole("button", { name: "Notebook example", exact: true })
+    .getAttribute("data-notebook-id");
   await modes.getByRole("button", { name: "Python", exact: true }).click();
   await expect(editor).toHaveValue("# Python draft remains intact");
   await modes.getByRole("button", { name: "OpenQASM", exact: true }).click();
@@ -197,21 +198,25 @@ test("Notebook tab uses the main editor and keeps all drafts when switching mode
   await expect(notebook.getByRole("textbox").first()).toHaveValue(
     "# independent notebook draft",
   );
-  const picker = page.getByRole("combobox", { name: "Notebook example" });
-  const alternate = await picker
-    .locator("option")
-    .evaluateAll(
-      (options, current) =>
-        options.find((option) => option.value !== current && !option.disabled)
-          .value,
-      selected,
-    );
-  await picker.selectOption(alternate);
+  const picker = page.getByRole("button", {
+    name: "Notebook example",
+    exact: true,
+  });
+  await picker.click();
+  const alternate = await page
+    .getByRole("listbox", { name: "Notebooks", exact: true })
+    .locator('[role="option"][aria-selected="false"][aria-disabled="false"]')
+    .first()
+    .getAttribute("data-notebook-id");
+  await page
+    .getByRole("combobox", { name: "Search notebooks" })
+    .press("Escape");
+  await chooseNotebook(page, alternate);
   await expect(
     notebook.getByRole("button", { name: "Run all", exact: true }),
   ).toBeEnabled();
   await notebook.getByRole("textbox").first().fill("# another notebook draft");
-  await picker.selectOption(selected);
+  await chooseNotebook(page, selected);
   await expect(notebook.getByRole("textbox").first()).toHaveValue(
     "# independent notebook draft",
   );
@@ -223,8 +228,8 @@ test("Notebook tab uses the main editor and keeps all drafts when switching mode
     "# independent notebook draft",
   );
   await expect(
-    page.getByRole("combobox", { name: "Notebook example" }),
-  ).toHaveValue(selected);
+    page.getByRole("button", { name: "Notebook example", exact: true }),
+  ).toHaveAttribute("data-notebook-id", selected);
   await expect(notebook).toContainText("Not run");
   await page.screenshot({
     path: "test-results/notebook-main-editor.png",
@@ -483,10 +488,7 @@ test("Notebook imports independently, preserves metadata and supports reversible
   await expect(model).toHaveValue("# original script draft");
   await page.getByRole("button", { name: "Notebook", exact: true }).click();
   // Switching back to the official notebook preserves its independent draft.
-  await page.getByRole("combobox", { name: "Notebook example" }).selectOption({
-    label:
-      "Superposition in native FlagQuantum · community/basic_examples/superposition",
-  });
+  await chooseNotebook(page, "community/basic_examples/superposition");
   await expect(workspace.getByRole("textbox").first()).toHaveValue(original);
 });
 

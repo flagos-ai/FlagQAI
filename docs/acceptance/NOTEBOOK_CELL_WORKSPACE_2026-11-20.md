@@ -203,3 +203,22 @@ maximum height of 64 px, and checks command overflow and output fitting at 1,440
 and 1,000 px. All 10 Notebook browser scenarios and 320 frontend tests passed,
 along with TypeScript, production build and staged package surface verification.
 No paid model calls were made.
+
+### Searchable notebook picker
+
+The native catalog select is replaced with a bounded popover using the workbench
+theme. Its trigger shows the document title; results group titles by category and
+show source paths as secondary text. Search matches titles and paths, the selected
+document has a checkmark, and generic overview titles use the parent folder name.
+Imported copies remain selectable while active. Unavailable entries retain their
+reason and cannot be opened.
+
+The search receives focus on opening. Arrow keys move through available results,
+Enter selects, and Escape dismisses and returns focus to the trigger. Clicking
+outside or leaving the picker closes it. Selecting a document never executes code.
+
+All 11 Notebook browser scenarios passed, covering popup bounds at 1,440 and
+1,000 px, search and keyboard interaction, draft retention across selection and
+refresh, imported copies, explicit Agent references and real local cell execution.
+All 320 frontend tests and staged package verification passed. No paid model calls
+were made.
