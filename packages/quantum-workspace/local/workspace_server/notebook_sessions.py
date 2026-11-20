@@ -65,6 +65,88 @@ class NotebookSessions:
             self.documents.put(record)
             return self.read(key)
 
+    def import_notebook(self, data):
+        key = identity(data.get('request_id'))
+        document = data.get('notebook')
+        if not isinstance(document, dict) or document.get('nbformat') != 4:
+            raise ValueError('Import a Jupyter notebook in nbformat 4.')
+        raw_cells = document.get('cells')
+        if not isinstance(raw_cells, list) or len(raw_cells) > 1000:
+            raise ValueError('Notebook must contain at most 1000 cells.')
+        if not isinstance(document.get('metadata', {}), dict):
+            raise ValueError('Notebook metadata must be an object.')
+        metadata = document.get('metadata', {})
+        for field in ('kernelspec', 'language_info'):
+            value = metadata.get(field, {})
+            if not isinstance(value, dict):
+                raise ValueError('Kernel metadata must be an object.')
+            language = value.get('language' if field == 'kernelspec' else 'name', 'python')
+            if not isinstance(language, str) or language and language.lower() not in ('python', 'python3'):
+                raise ValueError('Only Python notebooks can execute in this workspace.')
+        cells = []
+        for cell in raw_cells:
+            if not isinstance(cell, dict) or cell.get('cell_type') not in ('code', 'markdown', 'raw'):
+                raise ValueError('Unsupported notebook cell type.')
+            source = cell.get('source', '')
+            if isinstance(source, list) and all(isinstance(line, str) for line in source):
+                source = ''.join(source)
+            if not isinstance(source, str) or len(source.encode()) > 32768:
+                raise ValueError('Cell source must be at most 32 KiB.')
+            if not isinstance(cell.get('metadata', {}), dict):
+                raise ValueError('Cell metadata must be an object.')
+            outputs = cell.get('outputs', [])
+            if not isinstance(outputs, list) or any(not isinstance(output, dict) for output in outputs):
+                raise ValueError('Cell outputs must be a list of objects.')
+            for output in outputs:
+                if not isinstance(output.get('data', {}), dict):
+                    raise ValueError('Output MIME data must be an object.')
+                for field in ('text', 'traceback'):
+                    value = output.get(field, '')
+                    if not (isinstance(value, str) or isinstance(value, list) and all(isinstance(line, str) for line in value)):
+                        raise ValueError('Output text must contain strings.')
+            cells.append({'id': uuid.uuid4().hex, 'cell_type': cell['cell_type'], 'source': source, 'notebook': cell})
+        if sum(len(cell['source'].encode()) for cell in cells) > 512 * 1024:
+            raise ValueError('Notebook source exceeds 512 KiB.')
+        signature = digest(document)
+        with self.lock:
+            old = self.documents.get(key)
+            if old:
+                if old.get('import_signature') != signature:
+                    raise ProjectConflict('Import identity belongs to a different notebook.')
+                return self.read(key)
+            record = {'id': key, 'status': 'saved', 'notebook_id': 'import:' + key,
+                      'title': str(data.get('title') or 'Imported notebook')[:200],
+                      'revision': uuid.uuid4().hex, 'import_signature': signature,
+                      'metadata': document.get('metadata', {}),
+                      'cells': cells or [{'id': uuid.uuid4().hex, 'cell_type': 'code', 'source': ''}]}
+            self.documents.put(record)
+            return self.read(key)
+
+    def assist(self, key, data):
+        source, cursor, kind = data.get('source'), data.get('cursor'), data.get('kind')
+        if not isinstance(source, str) or len(source.encode()) > 32768 or type(cursor) is not int or not 0 <= cursor <= len(source) or kind not in ('complete', 'inspect'):
+            raise ValueError('Use a bounded source, cursor and assistance kind.')
+        with self.lock:
+            self.read(key)
+            kernel = self.kernels.get(key)
+            if not kernel or kernel.get('busy') or not kernel.get('ready') or kernel['process'].poll() is not None:
+                return {'available': False, 'matches': []}
+            token = uuid.uuid4().hex
+            kernel['process'].stdin.write(json.dumps({'action': kind, 'source': source, 'cursor': cursor, 'token': token}) + '\n')
+            kernel['process'].stdin.flush()
+            deadline = time.monotonic() + 4
+            while time.monotonic() < deadline:
+                try:
+                    event = kernel['events'].get(timeout=max(.01, deadline - time.monotonic()))
+                except queue.Empty:
+                    break
+                if event['type'] == 'fatal':
+                    self._stop(key)
+                    return {'available': False, 'matches': []}
+                if event.get('token') == token:
+                    return event['result']
+            return {'available': False, 'matches': []}
+
     def read(self, key):
         record = self.documents.get(identity(key))
         if not record:
@@ -87,14 +169,14 @@ class NotebookSessions:
             seen.add(cell_id)
             if not isinstance(cell.get('source'), str) or len(cell['source'].encode()) > 32768:
                 raise ValueError('Cell source must be at most 32 KiB.')
-        if len(json.dumps(cells).encode()) > 512 * 1024:
+        if sum(len(cell['source'].encode()) for cell in cells) > 512 * 1024:
             raise ValueError('Notebook source exceeds 512 KiB.')
         with self.lock:
             record = self.read(key)
             if data.get('revision') != record['revision']:
                 raise ProjectConflict('Notebook changed in another window. Local edits are retained; reopen the saved version before retrying.')
-            saved = {name: record[name] for name in ('id', 'status', 'notebook_id', 'title')}
-            saved.update(revision=uuid.uuid4().hex, cells=[{k: c[k] for k in ('id', 'cell_type', 'source')} for c in cells])
+            saved = {name: record[name] for name in ('id', 'status', 'notebook_id', 'title', 'metadata', 'import_signature') if name in record}
+            saved.update(revision=uuid.uuid4().hex, cells=[{k: c[k] for k in ('id', 'cell_type', 'source', 'notebook') if k in c} for c in cells])
             self.documents.put(saved)
             return self.read(key)
 
@@ -170,7 +252,9 @@ class NotebookSessions:
                     raise ValueError('Four notebook kernels are open. Restart another notebook kernel to release it.')
                 root = self.settings.database_path.parent / 'notebook-workspaces' / key
                 root.mkdir(parents=True, exist_ok=True)
-                _, _, bundle, _ = notebook_bundle(self.settings.web_root, record['notebook_id'])
+                bundle = {'files': {}}
+                if not record['notebook_id'].startswith('import:'):
+                    _, _, bundle, _ = notebook_bundle(self.settings.web_root, record['notebook_id'])
                 # Per-notebook working directory retains user-created results.
                 # Source support files are seeded once, never overwritten.
                 for name, source in bundle['files'].items():
@@ -224,6 +308,8 @@ class NotebookSessions:
                 event = kernel['events'].get(timeout=100)
                 if event['type'] == 'fatal':
                     raise ValueError(event['error'])
+                if event['type'] == 'assistance':
+                    continue
                 if event['type'] == 'done':
                     break
                 cell = next(c for c in run['cells'] if c['id'] == event.get('cell_id'))

@@ -84,6 +84,9 @@ export function ModelPage({
   compile: (source?: string, name?: string) => Promise<void>;
 }) {
   const notebookId =
+    (/^import:[a-f0-9]{32}$/.test(notebookEditor.id || "")
+      ? notebookEditor.id
+      : undefined) ||
     notebookExamples.find((item) => item.id === notebookEditor.id)?.id ||
     notebookExamples.find(
       (item) => item.path === "community/basic_examples/superposition",
@@ -413,6 +416,9 @@ export function ModelPage({
                 onNotebookEditorChange({ active: true, id: event.target.value })
               }
             >
+              {notebookId.startsWith("import:") && (
+                <option value={notebookId}>Imported notebook</option>
+              )}
               {Array.from(
                 new Set(notebookExamples.map((item) => item.category)),
               ).map((category) => (
@@ -473,7 +479,11 @@ export function ModelPage({
           </button>
         </div>
         {notebookEditor.active && (
-          <NotebookWorkspace key={notebookId} notebookId={notebookId} />
+          <NotebookWorkspace
+            key={notebookId}
+            notebookId={notebookId}
+            onImport={(id) => onNotebookEditorChange({ active: true, id })}
+          />
         )}
         <ProjectTabs
           state={state}

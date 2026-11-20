@@ -351,7 +351,7 @@ def create_server(settings, service):
         def do_POST(self):
             if not self.allowed():
                 return self.reply({'error': 'Only local same-origin access is allowed.'}, 403)
-            notebook = re.fullmatch(r'/api/notebook-sessions(?:/([a-f0-9]{32})/(save|execute|interrupt|restart))?', self.path)
+            notebook = re.fullmatch(r'/api/notebook-sessions(?:/import|/([a-f0-9]{32})/(save|execute|interrupt|restart|assist))?', self.path)
             if notebook:
                 try:
                     length = int(self.headers.get('Content-Length', '0'))
@@ -361,7 +361,9 @@ def create_server(settings, service):
                     if not isinstance(data, dict):
                         raise ValueError('Use a notebook object.')
                     key, action = notebook.groups()
+                    if self.path.endswith('/import'): return self.reply(notebooks.import_notebook(data), 201)
                     if not key: return self.reply(notebooks.create(data), 201)
+                    if action == 'assist': return self.reply(notebooks.assist(key, data))
                     if action == 'save': return self.reply(notebooks.save(key, data))
                     if action == 'execute': return self.reply(notebooks.execute(key, data), 202)
                     return self.reply(notebooks.control(key, action))

@@ -141,3 +141,52 @@ class NotebookSessionTests(unittest.TestCase):
         for name, expected in bundle['inputHashes'].items():
             path = workspace.parent/self.key/name
             self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), expected)
+
+    def test_import_preserves_metadata_attachments_outputs_and_survives_restart(self):
+        document = {'nbformat': 4, 'nbformat_minor': 5, 'metadata': {'research': {'seed': 42}}, 'cells': [
+            {'id': 'md-original', 'cell_type': 'markdown', 'metadata': {'tags': ['intro']}, 'source': ['# Study\n', '**Result**'],
+             'attachments': {'diagram.png': {'image/png': 'abc'}}},
+            {'id': 'code-original', 'cell_type': 'code', 'metadata': {}, 'source': 'print(42)', 'execution_count': 7,
+             'outputs': [{'output_type': 'stream', 'name': 'stdout', 'text': ['42\n']}]},
+            {'id': 'raw-original', 'cell_type': 'raw', 'metadata': {'format': 'text'}, 'source': 'raw text'}]}
+        data = {'request_id': '8'*32, 'notebook': document, 'title': 'study.ipynb'}
+        imported = self.sessions.import_notebook(data)
+        self.assertEqual(imported['runs'], [])
+        self.assertEqual(imported['kernel'], 'stopped')
+        self.assertEqual(imported['cells'][0]['source'], '# Study\n**Result**')
+        self.assertEqual([c['notebook'] for c in imported['cells']], document['cells'])
+        self.assertEqual(self.sessions.import_notebook(data)['id'], imported['id'])
+        with self.assertRaises(ProjectConflict):
+            self.sessions.import_notebook({**data, 'notebook': {**document, 'metadata': {}}})
+        imported['cells'][1]['source'] = 'print(43)'
+        self.sessions.save(imported['id'], {'revision': imported['revision'], 'cells': imported['cells']})
+        self.sessions.close()
+        self.sessions = NotebookSessions(self.settings, self.python)
+        restored = self.sessions.create({'request_id': imported['id'], 'notebook_id': imported['notebook_id']})
+        self.assertEqual(restored['metadata'], document['metadata'])
+        self.assertEqual(restored['cells'][1]['notebook'], document['cells'][1])
+        self.key, self.doc = restored['id'], restored
+        run, _ = self.execute([1])
+        self.assertEqual(run['status'], 'completed', run)
+        self.assertIn('43', run['cells'][0]['outputs'][0]['text'])
+
+    def test_import_rejects_invalid_sources_before_creating_document(self):
+        for document in ({'nbformat': 3, 'cells': []}, {'nbformat': 4, 'cells': [{'cell_type': 'code', 'source': ['ok', 12]}]},
+                         {'nbformat': 4, 'cells': [{'cell_type': 'code', 'source': 'a'*32769}]}):
+            with self.assertRaises(ValueError):
+                self.sessions.import_notebook({'request_id': '8'*32, 'notebook': document})
+        self.assertIsNone(self.sessions.documents.get('8'*32))
+
+    def test_kernel_completion_and_documentation_do_not_execute_cells(self):
+        self.assertFalse(self.sessions.assist(self.key, {'source': 'pri', 'cursor': 3, 'kind': 'complete'})['available'])
+        self.save(['research_value = 42\ndef research_function(alpha, beta=3):\n    """Research parameter documentation."""\n    return alpha + beta'])
+        self.execute([0])
+        completed = self.sessions.assist(self.key, {'source': 'research_v', 'cursor': 10, 'kind': 'complete'})
+        self.assertIn('research_value', completed['matches'])
+        inspected = self.sessions.assist(self.key, {'source': 'research_function(', 'cursor': 18, 'kind': 'inspect'})
+        self.assertIn('alpha', inspected['documentation'])
+        self.assertIn('Research parameter documentation', inspected['documentation'])
+        self.assertEqual(len(self.sessions.read(self.key)['runs']), 1)
+        self.save(['assert research_value == 42'])
+        run, _ = self.execute([0], 'b'*32)
+        self.assertEqual(run['status'], 'completed', run)

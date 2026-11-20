@@ -101,6 +101,29 @@ try:
         if request['action'] == 'execute':
             if busy.acquire(blocking=False):
                 threading.Thread(target=execute, args=(request,), daemon=True).start()
+        elif request['action'] in ('complete', 'inspect'):
+            result = {'available': False, 'matches': []}
+            if not busy.locked():
+                try:
+                    message = (client.complete(request['source'], request['cursor'])
+                               if request['action'] == 'complete' else
+                               client.inspect(request['source'], request['cursor'], detail_level=0))
+                    deadline = time.monotonic() + 3
+                    while time.monotonic() < deadline:
+                        reply = client.get_shell_msg(timeout=max(.01, deadline - time.monotonic()))
+                        if reply.get('parent_header', {}).get('msg_id') != message:
+                            continue
+                        content = reply['content']
+                        if request['action'] == 'complete':
+                            result = {'available': True, 'matches': content.get('matches', [])[:100],
+                                      'cursor_start': content.get('cursor_start', request['cursor']),
+                                      'cursor_end': content.get('cursor_end', request['cursor'])}
+                        else:
+                            result = {'available': True, 'documentation': content.get('data', {}).get('text/plain', '')[:16000]}
+                        break
+                except Exception:
+                    result = {'available': False, 'matches': []}
+            emit({'type': 'assistance', 'token': request['token'], 'result': result})
         elif request['action'] == 'interrupt':
             manager.interrupt_kernel()
         elif request['action'] == 'shutdown':

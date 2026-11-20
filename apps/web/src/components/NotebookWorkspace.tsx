@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import {
   notebookSessions,
   NotebookRequestError,
@@ -7,6 +7,11 @@ import {
   type CellOutput,
   type ExecuteCells,
 } from "../api/notebook-sessions";
+import {
+  notebookHistory,
+  splitCell,
+  mergeCell,
+} from "../state/notebook-editing";
 import { NotebookCellEditor } from "./NotebookCellEditor";
 import { AgentMarkdown } from "./AgentMarkdown";
 
@@ -21,23 +26,33 @@ function initial(id: string): {
   try {
     return (
       JSON.parse(localStorage.getItem(storageKey(id)) || "null") || {
-        id: uuid(),
+        id: id.startsWith("import:") ? id.slice(7) : uuid(),
       }
     );
   } catch {
-    return { id: uuid() };
+    return { id: id.startsWith("import:") ? id.slice(7) : uuid() };
   }
 }
 function Output({ output }: { output: CellOutput }) {
   if (output.output_type === "error")
     return (
       <pre className="fq-notebook-error">
-        {output.ename}: {output.evalue}
+        {String(output.ename || "Error")}: {String(output.evalue || "")}
         {"\n"}
-        {output.traceback?.join("\n").replace(/\x1b\[[0-9;]*m/g, "")}
+        {(Array.isArray(output.traceback)
+          ? output.traceback.join("\n")
+          : ""
+        ).replace(/\x1b\[[0-9;]*m/g, "")}
       </pre>
     );
-  if (output.text) return <pre>{output.text}</pre>;
+  if (output.text)
+    return (
+      <pre>
+        {Array.isArray(output.text)
+          ? output.text.join("")
+          : String(output.text)}
+      </pre>
+    );
   const data = output.data || {};
   return (
     <>
@@ -53,8 +68,13 @@ function Output({ output }: { output: CellOutput }) {
           src={"data:image/jpeg;base64," + data["image/jpeg"]}
         />
       )}
-      {typeof data["text/plain"] === "string" && (
-        <pre>{data["text/plain"]}</pre>
+      {(typeof data["text/plain"] === "string" ||
+        Array.isArray(data["text/plain"])) && (
+        <pre>
+          {Array.isArray(data["text/plain"])
+            ? data["text/plain"].join("")
+            : (data["text/plain"] as string)}
+        </pre>
       )}
       {data["application/json"] !== undefined && (
         <pre>{JSON.stringify(data["application/json"], null, 2)}</pre>
@@ -63,10 +83,27 @@ function Output({ output }: { output: CellOutput }) {
   );
 }
 
-export function NotebookWorkspace({ notebookId }: { notebookId: string }) {
+export function NotebookWorkspace({
+  notebookId,
+  onImport,
+}: {
+  notebookId: string;
+  onImport: (id: string) => void;
+}) {
   const [seed] = useState(() => initial(notebookId));
   const [session, setSession] = useState<NotebookSession>();
-  const [cells, setCells] = useState<EditableCell[]>(seed.cells || []);
+  const [history, edit] = useReducer(notebookHistory, {
+    cells: seed.cells || [],
+    past: [],
+    future: [],
+  });
+  const cells = history.cells;
+  const completionWords = useMemo(
+    () => cells.map((cell) => cell.source).join("\n"),
+    [cells],
+  );
+  const fileInput = useRef<HTMLInputElement>(null);
+  const cursors = useRef(new Map<string, number>());
   const [pending, setPending] = useState<ExecuteCells | undefined>(
     seed.pending,
   );
@@ -107,7 +144,7 @@ export function NotebookWorkspace({ notebookId }: { notebookId: string }) {
         setError((previous) =>
           previous.startsWith("Disconnected.") ? "" : previous,
         );
-        if (!seed.cells) setCells(value.cells);
+        if (!seed.cells) edit({ type: "load", cells: value.cells });
         if (
           seed.pending &&
           value.runs.some((run) => run.id === seed.pending?.request_id)
@@ -186,7 +223,7 @@ export function NotebookWorkspace({ notebookId }: { notebookId: string }) {
     }
   }
   async function run(ids: string[]) {
-    if (active || pending) return;
+    if (!ids.length || active || pending) return;
     await act(async () => {
       const value = await save();
       const request = {
@@ -217,14 +254,40 @@ export function NotebookWorkspace({ notebookId }: { notebookId: string }) {
       }
     });
   }
-  function update(next: EditableCell[]) {
-    setCells(next);
+  function update(next: EditableCell[], group?: string) {
+    edit({ type: "edit", cells: next, group, time: Date.now() });
+  }
+  function insert(index: number, cell_type: EditableCell["cell_type"]) {
+    const cell = { id: uuid(), cell_type, source: "" };
+    update([...cells.slice(0, index), cell, ...cells.slice(index)]);
+    if (cell_type === "markdown") setEditingMarkdown(cell.id);
+  }
+  async function importFile(file: File) {
+    await act(async () => {
+      if (file.size > 1024 * 1024)
+        throw Error(
+          "Import supports notebooks up to 1 MiB, 1000 cells and 32 KiB per cell.",
+        );
+      const text = await file.text();
+      const notebook = JSON.parse(text);
+      const bytes = await crypto.subtle.digest(
+        "SHA-256",
+        new TextEncoder().encode(text),
+      );
+      const id = Array.from(new Uint8Array(bytes), (b) =>
+        b.toString(16).padStart(2, "0"),
+      )
+        .join("")
+        .slice(0, 32);
+      const value = await notebookSessions.import(id, file.name, notebook);
+      onImport(value.notebook_id || "import:" + value.id);
+    });
   }
   function download() {
     const notebook = {
       nbformat: 4,
       nbformat_minor: 5,
-      metadata: {
+      metadata: session?.metadata || {
         kernelspec: {
           name: "python3",
           display_name: "Python 3",
@@ -236,14 +299,30 @@ export function NotebookWorkspace({ notebookId }: { notebookId: string }) {
           .flatMap((run) => run.cells)
           .find((run) => run.id === cell.id && run.source === cell.source);
         return {
-          ...cell,
-          metadata: {},
+          ...(cell.notebook || {}),
+          id: cell.notebook?.id || cell.id,
+          cell_type: cell.cell_type,
+          source: cell.source,
+          metadata: cell.notebook?.metadata || {},
           ...(cell.cell_type === "code"
             ? {
-                execution_count: previous?.execution_count || null,
-                outputs: (previous?.outputs || []).map((output) => ({
+                execution_count:
+                  previous?.execution_count ??
+                  cell.notebook?.execution_count ??
+                  null,
+                outputs: (
+                  previous?.outputs ||
+                  (cell.notebook?.outputs as CellOutput[]) ||
+                  []
+                ).map((output) => ({
                   ...output,
-                  ...(output.data ? { metadata: {} } : {}),
+                  ...(output.data
+                    ? {
+                        metadata:
+                          (output as CellOutput & { metadata?: unknown })
+                            .metadata || {},
+                      }
+                    : {}),
                 })),
               }
             : {}),
@@ -265,6 +344,19 @@ export function NotebookWorkspace({ notebookId }: { notebookId: string }) {
     <section
       className="fq-notebook-reader fq-notebook-workspace fq-notebook-inline"
       aria-label="Notebook workspace"
+      onKeyDown={(event) => {
+        if (
+          event.nativeEvent.isComposing ||
+          !(event.ctrlKey || event.metaKey) ||
+          event.altKey
+        )
+          return;
+        if (event.key.toLowerCase() === "z") {
+          event.preventDefault();
+          event.stopPropagation();
+          edit({ type: event.shiftKey ? "redo" : "undo" });
+        }
+      }}
     >
       <div className="fq-notebook-topbar">
         <header>
@@ -277,6 +369,20 @@ export function NotebookWorkspace({ notebookId }: { notebookId: string }) {
           </div>
         </header>
         <div className="fq-notebook-actions">
+          <button
+            disabled={!history.past.length}
+            onClick={() => edit({ type: "undo" })}
+            title="Undo edit (Ctrl/Cmd+Z)"
+          >
+            Undo
+          </button>
+          <button
+            disabled={!history.future.length}
+            onClick={() => edit({ type: "redo" })}
+            title="Redo edit (Ctrl/Cmd+Shift+Z)"
+          >
+            Redo
+          </button>
           <button
             className="primary"
             disabled={!session || busy || active || !!pending}
@@ -320,7 +426,45 @@ export function NotebookWorkspace({ notebookId }: { notebookId: string }) {
           >
             Restart kernel
           </button>
-          <button onClick={download}>Download .ipynb</button>
+          <details className="fq-notebook-menu">
+            <summary aria-label="Notebook file and shortcuts">More</summary>
+            <div>
+              <button onClick={download}>Download .ipynb</button>
+              <button
+                disabled={busy || active || !!pending}
+                onClick={() => fileInput.current?.click()}
+              >
+                Import .ipynb
+              </button>
+              <p>
+                Shift+Enter: run cell
+                <br />
+                Ctrl+Space: complete
+                <br />
+                Ctrl+Shift+Space: parameters
+                <br />
+                Ctrl/Cmd+Shift+−: split cell
+                <br />
+                Ctrl/Cmd+Z: undo edit
+              </p>
+              <small>
+                Import creates an independent copy. Local support files are not
+                included.
+              </small>
+            </div>
+          </details>
+          <input
+            ref={fileInput}
+            type="file"
+            accept=".ipynb,application/x-ipynb+json"
+            aria-label="Import notebook file"
+            hidden
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              event.target.value = "";
+              if (file) void importFile(file);
+            }}
+          />
         </div>
       </div>
       <p className="fq-notebook-hint" role="status">
@@ -339,7 +483,7 @@ export function NotebookWorkspace({ notebookId }: { notebookId: string }) {
               download();
               const value = await notebookSessions.read(seed.id);
               setSession(value);
-              setCells(value.cells);
+              edit({ type: "load", cells: value.cells });
               baseRevision.current = value.revision;
               setSavedRevision(value.revision);
             })
@@ -379,7 +523,15 @@ export function NotebookWorkspace({ notebookId }: { notebookId: string }) {
           const last = session?.runs
             .flatMap((run) => run.cells.map((value) => ({ ...value, run })))
             .find((value) => value.id === cell.id);
-          const changed = !!last && last.source !== cell.source;
+          const imported = cell.notebook?.outputs as CellOutput[] | undefined;
+          const output = last?.outputs || imported || [];
+          const changed = last
+            ? last.source !== cell.source
+            : !!imported?.length &&
+              cell.source !==
+                (Array.isArray(cell.notebook?.source)
+                  ? cell.notebook.source.join("")
+                  : cell.notebook?.source);
           return (
             <section
               className="fq-notebook-edit-cell"
@@ -397,11 +549,13 @@ export function NotebookWorkspace({ notebookId }: { notebookId: string }) {
                 <span>
                   {changed
                     ? "Code changed · previous output"
-                    : last
-                      ? `${last.status}${last.run.kernel_id !== session?.kernel_id ? " · previous kernel" : ""}`
-                      : cell.cell_type === "code"
-                        ? "Not run"
-                        : ""}
+                    : !last && imported?.length
+                      ? "Imported output · not verified here"
+                      : last
+                        ? `${last.status}${last.run.kernel_id !== session?.kernel_id ? " · previous kernel" : ""}`
+                        : cell.cell_type === "code"
+                          ? "Not run"
+                          : ""}
                 </span>
                 {cell.cell_type === "code" && (
                   <button
@@ -425,6 +579,118 @@ export function NotebookWorkspace({ notebookId }: { notebookId: string }) {
                     {editingMarkdown === cell.id ? "Done" : "Edit"}
                   </button>
                 )}
+                <details className="fq-notebook-menu">
+                  <summary aria-label={`Cell ${index + 1} actions`}>⋯</summary>
+                  <div
+                    onClick={(event) => {
+                      if ((event.target as HTMLElement).closest("button"))
+                        event.currentTarget.parentElement?.removeAttribute(
+                          "open",
+                        );
+                    }}
+                  >
+                    <button onClick={() => insert(index, "code")}>
+                      Insert code above
+                    </button>
+                    <button onClick={() => insert(index + 1, "code")}>
+                      Insert code below
+                    </button>
+                    <button onClick={() => insert(index + 1, "markdown")}>
+                      Insert Markdown below
+                    </button>
+                    <button
+                      onClick={() =>
+                        update([
+                          ...cells.slice(0, index + 1),
+                          {
+                            id: uuid(),
+                            cell_type: cell.cell_type,
+                            source: cell.source,
+                          },
+                          ...cells.slice(index + 1),
+                        ])
+                      }
+                    >
+                      Duplicate cell
+                    </button>
+                    <button
+                      onClick={() =>
+                        update(
+                          splitCell(
+                            cells,
+                            cell.id,
+                            cursors.current.get(cell.id) ?? cell.source.length,
+                            uuid(),
+                          ),
+                        )
+                      }
+                    >
+                      Split at cursor
+                    </button>
+                    <button
+                      disabled={
+                        index === cells.length - 1 ||
+                        cells[index + 1].cell_type !== cell.cell_type
+                      }
+                      onClick={() => update(mergeCell(cells, index))}
+                    >
+                      Merge with next
+                    </button>
+                    <button
+                      disabled={index === cells.length - 1 || active}
+                      onClick={() => {
+                        const copy = [...cells];
+                        [copy[index], copy[index + 1]] = [
+                          copy[index + 1],
+                          copy[index],
+                        ];
+                        update(copy);
+                      }}
+                    >
+                      Move down
+                    </button>
+                    <button
+                      disabled={
+                        busy ||
+                        active ||
+                        !!pending ||
+                        !session ||
+                        !cells
+                          .slice(0, index + 1)
+                          .some((c) => c.cell_type === "code")
+                      }
+                      onClick={() =>
+                        void run(
+                          cells
+                            .slice(0, index + 1)
+                            .filter((c) => c.cell_type === "code")
+                            .map((c) => c.id),
+                        )
+                      }
+                    >
+                      Run through this cell
+                    </button>
+                    <button
+                      disabled={
+                        busy ||
+                        active ||
+                        !!pending ||
+                        !session ||
+                        !cells.slice(index).some((c) => c.cell_type === "code")
+                      }
+                      onClick={() =>
+                        void run(
+                          cells
+                            .slice(index)
+                            .filter((c) => c.cell_type === "code")
+                            .map((c) => c.id),
+                        )
+                      }
+                    >
+                      Run from this cell
+                    </button>
+                  </div>
+                </details>
                 <button
                   title="Move cell up"
                   aria-label={`Move cell ${index + 1} up`}
@@ -481,7 +747,16 @@ export function NotebookWorkspace({ notebookId }: { notebookId: string }) {
                       cells.map((value) =>
                         value.id === cell.id ? { ...value, source } : value,
                       ),
+                      cell.id,
                     )
+                  }
+                  words={completionWords}
+                  onAssist={(source, cursor, kind) =>
+                    notebookSessions.assist(seed.id, source, cursor, kind)
+                  }
+                  onSelection={(at) => cursors.current.set(cell.id, at)}
+                  onSplit={(at) =>
+                    update(splitCell(cells, cell.id, at, uuid()))
                   }
                   onRun={() => {
                     if (cell.cell_type === "markdown")
@@ -490,12 +765,12 @@ export function NotebookWorkspace({ notebookId }: { notebookId: string }) {
                   }}
                 />
               )}
-              {last && (last.outputs.length > 0 || last.run.error) && (
+              {(output.length > 0 || last?.run.error) && (
                 <div
                   className="fq-notebook-cell-output"
                   aria-label={`Output cell ${index + 1}`}
                 >
-                  {last.outputs.map((output, i) => (
+                  {output.map((output, i) => (
                     <Output key={i} output={output} />
                   ))}
                   {last?.run.error && <p role="alert">{last.run.error}</p>}
