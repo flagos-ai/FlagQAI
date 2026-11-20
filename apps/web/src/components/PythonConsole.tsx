@@ -165,7 +165,7 @@ export function PythonConsole({
         </Modal>
       )}
       <div className="fq-pane-title">
-        <span className="fq-console-title">PYTHON OUTPUT</span>
+        <span className="fq-console-title">Output</span>
         <span
           className={
             feedback.busy

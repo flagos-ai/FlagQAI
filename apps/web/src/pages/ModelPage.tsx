@@ -469,15 +469,6 @@ export function ModelPage({
               <option value="synthesis">{pythonStyleLabels.synthesis}</option>
             </select>
           )}
-          {!notebookEditor.active && (
-            <button
-              className="fq-selection-action"
-              title="Attach a snapshot to your next message without sending it"
-              onClick={onReferenceDocument}
-            >
-              Reference in chat ↗
-            </button>
-          )}
           {!notebookEditor.active && selection.end > selection.start && (
             <button
               className="fq-selection-action"
@@ -518,7 +509,10 @@ export function ModelPage({
         />
         <div className="fq-toolbar fq-model-toolbar" inert={!!codePreview}>
           <div className="fq-model-document">
-            <span className="fq-filename">
+            <span
+              className="fq-filename"
+              title={`${state.name}.${isPython ? "py" : "qasm"}`}
+            >
               <UIIcon name="file" size={14} />
               <span>
                 {state.name}.{isPython ? "py" : "qasm"}
@@ -551,102 +545,132 @@ export function ModelPage({
               }}
             />
           </div>
-          <button
-            onClick={() => dispatch({ type: "undo" })}
-            disabled={!state.undo.length}
+          <div
+            className="fq-model-commands"
+            role="toolbar"
+            aria-label="Model commands"
           >
-            <UIIcon name="undo" size={14} /> Undo
-          </button>
-          <button
-            disabled={projectWorkspace.busy || python.submitting}
-            title="Save current file (⌘S / Ctrl+S)"
-            onClick={() => void projectWorkspace.save()}
-          >
-            Save
-          </button>
-          {state.project && needsProjectSave && (
+            <div className="fq-model-command-group">
+              <button
+                className="fq-control-icon"
+                aria-label="Undo"
+                title="Undo last edit"
+                onClick={() => dispatch({ type: "undo" })}
+                disabled={!state.undo.length}
+              >
+                <UIIcon name="undo" size={14} />
+              </button>
+              <button
+                disabled={projectWorkspace.busy || python.submitting}
+                title="Save current file (⌘S / Ctrl+S)"
+                onClick={() => void projectWorkspace.save()}
+              >
+                <UIIcon name="save" size={14} /> Save
+              </button>
+              {state.project && needsProjectSave && (
+                <button
+                  disabled={projectWorkspace.busy || python.submitting}
+                  onClick={() => void projectWorkspace.saveAll()}
+                >
+                  Save all
+                </button>
+              )}
+              <button
+                className="fq-control-icon"
+                title="Download model"
+                aria-label="Download model"
+                onClick={() =>
+                  download(
+                    state.name + (isPython ? ".py" : ".qasm"),
+                    state.source,
+                  )
+                }
+              >
+                <UIIcon name="download" />
+              </button>
+            </div>
+            <div className="fq-model-command-group">
+              <button
+                className="fq-model-reference"
+                aria-label="Reference in chat ↗"
+                title="Reference in chat · Attach a snapshot to your next message without sending it"
+                onClick={onReferenceDocument}
+              >
+                <UIIcon name="arrow" size={14} />
+                <span className="fq-model-command-label">Reference</span>
+              </button>
+              <button
+                aria-label="Configuration"
+                title={
+                  isPython ? "Python environment" : "Synthesis configuration"
+                }
+                aria-expanded={configuration}
+                onClick={() => setConfiguration(!configuration)}
+              >
+                <UIIcon name="settings" size={14} />
+                <span className="fq-model-command-label">
+                  {isPython ? "Environment" : "Configuration"}
+                </span>
+              </button>
+            </div>
             <button
-              disabled={projectWorkspace.busy || python.submitting}
-              onClick={() => void projectWorkspace.saveAll()}
+              className="primary fq-run-primary"
+              aria-label={
+                isPython
+                  ? needsProjectSave
+                    ? "Save & run"
+                    : "Run Python"
+                  : "Compile"
+              }
+              disabled={!canRun}
+              aria-keyshortcuts="Meta+Enter Control+Enter"
+              title={
+                needsProjectSave
+                  ? "Save changed project files, then run this Python entry"
+                  : "Run the current code"
+              }
+              onClick={runCurrent}
             >
-              Save all
+              <UIIcon
+                name={
+                  !canRun &&
+                  (python.submitting ||
+                    loadingRun ||
+                    ["queued", "running"].includes(python.run?.status || "") ||
+                    state.busy)
+                    ? "refresh"
+                    : isPython
+                      ? "play"
+                      : "circuit"
+                }
+                className={
+                  !canRun &&
+                  (python.submitting ||
+                    loadingRun ||
+                    ["queued", "running"].includes(python.run?.status || "") ||
+                    state.busy)
+                    ? "fq-ui-busy"
+                    : ""
+                }
+                size={14}
+              />
+              {isPython
+                ? python.submitting
+                  ? "Starting…"
+                  : loadingRun
+                    ? "Loading run…"
+                    : python.run?.status === "queued"
+                      ? "Queued…"
+                      : python.run?.status === "running"
+                        ? "Running…"
+                        : needsProjectSave
+                          ? "Save & run"
+                          : "Run Python"
+                : state.busy
+                  ? "Compiling…"
+                  : "Compile"}
             </button>
-          )}
-          <button
-            className="fq-control-icon"
-            title="Download model"
-            aria-label="Download model"
-            onClick={() =>
-              download(state.name + (isPython ? ".py" : ".qasm"), state.source)
-            }
-          >
-            <UIIcon name="download" />
-          </button>
-          <button
-            aria-label="Configuration"
-            aria-expanded={configuration}
-            onClick={() => setConfiguration(!configuration)}
-          >
-            <UIIcon name="settings" size={14} />
-            {isPython ? "Environment" : "Configuration"}
-          </button>
-          <button
-            className="primary fq-run-primary"
-            aria-label={
-              isPython
-                ? needsProjectSave
-                  ? "Save & run"
-                  : "Run Python"
-                : "Compile"
-            }
-            disabled={!canRun}
-            aria-keyshortcuts="Meta+Enter Control+Enter"
-            title={
-              needsProjectSave
-                ? "Save changed project files, then run this Python entry"
-                : "Run the current code"
-            }
-            onClick={runCurrent}
-          >
-            <UIIcon
-              name={
-                !canRun &&
-                (python.submitting ||
-                  loadingRun ||
-                  ["queued", "running"].includes(python.run?.status || "") ||
-                  state.busy)
-                  ? "refresh"
-                  : isPython
-                    ? "play"
-                    : "circuit"
-              }
-              className={
-                !canRun &&
-                (python.submitting ||
-                  loadingRun ||
-                  ["queued", "running"].includes(python.run?.status || "") ||
-                  state.busy)
-                  ? "fq-ui-busy"
-                  : ""
-              }
-              size={14}
-            />
-            {isPython
-              ? python.submitting
-                ? "Starting…"
-                : loadingRun
-                  ? "Loading run…"
-                  : python.run?.status === "queued"
-                    ? "Queued…"
-                    : python.run?.status === "running"
-                      ? "Running…"
-                      : needsProjectSave
-                        ? "Save & run"
-                        : "Run Python"
-              : state.busy
-                ? "Compiling…"
-                : "Compile"}
-          </button>
+          </div>
         </div>
         {contextMenu && (
           <div
@@ -911,7 +935,7 @@ export function ModelPage({
               ) : (
                 <>
                   <div className="fq-pane-title">
-                    MODEL ERRORS{" "}
+                    <span className="fq-model-output-title">Diagnostics</span>{" "}
                     <span>
                       {errors.length ? `${errors.length} errors` : ""}
                     </span>

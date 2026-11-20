@@ -314,6 +314,188 @@
 .fq-agent-work-live[open] .fq-live-activity-preview {
   display: none;
 }
+
+/* Source editors share the Notebook's quiet document and command hierarchy. */
+.fq-model-center {
+  container-type: inline-size;
+}
+.fq-workspace.fq-ui-controls .fq-model-center[data-notebook="false"] {
+  background: #222428;
+}
+.fq-workspace.fq-ui-controls
+  .fq-model-center[data-notebook="false"]
+  > .fq-pane-title {
+  height: auto;
+  min-height: 36px;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 6px;
+  padding: 4px 12px;
+  letter-spacing: 0;
+}
+.fq-model-center > .fq-pane-title > .fq-editor-mode-label {
+  display: none;
+}
+.fq-model-center > .fq-pane-title > .fq-python-style {
+  min-width: 0;
+  max-width: min(220px, 40cqw);
+}
+.fq-workspace.fq-ui-controls .fq-model-center > .fq-model-toolbar {
+  min-height: 0;
+  padding: 8px 12px;
+  gap: 6px 16px;
+  background: #26282c;
+}
+.fq-model-toolbar > .fq-model-document {
+  flex: 1 1 220px;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+.fq-model-toolbar .fq-model-document > .fq-filename {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  color: var(--ui-text);
+  font-size: 12px;
+  font-weight: 500;
+}
+.fq-model-document > .fq-filename > svg {
+  flex-shrink: 0;
+  color: var(--ui-muted);
+}
+.fq-model-document > .fq-filename > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fq-model-commands,
+.fq-model-command-group {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.fq-model-commands {
+  flex-wrap: wrap;
+  max-width: 100%;
+  gap: 8px;
+}
+.fq-model-command-group + .fq-model-command-group {
+  border-left: 1px solid var(--ui-line);
+  padding-left: 8px;
+}
+.fq-workspace.fq-ui-controls .fq-model-commands button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 5px 9px;
+  border-radius: 7px;
+  font-size: 11px;
+  box-shadow: none;
+}
+.fq-workspace.fq-ui-controls .fq-model-commands .fq-control-icon {
+  width: 30px;
+  padding: 5px;
+  flex-basis: 30px;
+}
+.fq-workspace.fq-ui-controls .fq-model-commands .fq-run-primary {
+  min-inline-size: 108px;
+}
+.fq-workspace.fq-ui-controls .fq-model-center > .fq-editor {
+  margin: 8px 12px 0;
+  background: var(--ui-field);
+  border: 1px solid var(--ui-line);
+  border-radius: 9px;
+}
+.fq-workspace.fq-ui-controls .fq-model-center > .fq-editor:focus-within {
+  border-color: var(--input-focus-border);
+}
+.fq-model-center > .fq-editor::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 48px;
+  background: inherit;
+  z-index: 1;
+  pointer-events: none;
+}
+.fq-model-center > .fq-editor > .fq-live-python-preview {
+  z-index: 3;
+}
+.fq-workspace.fq-ui-controls .fq-model-center > .fq-editor > textarea,
+.fq-workspace.fq-ui-controls .fq-model-center > .fq-editor > .fq-highlight {
+  padding: 14px 16px 32px 58px !important;
+}
+.fq-model-center > .fq-editor > .fq-line-numbers {
+  top: 14px;
+  width: 40px;
+  z-index: 2;
+  color: #7f8997;
+  font-size: 11px;
+}
+.fq-model-center > .fq-editor-status {
+  padding: 4px 14px;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: transparent;
+  border: 0;
+  color: var(--ui-muted);
+  line-height: 16px;
+}
+.fq-model-center > .fq-errors {
+  background: #222428;
+}
+.fq-workspace.fq-ui-controls .fq-model-center > .fq-errors .fq-pane-title {
+  min-height: 34px;
+  height: auto;
+  padding: 4px 12px;
+  background: #26282c;
+  letter-spacing: 0;
+}
+.fq-model-output-title,
+.fq-model-center .fq-console-title {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ui-text);
+}
+.fq-model-center .fq-diagnostic {
+  padding: 10px 14px !important;
+  background: transparent !important;
+  border-bottom-color: var(--ui-line) !important;
+}
+.fq-model-center .fq-diagnostic p {
+  margin: 4px 0 0;
+  color: var(--ui-muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+.fq-model-center .fq-python-logs {
+  background: transparent;
+}
+.fq-model-center .fq-python-result-toolbar {
+  border-bottom-color: var(--ui-line);
+}
+@container (max-width: 900px) {
+  .fq-model-command-label {
+    display: none;
+  }
+}
+@container (max-width: 520px) {
+  .fq-model-center > .fq-errors .fq-python-console > .fq-pane-title {
+    grid-template-columns: auto minmax(0, 1fr) max-content;
+  }
+  .fq-model-center .fq-python-console .fq-pane-title > select {
+    grid-column: 1 / -1;
+  }
+  .fq-model-commands {
+    gap: 4px;
+  }
+  .fq-model-command-group + .fq-model-command-group {
+    padding-left: 4px;
+  }
+}
 .fq-live-activity-empty {
   color: var(--ui-muted);
   font-size: 11px;
