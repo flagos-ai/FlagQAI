@@ -5,6 +5,7 @@ import {
 import { qaoaTaskPrompt } from "../tasks/qaoa-maxcut.mjs";
 import { UIIcon } from "./UIIcon";
 import { agentRunStatus } from "../state/agent-run-status";
+import { agentFollowUp } from "../state/agent-follow-up";
 import type { PlatformBridge } from "../hooks/usePlatformBridge";
 import type { QuantumJob } from "../contracts/quantum-workspace";
 import {
@@ -24,7 +25,7 @@ import { useAgentSubagents } from "../hooks/useAgentSubagents";
 import { dockChildren } from "../state/agent-progress";
 import { AgentSubagentDock } from "./AgentSubagentDock";
 import { useAutoGrowTextarea } from "../hooks/useAutoGrowTextarea";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { AgentConversation } from "../hooks/useAgentConversation";
 import { AgentCommandMenu, COMMAND_MENU_ID } from "./AgentCommandMenu";
 import {
@@ -164,6 +165,7 @@ export function AgentPanel({
     }
   });
   const [attachmentError, setAttachmentError] = useState("");
+  const [dismissedFollowUp, setDismissedFollowUp] = useState("");
   const [preview, setPreview] = useState<AgentAttachment | null>(null);
   const [repairOffer, setRepairOffer] = useState<PythonRepairRequest | null>(
     null,
@@ -405,6 +407,19 @@ export function AgentPanel({
     agent.view.stop === "stopping" ||
     pending > 0;
   const runStatus = agentRunStatus(agent);
+  const followUp = useMemo(() => agentFollowUp(agent.view), [agent.view]);
+  const followUpKey = `${agent.session?.id}:${followUp?.key}`;
+  const suggestedPrompt =
+    ready &&
+    !running &&
+    !agent.busy &&
+    !agent.pendingDelivery &&
+    !agent.error &&
+    !draft &&
+    !attachments.length &&
+    dismissedFollowUp !== followUpKey
+      ? followUp?.prompt
+      : undefined;
   return (
     <section className="fq-agent-panel" aria-label="FlagQAI Agent workspace">
       {repairOffer && (
@@ -780,6 +795,10 @@ export function AgentPanel({
             rows={2}
             value={draft}
             maxLength={6000}
+            aria-describedby={
+              suggestedPrompt ? "fq-agent-follow-up-hint" : undefined
+            }
+            data-follow-up={suggestedPrompt ? "true" : undefined}
             aria-autocomplete="list"
             aria-controls={
               referenceOpen
@@ -815,6 +834,31 @@ export function AgentPanel({
             }}
             onKeyDown={(event) => {
               if (event.nativeEvent.isComposing || composing.current) return;
+              if (suggestedPrompt && event.key === "Escape") {
+                setDismissedFollowUp(followUpKey);
+                event.preventDefault();
+                event.stopPropagation();
+                return;
+              }
+              if (
+                suggestedPrompt &&
+                event.key === "ArrowRight" &&
+                !event.shiftKey &&
+                !event.altKey &&
+                !event.ctrlKey &&
+                !event.metaKey
+              ) {
+                event.preventDefault();
+                setDraft(suggestedPrompt);
+                setCaret(suggestedPrompt.length);
+                requestAnimationFrame(() =>
+                  input.current?.setSelectionRange(
+                    suggestedPrompt.length,
+                    suggestedPrompt.length,
+                  ),
+                );
+                return;
+              }
               if (referenceOpen) {
                 if (event.key === "Escape") {
                   event.preventDefault();
@@ -890,8 +934,16 @@ export function AgentPanel({
                 void submit();
               }
             }}
-            placeholder="Ask FlagQAI about your quantum work…"
+            placeholder={
+              suggestedPrompt || "Ask FlagQAI about your quantum work…"
+            }
           />
+          {suggestedPrompt && (
+            <small id="fq-agent-follow-up-hint" className="fq-sr-only">
+              Suggested follow-up. Press Right Arrow to insert and edit; Escape
+              to dismiss.
+            </small>
+          )}
           <div
             className="fq-agent-composer-actions"
             role="group"
