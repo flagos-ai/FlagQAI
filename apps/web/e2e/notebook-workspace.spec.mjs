@@ -567,3 +567,53 @@ test("Notebook kernel completion, parameter help and partial runs preserve execu
     fullPage: true,
   });
 });
+
+test("cooling notebook imports its complete bundled companion project", async ({
+  page,
+}) => {
+  await page.goto("/#model");
+  const model = page.locator(
+    'textarea[aria-label="Quantum model code editor"]',
+  );
+  await model.fill("# preserved script draft");
+  await page.getByRole("button", { name: "Examples", exact: true }).click();
+  await page
+    .getByRole("textbox", { name: "Search models" })
+    .fill("Cooling-system");
+  await page
+    .getByRole("region", { name: "Official notebooks" })
+    .getByRole("button", { name: /Cooling-system optimization/ })
+    .click();
+  await page
+    .getByRole("button", { name: "Open notebook workspace", exact: true })
+    .click();
+  const workspace = page.getByRole("region", {
+    name: "Notebook workspace",
+    exact: true,
+  });
+  const cells = workspace.locator(".fq-notebook-edit-cell");
+  let imported = false;
+  for (let index = 0; index < (await cells.count()); index++) {
+    const cell = cells.nth(index);
+    const editor = cell.getByRole("textbox");
+    if (
+      (await editor.count()) &&
+      (await editor.inputValue()).includes("import full_model")
+    ) {
+      const source = await editor.inputValue();
+      await cell
+        .getByRole("button", { name: /^Run cell \d+$/, exact: true })
+        .click();
+      await expect(cell).toContainText("completed", { timeout: 45000 });
+      await expect(editor).toHaveValue(source);
+      imported = true;
+      break;
+    }
+  }
+  expect(imported).toBe(true);
+  await expect(model).toHaveValue("# preserved script draft");
+  await page.screenshot({
+    path: "test-results/notebook-cooling-imports.png",
+    fullPage: true,
+  });
+});

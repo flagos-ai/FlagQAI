@@ -1,5 +1,6 @@
 """Pinned notebook copies remain bounded, immutable and safe to retry."""
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import tempfile
@@ -11,6 +12,36 @@ from workspace_server.projects import Projects, ProjectConflict
 from workspace_server.notebooks import create_notebook_project
 
 WEB = Path(__file__).resolve().parents[3] / 'apps/web/public'
+
+RESOLVER_PATH = WEB.parent / 'scripts/notebooks/import_closure.py'
+spec = importlib.util.spec_from_file_location('notebook_import_closure', RESOLVER_PATH)
+resolver = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(resolver)
+
+
+class ImportClosureTests(unittest.TestCase):
+    def test_cell_package_aliases_init_relative_and_transitive_imports(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            sources = {
+                'examples/demo/main.py': 'VALUE = 1',
+                'examples/demo/__init__.py': 'from . import initialized',
+                'examples/demo/initialized.py': 'READY = True',
+                'examples/demo/helper.py': 'from . import sibling\nfrom examples.shared import support',
+                'examples/demo/sibling.py': 'VALUE = 2',
+                'examples/shared/__init__.py': '',
+                'examples/shared/support.py': 'import math',
+            }
+            for name, source in sources.items():
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(source)
+            files, imports = resolver.closure(root, root/'examples/demo/main.py', [
+                '%matplotlib inline\nfrom examples.demo import helper as selected\nimport IPython.display',
+            ])
+            self.assertTrue(sources.keys() <= files.keys())
+            self.assertEqual(imports, ['IPython', 'math'])
+
 
 class NotebookTests(unittest.TestCase):
     def setUp(self):
@@ -35,6 +66,36 @@ class NotebookTests(unittest.TestCase):
             raw=(WEB/'notebooks'/(item['id']+'.ipynb')).read_bytes()
             self.assertEqual(hashlib.sha256(raw).hexdigest(),item['notebookSha256'])
             self.assertEqual(json.loads(raw)['nbformat'],4)
+    def test_notebook_only_module_aliases_are_bundled(self):
+        item = next(e for e in self.entries if e['path'] == 'applications/automotive/cooling_systems_optimization/overview')
+        bundle = json.loads((WEB/'notebooks'/(item['id']+'.json')).read_text())
+        self.assertIn('examples/synthesis/' + item['path'] + '/full_model.py', bundle['files'])
+        # Audit every ordinary cell import against the known pinned module inventory.
+        inventory = set()
+        bundles = []
+        for item in self.entries:
+            files = json.loads((WEB/'notebooks'/(item['id']+'.json')).read_text())['files']
+            bundles.append((item, files))
+            inventory.update(files)
+        for item, files in bundles:
+            document = json.loads((WEB/'notebooks'/(item['id']+'.ipynb')).read_text())
+            for cell in document['cells']:
+                if cell['cell_type'] != 'code':
+                    continue
+                source = '\n'.join('pass' if line.lstrip().startswith(('%', '!', '?')) else line
+                                   for line in ''.join(cell['source']).splitlines())
+                try:
+                    modules = list(resolver.imported_modules(source))
+                except SyntaxError:
+                    continue
+                for module in modules:
+                    if not module.startswith('examples.'):
+                        continue
+                    path = module.replace('.', '/')
+                    for name in (path + '.py', path + '/__init__.py'):
+                        if name in inventory:
+                            self.assertIn(name, files, (item['path'], module))
+
     def test_copy_and_response_loss_retry_preserve_same_project(self):
         first=self.copy();second=self.copy()
         self.assertEqual(first,second)

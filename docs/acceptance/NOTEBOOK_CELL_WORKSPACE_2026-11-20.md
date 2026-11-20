@@ -108,3 +108,30 @@ notebooks. No paid model calls are involved.
   and attachments, refresh and independent drafts, kernel completions, parameter
   help, ordered partial execution, and the existing library/recovery flows.
 - Staged package surface verification passed; no paid model calls were made.
+
+
+## Companion import regression
+
+The notebook-cell dependency scan now resolves package imports and their aliases
+with the same resolver as companion Python files. The cooling-system notebook
+requires `full_model.py` only from a notebook cell; the telecom AMD workflow also
+requires two reference helpers not reachable from its entrypoint. These three
+missing files are now vendored from the unchanged pinned SDK revision.
+
+- Audited 2,024 resolved local imports across all 212 notebooks and companion
+  sources against the pinned checkout. All required modules are present; this
+  is dependency coverage, not full scientific execution of every notebook.
+- Seven bundle/resolver tests and ten real-kernel session tests passed, including
+  the unmodified cooling import cell and source-location verification inside
+  the bundled workspace.
+- The recovery regression deletes a previously missing helper, restarts the
+  session service and reruns the import. The helper is restored while edited
+  Python files, notebook source, run history and a result artifact remain intact.
+- Seven environment tests, the focused Chromium cooling-import scenario and
+  staged package verification passed. Production assets were rebuilt, and the
+  local port 4188 serves the corrected bundle.
+
+Existing kernels need an explicit restart before their next cell execution can
+seed newly supplied helpers. Restart does not execute cells or remove saved
+source, outputs or workspace artifacts; in-memory Python variables are reset.
+No paid model calls were made.

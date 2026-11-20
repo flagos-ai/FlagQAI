@@ -73,6 +73,37 @@ class NotebookSessionTests(unittest.TestCase):
         self.assertEqual(lost['status'], 'failed')
         self.assertEqual(lost['cells'][0]['outputs'][0]['ename'], 'NameError')
 
+    def test_cooling_imports_use_bundled_files_and_restart_repairs_missing_helper(self):
+        item = json.loads((self.settings.web_root/'notebooks/6281132ae7b11b3c3fea3e8f.ipynb').read_text())
+        imports = next(''.join(c['source']) for c in item['cells']
+                       if c['cell_type'] == 'code')
+        self.key = '7' * 32
+        self.doc = self.sessions.create({'notebook_id': '6281132ae7b11b3c3fea3e8f', 'request_id': self.key})
+        # Run the official failing cell, and ensure an SDK checkout on PYTHONPATH
+        # cannot hide a missing bundled module.
+        self.save([imports + "\nassert Path(full_model.__file__).resolve().is_relative_to(Path.cwd())\nprint('bundled cooling imports passed')"])
+        first, _ = self.execute([0])
+        self.assertEqual(first['status'], 'completed', first)
+        root = self.settings.database_path.parent/'notebook-workspaces'/self.key
+        helper = root/'examples/synthesis/applications/automotive/cooling_systems_optimization/overview/full_model.py'
+        self.assertTrue(helper.is_file())
+        self.sessions.control(self.key, 'restart')
+        helper.unlink()  # Existing workspace made by the incomplete older bundle.
+        main = helper.with_name('main.py')
+        main.write_text(main.read_text() + '\n# retained research edit\n')
+        artifact = root/'research-result.txt'
+        artifact.write_text('retained result')
+        self.sessions.close()
+        self.sessions = NotebookSessions(self.settings, self.python)
+        self.doc = self.sessions.read(self.key)
+        second, _ = self.execute([0], '8'*32)
+        self.assertEqual(second['status'], 'completed', second)
+        self.assertTrue(helper.is_file())
+        self.assertTrue(main.read_text().endswith('# retained research edit\n'))
+        self.assertEqual(artifact.read_text(), 'retained result')
+        self.assertEqual(len(self.doc['runs']), 2)
+        self.assertEqual(self.doc['cells'][0]['source'], imports + "\nassert Path(full_model.__file__).resolve().is_relative_to(Path.cwd())\nprint('bundled cooling imports passed')")
+
     def test_interrupt_and_service_restart_preserve_sources_history(self):
         self.save(['import time\nprint("started", flush=True)\ntime.sleep(60)'])
         data = {'request_id': 'e'*32, 'revision': self.doc['revision'], 'cell_ids': [self.doc['cells'][0]['id']]}
