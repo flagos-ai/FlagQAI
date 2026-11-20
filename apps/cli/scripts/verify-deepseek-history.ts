@@ -50,7 +50,7 @@ const nativeStream = async function* (options: GenerateOptions) {
   calls++
   assert.equal(options.provider, 'native')
   assert.equal(options.signal, controller.signal, 'cancellation reaches the actual request')
-  assert.equal(options.reasoningEffort, 'medium')
+  assert.equal(options.reasoningEffort, undefined, 'transport migration must not force a thinking budget')
   assert.equal((options.messages[0] as unknown as typeof message).source.provider, 'native')
   yield { type: 'finish', reason: { kind: 'stop' }, replayState: {
     response: { kind: 'pi-ai', version: 2, provider: 'native', model, api: 'openai-completions', stopReason: 'stop' }, blocks: [],
@@ -60,6 +60,15 @@ const chunks = []
 for await (const chunk of deepSeekReplayStream(bridgeRequest, [route, nativeRoute], nativeStream, next)) chunks.push(chunk)
 assert.equal(calls, 1, 'dispatch exactly once; do not replay tools or retry model errors')
 assert.equal(defaults, 0)
+for (const effort of ['off', 'low', 'medium', 'high'] as const) {
+  let dispatched = 0
+  for await (const _ of deepSeekReplayStream({ ...bridgeRequest, reasoningEffort: effort }, [route, nativeRoute], async function* (options: GenerateOptions) {
+    dispatched++
+    assert.equal(options.reasoningEffort, effort, 'explicit reasoning choice survives transport migration')
+    assert.equal(options.signal, controller.signal)
+  }, next)) {}
+  assert.equal(dispatched, 1)
+}
 assert.equal((chunks[0] as unknown as { replayState: { response: { provider: string } } }).replayState.response.provider, 'bridge')
 for (const bad of [undefined, { ...nativeRoute, ref: 'OTHER_KEY' }, { ...nativeRoute, baseURL: 'https://other.example' },
   { ...nativeRoute, models: ['another-model'] }, { ...nativeRoute, hasCustomHeaders: true }]) {

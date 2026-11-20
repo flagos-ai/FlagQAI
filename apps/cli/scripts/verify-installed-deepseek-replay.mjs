@@ -42,6 +42,7 @@ try {
       calls++
       assert.equal(request.provider, 'native')
       assert.equal(request.signal, controller.signal)
+      assert.equal(request.reasoningEffort, undefined, 'relocated transport must not force medium thinking')
       assert.equal(request.messages[0].source.replayState.blocks[0].thinkingSignature, 'reasoning_content')
       yield { type: 'finish', reason: { kind: 'stop' }, replayState: {
         response: { kind: 'pi-ai', version: 2, api: 'openai-completions', provider: 'native', model }, blocks: [],
@@ -50,6 +51,14 @@ try {
     assert.equal(calls, 1)
     assert.equal(chunks[0].replayState.response.provider, 'bridge')
     assert.equal(JSON.stringify(input), before)
+    for (const reasoningEffort of ['off', 'low', 'medium', 'high']) {
+      let calls = 0
+      for await (const _ of deepSeekReplayStream({ ...input, reasoningEffort }, profiles, async function* (request) {
+        calls++
+        assert.equal(request.reasoningEffort, reasoningEffort)
+      }, () => { throw new Error('Wrong transport') })) {}
+      assert.equal(calls, 1)
+    }
     console.log('Relocated archive: compiled replay, provider defaults, single dispatch, cancellation and immutable history passed.')
   `], { cwd: installed, encoding: 'utf8' })
   assert.match(output, /Relocated archive:/)

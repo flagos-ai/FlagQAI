@@ -31,7 +31,10 @@ export function deepSeekReplayStream(
     } } } as StreamChunk
   })()
   if (native) {
-    const request = { ...options, provider: native.route, reasoningEffort: options.reasoningEffort ?? 'medium' } as GenerateOptions
+    // Transport compatibility must not enable thinking or increase its budget.
+    // Leave an absent choice absent so the configured native profile remains
+    // authoritative; explicit off/effort selections pass through unchanged.
+    const request = { ...options, provider: native.route } as GenerateOptions
     const messages = nativeDeepSeekHistory(request, native.api, sameEndpointRoutes)
     return (async function* (stream: AsyncIterable<StreamChunk>) {
       for await (const chunk of stream) {
