@@ -59,6 +59,31 @@ try {
       }, () => { throw new Error('Wrong transport') })) {}
       assert.equal(calls, 1)
     }
+    const { createWorkbenchTools } = await import('./package/lib/types/dsh-adapter/workbench-tools.js')
+    const { runEvidence, experimentEvidence } = await import('./package/lib/types/dsh-adapter/workbench-evidence.js')
+    const binding = { port: 4188, client: 'installed', session: 'installed' }
+    const actions = []
+    const tools = createWorkbenchTools(() => binding, '/fixture', async (url, init) => {
+      let body = { cwd: '/fixture' }
+      if (!url.endsWith('/api/agent')) {
+        const action = JSON.parse(init.body)
+        actions.push(action)
+        body = action.operation === 'sdk.inspect' ? { apis: { 'fq.Module': {} } }
+          : action.operation === 'model.create' ? { file: { id: 'check.py', revision: 'revision' } }
+          : { python_run: { id: 'check-run', source_hash: 'revision', status: 'running' } }
+      }
+      return new Response(JSON.stringify(body), { status: 200 })
+    })
+    const preflight = await tools.find(t => t.name === 'workbench_preflight_python').execute(
+      { source: 'assert one_training_step()', name: 'Preflight', request_id: 'same' },
+      { signal: new AbortController().signal })
+    assert.equal(preflight.python_run.id, 'check-run')
+    assert.deepEqual(actions.map(a => a.operation), ['sdk.inspect', 'model.create', 'python.run'])
+    assert.equal(actions[2].expected_revision, 'revision')
+    assert.equal(actions[2].request_id, 'same:run')
+    assert.equal(runEvidence({ status: 'completed', logs: [] }).failure, null)
+    assert.equal(experimentEvidence({ program: { experiment: { metrics: { loss: 0.01 } } } }, 4188).recorded_metrics.loss, 0.01)
+    console.log('Relocated archive: preflight tools, revision-bound dispatch and recorded metrics passed.')
     console.log('Relocated archive: compiled replay, provider defaults, single dispatch, cancellation and immutable history passed.')
   `], { cwd: installed, encoding: 'utf8' })
   assert.match(output, /Relocated archive:/)

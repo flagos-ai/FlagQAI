@@ -14,6 +14,39 @@ except ImportError:
 
 @unittest.skipUnless(HAS_TRAINING, 'Requires FlagQuantum training and save/load')
 class HybridTrainingTests(unittest.TestCase):
+    def test_one_step_preflight_rejects_ignored_inputs_and_disconnected_gradients(self):
+        import torch
+        example = Path(__file__).resolve().parents[1] / 'examples' / 'hybrid_vqc_classifier.py'
+        ns = runpy.run_path(str(example))
+        torch.manual_seed(ns['SEED'])
+        initial = 0.3 * torch.randn(ns['LAYERS'], ns['N_QUBITS'])
+        model = ns['make_model'](True, initial)
+        report = ns['preflight'](model)
+        self.assertEqual(report['steps'], 1)
+        self.assertTrue(report['optimizer_update'])
+
+        class IgnoredInputs(torch.nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.inner = ns['make_model'](True, initial)
+
+            def forward(self, inputs):
+                return self.inner(torch.zeros_like(inputs))
+
+        with self.assertRaisesRegex(AssertionError, 'Inputs must affect'):
+            ns['preflight'](IgnoredInputs())
+
+        class ZeroGradient(torch.nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.weight = torch.nn.Parameter(torch.ones(1))
+
+            def forward(self, inputs):
+                return inputs[:, 0] + 0 * self.weight
+
+        with self.assertRaisesRegex(AssertionError, 'nonzero gradient'):
+            ns['preflight'](ZeroGradient())
+
     def test_training_consumes_all_inputs_and_replays_recorded_circuit(self):
         example = Path(__file__).resolve().parents[1] / 'examples' / 'hybrid_vqc_classifier.py'
         namespace = runpy.run_path(str(example))

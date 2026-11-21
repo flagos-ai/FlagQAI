@@ -38,7 +38,7 @@ def objective(value):
     return (value.reshape(-1) - LABELS).square().mean()
 
 
-def train_variant(entangle, initial):
+def make_model(entangle, initial):
     model = fq.Module(
         lambda parameters, inputs: circuit_builder(parameters, inputs, entangle=entangle),
         parameters={"theta": (LAYERS, N_QUBITS)},
@@ -46,6 +46,29 @@ def train_variant(entangle, initial):
         policy=fq.RuntimePolicy(observable="z", observable_qubits=(0,)),
         seed=SEED,
     )
+    return model
+
+
+def preflight(model):
+    before_parameters = [p.detach().clone() for p in model.parameters()]
+    before = model(INPUTS)
+    assert before.numel() == len(INPUTS), "One output is required per sample"
+    assert torch.isfinite(before).all()
+    assert not torch.allclose(before, model(torch.zeros_like(INPUTS))), "Inputs must affect the output"
+    loss = objective(before)
+    assert torch.isfinite(loss)
+    loss.backward()
+    gradients = [p.grad for p in model.parameters()]
+    assert all(g is not None and torch.isfinite(g).all() for g in gradients)
+    assert any(float(g.norm()) > 1e-8 for g in gradients), "Training must have a nonzero gradient"
+    torch.optim.Adam(model.parameters(), lr=0.08).step()
+    assert any(not torch.equal(old, p.detach()) for old, p in zip(before_parameters, model.parameters()))
+    return {"forward": True, "input_dependent": True, "finite_nonzero_gradient": True,
+            "optimizer_update": True, "initial_loss": float(loss.detach()), "steps": 1}
+
+
+def train_variant(entangle, initial):
+    model = make_model(entangle, initial)
     before = model(INPUTS)
     initial_loss = float(objective(before).detach())
     objective(before).backward()
@@ -74,9 +97,13 @@ def train_variant(entangle, initial):
     return theta, scores, report
 
 
-def main():
+def main(*, preflight_only=False):
     torch.manual_seed(SEED)
     initial = 0.3 * torch.randn(LAYERS, N_QUBITS)
+    checked = preflight(make_model(True, initial))
+    if preflight_only:
+        print(json.dumps({"schema": "flagqai.hybrid-preflight.v1", **checked}))
+        return checked
     theta, scores, trained = train_variant(True, initial)
     _, _, control = train_variant(False, initial)
     majority_accuracy = float((LABELS > 0).float().mean())
@@ -87,7 +114,7 @@ def main():
         "task": "two-bit zero-versus-nonzero supervised classification",
         "seed": SEED, "qubits": N_QUBITS, "layers": LAYERS,
         "inputs": INPUTS.tolist(), "labels": LABELS.tolist(),
-        "trained": trained, "no_entangler": control,
+        "preflight": checked, "trained": trained, "no_entangler": control,
         "majority_accuracy": majority_accuracy,
         "quantum_advantage_claim": False, "sampling_checks": [],
     }
@@ -118,4 +145,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--preflight", action="store_true", help="Check one optimizer step without full training or saving artifacts")
+    main(preflight_only=parser.parse_args().preflight)

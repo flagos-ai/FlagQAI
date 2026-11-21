@@ -12,7 +12,7 @@ def describe(value):
     return {"signature": signature, "doc": (inspect.getdoc(value) or "")[:600]}
 
 apis = {}
-for name in ("Circuit", "ExecutionOptions", "run", "save", "load", "counts", "samples", "probabilities", "statevector"):
+for name in ("Circuit", "Module", "RuntimePolicy", "train", "ExecutionOptions", "run", "save", "load", "counts", "samples", "probabilities", "statevector"):
     value = getattr(fq, name, None)
     if value is not None:
         apis["fq." + name] = describe(value)

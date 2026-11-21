@@ -253,3 +253,63 @@ test('research package export returns only a validated local download identity',
   const invalid = fixture(() => response({ export: { id: '../unsafe' } }))
   await assert.rejects(invalid.run('workbench_export_research', {}), /invalid identity/)
 })
+
+test('preflight uses the selected SDK and a separate exact model revision with stable retry IDs', async () => {
+  const f = fixture(body => response(body.operation === 'sdk.inspect' ? { apis: { 'fq.Module': {} } }
+    : body.operation === 'model.create' ? { file: { id: 'smoke.py', revision: 'smoke-v1' } }
+    : { python_run: { id: 'smoke-run', source_hash: 'smoke-v1', status: 'running' } }))
+  const input = { source: 'assert forward_backward_step()', name: 'Training preflight', request_id: 'smoke' }
+  for (let n = 0; n < 2; n++) {
+    const result = await f.run('workbench_preflight_python', input)
+    assert.equal(result.purpose, 'preflight')
+    assert.equal(result.python_run.id, 'smoke-run')
+    assert.equal(result.next_tool, 'workbench_wait_run')
+  }
+  const actions = f.calls.filter(c => c.init.body).map(c => JSON.parse(c.init.body))
+  assert.deepEqual(actions.map(c => c.operation), ['sdk.inspect', 'model.create', 'python.run', 'sdk.inspect', 'model.create', 'python.run'])
+  assert.equal(actions[1].request_id, 'smoke:model')
+  assert.equal(actions[2].request_id, 'smoke:run')
+  assert.equal(actions[2].expected_revision, 'smoke-v1')
+  assert.deepEqual(actions.slice(0, 3), actions.slice(3))
+  const bad = fixture(body => response(body.operation === 'sdk.inspect' ? {} : { file: { id: 'missing-revision.py' } }))
+  await assert.rejects(bad.run('workbench_preflight_python', input), /no run was submitted/)
+  assert.equal(bad.calls.filter(c => c.init.body).length, 2)
+})
+
+test('preflight cannot run after SDK inspection changes its session', async () => {
+  let active = binding
+  const calls = []
+  const tools = createWorkbenchTools(() => active, '/workspace', async (url, init) => {
+    if (url.endsWith('/api/agent')) return response({ cwd: '/workspace' })
+    calls.push(JSON.parse(init.body).operation)
+    active = { ...binding, session: 'new-session' }
+    return response({})
+  })
+  await assert.rejects(tools.find(t => t.name === 'workbench_preflight_python').execute({ source: 'pass', name: 'Check', request_id: 'one' }, { signal: new AbortController().signal }), /context changed/)
+  assert.deepEqual(calls, ['sdk.inspect'])
+})
+
+test('compact evidence keeps the explicit SDK cause even outside its recent log window', () => {
+  const run = { status: 'failed', logs: [
+    { stream: 'stderr', text: 'Traceback (most recent call last):\n  File "candidate.py", line 54, in builder\nKeyError: (0, 0)\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File "candidate.py", line 130, in main\nflagquantum.errors.ExecutionError: Module builder compilation requires static circuit topology\n' },
+    ...Array.from({ length: 25 }, () => ({ stream: 'stdout', text: 'later diagnostics\n' })),
+  ] }
+  const evidence = runEvidence(run)
+  assert.equal(evidence.logs_truncated, true)
+  assert.equal(evidence.failure.summary, 'KeyError: (0, 0)')
+  assert.deepEqual(evidence.failure.frames, [{ file: 'candidate.py', line: 54 }])
+  assert.equal(evidence.failure.explicit_cause, true)
+  assert.equal(runEvidence({ status: 'completed', logs: run.logs }).failure, null)
+  const unchained = runEvidence({ status: 'failed', logs: [{ stream: 'stderr', text: 'KeyError: old\nDuring handling of the above exception, another exception occurred:\nValueError: current\n' }] })
+  assert.equal(unchained.failure.summary, 'ValueError: current')
+})
+
+test('saved metrics remain source-bound recorded evidence and never imply independent validation', () => {
+  const metrics = { flagqai_hybrid_training: { trained: { initial_loss: 2.5, final_loss: 0.01 }, quantum_advantage_claim: false } }
+  const evidence = experimentEvidence({ program: { origin: { run_id: 'training', source_hash: 'revision' }, experiment: { metrics } } }, 4188)
+  assert.deepEqual(evidence.recorded_metrics, metrics)
+  assert.equal(evidence.origin.source_hash, 'revision')
+  assert.equal(evidence.metrics_status, 'recorded_not_independently_verified')
+  assert.equal(experimentEvidence({ program: {} }, 4188).metrics_status, 'not_recorded')
+  assert.equal(experimentEvidence({ program: { experiment: { metrics: { big: 'x'.repeat(13000) } } } }, 4188).recorded_metrics.truncated, true)
+})
