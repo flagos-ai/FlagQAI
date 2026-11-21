@@ -1,5 +1,5 @@
 """Vendor pinned native notebooks and their Python import closure, never execute them."""
-import ast
+from import_closure import closure
 import base64
 import hashlib
 import json
@@ -14,39 +14,6 @@ out = web / 'public/notebooks'
 out.mkdir(parents=True, exist_ok=True)
 def sha(raw): return hashlib.sha256(raw).hexdigest()
 def encode(value): return (json.dumps(value, ensure_ascii=False, indent=2) + '\n').encode()
-def closure(entry):
-    files, imports, pending = {}, set(), [entry]
-    while pending:
-        path = pending.pop()
-        name = path.relative_to(root).as_posix()
-        if name in files: continue
-        source = path.read_text()
-        files[name] = source
-        for parent in path.relative_to(root).parents:
-            if str(parent) != '.':
-                init = root / parent / '__init__.py'
-                if init.is_file() and init != path and init.relative_to(root).as_posix() not in files:
-                    pending.append(init)
-                elif not init.is_file():
-                    files.setdefault((parent / '__init__.py').as_posix(), '')
-        package = list(path.relative_to(root).parts[:-1])
-        for node in ast.walk(ast.parse(source)):
-            names = []
-            if isinstance(node, ast.Import): names = [a.name for a in node.names]
-            elif isinstance(node, ast.ImportFrom):
-                prefix = package[:len(package)-node.level+1] if node.level else []
-                module = '.'.join(prefix + ([node.module] if node.module else []))
-                names = [module] + [module + '.' + a.name for a in node.names]
-            for module in names:
-                if module.startswith('examples.'):
-                    candidate = root.joinpath(*module.split('.')).with_suffix('.py')
-                    if candidate.is_file(): pending.append(candidate)
-                    else:
-                        init = root.joinpath(*module.split('.'), '__init__.py')
-                        if init.is_file(): pending.append(init)
-                elif module and not getattr(node, 'level', 0):
-                    imports.add(module.split('.')[0])
-    return files, sorted(imports - {'examples'})
 
 def include_inputs(files):
     assets = {}
@@ -91,7 +58,9 @@ for notebook in sorted(base.rglob('walkthrough.ipynb')):
                   if c['cell_type']=='markdown' and ''.join(c['source']).startswith('# ')), identity.split('/')[-1].replace('_',' '))
     module = provenance['native_entrypoint']
     entry = root.joinpath(*module.split('.')).with_suffix('.py')
-    files, imports = closure(entry)
+    files, imports = closure(root, entry, (
+        ''.join(cell['source']) for cell in document['cells'] if cell['cell_type'] == 'code'
+    ))
     input_hashes = include_inputs(files)
     # Keep executable source unchanged. A small launcher establishes package imports.
     files['run_notebook.py'] = (f'# Official FlagQuantum notebook: {identity}\n# SDK source: {REVISION}\n'

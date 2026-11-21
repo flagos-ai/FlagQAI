@@ -57,8 +57,8 @@ class WorkspaceBridge:
             raise ValueError('Invalid model name.')
         if data.get('page') not in ('model', 'synthesis', 'program', 'execution', 'jobs'):
             raise ValueError('Invalid workspace page.')
-        if data.get('language') not in (None,'qasm','python'): raise ValueError('Invalid source language.')
-        value = {key: data.get(key) for key in ('page', 'name', 'source', 'editorFile', 'selectedProgramId', 'selectedJobId', 'shots', 'seed', 'turnSeq', 'dirty', 'language')}
+        if data.get('language') not in (None,'qasm','python','notebook'): raise ValueError('Invalid source language.')
+        value = {key: data.get(key) for key in ('page', 'name', 'source', 'editorFile', 'selectedProgramId', 'selectedJobId', 'shots', 'seed', 'turnSeq', 'dirty', 'language', 'notebookId')}
         value.update(client=client, session=session, source_hash=source_hash(source), updated_at=time.time())
         with self.lock:
             if client not in self.contexts and len(self.contexts) >= 64:
@@ -104,7 +104,7 @@ class WorkspaceBridge:
                 raise ValueError('Python runtime unavailable.')
             return self.python_runs.inspect_sdk()
         if operation == 'draft.read':
-            return {'name': context['name'], 'source': context['source'], 'source_hash': context['source_hash']}
+            return {key: context.get(key) for key in ('name', 'source', 'source_hash', 'language', 'notebookId')}
         if operation == 'research.read':
             from .research_runs import read_research_run
             identity = data.get('run_id')
@@ -202,6 +202,8 @@ class WorkspaceBridge:
             if data.get('origin') != 'ui' and not data.get('expected_hash'):
                 raise BridgeConflict('Inspect the project snapshot hash before running it.')
             return {'python_run': self.python_runs.submit_project(data)}
+        if operation == 'model.share' and context.get('language') == 'notebook':
+            raise BridgeConflict('The active draft is a notebook snapshot, not executable Python or QASM. Use the notebook workspace to save or run cells.')
         if operation in ('model.create', 'model.share'):
             source = context['source'] if operation == 'model.share' else data.get('source')
             if operation == 'model.share' and data.get('expected_hash') != context['source_hash']:

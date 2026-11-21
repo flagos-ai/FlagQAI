@@ -32,7 +32,9 @@ export function ModelLibrary({
   projectPanel,
   projectRequest = 0,
   onCreateNotebook,
+  onOpenNotebook,
 }: {
+  onOpenNotebook: (id: string) => void;
   onCreateNotebook: (
     id: string,
     request: string,
@@ -325,7 +327,11 @@ export function ModelLibrary({
                   </button>
                 </section>
               )}
-              <NotebookLibrary query={query} onCreate={onCreateNotebook} />
+              <NotebookLibrary
+                query={query}
+                onCreate={onCreateNotebook}
+                onOpen={onOpenNotebook}
+              />
               <SynthesisExampleLibrary
                 query={query}
                 matches={synthesisMatches}

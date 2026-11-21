@@ -21,8 +21,10 @@ const featured = [
 export function NotebookLibrary({
   query,
   onCreate,
+  onOpen,
 }: {
   query: string;
+  onOpen: (id: string) => void;
   onCreate: (id: string, request: string) => Promise<boolean | undefined>;
 }) {
   const matches = matchingNotebooks(query);
@@ -161,6 +163,15 @@ export function NotebookLibrary({
             />
           </header>
           <div className="fq-notebook-actions">
+            <button
+              disabled={!document || !!selected.unavailableReason}
+              onClick={() => {
+                onOpen(selected.id);
+                setSelected(undefined);
+              }}
+            >
+              Open notebook workspace
+            </button>
             <button
               className="primary"
               disabled={creating || !!selected.unavailableReason || !document}

@@ -10,6 +10,7 @@
       "imports": [
         "dataclasses",
         "flagquantum",
+        "importlib",
         "itertools",
         "math",
         "matplotlib",
@@ -91,10 +92,11 @@
         "collections",
         "flagquantum",
         "math",
-        "random"
+        "random",
+        "torch"
       ],
       "notebookSha256": "9e88146d4a04f4af317cc62e18ecdacc9ce4b6f7f607907cc56e1e65a53bd26c",
-      "bundleSha256": "aa1943dd147cf96dd19e2f93a581187bc299b51ce6de3cc348bbbd97a6d7b682",
+      "bundleSha256": "2f5a0e12bbe0a96a4a285cda7dd696d287db68eaccefed9014adfd42de97d441",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/algorithms/foundational/bernstein_vazirani"
     },
@@ -108,10 +110,11 @@
         "collections",
         "flagquantum",
         "math",
-        "random"
+        "random",
+        "torch"
       ],
       "notebookSha256": "1ae783f65918c0179aab2297270f8f6de7c19011ac89d8c7c312f86ee3206f7d",
-      "bundleSha256": "4c89468499754d3dea0ce263dd34a17bc40e3ef1891346a3a07974201e6231e2",
+      "bundleSha256": "42dc9136fa327ac2f1a546ca3a8e0be877b0d32c8321fc5f49d0d286ceb61fdd",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/algorithms/foundational/deutsch_jozsa"
     },
@@ -183,6 +186,7 @@
         "numpy",
         "pathlib",
         "random",
+        "time",
         "torch",
         "typing"
       ],
@@ -198,6 +202,7 @@
       "category": "algorithms",
       "scope": "All twelve source stages, four Pauli terms at original time 22 and degree 33, two data and four block/response bits, regenerated even and odd QSVT phases and the source 1e-7 absolute tolerance.",
       "imports": [
+        "IPython",
         "argparse",
         "cmath",
         "dataclasses",
@@ -223,6 +228,7 @@
       "category": "algorithms",
       "scope": "All 15 source stages, the original four Pauli terms on two data qubits, time 22, degree 33 and 10 qubits for evolution. Compare both complex projected vectors using the declared scales.",
       "imports": [
+        "IPython",
         "dataclasses",
         "flagquantum",
         "importlib",
@@ -284,6 +290,7 @@
       "category": "algorithms",
       "scope": "All 23 code stages, the original checkpoints, 1,000 classical images and ten epochs, 250 hybrid images and one epoch, and 4,096 finite shots per four-qubit binding.",
       "imports": [
+        "IPython",
         "__future__",
         "argparse",
         "collections",
@@ -293,6 +300,7 @@
         "math",
         "matplotlib",
         "numpy",
+        "os",
         "pathlib",
         "torch",
         "typing"
@@ -309,10 +317,12 @@
       "category": "algorithms",
       "scope": "All 25 original code stages, three synthetic sets of 40 points, the complete 100-row binary Iris data, native Bloch and two-layer Pauli kernels, and the classical RBF SVC.",
       "imports": [
+        "IPython",
         "argparse",
         "dataclasses",
         "enum",
         "flagquantum",
+        "importlib",
         "math",
         "matplotlib",
         "numpy",
@@ -371,10 +381,12 @@
       "category": "algorithms",
       "scope": "Complete Discrete Log Notebook: original mod-5 and mod-13 scenarios;4000/10000 shots;integer and exact fractional labels;source rounding, inverse filters and assertions;two real-log-ratio illustrations;independent full complex states and clean workspace.",
       "imports": [
+        "IPython",
         "__future__",
         "dataclasses",
         "flagquantum",
         "fractions",
+        "io",
         "math",
         "matplotlib",
         "numpy",
@@ -411,11 +423,14 @@
       "category": "algorithms",
       "scope": "Complete Hidden Shift Notebook: original simple4,complex16 and no-dual16+indicator scenarios;seed1 permutation,shift1/3/9,2048 shots each,independent full-state Circuits,clean workspace,GF(2) rank selection and exact recovery.",
       "imports": [
+        "IPython",
         "__future__",
         "collections",
         "dataclasses",
         "flagquantum",
+        "io",
         "math",
+        "matplotlib",
         "random",
         "sympy",
         "torch",
@@ -433,12 +448,15 @@
       "category": "algorithms",
       "scope": "Complete Shor Notebook: classical123456789 warm-up,all continued-fraction examples,original21/base11 quantum period finding with10phase+5residue bits,2048actualshots,count>10/denominator<21 filters,histogram with rational axis,derived order6 and verified factors3/7;explicit mathematical corrections.",
       "imports": [
+        "IPython",
         "__future__",
         "dataclasses",
         "flagquantum",
         "fractions",
+        "io",
         "math",
         "matplotlib",
+        "random",
         "torch",
         "typing"
       ],
@@ -454,6 +472,7 @@
       "category": "algorithms",
       "scope": "All16original source code stages;fresh8x8grid,normalized64amplitudes,two complete Walsh spectra,six fractional native QPE bits with explicit source integer-word reciprocal table,13physicalqubits,powered first-order commuting evolution,source postselection and normalization,independent full complex Circuit states,named numeric probabilities,classical boundary matrix and both actual contour figures. Source-scale accuracy discrepancy and axis conventions explicitly reported;no scalar fit,transpose fix,precision increase or accuracy claim. Static unitary views preserve existing transform contract. No source importer,compiler/API/dependency change,hardware,speedup,scalability or optimality claim.",
       "imports": [
+        "IPython",
         "dataclasses",
         "flagquantum",
         "math",
@@ -476,6 +495,7 @@
       "imports": [
         "dataclasses",
         "flagquantum",
+        "importlib",
         "math",
         "matplotlib",
         "numpy",
@@ -496,6 +516,7 @@
       "category": "algorithms",
       "scope": "All 14 source stages; original duration-two four-slice four-coordinate system; fresh degree-six/seven exponential and degree-seven amplifier; both complete 11-qubit integrators and a million draws apiece.",
       "imports": [
+        "IPython",
         "argparse",
         "cmath",
         "collections",
@@ -519,6 +540,7 @@
       "category": "algorithms",
       "scope": "Both original 4 by 4 systems and all three three-qubit evolutions. Generate H0 and H1 from the model, retain the 7/50, 7/50 and 10/100 time schedules, and compare all eight amplitudes and direct-solve overlaps.",
       "imports": [
+        "IPython",
         "dataclasses",
         "flagquantum",
         "importlib",
@@ -539,6 +561,7 @@
       "category": "algorithms",
       "scope": "Complete all 14 original code stages, dense four-by-four matrix, normalized [1,2,4,3], four fractional QPE bits and both exact and powered first-order Trotter routes. Recompute ordered Pauli expansion, retain repetitions 4/8/16/24, original negative evolution time, reciprocal table, 1e-12 filtering, five-decimal complex rounding, single-global-phase correction, source real-projection diagnostic, fidelity and ten-percent threshold. Actual operator-exact CX/U3 conversion, independent full complex Circuit references and both source plots. Native root programs replace fixed callable applications; no generic QCallable or fresh-Output helper claim. No source importer, frozen216 modification, compiler/API/dependency, hardware, speedup, scalability or optimality claim.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
@@ -560,6 +583,7 @@
       "category": "algorithms",
       "scope": "All fifteen source stages, freshly generated seeded 4 by 4 matrix, complete 16-term Pauli LCU with four selectors, explicit degree-151 inverse and precision-driven inverse with 0.01 tolerance.",
       "imports": [
+        "IPython",
         "argparse",
         "cmath",
         "dataclasses",
@@ -586,6 +610,7 @@
       "category": "algorithms",
       "scope": "All 17 source code stages, the original three-term 8 by 8 matrix, three system and two selector bits, all nine ansatz angles, the conditional cost with 204800 actual draws per query, a cap of 2000 objective queries, and comparison of the final state with the direct solve.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
@@ -607,9 +632,11 @@
       "category": "algorithms",
       "scope": "Complete matrix-QPE workflow: original4x4 matrix,seed8 amplitudes,.02 desired resolution,seven signed fractional phase bits,exact and order2 approximate evolutions with per-power repetitions2,3,5,7,11,16,23;10000 shots each,top2 energies,source intervals,all4 classical eigenvalues,comparison plot and local resources/drawing.",
       "imports": [
+        "IPython",
         "dataclasses",
         "flagquantum",
         "fractions",
+        "io",
         "itertools",
         "math",
         "matplotlib",
@@ -629,6 +656,7 @@
       "category": "algorithms",
       "scope": "All 27 source stages, H2 at 0.735 angstrom in STO-3G, 15 fresh Pauli terms, four data bits, four selector bits, five phase bits and both original power schedules.",
       "imports": [
+        "IPython",
         "argparse",
         "dataclasses",
         "flagquantum",
@@ -672,6 +700,7 @@
       "category": "algorithms",
       "scope": "Complete14source code stages and source helper semantics. Preserve signed3-bit coordinates,3-bit signed fractional auxiliary,all17m and9l values,original coefficients and source strict success thresholds. Actual auxiliary modular-add kickback uses nested Fourier construction;basis preparation uses an amplitude vector. No fractional bit-view or direct fractional += support claimed. Native polynomial qfunc helpers replace fixed callbacks and x/y named ports replace two QNum array elements;no generic QCallable/QArray-of-QNum API claim. Independent absolute Circuit states,actual sampling,phase unwrapping,all source plots and complete2Djoint gradient. No compiler/publicAPI/dependency/source-importer/frozen216change,hardware,speedup,scalability or optimality claim.",
       "imports": [
+        "IPython",
         "cmath",
         "dataclasses",
         "flagquantum",
@@ -696,6 +725,7 @@
       "imports": [
         "collections",
         "flagquantum",
+        "math",
         "random"
       ],
       "notebookSha256": "b4b5041a7dac970b1587862df073d44d57811fe519de427911b8866ede640c60",
@@ -710,6 +740,7 @@
       "category": "algorithms",
       "scope": "All nine source stages, 200/500/4000 sample demonstrations, all twelve sample sizes with 1,500 independent trials each, weighted phases and the full twenty-sample degree-18 QSVT correction, plus 10,000 outcomes per Bell test.",
       "imports": [
+        "IPython",
         "argparse",
         "cmath",
         "dataclasses",
@@ -757,6 +788,7 @@
         "collections",
         "dataclasses",
         "flagquantum",
+        "importlib",
         "math",
         "matplotlib",
         "pathlib",
@@ -774,6 +806,7 @@
       "category": "algorithms",
       "scope": "Original four-mode orbital factorization, eight-mode one-electron ring, two-mode pairing Hamiltonian, Majorana canonical planes, Bogoliubov relation, and full-state validation across all 25 code stages.",
       "imports": [
+        "IPython",
         "cmath",
         "dataclasses",
         "flagquantum",
@@ -795,6 +828,7 @@
       "category": "algorithms",
       "scope": "All 16 source stages, both six-bit Fourier windows with 10,000 samples each, and 50 delta cycles with the original four-bit mixing window and 1,000 thermal samples. All 400 resets execute as channels.",
       "imports": [
+        "IPython",
         "dataclasses",
         "flagquantum",
         "importlib",
@@ -815,6 +849,7 @@
       "category": "algorithms",
       "scope": "All eight source stages: regenerate the six-qubit glued tree with seed 0 and its full 1,088-term Pauli expansion, use the original 200 cached twenty-qubit terms, execute both thirteen-point time grids with ten order-one Suzuki–Trotter repetitions, and draw 8,192 actual local samples per point.",
       "imports": [
+        "IPython",
         "bisect",
         "dataclasses",
         "flagquantum",
@@ -839,6 +874,7 @@
       "category": "algorithms",
       "scope": "All 15 source stages, the 15-bit unary example, both six-bit Dicke states, the six-cycle Max-XORSAT graph and all 22 lookup entries. Use 2,048 shots for each preparation and 10,000 DQI samples.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
@@ -882,6 +918,7 @@
       "category": "algorithms",
       "scope": "All 15 source stages, four qubits and three layers in both the ordinary and Grover-mixer circuits, two budgets of 30 objective queries with 1000 actual draws per query, two independently sampled 1000-draw final distributions, and side-by-side comparison.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
@@ -905,11 +942,13 @@
         "dataclasses",
         "flagquantum",
         "math",
+        "matplotlib",
+        "networkx",
         "torch",
         "typing"
       ],
       "notebookSha256": "7b010784554d1dcd127bebf7a894a4565dd3c9850f3b250f158c4e516c683bef",
-      "bundleSha256": "d10bf13dd87f2e2fb14bf0a8d04f5748cb9c10ef841641cbadd7e6c917b1e9ef",
+      "bundleSha256": "5dd846ef6c8cc57faa2958215b7dc6c3ad62bcbb1f3e5403261c4c2800f6418c",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/algorithms/search_and_optimization/qaoa/overview"
     },
@@ -920,6 +959,7 @@
       "category": "algorithms",
       "scope": "All 21 source stages, four one-qubit Hamiltonians, standard particle selection, and eight entropy-annealing steps with 20 neighbors per update. Each real experiment draws one native outcome and runs a complete posterior update.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
@@ -941,6 +981,7 @@
       "category": "applications",
       "scope": "All 23 source stages, fresh four-node thermal model and 64 design configurations, full degree-11 inverse, original full model definition with execution disabled, and the complete original one-phase-bit mock QAE model.",
       "imports": [
+        "IPython",
         "argparse",
         "cmath",
         "dataclasses",
@@ -953,7 +994,7 @@
         "torch"
       ],
       "notebookSha256": "5fed8a8af740c90ea0c6a42238c12e8ef47399348fd103d37f17fb2c63a975c8",
-      "bundleSha256": "eebbe780ea468d3aabb1c3ead0789ba7dedef3c29881399a6a3dff6b757a4d12",
+      "bundleSha256": "a10aee5fc0ffa275a41bc1a2bbdc9c1db7f255ac4866eb1a74eef847b5d84d01",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/applications/automotive/cooling_systems_optimization/overview"
     },
@@ -964,6 +1005,7 @@
       "category": "applications",
       "scope": "All11sourcecode stages;original3..6qubits/layers,tenfreshcircuits/size,100actualdraws/circuit,40retainednativeprograms,freshcomplexGaussianQRHaarfactorsand sourceQRconstruction,seededindependentpermutationsandmatrices,immutableqfunccomposition,independentCircuitanddenseabsolute fullstates,namedbitorder,zero workspace,actualcosts,sourcepositivecountmedian/ties/std/firstfailuredecision,and separatelylabeledidealheavyprobability. Fourcommentedremote stages preserved as inertmetadata. No exactSciPyRNGidentity,standardQVcertification,compiler/API/dependencychange,frozen216change,hardware,noise,speeduporscalabilityclaim.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
@@ -986,6 +1028,7 @@
       "category": "applications",
       "scope": "All4sourcecode stages; original one-qubit five independently source-seeded words5/10/15/20/25, filtered hardware gate order, RZ(pi), absoluteSX, checked inverse, concurrent synthesis, ten explicitly local statevector/density-matrix jobs in batches3/3/3/1, independently verified native/full Circuit/dense states, density matrices, zero workspace, explicit1024seeded actual samples each, actual resources, job-identity-tagged survival analysis and source eight-label mismatch diagnostic, final observed plot. No source importer, provider backend equivalence, cloud job, noisy-device fitted RB/error estimate, historical count fitting, frozen216change, new dependency or scalability claim.",
       "imports": [
+        "IPython",
         "asyncio",
         "collections",
         "dataclasses",
@@ -1010,6 +1053,7 @@
       "category": "applications",
       "scope": "All eight sections of the original single code cell, full 16-by-16 physical model, fresh degree-191 inverse and 192 phases, original 18-qubit width bound, complete tensor reference and 60-frame animation.",
       "imports": [
+        "IPython",
         "argparse",
         "cmath",
         "collections",
@@ -1032,6 +1076,7 @@
       "category": "applications",
       "scope": "All 19 source stages, eight spatial points, 1,024 time samples, all eight block columns, a fresh four-phase cubic solution and four source heat iterations.",
       "imports": [
+        "IPython",
         "dataclasses",
         "flagquantum",
         "math",
@@ -1052,6 +1097,7 @@
       "category": "applications",
       "scope": "All 19 source stages, the original 8 by 8 lattice, four velocity magnitudes, nine CFL events and thirteen streaming and reflection updates. Take 2048 samples and retain both spatial and velocity marginals.",
       "imports": [
+        "IPython",
         "dataclasses",
         "flagquantum",
         "fractions",
@@ -1072,6 +1118,7 @@
       "category": "applications",
       "scope": "All ten source stages, original 16 by 16 nozzle matrix with 45 entries, four degree-127/255 reciprocal fits, 128 inverse LCU coefficients, and native exact and bounded approximate preparation.",
       "imports": [
+        "IPython",
         "argparse",
         "dataclasses",
         "flagquantum",
@@ -1094,6 +1141,7 @@
       "category": "applications",
       "scope": "All sixteen source stages. Original eight- and sixteen-row systems with both right-hand sides, 24-to-20 Pauli trim, 31/255 odd degrees, full LCU selectors and exact or 0.03 approximate preparation.",
       "imports": [
+        "IPython",
         "argparse",
         "cmath",
         "dataclasses",
@@ -1119,6 +1167,7 @@
       "category": "applications",
       "scope": "All fourteen source stages, both original nozzle matrices and right-hand sides, degree-101 Pauli and degree-255 banded inverses, fresh phase fitting and the original solution thresholds.",
       "imports": [
+        "IPython",
         "argparse",
         "cmath",
         "dataclasses",
@@ -1144,6 +1193,7 @@
       "category": "applications",
       "scope": "All ten original code stages, the original 8 by 8 nozzle matrix with 21 entries, both Pauli and banded block encodings, fresh signed right-hand sides, and both unnormalized projections checked against the scaled matrix product.",
       "imports": [
+        "IPython",
         "cmath",
         "dataclasses",
         "flagquantum",
@@ -1166,6 +1216,7 @@
       "category": "applications",
       "scope": "All 23 original stages, fresh LiH STO-3G molecular calculations, the five-orbital frozen-core Hamiltonian, all sixteen symmetry sectors, and the ten-parameter 200-query VQE.",
       "imports": [
+        "IPython",
         "argparse",
         "dataclasses",
         "flagquantum",
@@ -1188,6 +1239,7 @@
       "category": "applications",
       "scope": "All five source stages, all twelve original distances, neutral singlet H2 in STO-3G, one tapered UCCSD angle, a 500-iteration ceiling, and fresh RHF, FCI and VQE curves.",
       "imports": [
+        "IPython",
         "dataclasses",
         "flagquantum",
         "matplotlib",
@@ -1207,6 +1259,7 @@
       "category": "applications",
       "scope": "All nine source stages. Original H2 geometry, four-mode and paired one-qubit Hamiltonians, three hardware-efficient layers, tapered UCCSD and one million samples per Pauli basis.",
       "imports": [
+        "IPython",
         "dataclasses",
         "flagquantum",
         "itertools",
@@ -1250,6 +1303,8 @@
       "category": "applications",
       "scope": "All 14 source stages, the original six-residue chain, six direction bits and one contact bit, five QAOA layers, 70 lower-70-percent objective queries, and 2048 shots per query and final comparison.",
       "imports": [
+        "IPython",
+        "collections",
         "dataclasses",
         "flagquantum",
         "itertools",
@@ -1292,6 +1347,7 @@
       "category": "applications",
       "scope": "All 19 source stages, the selected LiH/STO-3G geometry, one frozen core orbital, the six-bit symmetry sector, 49 retained ordered Pauli terms, and seven phase bits with power-specific second-order product formulas.",
       "imports": [
+        "IPython",
         "argparse",
         "collections",
         "dataclasses",
@@ -1317,6 +1373,7 @@
         "collections",
         "dataclasses",
         "flagquantum",
+        "importlib",
         "itertools",
         "math",
         "matplotlib",
@@ -1337,10 +1394,18 @@
       "category": "applications",
       "scope": "Complete local FMO Notebook: seven-site physical matrix, declared 35-term Pauli product formula, 20 quantum time points, 100 exact matrix-exponential time points, named populations, timings and comparison plot.",
       "imports": [
-        "flagquantum"
+        "IPython",
+        "argparse",
+        "collections",
+        "flagquantum",
+        "math",
+        "matplotlib",
+        "pathlib",
+        "time",
+        "torch"
       ],
       "notebookSha256": "1c46e1ab2525df1ce32793fb139640e61102ec274c8c3c6cea9203dbf2a89b24",
-      "bundleSha256": "f4a675f7f9177df1c024de04a93817f4abc4d3caa78ff2f89c448bfa1092f4a0",
+      "bundleSha256": "eeae93b8bdb2b3dbde14aada1316a2aa51e77f2cfa4cde4cb97419ab0d49bcb4",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/applications/chemistry/quantum_walk_fmo"
     },
@@ -1354,10 +1419,11 @@
         "collections",
         "dataclasses",
         "flagquantum",
-        "math"
+        "math",
+        "torch"
       ],
       "notebookSha256": "e4ad83415f86751bba959a818ef730ae9d673bbaa48246e6d96ff4e49353003a",
-      "bundleSha256": "9fec159343c6829b4fa83741d30dc9e84d0f2e3158957ea9f8db7793b6aa09fd",
+      "bundleSha256": "1ac3192376c6f80cd6dfc93da30078ee504b939d357dfa5e2ca430a44ebb5c02",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/applications/chemistry/second_quantized_hamiltonian/overview"
     },
@@ -1387,9 +1453,11 @@
       "category": "applications",
       "scope": "Complete original 17-cell wireless sensor link-monitoring workflow: all 12 resources, 13 edges, node 1 fixed to one, one QAOA layer, penalty 2, CVaR 0.9, native 60-iteration search, actual 1,000 draws, observed minimum feasible cover and original/solution network views.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
+        "io",
         "math",
         "matplotlib",
         "networkx",
@@ -1408,9 +1476,11 @@
       "category": "applications",
       "scope": "Complete original17-cell minimum vertex cover patching workflow:8-resource7-vulnerability graph,illustrativekillchain,bipartiteanddualviews,3-layerQAOA,penalty10,CVaR0.9,60iterationsearch,actualoptimized/uniformsamples,minimumfeasibleobservedcover,andremainingattackgraph.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
+        "io",
         "itertools",
         "math",
         "matplotlib",
@@ -1430,9 +1500,11 @@
       "category": "applications",
       "scope": "Complete eleven-cell whitebox workflow: original six-bit coordinates, width ceiling 25, seed 3 and 500 classical draws, predicate phase oracle, source recommendation 36 and actual ten Grover iterations, 500 local quantum observations, branch annotations and two frequency figures; independent Circuit absolute states and clean workspace.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
+        "io",
         "itertools",
         "math",
         "matplotlib",
@@ -1452,8 +1524,11 @@
       "category": "applications",
       "scope": "All seven source stages at the original five-bit width and rate 0.5: interval 15..29, the classical 3..13 diagnostic, interval 21..31 and a minus-18 shift modulo 32. Fresh amplitudes and exact discrete overlaps, explicit refusal of the original approximate hints, public native qfunc composition, independent absolute physical states, clean private attenuation and compiler workspace, the original 0.01 amplitude tolerance, and all 32 words in three inspected figures. Uses the existing approved overlap correction; does not add unchanged-original coverage. No frozen quantum counterpart, API or dependency changes; no hardware, speedup or scalability claim.",
       "imports": [
+        "IPython",
+        "PIL",
         "dataclasses",
         "flagquantum",
+        "json",
         "math",
         "matplotlib",
         "pathlib",
@@ -1493,6 +1568,7 @@
       "category": "applications",
       "scope": "All 14 source stages; fresh sixteen-bin and two-bin distributions, original sine and Chebyshev demonstrations, full four-term native Wiener recurrence and all 32 joint time/coefficient branches.",
       "imports": [
+        "IPython",
         "argparse",
         "collections",
         "dataclasses",
@@ -1515,15 +1591,18 @@
       "category": "applications",
       "scope": "All 26 source code stages, all 948 original CSV rows, original 125/60/60 splits, both t-SNE plots, three PCA features, exact native overlap states and all five classifier results.",
       "imports": [
+        "IPython",
         "argparse",
         "csv",
         "dataclasses",
         "enum",
         "flagquantum",
         "hashlib",
+        "importlib",
         "math",
         "matplotlib",
         "numpy",
+        "os",
         "pathlib",
         "sklearn",
         "torch",
@@ -1541,6 +1620,7 @@
       "category": "applications",
       "scope": "All 29 source stages, two assets, a four-dimensional system, 2,048 shots per histogram, four spectroscopy bits, two selected reduced rotations and three HHL profiles.",
       "imports": [
+        "IPython",
         "dataclasses",
         "flagquantum",
         "math",
@@ -1562,6 +1642,7 @@
       "category": "applications",
       "scope": "All13sourcecode stages; original five-bit32pointlognormal grid,mu0.7,sigma0.13,strike1.9,fresh normalizedPDF andpayoffangles,source width20,native inplace preparation/reflection,independent absolute six-qubitCircuit/directstates,namedindicator,retainedprivateasset,explicit count-only local adaptive profileepsilon0.05/alpha0.01/k<=16/batch256/steps<=64/seed6100,actual adaptivecounts,scaledpriceinterval,sourcefinaltolerancefactor5,freshclassicalexpectedpayoffvalidation andactualprobability/payofffigure. Eachnewstructuralkcompilesonce;not runtimeparameterbinding orproprietaryIQAE equivalence. No sourceimporter,frozenquantumtable,newdependency,cloud,hardware,speedup orscalabilityclaim.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
@@ -1583,9 +1664,11 @@
       "category": "applications",
       "scope": "Complete original twelve-cell three-asset portfolio workflow: covariance and return data, integer holdings0..7,budget6,three QAOA layers,penalty10,CVaR0.7,60iteration optimization,actual optimized/uniform sampling,two charts,best observed feasible allocation and exact classical optimum.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
+        "io",
         "itertools",
         "math",
         "matplotlib",
@@ -1604,6 +1687,7 @@
       "category": "applications",
       "scope": "All 28 source stages, all 251 original price rows and four assets, eight-dimensional padded operator, 16-dimensional Hermitian embedding, six phase bits and all 64 reciprocal rotations.",
       "imports": [
+        "IPython",
         "csv",
         "dataclasses",
         "datetime",
@@ -1626,6 +1710,7 @@
       "category": "applications",
       "scope": "All 15 source stages, two assets with two bits apiece, three-bit selector, width budgets 14 and 25, epsilon 0.05, alpha 0.1, and the original confidence check.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
@@ -1647,6 +1732,7 @@
       "category": "applications",
       "scope": "All 15 source stages, two assets with two bits apiece, five-bit selector with two fractional bits, width budget 25, epsilon 0.05, alpha 0.1, and the original confidence check.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
@@ -1669,6 +1755,7 @@
       "category": "applications",
       "scope": "All 16 source stages, two assets with two bits apiece, five-bit selector with two fractional bits, width budget 25, epsilon 0.05, alpha 0.1, and the original confidence check.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
@@ -1691,9 +1778,12 @@
       "category": "applications",
       "scope": "All11sourcecode stages; original seven-bit128pointfreshlognormalgrid,mu0.7,sigma0.13,exclusiveCDF,target0.07,tolerance0.007,initialindex32,width28,native thresholdXORandGroverfamily,independent absolutephysicalstatesas eight-logical-qubitCircuit/directstates tensoredwithcleanzerowork,namedindicator,retainedprivateasset,actualcount-onlylocaladaptiveprofileepsilon0.05/alpha0.01/k<=16/batch256/steps<=64/seed6200,sourcehalvingandtermination,implicitNonereturnandinitialvdiagnostic,andfullprobabilityplot. The search can exhaust before tolerance;no exactCDFrepair,tighterestimator,proprietaryIQAE,runtimebinding,hardware,speedup orscalabilityclaim. Algorithmicpowercap0..16 remains subject to explicitdefault100000operationbudget,sourcewidth28andmax20cleanwork;oversized threshold/powerpairs refuse without sampling.",
       "imports": [
+        "IPython",
+        "PIL",
         "collections",
         "dataclasses",
         "flagquantum",
+        "json",
         "math",
         "matplotlib",
         "pathlib",
@@ -1712,6 +1802,7 @@
       "category": "applications",
       "scope": "All 17 original stages, unmodified 128-by-128 RGB input, all 16,384 amplitudes with explicit gates, two coherent cyclic differences and 200,000 finite samples.",
       "imports": [
+        "IPython",
         "argparse",
         "collections",
         "dataclasses",
@@ -1735,9 +1826,11 @@
       "category": "applications",
       "scope": "All seventeen source stages at original three facilities/four customers/exactly two used facilities, twelve decisions and five clean temporary work bits (seventeen physical bits), five QAOA layers, penalty10 and50iteration budget. Full nonlinear empty-facility residual retained; native exact mean explicitly substitutes unpinned source optimizer default, with no historical SDK version or trajectory claim. Actual optimized and zero-angle uniform samples, topfive, all network/trace/histogram/observedtable/graph and fresh constrained exhaustive classicaltable/graph. All4096cost and two nonzero full complex-state Circuit references required. No frozen quantum counterpart changes, production API/dependency changes, runtimebinding, optimum guarantee, cloud, hardware, speedup or scalability claim.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
+        "json",
         "math",
         "matplotlib",
         "networkx",
@@ -1756,6 +1849,7 @@
       "category": "applications",
       "scope": "All 28 task-scheduling stages, both original task graphs, full 12- and 24-bit encodings, eight layers, original CVaR and evaluation budgets, all actual finite samples, and independent exact schedules.",
       "imports": [
+        "IPython",
         "argparse",
         "dataclasses",
         "flagquantum",
@@ -1779,6 +1873,7 @@
       "category": "applications",
       "scope": "All 17 source stages, four cities, 16 assignment bits, eight QAOA layers, 150 evaluations of the lower 60 percent sampled cost, and 2,048 draws for each optimization, final and uniform histogram.",
       "imports": [
+        "IPython",
         "dataclasses",
         "flagquantum",
         "importlib",
@@ -1800,6 +1895,7 @@
       "category": "applications",
       "scope": "All 36 source stages, fresh six-location data, original sixteen-bit twelve-layer routing circuit, 26 finite-shot native optimizer queries, 30,000 final draws, and actual route plots.",
       "imports": [
+        "IPython",
         "argparse",
         "dataclasses",
         "flagquantum",
@@ -1823,6 +1919,7 @@
       "category": "applications",
       "scope": "All twenty source stages, eight decision qubits, a three-layer ordinary comparator, all 74 candidate mixers in the original order, and adaptive growth until the source scaled gradient norm falls below 0.027. Each optimization allows 60 objective evaluations.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
@@ -1844,13 +1941,16 @@
       "category": "applications",
       "scope": "All thirteen original source stages: three sources/four consumers, twelve binary decisions plus six bounded-slack bits, four QAOA layers, penalty10,100iteration mean-cost search, actual optimized and zero-angle uniform samples, original network/trace/histogram/observed table and graph, fresh exact constrained reference and graph. Full18-bit costs and two nonzero complete Circuit-state references required. No frozen quantum counterpart, API or dependency changes, proprietary optimization trajectory, runtime binding, cloud, hardware, speedup or scalability claim.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
+        "json",
         "math",
         "matplotlib",
         "networkx",
         "pathlib",
+        "random",
         "torch"
       ],
       "notebookSha256": "994ae8f130bb2fc0f5886e763125bc492840eef736b0cd2e6bffec397305ba7c",
@@ -1870,10 +1970,12 @@
         "flagquantum",
         "itertools",
         "math",
+        "matplotlib",
+        "numpy",
         "torch"
       ],
       "notebookSha256": "801718a7a1bdd7f755eb10861a45629f7e2ebf1e68ec1a6c1e2b4ccab8977480",
-      "bundleSha256": "07ec83e3a1ae93e89cd81218f67147f0ecaffc3dbf9299e62e0cc186052f99ad",
+      "bundleSha256": "6e3aa9a6fb5bd8cc6e5b80ba97f744c96e47fff6b0436af9e3abde8a03e8789c",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/applications/optimization/integer_linear_programming/overview"
     },
@@ -1884,9 +1986,11 @@
       "category": "applications",
       "scope": "All nine source stages at the original three-donor/three-patient size, nine assignment bits, five QAOA layers, penalty factor two, width objective, 100-iteration limit and CVaR 0.7. Fresh all-512-assignment model audit and SDK-reviewed pair-conflict penalty; public native optimization with exact local CVaR, actual finite final samples, sampled top ten, trace/histogram/matching table/bipartite graph, and separate score/penalty/feasibility/source-score diagnostics. Independent full complex-state Circuit checks for two nonzero parameter tuples. Exhaustive legal matching reference is evaluated after sampling and never repairs observations. No frozen quantum counterpart, API or dependency changes, runtime-binding equivalence, cloud, hardware, speedup or scalability claim.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
+        "json",
         "math",
         "matplotlib",
         "networkx",
@@ -1905,6 +2009,7 @@
       "category": "applications",
       "scope": "All nine original stages, the complete 13-spin 162-term cost, three QAOA layers, bounded actual-CX selection, full optimization and finite samples.",
       "imports": [
+        "IPython",
         "argparse",
         "collections",
         "dataclasses",
@@ -1931,11 +2036,12 @@
         "dataclasses",
         "flagquantum",
         "math",
+        "matplotlib",
         "networkx",
         "torch"
       ],
       "notebookSha256": "d8175433c6a624a4b7d8b824027cb3d3010a5451189906330d27cafaba1f3816",
-      "bundleSha256": "307084e965ff52f0c194eb63dfbe1ebc75f62bbf2a3c6fa42462442ea952ee74",
+      "bundleSha256": "10864d16ccea493830f94891889253d076901f3ba341e75b57c8ab1dd3fb4dac",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/applications/optimization/max_clique/overview"
     },
@@ -1950,11 +2056,12 @@
         "dataclasses",
         "flagquantum",
         "math",
+        "matplotlib",
         "networkx",
         "torch"
       ],
       "notebookSha256": "6cfe7615e934dfc103d67a33bbbf0757ca0f731a28c9fe859f55d10ff2e12a35",
-      "bundleSha256": "c1a87b4c3a2e33246609df64f345cc37385ed672cecf3d8bf2261f4b38f3ce5a",
+      "bundleSha256": "3d7b507467ea25c4343b5e952871bf9385051dc962d712de7d1e17434def5ad3",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/applications/optimization/max_independent_set/overview"
     },
@@ -1970,10 +2077,13 @@
         "dataclasses",
         "flagquantum",
         "math",
+        "matplotlib",
+        "networkx",
+        "numpy",
         "torch"
       ],
       "notebookSha256": "664389b878a40bb4bf78de9ea280e54a575571223b8af7029acde3334406e426",
-      "bundleSha256": "b490dfafcc174e516838850b56936dda462ee3269249d109462726bed790196e",
+      "bundleSha256": "f9d89d9cb36c045f78a996c2973f486be440d32b380f9bd7ed368c9e6eef2d82",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/applications/optimization/max_induced_k_color_subgraph/overview"
     },
@@ -1988,11 +2098,13 @@
         "dataclasses",
         "flagquantum",
         "math",
+        "matplotlib",
         "networkx",
+        "numpy",
         "torch"
       ],
       "notebookSha256": "b28499ff5184431c6700a7c170b72b4d9ae683fc983c729edb6d591cba2f3b6e",
-      "bundleSha256": "babc5c5a407caee88ebbbf8cd846b3aaebf102b497420258e86cd5f0dd44666a",
+      "bundleSha256": "94d0a8c5374ee1bf1c080b384adf5d7e0aa4cee3b08bdd494482ab35ad1732a0",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/applications/optimization/max_k_vertex_cover/overview"
     },
@@ -2008,10 +2120,13 @@
         "dataclasses",
         "flagquantum",
         "math",
+        "matplotlib",
+        "networkx",
+        "numpy",
         "torch"
       ],
       "notebookSha256": "8112efeac91a061c6c017c40598b4599ab949893ead3cabf6534425aa7181a44",
-      "bundleSha256": "6a2d94c0b39f0177da9da4002c38b1f3adfb668bdf53b33aa27137dcf63736cc",
+      "bundleSha256": "707ae2823e1cadddc7f432c475eff2b11af11684c61bed884ca45ba7ec5f356a",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/applications/optimization/min_graph_coloring/overview"
     },
@@ -2022,6 +2137,7 @@
       "category": "applications",
       "scope": "All fifteen code stages: fresh six-node graph (edge probability 0.6, seed 8), six decision bits, fourteen encoded slack bits, six QAOA layers, penalty 10, 70 optimizer iterations, 70% lower-tail CVaR, optimized and uniform samples, and an independent exhaustive constrained solution.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
@@ -2043,6 +2159,7 @@
       "category": "applications",
       "scope": "Both source code stages, the fresh 40-node graph with edge probability 0.2, a six-qubit cap per community, two QAOA layers, and 20 objective queries per community. Signed contractions and original-node flips, finite sample ranking, both classical comparisons and the complete labeled graph. Independent absolute Circuit states and cut tables for all realized quantum subproblems.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
@@ -2067,6 +2184,7 @@
       "category": "applications",
       "scope": "All 19 source stages, the 4 by 2 container and three rectangles, 17 active variables, 102 regenerated Ising terms, ten QAOA layers, 60 objective queries and 10,000 actual shots per query and final readout.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
@@ -2089,8 +2207,10 @@
       "category": "applications",
       "scope": "All14source code stages, original2bits/6angles, q0 rotation repeated on q1, source X/Y/Z bases and counts formula, unit links,target(0.6,1.0,0.2), original30objectiveevaluationcap and1000shotsperbasis. Native finite sampling and capped nativeCOBYLA, actual trace, finalYsample and two independentpositionestimates. Six nonzero complete absolute Circuit state comparisons, bitorder,Ysign,finitecountgeometry,budgetandinputrejections required. Frozen216quantumcounterparts and production/API/dependency contracts unchanged.",
       "imports": [
+        "IPython",
         "dataclasses",
         "flagquantum",
+        "json",
         "math",
         "matplotlib",
         "pathlib",
@@ -2109,6 +2229,7 @@
       "category": "applications",
       "scope": "All fourteen source stages, eight original subsets covering ten elements, eight decision bits and fifteen encoded slack bits, three QAOA layers, penalty 10, sixty optimizer iterations, exact lower-tail CVaR at 70%, finite optimized and uniform samples, and independent exhaustive constrained comparison.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
@@ -2133,11 +2254,12 @@
         "dataclasses",
         "flagquantum",
         "math",
+        "matplotlib",
         "numpy",
         "torch"
       ],
       "notebookSha256": "5a153fffe95582d6d3ff8579329565d40f9ef66e698c69deb2b27331d970144d",
-      "bundleSha256": "19efb7fdaa9819fe689f25af95389939690eebd4881b340b8d2accc72e45811b",
+      "bundleSha256": "a0910aa474bce2116f8d9d8b1796aec1028ef9ea04d2dba06abffdd4debf2107",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/applications/optimization/set_partition/overview"
     },
@@ -2148,6 +2270,7 @@
       "category": "applications",
       "scope": "All 22 source stages, a fresh four-node weighted graph, six ordered generators, fourteen imaginary-time steps and 128 shots per histogram. Report update energy, independently measured energy, rounded cut and the exact four-node comparison.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
@@ -2172,6 +2295,7 @@
       "category": "applications",
       "scope": "All 39 source stages: four-mode factorization, four-site eight-mode Slater preparation, quarter-filling interacting dynamics on steps 0–9, one-electron noninteracting dynamics and half-filling vanishing hopping on steps 0–10, and two 400-point classical one-electron comparisons.",
       "imports": [
+        "IPython",
         "dataclasses",
         "flagquantum",
         "itertools",
@@ -2194,6 +2318,7 @@
       "imports": [
         "dataclasses",
         "flagquantum",
+        "importlib",
         "math",
         "matplotlib",
         "pathlib",
@@ -2231,6 +2356,7 @@
       "category": "applications",
       "scope": "All 20 source stages, original 32x32 grid, all four electromagnetic components, seventeen physical bits, time five, effective time640, 686-degree fresh GQSP factorization and all1372 native walk selections.",
       "imports": [
+        "IPython",
         "argparse",
         "collections",
         "dataclasses",
@@ -2255,6 +2381,7 @@
       "category": "applications",
       "scope": "Complete original signed quantum sawtooth-map workflow: three bits, kick strength 0.1, initial momentum -2, timesteps 2/4/6/8 and 1,000 actual samples each; exact CX/U3 resource counts, original extrapolation explicitly labeled, and comparison with hash-pinned historical upstream IonQ measurements.",
       "imports": [
+        "IPython",
         "__future__",
         "cmath",
         "collections",
@@ -2262,6 +2389,7 @@
         "dataclasses",
         "flagquantum",
         "hashlib",
+        "io",
         "json",
         "math",
         "matplotlib",
@@ -2281,6 +2409,7 @@
       "category": "applications",
       "scope": "All 27 source stages, original 8x8 grid, actual reconstruction of all 128 block columns, original degree251 and 252 fresh phases, complete 18-bit execution and all eight electric field values.",
       "imports": [
+        "IPython",
         "argparse",
         "cmath",
         "collections",
@@ -2307,6 +2436,7 @@
       "category": "applications",
       "scope": "All 25 source stages, original 8x8 phase-space grid, all 17 encoding qubits, fresh 128-amplitude random input, complex block projection and original 18-qubit single-pair QSVT demonstration.",
       "imports": [
+        "IPython",
         "argparse",
         "collections",
         "dataclasses",
@@ -2330,6 +2460,7 @@
       "category": "applications",
       "scope": "All sixteen traffic-network stages, original six-node graph, all 24 assignment bits, five layers, independent integral-flow solution, twelve finite-shot native optimizer queries, and the actual final sample.",
       "imports": [
+        "IPython",
         "argparse",
         "dataclasses",
         "flagquantum",
@@ -2353,13 +2484,16 @@
       "category": "applications",
       "scope": "All ten original source stages: fresh seed0 NumPy coefficients at thirteen locations, at most seven antennas, original three neighbor equalities and maximization sign, thirteen decisions plus three binary modeled-slack bits, four layers, penalty3,60iteration exact mean search, actual3000finiteCPUshots, sampledtopfive, trace and weightedcosthistogram. All65536jointcost and two nonzero complete Circuit state checks required. No frozen Qmod coefficient substitution, frozen quantum counterpart changes, production API/dependency changes, proprietary trajectory equivalence, runtime binding, cloud, hardware, speedup or scalability claim.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
+        "json",
         "math",
         "matplotlib",
         "numpy",
         "pathlib",
+        "random",
         "torch"
       ],
       "notebookSha256": "29e8b190d71873fa8009efa67009a6b910bba779599c938759355fc2ce71f472",
@@ -2374,6 +2508,7 @@
       "category": "applications",
       "scope": "All 21 original stages, full 24-bit two-demand model, twenty layers, forty nonzero angles, one objective query and independent final finite sampling.",
       "imports": [
+        "IPython",
         "argparse",
         "dataclasses",
         "flagquantum",
@@ -2398,7 +2533,9 @@
       "category": "applications",
       "scope": "All 29 original CPU-variant stages, full 24-bit twenty-layer cost/RX circuit, original forty-angle schedule, one actual 1000-draw objective query and independent 40000-draw final sample.",
       "imports": [
+        "IPython",
         "argparse",
+        "collections",
         "dataclasses",
         "flagquantum",
         "itertools",
@@ -2411,7 +2548,7 @@
         "typing"
       ],
       "notebookSha256": "be8b4f018d12a1dddb13a1f2f5e34108d1978dfd2fa63742f7d3aec406580e04",
-      "bundleSha256": "608425435aaa53d44d74834747f390488c4b054469e78d266a58b7bc3f441b42",
+      "bundleSha256": "8eaf0f3bccd5d4cff831d0391b40b98b1479c93be05eec731c755819073418a8",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/applications/telecom/resiliency_planning/resiliency_planning_amd/overview"
     },
@@ -2422,6 +2559,7 @@
       "category": "community",
       "scope": "All 18 source stages, the original 10- and 12-control circuits, both 18-qubit device graphs and the CX/U basis.",
       "imports": [
+        "IPython",
         "argparse",
         "dataclasses",
         "flagquantum",
@@ -2443,6 +2581,7 @@
       "category": "community",
       "scope": "All17 source stages, original RandomState12 identical three-bit inputs, seven-bit SWAP test, RX0.1 approximation study, original distance31 case, all105 original physical configurations and1070000 actual finite draws.",
       "imports": [
+        "IPython",
         "argparse",
         "dataclasses",
         "flagquantum",
@@ -2466,10 +2605,11 @@
       "category": "community",
       "scope": "Complete local tutorial workflow: composed preparation, synthesis and visualization. Text circuit drawing replaces the upstream cloud viewer. Native execution, analytical state and independent Circuit additionally verify the quantum result.",
       "imports": [
-        "flagquantum"
+        "flagquantum",
+        "torch"
       ],
       "notebookSha256": "39ff78ca2ccf8180d4f83134ceae8b57c197e0afe37b91e9f4d5791c95c57448",
-      "bundleSha256": "d43f9c6264601fb6ad85c4ac4da4f3ce18d489ad8e1f04383a3376e60d01a163",
+      "bundleSha256": "fc7c644a643fc3366df246841253deb56d8361ac53cb620556f0a699db4364c6",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/community/basic_examples/superposition"
     },
@@ -2496,6 +2636,7 @@
       "category": "community",
       "scope": "All 17 source stages, the original eight- and four-bit uniform starter, one actual stage-one draw, signed Gaussian error and resource reporting, and the disabled team export.",
       "imports": [
+        "IPython",
         "argparse",
         "dataclasses",
         "flagquantum",
@@ -2515,6 +2656,7 @@
       "category": "community",
       "scope": "All 19 source stages, original six-bit direct, eight-bit and four-bit amplitude-amplification paths, and the original disabled team export.",
       "imports": [
+        "IPython",
         "argparse",
         "dataclasses",
         "flagquantum",
@@ -2535,6 +2677,7 @@
       "category": "community",
       "scope": "All 17 source stages, original eight- and 127-qubit resolutions, tuned RY and CRY, truncated Fourier transformation, measured signed-grid MSE and native exports.",
       "imports": [
+        "IPython",
         "argparse",
         "dataclasses",
         "flagquantum",
@@ -2575,6 +2718,7 @@
       "category": "community",
       "scope": "All 20 source stages, original seven-bit 128-point grid, thirty-two-step ladder, four-time resource sweep, full controlled-rotation sweep, and eight actual figures.",
       "imports": [
+        "IPython",
         "argparse",
         "collections",
         "dataclasses",
@@ -2598,6 +2742,7 @@
       "category": "community",
       "scope": "All 51 winning-advection stages, original seven-bit grid and all three ten-step quantum schedules, fresh 127-term Hamiltonian, unchanged numerical baselines, both full resource sweeps, and thirteen actual figures.",
       "imports": [
+        "IPython",
         "argparse",
         "collections",
         "dataclasses",
@@ -2638,6 +2783,7 @@
       "category": "community",
       "scope": "All ten source code stages and the original checkerboard, Toeplitz, symmetric tridiagonal, and 4 by 4 grid Laplacian models. Preserve the dimensions 8, 16, 16, and 16, the respective scales 8, 4, 3, and 5, and the original uniform input.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
@@ -2662,6 +2808,7 @@
       "imports": [
         "dataclasses",
         "flagquantum",
+        "json",
         "math",
         "numpy",
         "torch"
@@ -2678,9 +2825,11 @@
       "category": "community",
       "scope": "All 14 source stages, 30 fresh STO-3G geometries, both displaced Hamiltonians, every source time and detuning grid, one million trials per binding, and the adaptive posterior.",
       "imports": [
+        "IPython",
         "argparse",
         "dataclasses",
         "flagquantum",
+        "importlib",
         "math",
         "matplotlib",
         "numpy",
@@ -2700,6 +2849,7 @@
       "category": "community",
       "scope": "All 21 source stages, 2/4/8/16-vertex tree oracle and native Pauli LCU, eight-site stochastic and Chebyshev projections, both four-vertex discriminants, and both 16-vertex walks through twenty repetitions.",
       "imports": [
+        "IPython",
         "argparse",
         "collections",
         "dataclasses",
@@ -2724,13 +2874,14 @@
       "imports": [
         "dataclasses",
         "flagquantum",
+        "importlib",
         "math",
         "matplotlib",
         "pathlib",
         "torch"
       ],
       "notebookSha256": "ea587e87b4fba3b219baa2612fae9a723fc7672a434293d6d5b81b9b1db8cdab",
-      "bundleSha256": "be7802ad92aa1b048378f1b1410326e38f06acb4327d579768e35b50cc43822e",
+      "bundleSha256": "76b99d6ca8a736572f65e3d226cd74aac894bf199eb960f3c4e5721612d0991e",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/community/paper_implementation_project/quantum_algo_for_solving_linear_differential_equations/harmonic_oscillator/overview"
     },
@@ -2741,6 +2892,7 @@
       "category": "community",
       "scope": "All twelve original source stages, five-qubit uniform input, three-qubit single-excitation input, three-qubit nonsymmetric input and 2048 actual native samples per case.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
@@ -2762,6 +2914,7 @@
       "category": "community",
       "scope": "All twelve source stages, original eight-bit resolution, fresh degree-28/27 coefficients and 29/28 phases, original sine block, two exact amplification rounds, and all 256 probabilities.",
       "imports": [
+        "IPython",
         "argparse",
         "dataclasses",
         "flagquantum",
@@ -2782,16 +2935,18 @@
       "category": "functions",
       "scope": "Complete local computational Notebook workflow: exact amplification, executed seeded sampling with all-success assertion, standard and tuned Grover trajectories and saved trajectory plot.",
       "imports": [
+        "IPython",
         "argparse",
         "collections",
         "flagquantum",
         "math",
         "matplotlib",
         "pathlib",
-        "random"
+        "random",
+        "torch"
       ],
       "notebookSha256": "41092b7d27ecfc37f2a7af37f66785bb6e8078c23c5032831ecdefdc76cec2c5",
-      "bundleSha256": "5aa3ad44ca7907fd2fcdf74e5ca7c4f0602cb349101281a0a8a9bdaa94de33a5",
+      "bundleSha256": "27983e59afc147476211751e4670cb064358fc0aa0119b0d86e180abd08f9112",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/functions/amplitude_amplification/exact_amplitude_amplification"
     },
@@ -2804,10 +2959,11 @@
       "imports": [
         "collections",
         "flagquantum",
-        "random"
+        "random",
+        "torch"
       ],
       "notebookSha256": "01c2edde8b360af554b9ed3467d42efceb860210a5067d75437c3dc9c9fb7a34",
-      "bundleSha256": "2d856d05dc4a3ac566ce8d4af3b45f24998b6f602d7d55da60ee72d4efc6bc7d",
+      "bundleSha256": "1aeed4347afcbbda3b2df7f05113a4937e37b2aba06ea3425a75e70bca13d1fa",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/functions/arithmetic/arithmetic_expression/arithmetic_expression_example"
     },
@@ -2820,10 +2976,11 @@
       "imports": [
         "collections",
         "flagquantum",
-        "random"
+        "random",
+        "torch"
       ],
       "notebookSha256": "c6832d18b2cfc1e6e9c2bbe949e0e50a108e71ba7eb704fd05a024090572c5c7",
-      "bundleSha256": "08367c0c04d7eb6b7a8d9132b2a3ac6694d4d34d35c60f72ce32a213623b809d",
+      "bundleSha256": "ec0a860a42f933396be6411dd2d065d77e2a570487baddd7329bb027aa410492",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/functions/arithmetic/bitwise_and/overview"
     },
@@ -2836,10 +2993,11 @@
       "imports": [
         "collections",
         "flagquantum",
-        "random"
+        "random",
+        "torch"
       ],
       "notebookSha256": "fde57a1545a75d954005ec35e8273b7bea78ab2778ebc8730de345e07b2a0757",
-      "bundleSha256": "533f959f2bf2a4f91f340313d2257280b0b4de5af2190cd722f19a3296230070",
+      "bundleSha256": "208103bd3a5a2eab2cb85a892267f4210bc20bf58d8c6b7f2b4fa3032a05f8e6",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/functions/arithmetic/bitwise_invert/bitwise_invert_example"
     },
@@ -2903,6 +3061,7 @@
       "imports": [
         "collections",
         "flagquantum",
+        "fractions",
         "random",
         "typing"
       ],
@@ -2921,10 +3080,11 @@
         "collections",
         "flagquantum",
         "random",
+        "torch",
         "typing"
       ],
       "notebookSha256": "750377a20eda8dae181b0a1aab99b5d8015b68355c24f87265f39fe88531eb98",
-      "bundleSha256": "ee72b6d643404c5e6a1c53f86898f9ecc687a3983b6e9edf1bbdd0216d027e37",
+      "bundleSha256": "8018d1f8797a264a1c1e5656e284b4cd6884efa395080cf2756f7b9a9a700800",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/functions/arithmetic/modular_exp/modular_exp_example"
     },
@@ -2938,10 +3098,11 @@
         "collections",
         "flagquantum",
         "random",
+        "torch",
         "typing"
       ],
       "notebookSha256": "bbd4baa185e8b0fa1fc69a0f75d1eed2e39cb1db1b05662b8de775ebb281abb3",
-      "bundleSha256": "797ec8c03f19c17b170253df713170563a9b35580d4c9cd1fb3c866ffe74cfdc",
+      "bundleSha256": "01beaa3ab59928259ff8d94ad70b2427fca5a64e29fea9a6b982841b23e91bf1",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/functions/arithmetic/modulo/modulo_example"
     },
@@ -2954,6 +3115,7 @@
       "imports": [
         "collections",
         "flagquantum",
+        "fractions",
         "random",
         "typing"
       ],
@@ -2988,7 +3150,9 @@
       "imports": [
         "collections",
         "flagquantum",
-        "random"
+        "fractions",
+        "random",
+        "typing"
       ],
       "notebookSha256": "f666d89e8f272f31e9af62f4c1df0b30adb187962bfab3b34373eb45fc276242",
       "bundleSha256": "e425507592252f75e42c83dd754eddd9554f2b8bc34557e02110035fa6e7d83b",
@@ -3036,10 +3200,11 @@
       "category": "functions",
       "scope": "Complete computational Notebook workflow: define a native quantum function and synthesize it. The native user script additionally executes it and reads named probabilities. Existing independent Circuit acceptance checks complete complex amplitudes, absolute phase, bit order and clean workspace. No cloud, plotting, data or sampling workflow occurs in the reviewed Notebook.",
       "imports": [
-        "flagquantum"
+        "flagquantum",
+        "torch"
       ],
       "notebookSha256": "9227fc1d7b24532dd3d7d1970d71b04b8706699d92767c7d003ca1b3e2dd588d",
-      "bundleSha256": "f9d523619aef9389abddcd8d789b4c1bf851b5ee78dc90f74f5c1e1215195530",
+      "bundleSha256": "13f72aeed6fe7d126dd3eb131029ebabce79441b548670e2dbe3884fbf8b45fe",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/functions/hadamard_transform"
     },
@@ -3070,10 +3235,12 @@
       "category": "functions",
       "scope": "Complete local single-cell Notebook program construction with explicit finite real parameter specialization; execution and independent-state checks are additional validation.",
       "imports": [
-        "flagquantum"
+        "flagquantum",
+        "math",
+        "torch"
       ],
       "notebookSha256": "0dbd6d1fe370dd8c687ba53d5a2c53ba6fe4cc122c5ff87905c6b8416553fc0c",
-      "bundleSha256": "9a47d1b5e6027133b30306d2c0088d2a0e4c8577012f01cb23fcef3d4d5262c5",
+      "bundleSha256": "c57b2c1a52a1c1d4babf9a40d9bbdd273cf7859f34baf4bb1b97d8371f4c4bcd",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/functions/hamiltonian_evolution/suzuki_trotter"
     },
@@ -3132,10 +3299,12 @@
       "category": "functions",
       "scope": "Complete local computational Notebook workflow: allocate four qubits, apply QFT and synthesize. Local execution and a Fourier-matrix Circuit comparison additionally verify the program.",
       "imports": [
-        "flagquantum"
+        "flagquantum",
+        "math",
+        "torch"
       ],
       "notebookSha256": "0433976738f729639784271601cf2676a48c687e746462f76264db62951c543b",
-      "bundleSha256": "b8e4f48c4ce6da641758b3d06ab6bc6050aaf59c476036a9d2bc9a9e9d11fcb1",
+      "bundleSha256": "b005c5eb81a1bbe4081d79077963446dfd32f4f21de5211f842ee07804fd3904",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/functions/qft"
     },
@@ -3183,10 +3352,13 @@
       "category": "functions",
       "scope": "Complete local computational Notebook workflow: reuse and synthesize all nine native gate examples in source order, preserving source parameters. Direct synthesize(qfunc) replaces separate create_model and synthesis calls. Local execution and named probabilities additionally check each program; independent gate Circuit comparisons retain absolute phase. No cloud or hardware result is claimed.",
       "imports": [
-        "flagquantum"
+        "cmath",
+        "flagquantum",
+        "math",
+        "torch"
       ],
       "notebookSha256": "295a16446158dba5784806f80f616ff9b4ae7917ed1e5378c1509203f3d82e8c",
-      "bundleSha256": "99f6a4348a281f43df2e1c0d448c000631de6eaea5c5ee20b9a71ae9b67cafc6",
+      "bundleSha256": "9c0ad24bf0a20c041fc6ac1ec516a45fc89d5aa169bf0e31885c3f814bd4f4e8",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/functions/standard_gates/overview"
     },
@@ -3197,10 +3369,11 @@
       "category": "functions",
       "scope": "Complete computational Notebook workflow: define a native quantum function and synthesize it. The native user script additionally executes it and reads named probabilities. Existing independent Circuit acceptance checks complete complex amplitudes, absolute phase, bit order and clean workspace. No cloud, plotting, data or sampling workflow occurs in the reviewed Notebook.",
       "imports": [
-        "flagquantum"
+        "flagquantum",
+        "torch"
       ],
       "notebookSha256": "6f8b675fc9b91e1ba1b7aac09640bd36e84746e1d755205925b5112bc123dcfb",
-      "bundleSha256": "2b6dc8f415785538247c17f74ea000f172c0813e7d93944f8b8919ef5021872c",
+      "bundleSha256": "ca7c02885697db5b0d1af419b6f208a1ee665883e05add721018e8a746653157",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/functions/state_preparation/prepare_bell_state"
     },
@@ -3226,10 +3399,11 @@
       "category": "functions",
       "scope": "Complete computational Notebook workflow: define a native quantum function and synthesize it. The native user script additionally executes it and reads named probabilities. Existing independent Circuit acceptance checks complete complex amplitudes, absolute phase, bit order and clean workspace. No cloud, plotting, data or sampling workflow occurs in the reviewed Notebook.",
       "imports": [
-        "flagquantum"
+        "flagquantum",
+        "torch"
       ],
       "notebookSha256": "d52767e8a12f39ee56291f4b92db31c0ad757b66f20d5eaffd59496739b9a228",
-      "bundleSha256": "f5901f138eb6f0819cbf57b6b2252af1e3a6d17b70d91ef6927ac93ba8f4ad1b",
+      "bundleSha256": "4c9debc4bd060cbf28068ac40c4088050894524606e81b9a4fa4b841cf65a230",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/functions/state_preparation/prepare_ghz_state"
     },
@@ -3260,10 +3434,11 @@
         "collections",
         "flagquantum",
         "math",
-        "random"
+        "random",
+        "torch"
       ],
       "notebookSha256": "1f006c67168456aad49d87b1eff91355cab03273a6606489fe9e9f25fa56fbaa",
-      "bundleSha256": "bf2bea24a4a1d3fbaf063700bc96f1f386f184634b4c59b25383307f1bc6935c",
+      "bundleSha256": "ddefdce83d83f8ee3cc391e1030c987bb2ebcd0bcfec24c8f1cecdcba5f35760",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/functions/state_preparation/prepare_state_and_amplitudes"
     },
@@ -3274,10 +3449,11 @@
       "category": "functions",
       "scope": "Complete local computational Notebook workflow: define the retained diagonal complex matrix, allocate two qubits, apply the matrix and synthesize. Local execution and independent matrix-Circuit comparison additionally validate the result.",
       "imports": [
-        "flagquantum"
+        "flagquantum",
+        "torch"
       ],
       "notebookSha256": "d18416a77a349937b40514e6f95a63f9469d515da9e126c26f67309a4bd4acbf",
-      "bundleSha256": "7c1c7e9ee270531cd3c2cc61c9a402ed22f6493a835feb0fcb0246206bee25c9",
+      "bundleSha256": "234be649979d55e4facc7217dcec6dc83b3e7a6738b9d6607ad7a50345720069",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/functions/unitary"
     },
@@ -3288,6 +3464,7 @@
       "category": "tutorials",
       "scope": "All 19 source stages, both 128-site 50-step circles, four-dimensional four-step hypercube, original finite shot counts, and the full nine-width 1024-site CX sweep.",
       "imports": [
+        "IPython",
         "argparse",
         "collections",
         "dataclasses",
@@ -3310,9 +3487,13 @@
       "category": "tutorials",
       "scope": "All10 original stages: six-bit ring at position32 with complex H/S coin,1 and20 steps; five-bit-by-five-bit torus at(16,16) with signed four-direction coin and20 steps. Three actual1000-draw batches, ring bars and torus heatmap. Complete native/independent Circuit amplitudes include the retained entangled coin; additional compiler workspace must be zero. Reuse retained qfunc directly at t20; do not alter its convenience wrapper or downsize to16. Classical step binding is synthesis-time with separate builds. No remote execution or source importer.",
       "imports": [
+        "IPython",
         "dataclasses",
         "flagquantum",
+        "io",
         "math",
+        "matplotlib",
+        "numpy",
         "torch",
         "typing"
       ],
@@ -3328,6 +3509,7 @@
       "category": "tutorials",
       "scope": "All16sourcecode stages; original two-qubit seven-ordered-term Hamiltonian, fresh eigendecomposition index2, five-bit QPE, piecewise-ceiling repetitions4/4/4/12/32, both seven/thirteen-qubit programs, sequential shared data, exact Hermitian matrix powers, five controlled three-CX exchanges, retained private environment, independent absolute physical Circuit states, named numeric phase/bit marginals, actual resources, explicit1024draws/seeds and final phase histogram. Scalar encoded-bit gates preserve numeric formats; signed/fractional arithmetic borrows remain rejected. No source importer, historical count fitting, frozen216change, new dependency, runtime/backend change, hardware,speedup or scalability claim.",
       "imports": [
+        "IPython",
         "dataclasses",
         "flagquantum",
         "fractions",
@@ -3350,10 +3532,11 @@
       "category": "tutorials",
       "scope": "Complete local computational Notebook workflow: helper-built two-qubit Bell pair, blank six-qubit exercise and adjacent-CX-chain GHZ solution; native synthesis and text drawing replace cloud viewing. Actual execution and independent Circuit full-state references additionally check all three programs; no remote execution or hardware measurement is claimed.",
       "imports": [
-        "flagquantum"
+        "flagquantum",
+        "torch"
       ],
       "notebookSha256": "f408b34db0d32f9abd03bb6b46c4538777a646a567dda7abc463af6001139445",
-      "bundleSha256": "986bdbfc18cbe0546bf890c28570414f6737572b671bd47049a0ae1e03e73474",
+      "bundleSha256": "eaff32e3eb9a144cdcaf0081e68f5eaaea1055f459d5394fd930f7a361731060",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/tutorials/basics/entanglement"
     },
@@ -3364,6 +3547,7 @@
       "category": "tutorials",
       "scope": "All three source stages, original water geometry and STO-3G basis, one frozen spatial orbital, eight active electrons, all 551 freshly generated Pauli terms on twelve qubits, and one first-order step at time one.",
       "imports": [
+        "IPython",
         "bisect",
         "dataclasses",
         "flagquantum",
@@ -3445,10 +3629,11 @@
       "imports": [
         "collections",
         "flagquantum",
-        "random"
+        "random",
+        "torch"
       ],
       "notebookSha256": "7885ecbd00d6d1434a4e2e4ac8b8fc2cd43df609485f0a2e7fe3a53d9c186081",
-      "bundleSha256": "80b30374bb7b66cc709ba9f8a1bd0ac2c528300c0da6200e11d59bfbf2322254",
+      "bundleSha256": "468743c1fc9d8bc0a0e0309dcf24dc3a86c4c69cc79e530a09a0c2186c8f4627",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/tutorials/basics/prepare_state"
     },
@@ -3459,11 +3644,13 @@
       "category": "tutorials",
       "scope": "Complete QMCI Pi Notebook: four-bit lattice plot, classical grids3/5/6, original3+6bit QPE and2048local shots, source reporting formula, count-only iterative epsilon0.03/alpha0.01, independent1..4bit lattices, confidence intervals, all16classical grid sizes and errorbar comparison.",
       "imports": [
+        "IPython",
         "__future__",
         "collections",
         "dataclasses",
         "flagquantum",
         "fractions",
+        "io",
         "math",
         "matplotlib",
         "torch",
@@ -3501,6 +3688,7 @@
       "imports": [
         "collections",
         "flagquantum",
+        "math",
         "random"
       ],
       "notebookSha256": "8fa12537bbd216b4bde1c86424d8e40775c96c37b5e41cc22f933f2ded40adc2",
@@ -3532,10 +3720,11 @@
       "imports": [
         "collections",
         "flagquantum",
-        "random"
+        "random",
+        "torch"
       ],
       "notebookSha256": "cac5d0cf38caad34a382713bfb1ca78f4fb2b352f161f38acd252c83dab22a98",
-      "bundleSha256": "9169fd3df1e9be87364c9fe26a4375e27bb91de8d801771f64272da8a631c02a",
+      "bundleSha256": "eb0b92edce9ffeb50f6d3fca7839682176b272c362081e513c9e554e9b1b8dfd",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/tutorials/basics/quantum_programming/classiq_overview_tutorial"
     },
@@ -3568,6 +3757,7 @@
       "category": "tutorials",
       "scope": "All 16 original stages, 50 angle bindings, finite computational and Bell-basis observations, both actual local job kinds and the 200-query Bell variational workflow.",
       "imports": [
+        "IPython",
         "argparse",
         "concurrent",
         "dataclasses",
@@ -3614,11 +3804,13 @@
       "category": "tutorials",
       "scope": "All 23 source code stages, original bit widths, full controlled arithmetic, two Suzuki–Trotter steps, four phase bits, two original sampling bindings and the third expectation binding.",
       "imports": [
+        "ast",
         "cmath",
         "collections",
         "dataclasses",
         "flagquantum",
         "fractions",
+        "inspect",
         "itertools",
         "math",
         "random",
@@ -3638,10 +3830,11 @@
       "scope": "Complete local computational Notebook workflow: the same native arithmetic program synthesized under both width/depth objectives, text drawing and actual width/depth reports. Independent Circuit acceptance checks both objectives; execution and named readout additionally verify the result. No global-optimum or guaranteed resource improvement is claimed.",
       "imports": [
         "flagquantum",
+        "torch",
         "typing"
       ],
       "notebookSha256": "1d2800bd03dad83a57b5b16ccd9146fc1b20a9dfd5345fea4495e8fb202dfdba",
-      "bundleSha256": "149e01f989af8ee1846db47b7bb41c48ed6497a26ffbd7cff1d7af538b0dbefa",
+      "bundleSha256": "10c975681d89b15484550c8f0bf8f5baa57b08054f39113bbb3944005cd2c7dd",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/tutorials/basics/quantum_programming/synthesis_tutorial"
     },
@@ -3675,6 +3868,7 @@
       "category": "tutorials",
       "scope": "All11sourcecode stages,originalfour data bits/indicator/sixmarkedintegers,zero data input,allfivephaseprecision1..5,both actual width/depth policies,source depthbounds15+3(p-1),complete Groverglobalminus,independent absolute native/converted fullstates,named numericmarginals,retainedprivatedata,actual exact CX/U3costs and final measured/historicalfigure. Equalpolicyresources explicitly reported;source default represented by native width policy. Fullycommented optional SDKstages remain historical nonexecution metadata. No sourceimporter,frozen216change,compiler/API/dependencychange,hardware,speedup,scalability or optimality claim.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
@@ -3697,6 +3891,7 @@
       "category": "tutorials",
       "scope": "All seven original code stages, fresh seed1235 matrix8x8, all precisions1..8, actual native and converted complete Circuit states, named phase marginal and retained data environment. Preserve unused source shift and exponentiate the original matrix. Eight literal fractional signatures retain the annotation contract. Actual CX/U3 metrics and full source-style plot, with archived Qiskit counts clearly historical and commented optional installation/transpilation stages represented as non-executing provenance. No fresh cross-framework benchmark, source importer, frozen216 modification, compiler/API/dependency, hardware, release, speedup,scalability or optimality claim.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
@@ -3721,6 +3916,7 @@
       "category": "tutorials",
       "scope": "Complete local Notebook workflow: reproduce seeded 256-element data, all ten bounds, executed resource/error measurements and saved plot. Retained six-bit Qmod counterpart remains separately available through build_program.",
       "imports": [
+        "IPython",
         "dataclasses",
         "flagquantum",
         "matplotlib",
@@ -3729,7 +3925,7 @@
         "torch"
       ],
       "notebookSha256": "56f3d23c59f74c4166b21ea34a8e759fad490d419258b4db0bb9b46f543782e7",
-      "bundleSha256": "ad8c0cfd7a21e3061221d5626f1a49f4b2e677036547c6c0a49fc055b6a86963",
+      "bundleSha256": "67b6fc3c6c2a72352f410d89a1a62c2d0bdd6a115ba3bc75258e5a17b93ab2bd",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/tutorials/technology_demonstrations/approximated_state_preparation"
     },
@@ -3758,10 +3954,11 @@
       "scope": "Complete adapted local Notebook computation: reproduce seed12 and all16 signed amplitudes, synthesize with depth objective and eight-bit ceiling, draw the native circuit and report executed resources. Retained four-bit quantum source counterpart remains separately verified.",
       "imports": [
         "flagquantum",
-        "numpy"
+        "numpy",
+        "torch"
       ],
       "notebookSha256": "78baee190640fd9833f76417ee3471e9c1aacd889e65100fd5a2138b2acaa9e2",
-      "bundleSha256": "8b2326c4862ff2001e14ef1ed201b70d10ec83d56414fc376f4b1d01f5b8ddd7",
+      "bundleSha256": "150413705389a559fd3e834816149ff0bee11673d1fb95663c13ab38438350d1",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management"
     },
@@ -3865,7 +4062,7 @@
         "typing"
       ],
       "notebookSha256": "3c7bedb16b37e5461448b599e00de913d0cfc189b2604fa3a6e85398c00bd318",
-      "bundleSha256": "996bc3f5ba813dd52ad9f90b4bacdf5f354a1ec87a4194a20e721bb9db253373",
+      "bundleSha256": "e4d65f01e7e727a4a653c1205882117c03ebc2b95c8bb19ae9fee16b42340308",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/tutorials/technology_demonstrations/classiq_paper/quantum_walk/classiq_discrete_quantum_walk/overview"
     },
@@ -3936,6 +4133,7 @@
       "category": "tutorials",
       "scope": "All 15 code stages, 5-to-11-bit one-step walks, actual width and CX-first candidate counts, both complete endpoint state checks, and the original CSV comparisons.",
       "imports": [
+        "IPython",
         "argparse",
         "collections",
         "csv",
@@ -3960,6 +4158,7 @@
       "category": "tutorials",
       "scope": "All 16 source stages; fresh 551-term water Hamiltonian; 12-bit first-, second- and fourth-order products, both 13-bit coherent controls, and the original 1,000/2,000 qDRIFT draws.",
       "imports": [
+        "IPython",
         "argparse",
         "bisect",
         "dataclasses",
@@ -4001,6 +4200,7 @@
       "category": "tutorials",
       "scope": "Complete all10sourcecode stages,original rounded8x8matrix/eightelementRHS,explicit preparation normalization of norm0.9999999994356988,classical solve keeps raw RHS,all seven precision2..8,literal fractional roots,powered exact matrix QPE,reciprocal table,source phasezero/indicatorone filtering and scale,squared overlap,independent absolute native/converted states,actual exact CX/U3 resources and final measured/historical plot. Optional source Qiskit cells are fully commented and preserved as historical nonexecution metadata. No sourceimporter,compiler/API/dependencychange,frozen216change,hardware,speedup,scalability or optimality claim.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
@@ -4022,9 +4222,11 @@
       "category": "tutorials",
       "scope": "All nine source code stages, all 23 original sizes through 68 variables, and a separate complete coherent reference.",
       "imports": [
+        "IPython",
         "argparse",
         "dataclasses",
         "flagquantum",
+        "math",
         "matplotlib",
         "numpy",
         "pathlib",
@@ -4045,6 +4247,7 @@
       "category": "tutorials",
       "scope": "All 12 source stages, original seven-vertex graph, ten QAOA layers, all 61 cost terms, 400 optimizer budget and 10,000 draws per objective query. Preserve the original 218-row Qiskit comparison trace.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
@@ -4089,9 +4292,11 @@
       "category": "tutorials",
       "scope": "All9 original code stages and source solution replays. Source3-layer3-node2-edge MaxCut,3/2/4-bit slack-penalty and3/2-bit feasible phase models. Preserve RX(beta), six-angle initial schedule,quantum coefficient2 square and distinct classical coefficient4 linear violation score. Native COBYLA executes capped40/50 actual quantum objective queries and selects the last actual query. Five actual1000-draw statistics batches,one1000-draw MaxCut table and four10-draw Knapsack tables; four convergence figures. Named native ports replace source structs without changing widths. Classical bindings specialize at synthesis. Six independent full-state Circuit comparisons at two nonzero bindings preserve bit order,absolute global phase and clean compiler workspace. No source importer,provider optimizer trajectory equivalence,hardware submission,optimality or speedup claim.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
+        "io",
         "math",
         "matplotlib",
         "torch",
@@ -4109,8 +4314,10 @@
       "category": "tutorials",
       "scope": "Complete original eighteen-cell MaxCut Workshop: five vertices, six edges, four QAOA layers, all eight angles, original 0..1-radian schedule, forty actual objective executions, actual 1,000 draws, observed maximum cut and original/solution graph views.",
       "imports": [
+        "IPython",
         "dataclasses",
         "flagquantum",
+        "io",
         "math",
         "matplotlib",
         "networkx",
@@ -4129,9 +4336,11 @@
       "category": "tutorials",
       "scope": "Complete original 18-cell native portfolio equality workshop; all source scenarios, costs, encodings, objective-call caps, actual 1000 samples each, traces, cost plots, classical minima and independent absolute Circuit verification.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
+        "io",
         "itertools",
         "math",
         "matplotlib",
@@ -4150,9 +4359,11 @@
       "category": "tutorials",
       "scope": "Complete original 16-cell native portfolio inequality workshop; all source scenarios, costs, encodings, objective-call caps, actual 1000 samples each, traces, cost plots, classical minima and independent absolute Circuit verification.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
+        "io",
         "itertools",
         "math",
         "matplotlib",
@@ -4171,6 +4382,7 @@
       "category": "tutorials",
       "scope": "All12sourcecode stages; original five-bit32pointlognormal grid,mu0.7,sigma0.13,strike1.9,fresh normalizedPDF andpayoffangles,source width28,native inplace preparation/reflection,independent absolute six-qubitCircuit/directstates,namedindicator,retainedprivateasset,explicit count-only local adaptive profileepsilon0.05/alpha0.01/k<=16/batch256/steps<=64/seed6101,actual adaptivecounts,scaledpriceinterval,sourcefinaltolerancefactor10,freshclassicalexpectedpayoffvalidation andactualprobability/payofffigure. Eachnewstructuralkcompilesonce;not runtimeparameterbinding orproprietaryIQAE equivalence. No sourceimporter,frozenquantumtable,newdependency,cloud,hardware,speedup orscalabilityclaim.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
@@ -4192,6 +4404,7 @@
       "category": "tutorials",
       "scope": "All 21 workshop stages, two original two-bit assets, one-fraction-bit affine maximum, three-bit payoff selector, width budgets 14 and 25, and all 20000 actual indicator draws.",
       "imports": [
+        "IPython",
         "collections",
         "dataclasses",
         "flagquantum",
@@ -4229,6 +4442,7 @@
       "category": "tutorials",
       "scope": "All 21 original source code stages at original 4x4 matrix,b=[1,2,4,3],four-bit fractional QPE and 16 reciprocal amplitudes. Fresh matrix exponential,normalized preparation,classical solve,full complex states,named output probabilities,indicator=1/phase=0 postselection, 1/16 scale, five-decimal rounding,fidelity,source componentwise phase-removal magnitude diagnostic and final plot. Explicitly report phase leakage and magnitude-only limitation. Reuse public native qpe,unitary,select_rotation,within/apply and independent dense Circuit reference. Fixed callback translated into visible native root;no generic QCallable or fresh-output helper support claimed. No compiler, public API, dependency or frozen 216-counterpart change. No source importer,hardware,release,speedup,scalability or optimality claim.",
       "imports": [
+        "IPython",
         "dataclasses",
         "flagquantum",
         "math",

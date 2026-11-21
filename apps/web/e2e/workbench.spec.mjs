@@ -242,6 +242,10 @@ test("missing output and real Python errors are distinct and preserve run histor
     ["import flagqai_nonexistent_acceptance_dependency", "ModuleNotFoundError"],
     ["import flagquantum as fq\nfq.Circuit(1).h(99)", "ValidationError"],
     [
+      'class ExecutionError(Exception): pass\ntry:\n    {}[(0, 0)]\nexcept KeyError as cause:\n    raise ExecutionError("Module builder compilation requires static circuit topology; do not branch on Tensor values when choosing gates or qubits") from cause',
+      "KeyError",
+    ],
+    [
       "# " +
         "long context ".repeat(150) +
         "\n" +
@@ -266,11 +270,21 @@ test("missing output and real Python errors are distinct and preserve run histor
       page.getByRole("button", { name: "Ask Agent to fix", exact: true }),
     ).toBeVisible();
     const expectedLine =
-      error === "ValueError" ? 81 : error === "ValidationError" ? 2 : 1;
+      error === "ValueError"
+        ? 81
+        : error === "ValidationError"
+          ? 2
+          : error === "KeyError"
+            ? 3
+            : 1;
     const failure = page.getByRole("region", {
       name: "Python failure",
       exact: true,
     });
+    if (error === "KeyError") {
+      await expect(failure.locator("b")).toHaveText("KeyError: (0, 0)");
+      await expect(failure).not.toContainText("do not branch");
+    }
     if (error === "ValueError") {
       await editor(page).evaluate((element) => {
         element.scrollLeft = 1000;
@@ -3089,10 +3103,12 @@ test("browser backup failure preserves the last snapshot and exposes recovery wi
   await expect(editor(page)).toHaveValue(liveDraft);
   // Restore storage and retry in the same browser task so a pending automatic
   // save cannot remove the recovery button between these two test actions.
-  await notice.getByRole("button", { name: "Retry backup" }).evaluate((button) => {
-    window.__restoreWorkspaceStorage();
-    button.click();
-  });
+  await notice
+    .getByRole("button", { name: "Retry backup" })
+    .evaluate((button) => {
+      window.__restoreWorkspaceStorage();
+      button.click();
+    });
   await expect(notice).toHaveCount(0);
   await page.reload();
   await expect(editor(page)).toHaveValue(liveDraft);

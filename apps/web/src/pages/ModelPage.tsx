@@ -1,3 +1,7 @@
+import type { NotebookContext } from "../state/notebook-context";
+import { NotebookWorkspace } from "../components/NotebookWorkspace";
+import { NotebookPicker } from "../components/NotebookPicker";
+import { notebookExamples } from "../state/notebooks";
 import {
   detectedPythonStyle,
   pythonStyleLabels,
@@ -26,7 +30,7 @@ import {
 import { changedLines } from "../state/code-diff";
 import { PythonConsole } from "../components/PythonConsole";
 import type { PythonWorkspace } from "../hooks/usePythonWorkspace";
-import { codeTokens } from "../state/code-tokens";
+import { codeTokens, codeTokenLines } from "../state/code-tokens";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { lintOpenQASM } from "../../../../packages/quantum-workspace/domain/model-lint.mjs";
 import { EditorSyncBar } from "../components/EditorSyncBar";
@@ -46,6 +50,9 @@ import type { PlatformBridge } from "../hooks/usePlatformBridge";
 import type { ResearchTurn } from "../state/research-record";
 export function ModelPage({
   codePreview,
+  notebookEditor,
+  onNotebookEditorChange,
+  onNotebookContextChange,
   state,
   dispatch,
   compile,
@@ -55,10 +62,14 @@ export function ModelPage({
   onOpenProject,
   onFindFile,
   onAttachSelection,
+  onReferenceDocument,
   onRepairPython,
   backendLabel = "Configured CPU backend",
   research,
 }: {
+  notebookEditor: { active: boolean; id?: string };
+  onNotebookContextChange: (value: NotebookContext) => void;
+  onNotebookEditorChange: (value: { active: boolean; id?: string }) => void;
   projectWorkspace: ProjectWorkspace;
   onOpenProject: () => void;
   onFindFile: () => void;
@@ -67,6 +78,7 @@ export function ModelPage({
   backendLabel?: string;
   research?: { turns: ResearchTurn[]; bridge: PlatformBridge };
   onRepairPython: (run: PythonRun) => Promise<void>;
+  onReferenceDocument: () => void;
   onAttachSelection: (
     source: string,
     startLine: number,
@@ -77,6 +89,14 @@ export function ModelPage({
   dispatch: React.Dispatch<WorkspaceAction>;
   compile: (source?: string, name?: string) => Promise<void>;
 }) {
+  const notebookId =
+    (/^import:[a-f0-9]{32}$/.test(notebookEditor.id || "")
+      ? notebookEditor.id
+      : undefined) ||
+    notebookExamples.find((item) => item.id === notebookEditor.id)?.id ||
+    notebookExamples.find(
+      (item) => item.path === "community/basic_examples/superposition",
+    )!.id;
   const [reviewRequest, setReviewRequest] = useState<{
     id: string;
     sequence: number;
@@ -217,6 +237,11 @@ export function ModelPage({
   );
   const errors = diagnostics.filter((d) => d.severity === "error"),
     lines = state.source.split("\n");
+  const highlightedLines = useMemo(
+    () =>
+      codeTokenLines(codeTokens(state.source, isPython ? "python" : "qasm")),
+    [state.source, isPython],
+  );
   const lineStarts = useMemo(() => {
     let offset = 0;
     return state.source.split("\n").map((line) => {
@@ -323,22 +348,30 @@ export function ModelPage({
       className={"fq-model-workspace " + (focus ? "focused" : "")}
       style={{
         gridTemplateColumns:
-          configuration && !focus
+          configuration && !focus && !notebookEditor.active
             ? `minmax(0,1fr) 6px ${settingsWidth}px`
             : "minmax(0,1fr)",
       }}
     >
-      <section className="fq-model-center">
+      <section
+        className="fq-model-center"
+        data-notebook={notebookEditor.active}
+      >
         <div className="fq-pane-title">
-          MODEL EDITOR
-          <button
-            className="fq-control-icon"
-            aria-label="Find in code"
-            title="Find in code (⌘F / Ctrl+F)"
-            onClick={openFind}
-          >
-            <UIIcon name="code" size={14} />
-          </button>
+          <span className="fq-editor-mode-label">
+            {notebookEditor.active ? "NOTEBOOK" : "MODEL EDITOR"}
+          </span>
+          {!notebookEditor.active && (
+            <button
+              className="fq-control-icon"
+              aria-label="Find in code"
+              title="Find in code (⌘F / Ctrl+F)"
+              disabled={notebookEditor.active}
+              onClick={openFind}
+            >
+              <UIIcon name="code" size={14} />
+            </button>
+          )}
           <button
             className="fq-project-open"
             aria-label="Open project workspace"
@@ -362,20 +395,40 @@ export function ModelPage({
           >
             <button
               disabled={!!state.activeProjectTab && !isPython}
-              aria-pressed={isPython}
-              onClick={() => dispatch({ type: "language", language: "python" })}
+              aria-pressed={!notebookEditor.active && isPython}
+              onClick={() => {
+                onNotebookEditorChange({ ...notebookEditor, active: false });
+                dispatch({ type: "language", language: "python" });
+              }}
             >
               Python
             </button>{" "}
             <button
               disabled={!!state.activeProjectTab && isPython}
-              aria-pressed={!isPython}
-              onClick={() => dispatch({ type: "language", language: "qasm" })}
+              aria-pressed={!notebookEditor.active && !isPython}
+              onClick={() => {
+                onNotebookEditorChange({ ...notebookEditor, active: false });
+                dispatch({ type: "language", language: "qasm" });
+              }}
             >
               OpenQASM
             </button>
+            <button
+              aria-pressed={notebookEditor.active}
+              onClick={() =>
+                onNotebookEditorChange({ active: true, id: notebookId })
+              }
+            >
+              Notebook
+            </button>
           </div>
-          {isPython && (
+          {notebookEditor.active && (
+            <NotebookPicker
+              value={notebookId}
+              onChange={(id) => onNotebookEditorChange({ active: true, id })}
+            />
+          )}
+          {isPython && !notebookEditor.active && (
             <select
               className="fq-python-style"
               aria-label="Python authoring style"
@@ -397,7 +450,7 @@ export function ModelPage({
               <option value="synthesis">{pythonStyleLabels.synthesis}</option>
             </select>
           )}
-          {selection.end > selection.start && (
+          {!notebookEditor.active && selection.end > selection.start && (
             <button
               className="fq-selection-action"
               onMouseDown={(event) => event.preventDefault()}
@@ -415,6 +468,15 @@ export function ModelPage({
             <UIIcon name={focus ? "restore" : "expand"} />
           </button>
         </div>
+        {notebookEditor.active && (
+          <NotebookWorkspace
+            key={notebookId}
+            notebookId={notebookId}
+            onContextChange={onNotebookContextChange}
+            onReference={onReferenceDocument}
+            onImport={(id) => onNotebookEditorChange({ active: true, id })}
+          />
+        )}
         <ProjectTabs
           state={state}
           dispatch={dispatch}
@@ -428,7 +490,10 @@ export function ModelPage({
         />
         <div className="fq-toolbar fq-model-toolbar" inert={!!codePreview}>
           <div className="fq-model-document">
-            <span className="fq-filename">
+            <span
+              className="fq-filename"
+              title={`${state.name}.${isPython ? "py" : "qasm"}`}
+            >
               <UIIcon name="file" size={14} />
               <span>
                 {state.name}.{isPython ? "py" : "qasm"}
@@ -461,102 +526,132 @@ export function ModelPage({
               }}
             />
           </div>
-          <button
-            onClick={() => dispatch({ type: "undo" })}
-            disabled={!state.undo.length}
+          <div
+            className="fq-model-commands"
+            role="toolbar"
+            aria-label="Model commands"
           >
-            <UIIcon name="undo" size={14} /> Undo
-          </button>
-          <button
-            disabled={projectWorkspace.busy || python.submitting}
-            title="Save current file (⌘S / Ctrl+S)"
-            onClick={() => void projectWorkspace.save()}
-          >
-            Save
-          </button>
-          {state.project && needsProjectSave && (
+            <div className="fq-model-command-group">
+              <button
+                className="fq-control-icon"
+                aria-label="Undo"
+                title="Undo last edit"
+                onClick={() => dispatch({ type: "undo" })}
+                disabled={!state.undo.length}
+              >
+                <UIIcon name="undo" size={14} />
+              </button>
+              <button
+                disabled={projectWorkspace.busy || python.submitting}
+                title="Save current file (⌘S / Ctrl+S)"
+                onClick={() => void projectWorkspace.save()}
+              >
+                <UIIcon name="save" size={14} /> Save
+              </button>
+              {state.project && needsProjectSave && (
+                <button
+                  disabled={projectWorkspace.busy || python.submitting}
+                  onClick={() => void projectWorkspace.saveAll()}
+                >
+                  Save all
+                </button>
+              )}
+              <button
+                className="fq-control-icon"
+                title="Download model"
+                aria-label="Download model"
+                onClick={() =>
+                  download(
+                    state.name + (isPython ? ".py" : ".qasm"),
+                    state.source,
+                  )
+                }
+              >
+                <UIIcon name="download" />
+              </button>
+            </div>
+            <div className="fq-model-command-group">
+              <button
+                className="fq-model-reference"
+                aria-label="Reference in chat ↗"
+                title="Reference in chat · Attach a snapshot to your next message without sending it"
+                onClick={onReferenceDocument}
+              >
+                <UIIcon name="arrow" size={14} />
+                <span className="fq-model-command-label">Reference</span>
+              </button>
+              <button
+                aria-label="Configuration"
+                title={
+                  isPython ? "Python environment" : "Synthesis configuration"
+                }
+                aria-expanded={configuration}
+                onClick={() => setConfiguration(!configuration)}
+              >
+                <UIIcon name="settings" size={14} />
+                <span className="fq-model-command-label">
+                  {isPython ? "Environment" : "Configuration"}
+                </span>
+              </button>
+            </div>
             <button
-              disabled={projectWorkspace.busy || python.submitting}
-              onClick={() => void projectWorkspace.saveAll()}
+              className="primary fq-run-primary"
+              aria-label={
+                isPython
+                  ? needsProjectSave
+                    ? "Save & run"
+                    : "Run Python"
+                  : "Compile"
+              }
+              disabled={!canRun}
+              aria-keyshortcuts="Meta+Enter Control+Enter"
+              title={
+                needsProjectSave
+                  ? "Save changed project files, then run this Python entry"
+                  : "Run the current code"
+              }
+              onClick={runCurrent}
             >
-              Save all
+              <UIIcon
+                name={
+                  !canRun &&
+                  (python.submitting ||
+                    loadingRun ||
+                    ["queued", "running"].includes(python.run?.status || "") ||
+                    state.busy)
+                    ? "refresh"
+                    : isPython
+                      ? "play"
+                      : "circuit"
+                }
+                className={
+                  !canRun &&
+                  (python.submitting ||
+                    loadingRun ||
+                    ["queued", "running"].includes(python.run?.status || "") ||
+                    state.busy)
+                    ? "fq-ui-busy"
+                    : ""
+                }
+                size={14}
+              />
+              {isPython
+                ? python.submitting
+                  ? "Starting…"
+                  : loadingRun
+                    ? "Loading run…"
+                    : python.run?.status === "queued"
+                      ? "Queued…"
+                      : python.run?.status === "running"
+                        ? "Running…"
+                        : needsProjectSave
+                          ? "Save & run"
+                          : "Run Python"
+                : state.busy
+                  ? "Compiling…"
+                  : "Compile"}
             </button>
-          )}
-          <button
-            className="fq-control-icon"
-            title="Download model"
-            aria-label="Download model"
-            onClick={() =>
-              download(state.name + (isPython ? ".py" : ".qasm"), state.source)
-            }
-          >
-            <UIIcon name="download" />
-          </button>
-          <button
-            aria-label="Configuration"
-            aria-expanded={configuration}
-            onClick={() => setConfiguration(!configuration)}
-          >
-            <UIIcon name="settings" size={14} />
-            {isPython ? "Environment" : "Configuration"}
-          </button>
-          <button
-            className="primary fq-run-primary"
-            aria-label={
-              isPython
-                ? needsProjectSave
-                  ? "Save & run"
-                  : "Run Python"
-                : "Compile"
-            }
-            disabled={!canRun}
-            aria-keyshortcuts="Meta+Enter Control+Enter"
-            title={
-              needsProjectSave
-                ? "Save changed project files, then run this Python entry"
-                : "Run the current code"
-            }
-            onClick={runCurrent}
-          >
-            <UIIcon
-              name={
-                !canRun &&
-                (python.submitting ||
-                  loadingRun ||
-                  ["queued", "running"].includes(python.run?.status || "") ||
-                  state.busy)
-                  ? "refresh"
-                  : isPython
-                    ? "play"
-                    : "circuit"
-              }
-              className={
-                !canRun &&
-                (python.submitting ||
-                  loadingRun ||
-                  ["queued", "running"].includes(python.run?.status || "") ||
-                  state.busy)
-                  ? "fq-ui-busy"
-                  : ""
-              }
-              size={14}
-            />
-            {isPython
-              ? python.submitting
-                ? "Starting…"
-                : loadingRun
-                  ? "Loading run…"
-                  : python.run?.status === "queued"
-                    ? "Queued…"
-                    : python.run?.status === "running"
-                      ? "Running…"
-                      : needsProjectSave
-                        ? "Save & run"
-                        : "Run Python"
-              : state.busy
-                ? "Compiling…"
-                : "Compile"}
-          </button>
+          </div>
         </div>
         {contextMenu && (
           <div
@@ -618,7 +713,7 @@ export function ModelPage({
               transform: `translate(${-scroll.left}px,${-scroll.top}px)`,
             }}
           >
-            {lines.map((text, i) => (
+            {highlightedLines.map((tokens, i) => (
               <span
                 data-editor-line={i + 1}
                 key={(state.editorLink?.updated || 0) + ":" + i}
@@ -628,7 +723,7 @@ export function ModelPage({
                 ].join(" ")}
               >
                 {markCodeMatch(
-                  codeTokens(text || " ", isPython ? "python" : "qasm"),
+                  tokens.length ? tokens : [{ text: " ", kind: "plain" }],
                   findMatch?.source === state.source
                     ? findMatch.start - lineStarts[i]
                     : -1,
@@ -821,7 +916,7 @@ export function ModelPage({
               ) : (
                 <>
                   <div className="fq-pane-title">
-                    MODEL ERRORS{" "}
+                    <span className="fq-model-output-title">Diagnostics</span>{" "}
                     <span>
                       {errors.length ? `${errors.length} errors` : ""}
                     </span>
@@ -884,7 +979,7 @@ export function ModelPage({
           </>
         )}
       </section>
-      {configuration && !focus && (
+      {configuration && !focus && !notebookEditor.active && (
         <>
           <Separator
             label="Resize synthesis configuration"

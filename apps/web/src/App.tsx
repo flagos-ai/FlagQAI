@@ -1,3 +1,9 @@
+import { notebookExamples } from "./state/notebooks";
+import {
+  notebookContext,
+  notebookAttachment,
+  type NotebookContext,
+} from "./state/notebook-context";
 import { ToolbarMenu } from "./components/ToolbarMenu";
 import { ComputeEnvironment } from "./components/ComputeEnvironment";
 import { ResearchPackages } from "./components/ResearchPackages";
@@ -59,7 +65,38 @@ export default function App() {
     [sidebarWidth, setSidebarWidth] = usePanelSize("sidebar", 280, 170, 480),
     [guide, setGuide] = useState(false),
     [uploadError, setUploadError] = useState("");
-  const bridge = usePlatformBridge(state, dispatch, agent);
+  const [notebookEditor, setNotebookEditor] = useState<{
+    active: boolean;
+    id?: string;
+  }>(() => {
+    try {
+      const saved = JSON.parse(
+        localStorage.getItem("fq-notebook-editor-v1") || "null",
+      );
+      return {
+        active: saved?.active === true,
+        id: typeof saved?.id === "string" ? saved.id : undefined,
+      };
+    } catch {
+      return { active: false };
+    }
+  });
+  const [notebookSnapshot, setNotebookSnapshot] = useState<NotebookContext>();
+  const activeNotebook = useMemo(() => {
+    if (state.page !== "model" || !notebookEditor.active) return undefined;
+    const entry =
+      notebookExamples.find((item) => item.id === notebookEditor.id) ||
+      notebookExamples.find(
+        (item) => item.path === "community/basic_examples/superposition",
+      )!;
+    const id = /^import:[a-f0-9]{32}$/.test(notebookEditor.id || "")
+      ? notebookEditor.id!
+      : entry.id;
+    return notebookSnapshot?.id === id
+      ? notebookSnapshot
+      : notebookContext(id, entry.id === id ? entry.title : id, []);
+  }, [state.page, notebookEditor, notebookSnapshot]);
+  const bridge = usePlatformBridge(state, dispatch, agent, activeNotebook);
   const researchTurns = useMemo(
     () =>
       researchTurnsFromProgress(progressTurns(agent.view, []), bridge.actions),
@@ -76,6 +113,22 @@ export default function App() {
   }, [bridge.ready, bridge.client, bridge.session]);
   const editorSync = useEditorSync(state, dispatch);
   const projectWorkspace = useProjectWorkspace(state, dispatch);
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "fq-notebook-editor-v1",
+        JSON.stringify(notebookEditor),
+      );
+    } catch {
+      /* Keep the editor usable without storage. */
+    }
+  }, [notebookEditor]);
+  const openNotebook = (id: string) => setNotebookEditor({ active: true, id });
+  const openProjectFile = async (path: string) => {
+    const opened = await projectWorkspace.openFile(path);
+    if (opened) setNotebookEditor((value) => ({ ...value, active: false }));
+    return opened;
+  };
   const [projectRequest, setProjectRequest] = useState(0);
   const [quickOpen, setQuickOpen] = useState(false);
   useEffect(() => {
@@ -122,12 +175,14 @@ export default function App() {
       } else {
         const model = await readModelImport(file);
         if (program) await compile(model.source, model.name);
-        else
+        else {
+          setNotebookEditor((value) => ({ ...value, active: false }));
           dispatch({
             type: "model",
             model: { ...model, language: kind },
             preserveDraft: true,
           });
+        }
       }
     } catch (error) {
       setUploadError(
@@ -145,6 +200,7 @@ export default function App() {
     if (state.agentOpen)
       return (
         <AgentPanel
+          notebook={activeNotebook}
           language={state.page === "program" ? "qasm" : state.language}
           agent={agent}
           bridge={bridge}
@@ -208,25 +264,30 @@ export default function App() {
     if (state.page === "model")
       return (
         <ModelLibrary
+          onOpenNotebook={openNotebook}
           onCreateNotebook={async (id, request) => {
             const result = await projectWorkspace.createNotebook(id, request);
-            if (result) setProjectRequest((value) => value + 1);
+            if (result) {
+              setNotebookEditor((value) => ({ ...value, active: false }));
+              setProjectRequest((value) => value + 1);
+            }
             return result;
           }}
           projectRequest={projectRequest}
           projectPanel={
             <ProjectExplorer
               state={state}
-              workspace={projectWorkspace}
+              workspace={{ ...projectWorkspace, openFile: openProjectFile }}
               dispatch={dispatch}
             />
           }
           models={state.models}
           folders={state.modelFolders}
           dispatch={dispatch}
-          onSelect={(model) =>
-            dispatch({ type: "model", model, preserveDraft: true })
-          }
+          onSelect={(model) => {
+            setNotebookEditor((value) => ({ ...value, active: false }));
+            dispatch({ type: "model", model, preserveDraft: true });
+          }}
           onUpload={(file) => void upload(file)}
           busy={state.busy || importing}
           importing={importing}
@@ -347,7 +408,7 @@ export default function App() {
         <QuickOpen
           project={state.project}
           activePath={state.editorLink?.project?.path}
-          onOpen={projectWorkspace.openFile}
+          onOpen={openProjectFile}
           workspaceBusy={projectWorkspace.busy}
           error={projectWorkspace.error}
           onClose={() => setQuickOpen(false)}
@@ -459,6 +520,9 @@ export default function App() {
           )}
           {state.page === "model" && (
             <ModelPage
+              notebookEditor={notebookEditor}
+              onNotebookContextChange={setNotebookSnapshot}
+              onNotebookEditorChange={setNotebookEditor}
               codePreview={bridge.liveCode}
               onFindFile={() => setQuickOpen(true)}
               projectWorkspace={projectWorkspace}
@@ -510,6 +574,23 @@ export default function App() {
                   file,
                 });
                 setPendingRepair(request);
+                dispatch({ type: "agent", open: true });
+              }}
+              onReferenceDocument={() => {
+                setPendingAttachment(
+                  activeNotebook
+                    ? notebookAttachment(activeNotebook)
+                    : {
+                        id: "document-" + crypto.randomUUID(),
+                        name:
+                          state.name +
+                          (state.language === "python" ? ".py" : ".qasm"),
+                        source: state.source,
+                        language: state.language,
+                        kind: "model",
+                        workspaceFile: state.editorLink?.path,
+                      },
+                );
                 dispatch({ type: "agent", open: true });
               }}
               onAttachSelection={(source, startLine, endLine) => {

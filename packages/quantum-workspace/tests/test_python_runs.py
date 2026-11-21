@@ -185,6 +185,9 @@ print('saved', result.counts, flush=True)
         self.assertEqual(report['sdk_version'], fq.__version__)
         self.assertEqual(report['environment']['python'], sys.executable)
         self.assertIn('fq.run', report['apis'])
+        for name in ('Module', 'RuntimePolicy', 'train'):
+            if hasattr(fq, name):
+                self.assertIn('fq.' + name, report['apis'])
         self.assertEqual(self.runs.store.list(), [])
         self.assertEqual(bridge.events(identity['client'], identity['session'], 0), [])
         with self.assertRaises(BridgeConflict):

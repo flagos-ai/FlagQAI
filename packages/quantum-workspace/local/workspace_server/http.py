@@ -28,6 +28,7 @@ from .reproduction import Reproductions
 from .notebooks import create_notebook_project, notebook_bundle
 from .notebook_environment import check_environment
 from .projects import ProjectConflict
+from .notebook_sessions import NotebookSessions
 
 
 def create_server(settings, service):
@@ -38,6 +39,7 @@ def create_server(settings, service):
         service.execution_profiles = ExecutionProfiles(environments)
     experiments = ExperimentImports(settings, runtime_settings=environments.snapshot if environments else None)
     python_runs = PythonRuns(settings, service, experiments)
+    notebooks = NotebookSessions(settings, python_runs)
     research_packages = ResearchPackages(settings, experiments, python_runs)
     reproductions = Reproductions(settings, research_packages, python_runs, experiments, environments)
     bridge = WorkspaceBridge(settings, service, python_runs, research_packages)
@@ -284,6 +286,12 @@ def create_server(settings, service):
                 self.wfile.write(content)
                 return
             if self.path == '/api/python/environment': return self.reply(python_runs.environment())
+            notebook = re.fullmatch(r'/api/notebook-sessions/([a-f0-9]{32})', self.path)
+            if notebook:
+                try:
+                    return self.reply(notebooks.read(notebook.group(1)))
+                except FileNotFoundError as error:
+                    return self.reply({'error': str(error)}, 404)
             environment_checks = re.fullmatch(r'/api/python/runs/([a-f0-9-]{36})/environment-checks', self.path)
             if environment_checks:
                 try:
@@ -343,6 +351,26 @@ def create_server(settings, service):
         def do_POST(self):
             if not self.allowed():
                 return self.reply({'error': 'Only local same-origin access is allowed.'}, 403)
+            notebook = re.fullmatch(r'/api/notebook-sessions(?:/import|/([a-f0-9]{32})/(save|execute|interrupt|restart|assist))?', self.path)
+            if notebook:
+                try:
+                    length = int(self.headers.get('Content-Length', '0'))
+                    if self.headers.get('Content-Type', '').split(';')[0] != 'application/json' or not 0 < length <= 1024 * 1024:
+                        raise ValueError('Use bounded notebook JSON.')
+                    data = json.loads(self.rfile.read(length))
+                    if not isinstance(data, dict):
+                        raise ValueError('Use a notebook object.')
+                    key, action = notebook.groups()
+                    if self.path.endswith('/import'): return self.reply(notebooks.import_notebook(data), 201)
+                    if not key: return self.reply(notebooks.create(data), 201)
+                    if action == 'assist': return self.reply(notebooks.assist(key, data))
+                    if action == 'save': return self.reply(notebooks.save(key, data))
+                    if action == 'execute': return self.reply(notebooks.execute(key, data), 202)
+                    return self.reply(notebooks.control(key, action))
+                except ProjectConflict as error: return self.reply({'error': str(error)}, 409)
+                except FileNotFoundError as error: return self.reply({'error': str(error)}, 404)
+                except (ValueError, KeyError, TypeError) as error: return self.reply({'error': str(error)}, 400)
+                except OSError: return self.reply({'error': 'Cannot access notebook workspace. Saved drafts are retained.'}, 503)
             research_action = re.fullmatch(
                 r'/api/research-runs/(invsqrt-[a-f0-9]{32})/(baseline|revision|decision|coordination)', self.path,
             )
@@ -539,6 +567,7 @@ def create_server(settings, service):
     server = ThreadingHTTPServer(('127.0.0.1', settings.port), WorkspaceHandler)
     original_close = server.server_close
     def close():
+        notebooks.close()
         python_runs.close()
         original_close()
     server.server_close = close
