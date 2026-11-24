@@ -98,11 +98,8 @@ for name,path in [('LICENSE',root/'LICENSE'),('CLASSIQ_LICENSE.txt',base/'CLASSI
     (out/name).write_bytes(path.read_bytes())
 (out/'NOTICE.txt').write_text(f'Native FlagQuantum notebooks and Python sources pinned at {REVISION}.\n'
     'Original provenance, copyrights and licenses are retained. Native workflows derive from the Classiq library; both licenses apply.\n'
-    'Python sources are unchanged; generated launchers invoke the documented Python entry and save its last observed fq.run result.\n'
-    'The cooling-system workbench walkthrough expands the pinned implementations into cells. Its upstream notebook is retained separately; catalog presentation metadata records both hashes.\n')
+    'Notebook bytes and Python sources are unchanged; generated launchers invoke the documented Python entry and save its last observed fq.run result.\n')
 print(f'Vendored {len(entries)} notebooks; {sum(not e["unavailableReason"] for e in entries)} bounded companion projects.')
 
-from cooling_walkthrough import apply as expand_cooling
-expand_cooling(out, index)
 from implementation import generate as generate_implementation
 generate_implementation(out)

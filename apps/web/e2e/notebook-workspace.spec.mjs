@@ -16,11 +16,11 @@ test("IPython cell workspace retains state, receipts, edits and output", async (
       .getByRole("textbox", { name: "Search models" })
       .fill("superposition");
     await page
-      .getByRole("region", { name: "Official notebooks" })
-      .getByRole("button", { name: /Superposition in native FlagQuantum/ })
-      .click();
-    await page
-      .getByRole("button", { name: "Open notebook workspace", exact: true })
+      .getByRole("region", { name: "FlagQuantum synthesis files" })
+      .getByRole("button", {
+        name: "community/basic_examples/superposition/walkthrough.ipynb",
+        exact: true,
+      })
       .click();
   }
   await open();
@@ -39,6 +39,9 @@ test("IPython cell workspace retains state, receipts, edits and output", async (
   }
   await workspace
     .getByRole("button", { name: "+ Code cell", exact: true })
+    .click();
+  await workspace
+    .getByRole("button", { name: "Edit markdown cell 1", exact: true })
     .click();
   await workspace.getByRole("textbox").first().fill("# draft markdown");
   await workspace
@@ -138,9 +141,9 @@ test("IPython cell workspace retains state, receipts, edits and output", async (
   await expect(workspace.getByRole("alert")).toContainText(
     "changed in another window",
   );
-  await expect(workspace.getByRole("textbox").first()).toHaveValue(
-    "# draft markdown",
-  );
+  await expect(
+    workspace.getByRole("heading", { name: "draft markdown", exact: true }),
+  ).toBeVisible();
   const conflictDraft = page.waitForEvent("download");
   await workspace
     .getByRole("button", { name: "Download local draft and load saved cells" })
@@ -149,9 +152,12 @@ test("IPython cell workspace retains state, receipts, edits and output", async (
     await readFile(await (await conflictDraft).path(), "utf8"),
   );
   expect(preserved.cells[0].source).toBe("# draft markdown");
-  await expect(workspace.getByRole("textbox").first()).toHaveValue(
-    "# saved in another window",
-  );
+  await expect(
+    workspace.getByRole("heading", {
+      name: "saved in another window",
+      exact: true,
+    }),
+  ).toBeVisible();
   await page
     .getByRole("group", { name: "Source language" })
     .getByRole("button", { name: "Python", exact: true })
@@ -253,7 +259,7 @@ test("Notebook renders readable Markdown and editable highlighted Python", async
     notebook.getByRole("button", { name: "Run all", exact: true }),
   ).toBeEnabled();
   const markdown = notebook.getByRole("region", {
-    name: "markdown cell 2",
+    name: "markdown cell 1",
     exact: true,
   });
   await expect(
@@ -265,7 +271,7 @@ test("Notebook renders readable Markdown and editable highlighted Python", async
   await expect(markdown.getByRole("textbox")).toHaveCount(0);
   await page.screenshot({ path: "/private/tmp/flagqai-modern-notebook.png" });
   await markdown
-    .getByRole("button", { name: "Edit markdown cell 2", exact: true })
+    .getByRole("button", { name: "Edit markdown cell 1", exact: true })
     .click();
   const text = markdown.getByRole("textbox");
   await text.fill(
@@ -286,18 +292,18 @@ test("Notebook renders readable Markdown and editable highlighted Python", async
   await expect(markdown.locator("em")).toHaveText("careful analysis");
   await expect(markdown.getByRole("listitem")).toHaveCount(2);
   await markdown
-    .getByLabel("Markdown cell 2 preview", { exact: true })
+    .getByLabel("Markdown cell 1 preview", { exact: true })
     .dblclick();
   await expect(text).toHaveValue(/A \*\*verified result\*\*/);
   await markdown
-    .getByRole("button", { name: "Render markdown cell 2" })
+    .getByRole("button", { name: "Render markdown cell 1" })
     .click();
-  const code = notebook.getByLabel("Edit code cell 1", { exact: true });
+  const code = notebook.getByLabel("Edit code cell 3", { exact: true });
   await code.fill(
     "import flagquantum as fq\n\ndef experiment():\n    return 42\n\nprint('ready') # local result",
   );
   const cell = notebook.getByRole("region", {
-    name: "code cell 1",
+    name: "code cell 3",
     exact: true,
   });
   await expect(cell.locator(".fq-token-keyword").first()).toHaveText("import");
@@ -590,13 +596,13 @@ test("cooling notebook imports its complete bundled companion project", async ({
   await page.getByRole("button", { name: "Examples", exact: true }).click();
   await page
     .getByRole("textbox", { name: "Search models" })
-    .fill("Cooling-system");
+    .fill("cooling_systems_optimization/overview/walkthrough.ipynb");
   await page
-    .getByRole("region", { name: "Official notebooks" })
-    .getByRole("button", { name: /Cooling-system optimization/ })
-    .click();
-  await page
-    .getByRole("button", { name: "Open notebook workspace", exact: true })
+    .getByRole("region", { name: "FlagQuantum synthesis files" })
+    .getByRole("button", {
+      name: "applications/automotive/cooling_systems_optimization/overview/walkthrough.ipynb",
+      exact: true,
+    })
     .click();
   const workspace = page.getByRole("region", {
     name: "Notebook workspace",
@@ -612,7 +618,7 @@ test("cooling notebook imports its complete bundled companion project", async ({
     const editor = cell.getByRole("textbox");
     if (
       (await editor.count()) &&
-      (await editor.inputValue()).includes("import PhaseFit, fit, response")
+      (await editor.inputValue()).includes("import full_model")
     ) {
       const source = await editor.inputValue();
       await cell
@@ -641,11 +647,11 @@ test("notebook output images fit without cropping or distorting", async ({
     .getByRole("textbox", { name: "Search models" })
     .fill("superposition");
   await page
-    .getByRole("region", { name: "Official notebooks" })
-    .getByRole("button", { name: /Superposition in native FlagQuantum/ })
-    .click();
-  await page
-    .getByRole("button", { name: "Open notebook workspace", exact: true })
+    .getByRole("region", { name: "FlagQuantum synthesis files" })
+    .getByRole("button", {
+      name: "community/basic_examples/superposition/walkthrough.ipynb",
+      exact: true,
+    })
     .click();
   const workspace = page.getByRole("region", {
     name: "Notebook workspace",

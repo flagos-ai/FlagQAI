@@ -163,8 +163,11 @@ class NotebookSessionTests(unittest.TestCase):
         entries = json.loads((self.settings.web_root/'notebooks/catalog.json').read_text())['entries']
         item = next(item for item in entries if json.loads((self.settings.web_root/'notebooks'/(item['id']+'.json')).read_text())['inputHashes'])
         doc = self.sessions.create({'notebook_id': item['id'], 'request_id': '9'*32})
-        self.assertIn('from notebook_inputs import prepare', doc['cells'][0]['source'])
+        original = json.loads((self.settings.web_root/'notebooks'/(item['id']+'.ipynb')).read_text())
+        self.assertEqual([cell['source'] for cell in doc['cells']],
+                         [''.join(cell['source']) for cell in original['cells']])
         self.key, self.doc = doc['id'], doc
+        self.save(['print(1)'])
         run, _ = self.execute([0])
         self.assertEqual(run['status'], 'completed', run)
         bundle = json.loads((self.settings.web_root/'notebooks'/(item['id']+'.json')).read_text())

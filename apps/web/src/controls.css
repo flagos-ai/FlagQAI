@@ -2642,6 +2642,81 @@
   font-size: 12px;
   color: var(--accent, #2563eb);
 }
+
+.fq-source-library {
+  padding: 8px 0;
+}
+.fq-source-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 4px;
+  font-size: 12px;
+}
+.fq-source-heading small {
+  color: var(--muted);
+  font-family: monospace;
+}
+.fq-source-children {
+  margin-left: 12px;
+  border-left: 1px solid var(--border);
+  padding-left: 3px;
+}
+.fq-workspace .fq-source-library button.fq-source-row {
+  width: 100%;
+  min-width: 0;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  padding: 4px 5px;
+  text-align: left;
+  font-size: 12px;
+}
+.fq-source-row > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fq-source-row > svg {
+  flex-shrink: 0;
+}
+.fq-source-row .expanded {
+  transform: rotate(90deg);
+}
+.fq-source-library .fq-source-row:hover,
+.fq-source-library .fq-source-row[aria-current="true"] {
+  background: var(--surface-raised);
+}
+.fq-source-library .fq-source-file {
+  padding-left: 23px;
+}
+.fq-source-preview {
+  width: min(1000px, 94vw);
+}
+.fq-source-preview header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.fq-source-preview h2 {
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.fq-source-preview pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.fq-source-preview img {
+  max-width: 100%;
+  height: auto;
+}
 .fq-notebook-implementation {
   width: min(1120px, 94vw);
 }

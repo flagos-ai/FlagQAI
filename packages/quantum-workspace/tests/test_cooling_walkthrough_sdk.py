@@ -24,7 +24,12 @@ class CoolingWalkthroughSDKTests(unittest.TestCase):
         web = Path(__file__).resolve().parents[3] / 'apps/web/public/notebooks'
         identity = '6281132ae7b11b3c3fea3e8f'
         bundle = json.loads((web / (identity + '.json')).read_text())
-        document = json.loads((web / (identity + '.ipynb')).read_text())
+        import importlib.util
+        generator = web.parents[1] / 'scripts/notebooks/cooling_walkthrough.py'
+        spec = importlib.util.spec_from_file_location('cooling_walkthrough', generator)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        document = json.loads(module.build(bundle['files'], 'offline-test', 'offline-test'))
         before = Path.cwd()
         old_path = sys.path[:]
         namespace = {'__name__': '__main__'}

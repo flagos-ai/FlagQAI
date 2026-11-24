@@ -14,7 +14,7 @@ import uuid
 
 from .job_store import SQLiteJobStore
 from .notebooks import notebook_bundle
-from .projects import ProjectConflict
+from .projects import ProjectConflict, parts
 
 
 def identity(value):
@@ -56,11 +56,9 @@ class NotebookSessions:
             _, item, bundle, raw = notebook_bundle(self.settings.web_root, data.get('notebook_id'))
             document = json.loads(raw)
             cells = [{'id': uuid.uuid4().hex, 'cell_type': cell['cell_type'],
-                      'source': ''.join(cell['source'])} for cell in document['cells']]
-            if bundle.get('inputHashes'):
-                cells.insert(0, {'id': uuid.uuid4().hex, 'cell_type': 'code',
-                    'source': '# Prepare the pinned data files in this notebook workspace.\nfrom notebook_inputs import prepare\nprepare()'})
+                      'source': ''.join(cell['source']), 'notebook': cell} for cell in document['cells']]
             record = {'id': key, 'status': 'saved', 'notebook_id': item['id'], 'title': item['title'],
+                      'metadata': document.get('metadata', {}),
                       'revision': uuid.uuid4().hex, 'cells': cells}
             self.documents.put(record)
             return self.read(key)
@@ -262,6 +260,25 @@ class NotebookSessions:
                     target.parent.mkdir(parents=True, exist_ok=True)
                     if not target.exists():
                         target.write_text(source)
+                # Restore pinned data only on explicit execution, without adding cells
+                # or replacing an existing research input.
+                for name, expected in bundle.get('inputHashes', {}).items():
+                    parts(name)
+                    if not name.startswith('examples/synthesis/'):
+                        raise ValueError('Notebook input must belong to the synthesis source tree.')
+                    target = root / name
+                    if target.exists():
+                        continue
+                    raw = (self.settings.web_root / 'examples/synthesis-files' /
+                           name.removeprefix('examples/synthesis/')).read_bytes()
+                    if sha256(raw).hexdigest() != expected:
+                        raise ValueError('Notebook input differs from its pinned source.')
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    try:
+                        with target.open('xb') as stream:
+                            stream.write(raw)
+                    except FileExistsError:
+                        pass
                 log = tempfile_log(root)
                 process = subprocess.Popen([selected.local_python or sys.executable, '-u', '-c',
                     Path(__file__).with_name('notebook_kernel_worker.py').read_text()], cwd=root,

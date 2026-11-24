@@ -8,6 +8,7 @@ import {
 } from "react";
 import { notebookExamples } from "../state/notebooks";
 import { UIIcon } from "./UIIcon";
+import { synthesisFiles } from "../state/synthesis-files";
 
 export function NotebookPicker({
   value,
@@ -32,13 +33,30 @@ export function NotebookPicker({
           ? item.path.split("/").at(-2)!.replaceAll("_", " ")
           : item.title,
     }));
+    let source;
+    if (value.startsWith("import:")) {
+      try {
+        const file = synthesisFiles.find(
+          (file) =>
+            file.notebookId &&
+            localStorage.getItem(
+              `fq-synthesis-notebook-v1:${file.path}:${file.sha256}`,
+            ) === value.slice(7),
+        );
+        source = examples.find((item) => item.id === file?.notebookId);
+      } catch {
+        /* The document remains available without its source label. */
+      }
+    }
     return value.startsWith("import:")
       ? [
           {
             id: value,
-            title: "Imported notebook",
-            label: "Imported notebook",
-            path: "Local editable copy",
+            title: source?.title || "Imported notebook",
+            label: source?.label || "Imported notebook",
+            path: source
+              ? source.path + "/walkthrough.ipynb"
+              : "Local editable copy",
             category: "Local",
             unavailableReason: "",
           },
