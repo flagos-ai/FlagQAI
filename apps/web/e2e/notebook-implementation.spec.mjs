@@ -11,7 +11,7 @@ const notebook = catalog.entries.find((item) =>
 );
 test("cooling notebook exposes imported quantum implementation without editing cells or running code", async ({
   page,
-}) => {
+}, testInfo) => {
   const source =
     "from examples.synthesis.applications.automotive.cooling_systems_optimization.overview import quantum, workflow";
   let executions = 0;
@@ -62,7 +62,7 @@ test("cooling notebook exposes imported quantum implementation without editing c
     "/workflow.py",
   );
   await page.screenshot({
-    path: "/private/tmp/flagqai-notebook-implementation.png",
+    path: testInfo.outputPath("notebook-implementation.png"),
   });
   await dialog.getByRole("button", { name: "Close implementation" }).click();
   await expect(

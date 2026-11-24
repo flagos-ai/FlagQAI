@@ -12,7 +12,7 @@ const notebook = catalog.entries.find(
 
 test("cell status separates execution state from retained output provenance", async ({
   page,
-}) => {
+}, testInfo) => {
   const cells = [
     "current",
     "previous",
@@ -96,5 +96,5 @@ test("cell status separates execution state from retained output provenance", as
   await expect(cell(6).locator(".fq-notebook-status-badge")).toHaveText(
     "Not run",
   );
-  await page.screenshot({ path: "/private/tmp/flagqai-notebook-status.png" });
+  await page.screenshot({ path: testInfo.outputPath("notebook-status.png") });
 });

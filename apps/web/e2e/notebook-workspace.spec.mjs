@@ -266,7 +266,7 @@ test("Notebook tab uses the main editor and keeps all drafts when switching mode
 
 test("Notebook renders readable Markdown and editable highlighted Python", async ({
   page,
-}) => {
+}, testInfo) => {
   await page.goto("/#model");
   await page
     .getByRole("group", { name: "Source language" })
@@ -290,7 +290,7 @@ test("Notebook renders readable Markdown and editable highlighted Python", async
     }),
   ).toBeVisible();
   await expect(markdown.getByRole("textbox")).toHaveCount(0);
-  await page.screenshot({ path: "/private/tmp/flagqai-modern-notebook.png" });
+  await page.screenshot({ path: testInfo.outputPath("modern-notebook.png") });
   await markdown
     .getByRole("button", { name: "Edit markdown cell 1", exact: true })
     .click();

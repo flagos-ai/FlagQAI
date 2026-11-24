@@ -6,6 +6,32 @@ workspace and IPython kernel. Two independent notebooks may run concurrently;
 the original cells, numerical parameters and optimization iterations are kept.
 No model calls are made.
 
+## Final result
+
+**212/212 notebooks and all 2,495 original code cells completed.** The final
+environment has 213 immutable attempts: 212 completed and one retained initial
+graph-coloring interruption. No original notebook cells were edited, skipped or
+replaced with cached outputs. No output cells reached the truncation limit.
+Every execution receipt, independent environment fingerprint and recorded
+artifact checksum was checked before exporting the summary.
+
+| Category | Completed notebooks |
+| --- | ---: |
+| Algorithms | 45 |
+| Applications | 69 |
+| Community | 18 |
+| Functions | 31 |
+| Tutorials | 49 |
+| Total | 212 |
+
+The machine-readable final report is
+[`notebook-corpus-native-2026-11-24.json`](notebook-corpus-native-2026-11-24.json).
+Minimum graph coloring completed its unchanged rerun in 1,922.58 seconds
+(about 32 minutes). Other long examples include Maxwell 2D (1,597.349 seconds),
+maximum induced k-color subgraph (1,438.627 seconds) and glued trees
+(838.285 seconds). These are observed local elapsed times, not promises for
+other machines.
+
 ## Inputs and runtime
 
 The source tree is pinned to FlagQuantum commit
@@ -30,7 +56,7 @@ not isolated performance benchmarks. The default interactive profile remains
 two threads and a 600-second cell deadline; long examples need the recorded
 profile rather than an implicit unlimited execution budget.
 
-Minimum graph coloring exceeded the initial cell deadline. Its separate retry
+Minimum graph coloring exceeded the initial cell deadline. Its successful retry
 profile uses the same original cells and four CPU threads, with a 7,200-second
 cell deadline and a 14,400-second notebook deadline. The initial interruption
 remains in the ledger; the larger budget does not reduce optimization iterations.
