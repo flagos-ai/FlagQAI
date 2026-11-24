@@ -993,10 +993,12 @@
         "pathlib",
         "torch"
       ],
-      "notebookSha256": "5fed8a8af740c90ea0c6a42238c12e8ef47399348fd103d37f17fb2c63a975c8",
-      "bundleSha256": "a10aee5fc0ffa275a41bc1a2bbdc9c1db7f255ac4866eb1a74eef847b5d84d01",
+      "notebookSha256": "a93906f748698e86537293f95fe132740ab6c214c31dc1df5f067bfab34b0730",
+      "bundleSha256": "251d36121647ea9dbd5e51374de3cffdc82c3ffb6922c07a8f09f03b10354e40",
       "unavailableReason": "",
-      "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/applications/automotive/cooling_systems_optimization/overview"
+      "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/applications/automotive/cooling_systems_optimization/overview",
+      "presentation": "cooling-expanded-v1",
+      "upstreamNotebookSha256": "5fed8a8af740c90ea0c6a42238c12e8ef47399348fd103d37f17fb2c63a975c8"
     },
     {
       "id": "7165782bd814e04960706a32",

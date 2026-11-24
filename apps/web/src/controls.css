@@ -2635,3 +2635,82 @@
   white-space: pre-wrap;
   margin: 0;
 }
+
+.fq-notebook-implementation-link {
+  align-self: flex-start;
+  margin: 4px 12px;
+  font-size: 12px;
+  color: var(--accent, #2563eb);
+}
+.fq-notebook-implementation {
+  width: min(1120px, 94vw);
+}
+.fq-notebook-implementation > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.fq-notebook-implementation > p {
+  font-size: 13px;
+  line-height: 1.6;
+}
+.fq-notebook-implementation-layout {
+  display: grid;
+  grid-template-columns: minmax(180px, 26%) minmax(0, 1fr);
+  gap: 16px;
+  min-height: 0;
+}
+.fq-notebook-implementation-layout nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 65vh;
+  overflow: auto;
+}
+.fq-notebook-implementation-layout nav button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  padding: 8px 10px;
+  gap: 3px;
+}
+.fq-notebook-implementation-layout nav button[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  color: var(--text);
+}
+.fq-notebook-implementation-layout section {
+  min-width: 0;
+  max-height: 65vh;
+  overflow: auto;
+}
+.fq-notebook-source-path {
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.fq-notebook-sdk-references {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 12px;
+  align-items: baseline;
+}
+.fq-notebook-sdk-references code {
+  background: var(--surface-raised);
+  color: var(--text);
+  border-radius: 4px;
+  padding: 2px 5px;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 700px) {
+  .fq-notebook-implementation-layout {
+    grid-template-columns: 1fr;
+  }
+  .fq-notebook-implementation-layout nav {
+    max-height: 160px;
+  }
+}

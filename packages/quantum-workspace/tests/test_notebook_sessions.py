@@ -74,7 +74,7 @@ class NotebookSessionTests(unittest.TestCase):
         self.assertEqual(lost['cells'][0]['outputs'][0]['ename'], 'NameError')
 
     def test_cooling_imports_use_bundled_files_and_restart_repairs_missing_helper(self):
-        item = json.loads((self.settings.web_root/'notebooks/6281132ae7b11b3c3fea3e8f.ipynb').read_text())
+        item = json.loads((self.settings.web_root/'notebooks/6281132ae7b11b3c3fea3e8f.upstream.ipynb').read_text())
         imports = next(''.join(c['source']) for c in item['cells']
                        if c['cell_type'] == 'code')
         self.key = '7' * 32

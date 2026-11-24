@@ -20,6 +20,8 @@ import { NotebookCellEditor } from "./NotebookCellEditor";
 import { AgentMarkdown } from "./AgentMarkdown";
 import { UIIcon } from "./UIIcon";
 
+import { NotebookImplementation } from "./NotebookImplementation";
+
 const uuid = () => crypto.randomUUID().replaceAll("-", "");
 const storageKey = (id: string) => "fq-notebook-workspace-v1:" + id;
 function initial(id: string): {
@@ -144,8 +146,11 @@ export function NotebookWorkspace({
   }, [cells, pending, savedRevision, seed.id, notebookId]);
   useEffect(() => {
     let live = true;
-    void notebookSessions
-      .open(notebookId, seed.id)
+    void (
+      notebookId.startsWith("import:")
+        ? notebookSessions.read(seed.id)
+        : notebookSessions.open(notebookId, seed.id)
+    )
       .then((value) => {
         if (!live) return;
         setSession(value);
@@ -605,6 +610,7 @@ export function NotebookWorkspace({
           </button>
         </p>
       )}
+      <NotebookImplementation notebookId={session?.notebook_id || notebookId} />
       <div className="fq-notebook-pages">
         {cells.map((cell, index) => {
           const last = session?.runs
@@ -851,6 +857,12 @@ export function NotebookWorkspace({
                   <UIIcon name="trash" size={14} />
                 </button>
               </div>
+              {cell.cell_type === "code" && (
+                <NotebookImplementation
+                  notebookId={session?.notebook_id || notebookId}
+                  source={cell.source}
+                />
+              )}
               {cell.cell_type === "markdown" && editingMarkdown !== cell.id ? (
                 <div
                   className="fq-notebook-markdown-preview"

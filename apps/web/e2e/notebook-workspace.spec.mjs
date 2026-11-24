@@ -612,7 +612,7 @@ test("cooling notebook imports its complete bundled companion project", async ({
     const editor = cell.getByRole("textbox");
     if (
       (await editor.count()) &&
-      (await editor.inputValue()).includes("import full_model")
+      (await editor.inputValue()).includes("import PhaseFit, fit, response")
     ) {
       const source = await editor.inputValue();
       await cell

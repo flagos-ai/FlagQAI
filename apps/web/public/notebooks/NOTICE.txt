@@ -1,3 +1,4 @@
 Native FlagQuantum notebooks and Python sources pinned at fb7c05184085f829f282780618014001a3da1714.
 Original provenance, copyrights and licenses are retained. Native workflows derive from the Classiq library; both licenses apply.
-Notebook bytes and Python sources are unchanged; generated launchers invoke the documented Python entry and save its last observed fq.run result.
+Python sources are unchanged; generated launchers invoke the documented Python entry and save its last observed fq.run result.
+The cooling-system workbench walkthrough expands the pinned implementations into cells. Its upstream notebook is retained separately; catalog presentation metadata records both hashes.
