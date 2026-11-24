@@ -10,6 +10,18 @@ import {
 } from "../src/state/synthesis-files.ts";
 
 test("every repository file retains its original snapshot hash and size", async () => {
+  assert.deepEqual(
+    JSON.parse(
+      await readFile(
+        new URL("../public/examples/synthesis-files.json", import.meta.url),
+      ),
+    ),
+    JSON.parse(
+      await readFile(
+        new URL("../src/data/synthesis-files.json", import.meta.url),
+      ),
+    ),
+  );
   assert.equal(synthesisFiles.length, 2679);
   assert.equal(new Set(synthesisFiles.map((file) => file.path)).size, 2679);
   const catalog = JSON.parse(

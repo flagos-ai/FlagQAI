@@ -12,6 +12,12 @@ export type RunEnvironmentChecks = {
 export type PythonRun = {
   notebook_environment?: import("./projects").NotebookEnvironment;
   project?: ProjectRun;
+  synthesis?: {
+    path: string;
+    revision: string;
+    original_sha256: string;
+    snapshot_hash: string;
+  };
   id: string;
   name: string;
   source: string;
@@ -102,8 +108,8 @@ export const pythonAPI = {
       {},
       signal,
     ),
-  run: (source: string, name: string) =>
-    request<PythonRun>("runs", { source, name }),
+  run: (source: string, name: string, synthesis_path?: string) =>
+    request<PythonRun>("runs", { source, name, synthesis_path }),
   read: (id: string, signal?: AbortSignal) =>
     request<PythonRun>("runs/" + encodeURIComponent(id), undefined, signal),
   list: () => request<PythonRun[]>("runs"),

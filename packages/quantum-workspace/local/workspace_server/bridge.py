@@ -50,8 +50,8 @@ class WorkspaceBridge:
     def publish(self, data):
         client, session = self.identity(data)
         source = data.get('source')
-        if not isinstance(source, str) or len(source.encode()) > 32768:
-            raise ValueError('Workspace source must be at most 32 KiB.')
+        if not isinstance(source, str) or len(source.encode()) > (65536 if data.get('language') == 'python' else 32768):
+            raise ValueError('Workspace source must be at most 64 KiB for Python or 32 KiB for other formats.')
         name = data.get('name')
         if not isinstance(name, str) or not 0 < len(name) <= 200:
             raise ValueError('Invalid model name.')
@@ -219,7 +219,7 @@ class WorkspaceBridge:
                 if not model['id'].endswith('.py') or model['revision'] != data.get('expected_revision'): raise BridgeConflict('Read the current Python model revision before running.')
                 source = model['source']
             else: source = data.get('source')
-            return {'python_run':self.python_runs.submit({'source':source,'name':data.get('name') or context['name']})}
+            return {'python_run':self.python_runs.submit({'source':source,'name':data.get('name') or context['name'], **({'synthesis_path':data['synthesis_path']} if 'synthesis_path' in data else {})})}
         if operation == 'compile':
             if data.get('model_id'):
                 model = read_model(self.root, data['model_id'])

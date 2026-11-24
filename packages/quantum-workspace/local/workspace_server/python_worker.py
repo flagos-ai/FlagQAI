@@ -163,13 +163,32 @@ def supervise():
         for name, source in files.items():
             if (not isinstance(name, str) or not isinstance(source, str) or '\\' in name or ':' in name
                     or any(not part or part.startswith('.') for part in name.split('/'))
-                    or Path(name).suffix.lower() not in ('.py', '.qasm') or len(source.encode()) > 32768):
+                    or Path(name).suffix.lower() not in ('.py', '.qasm') or len(source.encode()) > 65536):
                 raise ValueError('Invalid project source file.')
             total += len(source.encode())
             if total > 512 * 1024: raise ValueError('Project input snapshot exceeds 512 KiB.')
             path = root / name
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(source, encoding='utf-8')
+        if 'synthesis_files' in request:
+            assets = request['synthesis_files']
+            if not isinstance(assets, dict) or len(assets) > 4096:
+                raise ValueError('Invalid synthesis input snapshot.')
+            size = 0
+            for name, encoded in assets.items():
+                if (not name.startswith('examples/') or '\\' in name
+                        or any(part in ('', '.', '..') for part in name.split('/'))):
+                    raise ValueError('Invalid synthesis input path.')
+                raw = base64.b64decode(encoded, validate=True)
+                size += len(raw)
+                if size > 16 * 1024 * 1024:
+                    raise ValueError('Synthesis input exceeds 16 MiB.')
+                target = root / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(raw)
+            entry = request['synthesis_entry']
+            if entry not in assets or not entry.endswith('.py'):
+                raise ValueError('Missing synthesis entry.')
         if 'files' not in request:
             (root/'flagquantum_web.py').write_text(request['helper'], encoding='utf-8')
         emit({'type':'runtime', 'python':sys.version.split()[0], 'cwd':str(root)})
@@ -178,9 +197,16 @@ def supervise():
         driver = RUNTIME_MANIFEST_CODE + "\n" + SYNTHESIS_PREFLIGHT_CODE + "\n" + """import runpy,sys,json
 from pathlib import Path
 try:
+    sys.path.insert(0, str(Path.cwd()))
     sys.path.insert(0, str(Path(sys.argv[1]).resolve().parent))
-    check_synthesis_environment(sys.argv[1])
-    runpy.run_path(sys.argv[1], run_name='__main__')
+    entry = sys.argv[1]
+    sys.argv = [entry]
+    package = str(Path(entry).parent).replace('/', '.')
+    if package.startswith('examples.'):
+        import importlib
+        importlib.import_module(package)
+    check_synthesis_environment(entry)
+    runpy.run_module(entry[:-3].replace('/', '.'), run_name='__main__', alter_sys=True) if package.startswith('examples.') else runpy.run_path(entry, run_name='__main__')
 finally:
     fq = sys.modules.get('flagquantum')
     try:
@@ -197,7 +223,7 @@ finally:
         process = subprocess.Popen(command, cwd=root,
             stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             start_new_session=True, env={**env, 'FQ_WEB_ARTIFACT':str(root/'artifact.json'),
-                'OMP_NUM_THREADS':'2', 'MKL_NUM_THREADS':'2', 'OPENBLAS_NUM_THREADS':'2'})
+                'MPLBACKEND':'Agg', 'OMP_NUM_THREADS':'2', 'MKL_NUM_THREADS':'2', 'OPENBLAS_NUM_THREADS':'2'})
         def drain(pipe, stream):
             decoder = codecs.getincrementaldecoder('utf-8')(errors='replace')
             while True:

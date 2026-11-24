@@ -150,3 +150,15 @@ test("linking a dedicated failure file and receiving its repair never overwrite 
   assert.equal(repaired.editorLink.incoming.source, "print('fixed')");
   assert.equal(run.source, "import missing_demo\n");
 });
+
+test("synthesis failures point to the selected entry rather than a companion module", () => {
+  const run = failed("first\nsecond\n");
+  run.synthesis = { path: "case/entry.py" };
+  run.logs = [
+    {
+      stream: "stderr",
+      text: 'File "/tmp/examples/synthesis/case/entry.py", line 2\nFile "/tmp/examples/synthesis/case/helper.py", line 99\nValueError: actual failure',
+    },
+  ];
+  assert.equal(pythonFailure(run).line, 2);
+});

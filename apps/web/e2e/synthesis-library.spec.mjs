@@ -78,3 +78,52 @@ test("repository folders open original Python including large files without exec
     path: testInfo.outputPath("synthesis-file-tree.png"),
   });
 });
+
+test("source-tree Run executes original companion imports and preserves frozen inputs", async ({
+  page,
+}) => {
+  test.setTimeout(120000);
+  await page.goto("/#model");
+  await page.getByRole("button", { name: "Examples", exact: true }).click();
+  const path =
+    "applications/automotive/cooling_systems_optimization/overview/main.py";
+  await page.getByRole("textbox", { name: "Search models" }).fill(path);
+  await page
+    .getByRole("region", { name: "FlagQuantum synthesis files" })
+    .getByRole("button", { name: path, exact: true })
+    .click();
+  const before = new Set(
+    (await (await page.request.get("/api/python/runs")).json()).map(
+      (run) => run.id,
+    ),
+  );
+  await page.getByRole("button", { name: "Run Python", exact: true }).click();
+  let run;
+  await expect
+    .poll(
+      async () => {
+        const newest = (
+          await (await page.request.get("/api/python/runs")).json()
+        ).find((run) => !before.has(run.id));
+        if (!newest) return "waiting";
+        run = await (
+          await page.request.get("/api/python/runs/" + newest.id)
+        ).json();
+        return run.status;
+      },
+      { timeout: 100000 },
+    )
+    .not.toMatch(/^(waiting|queued|running)$/);
+  expect(run.status, JSON.stringify(run)).toBe("completed");
+  expect(run.synthesis.path).toBe(path);
+  expect(run.logs.map((row) => row.text).join("")).toContain(
+    "Signed QSVT temperatures:",
+  );
+  const evidenceResponse = await page.request.get(
+    `/api/python/runs/${run.id}/evidence`,
+  );
+  expect(evidenceResponse.ok()).toBeTruthy();
+  const evidence = await evidenceResponse.json();
+  expect(evidence.inputs.entry).toBe("examples/synthesis/" + path);
+  expect(Object.keys(evidence.inputs.files).length).toBeGreaterThan(1300);
+});

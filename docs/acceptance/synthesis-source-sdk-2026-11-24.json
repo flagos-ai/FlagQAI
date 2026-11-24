@@ -1,0 +1,637 @@
+{
+  "schema": "flagqai.synthesis-execution-acceptance.v1",
+  "revision": "0c88d5af9cd1f9dd0d39dca8d54309199c81c086",
+  "upstream_files_checked": 2679,
+  "upstream_python_parsed": 1318,
+  "entrypoint_environments_checked": 432,
+  "environment": {
+    "missing_dependencies": [],
+    "incompatible_sdk": [],
+    "runtime": {
+      "schema": "flagqai.runtime-environment.v1",
+      "python": "3.12.14",
+      "implementation": "CPython",
+      "system": "Darwin",
+      "machine": "arm64",
+      "virtual_environment": true,
+      "user_site_enabled": false,
+      "pythonpath_present": false,
+      "sdk_version": "0.4.0",
+      "save_load_supported": true,
+      "packages": {
+        "appnope": "1.0.0",
+        "asttokens": "3.0.2",
+        "attrs": "26.1.0",
+        "build": "1.6.1",
+        "certifi": "2026.10.23",
+        "charset-normalizer": "3.5.2",
+        "cirq-core": "1.7.0",
+        "cloudpickle": "3.1.3",
+        "comm": "0.2.3",
+        "contourpy": "1.4.0",
+        "cycler": "0.12.1",
+        "debugpy": "1.8.22",
+        "dill": "0.4.1",
+        "docutils": "0.23",
+        "duet": "0.2.9",
+        "executing": "2.3.0",
+        "filelock": "4.2.12",
+        "flagquantum": "0.3.1",
+        "fonttools": "4.68.0",
+        "fsspec": "2026.9.0",
+        "h5py": "3.16.0",
+        "id": "1.6.1",
+        "idna": "3.20",
+        "iniconfig": "2.3.1",
+        "ipykernel": "7.4.0",
+        "ipython": "9.19.1",
+        "ipython-pygments-lexers": "1.1.1",
+        "jaraco.classes": "3.4.0",
+        "jaraco.context": "6.1.2",
+        "jaraco.functools": "4.6.0",
+        "jedi": "0.20.1",
+        "jinja2": "3.1.6",
+        "joblib": "1.6.0",
+        "jupyter-client": "8.10.0",
+        "jupyter-core": "5.9.1",
+        "keyring": "25.7.0",
+        "kiwisolver": "1.5.1",
+        "markdown-it-py": "4.3.0",
+        "markupsafe": "3.0.4",
+        "matplotlib": "3.11.2",
+        "matplotlib-inline": "0.2.2",
+        "mdurl": "0.1.2",
+        "more-itertools": "11.2.1",
+        "mpmath": "1.3.0",
+        "narwhals": "2.29.0",
+        "nest-asyncio2": "1.7.4",
+        "networkx": "3.7",
+        "nh3": "0.3.8",
+        "numpy": "2.5.5",
+        "packaging": "26.4",
+        "pandas": "3.0.6",
+        "parso": "0.8.7",
+        "pexpect": "4.9.0",
+        "pillow": "13.0.0",
+        "pip": "25.0.1",
+        "platformdirs": "4.14.8",
+        "pluggy": "1.7.0",
+        "prompt-toolkit": "3.0.53",
+        "psutil": "7.2.2",
+        "ptyprocess": "0.7.0",
+        "pure-eval": "0.2.4",
+        "pygments": "2.21.0",
+        "pyparsing": "3.3.3",
+        "pyproject-hooks": "1.3.3",
+        "pyscf": "2.15.0",
+        "pytest": "9.2.0",
+        "python-dateutil": "4.0.0",
+        "pyzmq": "27.3.0",
+        "qiskit": "2.6.2",
+        "qiskit-algorithms": "0.4.0",
+        "readme-renderer": "46.0",
+        "requests": "2.34.2",
+        "requests-toolbelt": "1.0.0",
+        "rfc3986": "2.0.0",
+        "rich": "15.0.0",
+        "rustworkx": "0.18.1",
+        "scikit-learn": "1.9.1",
+        "scipy": "1.18.1",
+        "sdkbench": "0.3.0",
+        "setuptools": "84.2.1",
+        "stack-data": "0.6.3",
+        "stevedore": "5.10.0",
+        "sympy": "1.14.0",
+        "threadpoolctl": "3.8.0",
+        "torch": "2.14.0",
+        "tornado": "6.6.1",
+        "tqdm": "4.70.1",
+        "traitlets": "5.16.1",
+        "twine": "7.0.0",
+        "typing-extensions": "4.16.0",
+        "tzdata": "2026.6",
+        "urllib3": "2.8.0",
+        "wcwidth": "0.9.5",
+        "wheel": "0.48.0"
+      },
+      "packages_truncated": false,
+      "sdk_distribution_version": "0.3.1",
+      "pytorch": "2.14.0",
+      "cuda_available": false,
+      "module_distributions": {
+        "sklearn": [
+          "scikit-learn"
+        ],
+        "pyscf": [
+          "pyscf"
+        ],
+        "joblib": [
+          "joblib"
+        ],
+        "cloudpickle": [
+          "cloudpickle"
+        ],
+        "narwhals": [
+          "narwhals"
+        ],
+        "threadpoolctl": [
+          "threadpoolctl"
+        ],
+        "h5py": [
+          "h5py"
+        ],
+        "kiwisolver": [
+          "kiwisolver"
+        ],
+        "packaging": [
+          "packaging"
+        ],
+        "networkx": [
+          "networkx"
+        ],
+        "numpy": [
+          "numpy"
+        ],
+        "rich": [
+          "rich"
+        ],
+        "torch": [
+          "torch"
+        ],
+        "torchgen": [
+          "torch"
+        ],
+        "PIL": [
+          "pillow"
+        ],
+        "sympy": [
+          "sympy"
+        ],
+        "tqdm": [
+          "tqdm"
+        ],
+        "mpmath": [
+          "mpmath"
+        ],
+        "flagquantum": [
+          "flagquantum"
+        ],
+        "matplotlib": [
+          "matplotlib"
+        ],
+        "mpl_toolkits": [
+          "matplotlib"
+        ],
+        "cycler": [
+          "cycler"
+        ],
+        "fontTools": [
+          "fonttools"
+        ],
+        "pandas": [
+          "pandas"
+        ],
+        "typing_extensions": [
+          "typing_extensions"
+        ],
+        "dateutil": [
+          "python-dateutil"
+        ],
+        "charset_normalizer": [
+          "charset-normalizer"
+        ],
+        "pyparsing": [
+          "pyparsing"
+        ],
+        "scipy": [
+          "scipy"
+        ],
+        "dill": [
+          "dill"
+        ],
+        "psutil": [
+          "psutil"
+        ]
+      },
+      "sdk_code_sha256": "a8818820f80b231a82a6ae35f59aa98239ab31ec16707393cf8135f720abd17c",
+      "sdk_code_files": 1154,
+      "sdk_code_scope": "Python and native code files; excludes bytecode, data and distribution metadata",
+      "sdk_editable": false
+    }
+  },
+  "runs": [
+    {
+      "entry": "community/basic_examples/superposition/main.py",
+      "source_sha256": "a6fff6dd926a6d157bec2364984021668a9908ed757d908c2cd67a54536fbc57",
+      "status": "completed",
+      "elapsed_seconds": 1.303,
+      "error": null,
+      "logs": [
+        {
+          "stream": "stdout",
+          "text": "0: \u2500\u2500\u2500H\u2500\u2500\u2524\n1: \u2500\u2500\u2500H\u2500\u2500\u2524\n2: \u2500\u2500\u2500H\u2500\u2500\u2524\n"
+        },
+        {
+          "stream": "stdout",
+          "text": "{(0,): 0.12499999999999994, (1,): 0.12499999999999994, (2,): 0.12499999999999994, (3,): 0.12499999999999994, (4,): 0.12499999999999994, (5,): 0.12499999999999994, (6,): 0.12499999999999994, (7,): 0.12499999999999994}\n"
+        }
+      ],
+      "snapshot": {
+        "path": "community/basic_examples/superposition/main.py",
+        "revision": "0c88d5af9cd1f9dd0d39dca8d54309199c81c086",
+        "original_sha256": "a6fff6dd926a6d157bec2364984021668a9908ed757d908c2cd67a54536fbc57",
+        "snapshot_hash": "63c5095c3c787725614cc1bdeaea947181ada25a3116f4ed603f41fc5da612a0"
+      }
+    },
+    {
+      "entry": "algorithms/quantum_linear_solvers/hhl/main.py",
+      "source_sha256": "977ce1957a033c800c790c527f20349697edfd288e17ad73a1884412c1990116",
+      "status": "completed",
+      "elapsed_seconds": 1.14,
+      "error": null,
+      "logs": [
+        {
+          "stream": "stdout",
+          "text": "{(Fraction(0, 1), Fraction(0, 1), Fraction(0, 1)): 0.11807061307853522, (Fraction(0, 1), Fraction(0, 1), Fraction(1, 1)): 0.034913604928433296, (Fraction(0, 1), Fraction(1, 16), Fraction(0, 1)): 8.24448534235862e-05, (Fraction(0, 1), Fraction(1, 16), Fraction(1, 1)): 0.00012195474735323104, (Fraction(0, 1), Fraction(1, 8), Fraction(0, 1)): 0.00039418420178607115, (Fraction(0, 1), Fraction(1, 8), Fraction(1, 1)): 0.0005892292501981207, (Fraction(0, 1), Fraction(3, 16), Fraction(0, 1)): 3.798996084817724e-05, (Fraction(0, 1), Fraction(3, 16), Fraction(1, 1)): 0.000292624333275113, (Fraction(0, 1), Fraction(1, 4), Fraction(0, 1)): 0.0010684953942205256, (Fraction(0, 1), Fraction(1, 4), Fraction(1, 1)): 0.0030348307820167674, (Fraction(0, 1), Fraction(5, 16), Fraction(0, 1)): 3.325599187339488e-05, (Fraction(0, 1), Fraction(5, 16), Fraction(1, 1)): 0.00035931997198448, (Fraction(0, 1), Fraction(3, 8), Fraction(0, 1)): 8.654829861707777e-05, (Fraction(0, 1), Fraction(3, 8), Fraction(1, 1)): 0.00131907595826619, (Fraction(0, 1), Fraction(7, 16), Fraction(0, 1)): 3.044626157961958e-06, (Fraction(0, 1), Fraction(7, 16), Fraction(1, 1)): 1.952620642198199e-05, (Fraction(0, 1), Fraction(-1, 2), Fraction(0, 1)): 0.0017623878736213767, (Fraction(0, 1), Fraction(-1, 2), Fraction(1, 1)): 0.0002055209712662482, (Fraction(0, 1), Fraction(-7, 16), Fraction(0, 1)): 0.0002862731667924654, (Fraction(0, 1), Fraction(-7, 16), Fraction(1, 1)): 0.00010920676805050885, (Fraction(0, 1), Fraction(-3, 8), Fraction(0, 1)): 0.0023807456833632532, (Fraction(0, 1), Fraction(-3, 8), Fraction(1, 1)): 0.00045890885686330894, (Fraction(0, 1), Fraction(-5, 16), Fraction(0, 1)): 0.0006642808472852273, (Fraction(0, 1), Fraction(-5, 16), Fraction(1, 1)): 0.00012279455814007356, (Fraction(0, 1), Fraction(-1, 4), Fraction(0, 1)): 0.003457022434738138, (Fraction(0, 1), Fraction(-1, 4), Fraction(1, 1)): 0.0014201415459364499, (Fraction(0, 1), Fraction(-3, 16), Fraction(0, 1)): 0.00018782127864353277, (Fraction(0, 1), Fraction(-3, 16), Fraction(1, 1)): 0.0005725233571420073, (Fraction(0, 1), Fraction(-1, 8), Fraction(0, 1)): 0.0003434917659619033, (Fraction(0, 1), Fraction(-1, 8), Fraction(1, 1)): 0.003083155312741072, (Fraction(0, 1), Fraction(-1, 16), Fraction(0, 1)): 2.5091682765396355e-05, (Fraction(0, 1), Fraction(-1, 16), Fraction(1, 1)): 0.0012364956337924966, (Fraction(1, 1), Fraction(0, 1), Fraction(0, 1)): 0.006731408150798206, (Fraction(1, 1), Fraction(0, 1), Fraction(1, 1)): 0.11164246359218277, (Fraction(1, 1), Fraction(1, 16), Fraction(0, 1)): 0.00035455326148464683, (Fraction(1, 1), Fraction(1, 16), Fraction(1, 1)): 6.221127464357759e-05, (Fraction(1, 1), Fraction(1, 8), Fraction(0, 1)): 0.0014740796824821677, (Fraction(1, 1), Fraction(1, 8), Fraction(1, 1)): 0.0002549763644320028, (Fraction(1, 1), Fraction(3, 16), Fraction(0, 1)): 2.8819091986842012e-05, (Fraction(1, 1), Fraction(3, 16), Fraction(1, 1)): 6.788234060334225e-05, (Fraction(1, 1), Fraction(1, 4), Fraction(0, 1)): 0.0016906629817401715, (Fraction(1, 1), Fraction(1, 4), Fraction(1, 1)): 0.004403884696780876, (Fraction(1, 1), Fraction(5, 16), Fraction(0, 1)): 3.709403052462774e-05, (Fraction(1, 1), Fraction(5, 16), Fraction(1, 1)): 0.0007069397175681879, (Fraction(1, 1), Fraction(3, 8), Fraction(0, 1)): 0.00036321598036315655, (Fraction(1, 1), Fraction(3, 8), Fraction(1, 1)): 0.0024738334547523937, (Fraction(1, 1), Fraction(7, 16), Fraction(0, 1)): 0.00020238019843355802, (Fraction(1, 1), Fraction(7, 16), Fraction(1, 1)): 0.00031674855490703487, (Fraction(1, 1), Fraction(-1, 2), Fraction(0, 1)): 0.01835737623346036, (Fraction(1, 1), Fraction(-1, 2), Fraction(1, 1)): 0.009469883441065094, (Fraction(1, 1), Fraction(-7, 16), Fraction(0, 1)): 0.00010898312759160966, (Fraction(1, 1), Fraction(-7, 16), Fraction(1, 1)): 0.00041599756817007727, (Fraction(1, 1), Fraction(-3, 8), Fraction(0, 1)): 0.0004118156277577288, (Fraction(1, 1), Fraction(-3, 8), Fraction(1, 1)): 0.0014352293140671064, (Fraction(1, 1), Fraction(-5, 16), Fraction(0, 1)): 2.501618649143899e-08, (Fraction(1, 1), Fraction(-5, 16),"
+        },
+        {
+          "stream": "stdout",
+          "text": " Fraction(1, 1)): 4.1034380459543245e-05, (Fraction(1, 1), Fraction(-1, 4), Fraction(0, 1)): 0.0008900805743143582, (Fraction(1, 1), Fraction(-1, 4), Fraction(1, 1)): 0.004430789951921962, (Fraction(1, 1), Fraction(-3, 16), Fraction(0, 1)): 1.3626318571553861e-05, (Fraction(1, 1), Fraction(-3, 16), Fraction(1, 1)): 2.8110630056520456e-05, (Fraction(1, 1), Fraction(-1, 8), Fraction(0, 1)): 7.694475675104854e-05, (Fraction(1, 1), Fraction(-1, 8), Fraction(1, 1)): 0.00011499002574071537, (Fraction(1, 1), Fraction(-1, 16), Fraction(0, 1)): 2.3940600961042697e-05, (Fraction(1, 1), Fraction(-1, 16), Fraction(1, 1)): 3.6685725903313274e-05, (Fraction(2, 1), Fraction(0, 1), Fraction(0, 1)): 0.006731408150798178, (Fraction(2, 1), Fraction(0, 1), Fraction(1, 1)): 0.11164246359218277, (Fraction(2, 1), Fraction(1, 16), Fraction(0, 1)): 0.0003545532614846441, (Fraction(2, 1), Fraction(1, 16), Fraction(1, 1)): 6.221127464357885e-05, (Fraction(2, 1), Fraction(1, 8), Fraction(0, 1)): 0.001474079682482159, (Fraction(2, 1), Fraction(1, 8), Fraction(1, 1)): 0.0002549763644320027, (Fraction(2, 1), Fraction(3, 16), Fraction(0, 1)): 2.8819091986841585e-05, (Fraction(2, 1), Fraction(3, 16), Fraction(1, 1)): 6.788234060334266e-05, (Fraction(2, 1), Fraction(1, 4), Fraction(0, 1)): 0.0016906629817401771, (Fraction(2, 1), Fraction(1, 4), Fraction(1, 1)): 0.004403884696780883, (Fraction(2, 1), Fraction(5, 16), Fraction(0, 1)): 3.7094030524628555e-05, (Fraction(2, 1), Fraction(5, 16), Fraction(1, 1)): 0.0007069397175681931, (Fraction(2, 1), Fraction(3, 8), Fraction(0, 1)): 0.00036321598036315444, (Fraction(2, 1), Fraction(3, 8), Fraction(1, 1)): 0.002473833454752397, (Fraction(2, 1), Fraction(7, 16), Fraction(0, 1)): 0.00020238019843356127, (Fraction(2, 1), Fraction(7, 16), Fraction(1, 1)): 0.00031674855490703476, (Fraction(2, 1), Fraction(-1, 2), Fraction(0, 1)): 0.01835737623346036, (Fraction(2, 1), Fraction(-1, 2), Fraction(1, 1)): 0.009469883441065094, (Fraction(2, 1), Fraction(-7, 16), Fraction(0, 1)): 0.00010898312759160992, (Fraction(2, 1), Fraction(-7, 16), Fraction(1, 1)): 0.00041599756817007927, (Fraction(2, 1), Fraction(-3, 8), Fraction(0, 1)): 0.00041181562775773246, (Fraction(2, 1), Fraction(-3, 8), Fraction(1, 1)): 0.0014352293140671075, (Fraction(2, 1), Fraction(-5, 16), Fraction(0, 1)): 2.5016186491430212e-08, (Fraction(2, 1), Fraction(-5, 16), Fraction(1, 1)): 4.1034380459544065e-05, (Fraction(2, 1), Fraction(-1, 4), Fraction(0, 1)): 0.000890080574314355, (Fraction(2, 1), Fraction(-1, 4), Fraction(1, 1)): 0.004430789951921965, (Fraction(2, 1), Fraction(-3, 16), Fraction(0, 1)): 1.3626318571554239e-05, (Fraction(2, 1), Fraction(-3, 16), Fraction(1, 1)): 2.8110630056519517e-05, (Fraction(2, 1), Fraction(-1, 8), Fraction(0, 1)): 7.694475675105043e-05, (Fraction(2, 1), Fraction(-1, 8), Fraction(1, 1)): 0.00011499002574071411, (Fraction(2, 1), Fraction(-1, 16), Fraction(0, 1)): 2.3940600961042273e-05, (Fraction(2, 1), Fraction(-1, 16), Fraction(1, 1)): 3.668572590331279e-05, (Fraction(3, 1), Fraction(0, 1), Fraction(0, 1)): 0.36077181889795934, (Fraction(3, 1), Fraction(0, 1), Fraction(1, 1)): 0.11270315236711907, (Fraction(3, 1), Fraction(1, 16), Fraction(0, 1)): 8.277298158149795e-05, (Fraction(3, 1), Fraction(1, 16), Fraction(1, 1)): 6.12466513898771e-05, (Fraction(3, 1), Fraction(1, 8), Fraction(0, 1)): 0.0004252945986107634, (Fraction(3, 1), Fraction(1, 8), Fraction(1, 1)): 0.0003241826842446464, (Fraction(3, 1), Fraction(3, 16), Fraction(0, 1)): 5.2157177305906647e-05, (Fraction(3, 1), Fraction(3, 16), Fraction(1, 1)): 0.0002058093964773169, (Fraction(3, 1), Fraction(1, 4), Fraction(0, 1)): 0.0010304020081976274, (Fraction(3, 1), Fraction(1, 4), Fraction(1, 1)): 0.002384769449751065, (Fraction(3, 1), Fraction(5, 16), Fraction(0, 1)): 3.567106839008902e-05, (Fraction(3, 1), Fraction(5, 16), Fraction(1, 1)): 0.00035179501725044246, (Fraction(3, 1), Fraction(3, 8), Fraction(0, 1)): 8.472397187499699e-05, (Fraction(3, 1), Fraction(3, 8), Fraction(1, 1)): 0.0013360580792924686, (Fraction(3, 1), Fraction(7, 16), Fraction(0, 1)): 4.345910"
+        },
+        {
+          "stream": "stdout",
+          "text": "807834841e-06, (Fraction(3, 1), Fraction(7, 16), Fraction(1, 1)): 5.4502113223737685e-05, (Fraction(3, 1), Fraction(-1, 2), Fraction(0, 1)): 0.0006991666688047437, (Fraction(3, 1), Fraction(-1, 2), Fraction(1, 1)): 0.00025277865401975984, (Fraction(3, 1), Fraction(-7, 16), Fraction(0, 1)): 0.00015544375681391688, (Fraction(3, 1), Fraction(-7, 16), Fraction(1, 1)): 0.00012073082905032453, (Fraction(3, 1), Fraction(-3, 8), Fraction(0, 1)): 0.0014647044198412003, (Fraction(3, 1), Fraction(-3, 8), Fraction(1, 1)): 0.0005178849572479411, (Fraction(3, 1), Fraction(-5, 16), Fraction(0, 1)): 0.0004822463991458737, (Fraction(3, 1), Fraction(-5, 16), Fraction(1, 1)): 0.00014533605392007295, (Fraction(3, 1), Fraction(-1, 4), Fraction(0, 1)): 0.0021063391516290167, (Fraction(3, 1), Fraction(-1, 4), Fraction(1, 1)): 0.0005645010079566459, (Fraction(3, 1), Fraction(-3, 16), Fraction(0, 1)): 0.00014727382716025277, (Fraction(3, 1), Fraction(-3, 16), Fraction(1, 1)): 0.0003174538751900655, (Fraction(3, 1), Fraction(-1, 8), Fraction(0, 1)): 0.0002997666119798741, (Fraction(3, 1), Fraction(-1, 8), Fraction(1, 1)): 0.0018424968930203852, (Fraction(3, 1), Fraction(-1, 16), Fraction(0, 1)): 7.877457296597612e-06, (Fraction(3, 1), Fraction(-1, 16), Fraction(1, 1)): 0.000891359409580498}\nResourceEstimate(n_qubits=7, used_qubits=7, n_operations=581, operation_counts={'ry': 19, 'h': 136, 'cx': 196, 'crz': 90, 'rx': 116, 'phase': 8, 'swap': 4, 'cphase': 12}, max_operation_width=2, depth=435, per_qubit_depth=(435, 435, 343, 395, 421, 434, 233), t_count=0, t_depth=0, channel_count=0, basis='static_instruction_sequence', conversion_identity=None)\n"
+        }
+      ],
+      "snapshot": {
+        "path": "algorithms/quantum_linear_solvers/hhl/main.py",
+        "revision": "0c88d5af9cd1f9dd0d39dca8d54309199c81c086",
+        "original_sha256": "977ce1957a033c800c790c527f20349697edfd288e17ad73a1884412c1990116",
+        "snapshot_hash": "41af8d2020ebd0f96f1be4609482f1a6d4dd583bc5c24e24cb90e6e38dd6d68f"
+      }
+    },
+    {
+      "entry": "algorithms/state_preparation/swap_test/main.py",
+      "source_sha256": "706c61ebd8dc456a10f5e06af772d9105026053985728da5b10cc07d5f646e90",
+      "status": "completed",
+      "elapsed_seconds": 0.979,
+      "error": null,
+      "logs": [
+        {
+          "stream": "stdout",
+          "text": "{(0, 0, 0): 0.8365984697439165, (0, 0, 1): 0.007578410894077635, (0, 1, 0): 0.007578410894077635, (0, 1, 1): 0.004909660450466786, (1, 0, 1): 0.07166752400873032, (1, 1, 0): 0.07166752400873032}\n"
+        },
+        {
+          "stream": "stdout",
+          "text": "ResourceEstimate(n_qubits=5, used_qubits=5, n_operations=17, operation_counts={'rz': 4, 'h': 4, 'rx': 2, 'cx': 4, 'ccx': 2, 'cz': 1}, max_operation_width=3, depth=10, per_qubit_depth=(10, 10, 10, 8, 9), t_count=0, t_depth=0, channel_count=0, basis='static_instruction_sequence', conversion_identity=None)\n"
+        }
+      ],
+      "snapshot": {
+        "path": "algorithms/state_preparation/swap_test/main.py",
+        "revision": "0c88d5af9cd1f9dd0d39dca8d54309199c81c086",
+        "original_sha256": "706c61ebd8dc456a10f5e06af772d9105026053985728da5b10cc07d5f646e90",
+        "snapshot_hash": "bb7340baddeef8e7fb6e98fe7efd313b62b97b4635eb89199e479357314b3a87"
+      }
+    },
+    {
+      "entry": "applications/automotive/cooling_systems_optimization/overview/main.py",
+      "source_sha256": "5f0e5d7ec9c4fd786daf3f975efe81c272162c0d95c74aaaada92e80177a323c",
+      "status": "completed",
+      "elapsed_seconds": 1.741,
+      "error": null,
+      "logs": [
+        {
+          "stream": "stdout",
+          "text": "Physical nodes and configurations: 4 64\n"
+        },
+        {
+          "stream": "stdout",
+          "text": "Thermal normalization: 2888.095238095238\nEncoded and conditional block errors: 2.2737367544323206e-13 1.6653345369377348e-16\nSigned classical temperatures: [1.6048192771084335, 2.84578313253012, 0.25179803182194416, -0.9024004414604985]\nSigned QSVT temperatures: [1.5647638407745226, 2.7768226597135337, 0.24586952744401167, -0.8871022711795146]\nSpectral amplitude error and relative thermal error: 6.661338147750939e-16 0.02395561553869019\nInverse phase count: 12\nMock bindings: ((0.67, 0.31), (-0.41, 0.23))\nMock full-state errors: (1.4488835837920476e-16, 1.5654858205147556e-16)\nMock probability masses: (0.9999999999999988, 0.9999999999999998)\nInverse, conditional and mock circuit widths: 8 13 8\n"
+        }
+      ],
+      "snapshot": {
+        "path": "applications/automotive/cooling_systems_optimization/overview/main.py",
+        "revision": "0c88d5af9cd1f9dd0d39dca8d54309199c81c086",
+        "original_sha256": "5f0e5d7ec9c4fd786daf3f975efe81c272162c0d95c74aaaada92e80177a323c",
+        "snapshot_hash": "57fa2634ec19489966fbdf896421dd273608788c867ae2fc80408bdccca89c2b"
+      }
+    },
+    {
+      "entry": "algorithms/search_and_optimization/qaoa/overview/main.py",
+      "source_sha256": "3b27fbcf25918b6d9e1a704d2b8761d93301fed6c4f5dc1f2000b256a594f315",
+      "status": "completed",
+      "elapsed_seconds": 27.038,
+      "error": null,
+      "logs": [
+        {
+          "stream": "stdout",
+          "text": "section maxcut\ninitial_cost -0.4392273383398925"
+        },
+        {
+          "stream": "stdout",
+          "text": "\nfinal_cost -0.6629372924431002\niterations 60\nactual_evaluations 93\nconverged False\nbest_observed_feasible Sample(assignment=(12,), cost=-0.8333333333333334, feasible=True, count=91)\nresources ResourceEstimate(n_qubits=5, used_qubits=5, n_operations=64, operation_counts={'u3': 5, 'cphase': 24, 'rx': 20, 'phase': 15}, max_operation_width=2, depth=25, per_qubit_depth=(25, 25, 24, 24, 22), t_count=0, t_depth=0, channel_count=0, basis='static_instruction_sequence', conversion_identity=None)\n"
+        },
+        {
+          "stream": "stdout",
+          "text": "section knapsack\ninitial_cost -5.791015624999729\n"
+        },
+        {
+          "stream": "stdout",
+          "text": "final_cost -10.338067362779283\niterations 60\nactual_evaluations 96\nconverged False\nbest_observed_feasible Sample(assignment=(3, 2), cost=-19.0, feasible=True, count=14)\nresources ResourceEstimate(n_qubits=5, used_qubits=5, n_operations=852, operation_counts={'u3': 20, 'rz': 7, 'cphase': 423, 'h': 327, 'cx': 75}, max_operation_width=2, depth=721, per_qubit_depth=(716, 721, 719, 721, 700), t_count=0, t_depth=0, channel_count=0, basis='static_instruction_sequence', conversion_identity=None)\n"
+        }
+      ],
+      "snapshot": {
+        "path": "algorithms/search_and_optimization/qaoa/overview/main.py",
+        "revision": "0c88d5af9cd1f9dd0d39dca8d54309199c81c086",
+        "original_sha256": "3b27fbcf25918b6d9e1a704d2b8761d93301fed6c4f5dc1f2000b256a594f315",
+        "snapshot_hash": "ff18d65e60eb1c3cd24d106954726a2a2b00ed2eefa015931ae236bbac83db29"
+      }
+    },
+    {
+      "entry": "applications/chemistry/molecule_eigensolver/overview/main.py",
+      "source_sha256": "c6aa8056f21bb79e61ebcd89f3cfad8a19c8545732e4189c73f20fdabe832ab4",
+      "status": "completed",
+      "elapsed_seconds": 1.427,
+      "error": null,
+      "logs": [
+        {
+          "stream": "stdout",
+          "text": "Hydrogen distance and basis: 0.735 sto-3g\nShots per Pauli basis and iteration ceiling: 1000000 200\nHardware-efficient resources: "
+        },
+        {
+          "stream": "stdout",
+          "text": "ResourceEstimate(n_qubits=4, used_qubits=4, n_operations=35, operation_counts={'rz': 14, 'u3': 10, 'rx': 2, 'cx': 9}, max_operation_width=2, depth=14, per_qubit_depth=(14, 14, 13, 12), t_count=0, t_depth=0, channel_count=0, basis='static_instruction_sequence', conversion_identity=None)\nTapered UCCSD resources: ResourceEstimate(n_qubits=1, used_qubits=1, n_operations=2, operation_counts={'u3': 1, 'rz': 1}, max_operation_width=1, depth=2, per_qubit_depth=(2,), t_count=0, t_depth=0, channel_count=0, basis='static_instruction_sequence', conversion_identity=None)\nOptimizer evaluations, iterations, converged: 63 41 True\nOptimized angle: -0.2270512580871582\nReported finite-shot energy: -1.137855872750651\nExact expectation at that angle: -1.1373009958264562\nFull CI energy: -1.1373060357534144\n"
+        }
+      ],
+      "snapshot": {
+        "path": "applications/chemistry/molecule_eigensolver/overview/main.py",
+        "revision": "0c88d5af9cd1f9dd0d39dca8d54309199c81c086",
+        "original_sha256": "c6aa8056f21bb79e61ebcd89f3cfad8a19c8545732e4189c73f20fdabe832ab4",
+        "snapshot_hash": "1fe752270fe6e54eaa01bf3282deeca47acaf9a37abbb2d42b10432427ff22b6"
+      }
+    },
+    {
+      "entry": "applications/physical_systems/hhl_lanchester/physics.py",
+      "source_sha256": "69f74e6d70c0b4c0a30a0e20ba4f54f1d0db472c4cd92cf1db32e7cb7d7d9d72",
+      "status": "completed",
+      "elapsed_seconds": 0.269,
+      "error": null,
+      "logs": [],
+      "snapshot": {
+        "path": "applications/physical_systems/hhl_lanchester/physics.py",
+        "revision": "0c88d5af9cd1f9dd0d39dca8d54309199c81c086",
+        "original_sha256": "69f74e6d70c0b4c0a30a0e20ba4f54f1d0db472c4cd92cf1db32e7cb7d7d9d72",
+        "snapshot_hash": "258cef618419580e143e1675f3e3d8a9b6c24a51729c6d317024cd9fa14659bd"
+      }
+    },
+    {
+      "entry": "algorithms/machine_learning/qsvm/overview/main.py",
+      "source_sha256": "d308a2ba037b06c3f795f5dfe46ad6bae1940259f5d92a35a9bb272d2b1a4a92",
+      "status": "completed",
+      "elapsed_seconds": 2.895,
+      "error": null,
+      "logs": [
+        {
+          "stream": "stdout",
+          "text": "Synthetic split sizes: (40, 40, 40)\n"
+        },
+        {
+          "stream": "stdout",
+          "text": "Synthetic ground truth: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)\nIris split sizes: (80, 10, 10)\nIris ground truth: (0, 1, 1, 0, 1, 0, 0, 0, 1, 1)\nSynthetic Bloch: 1.0 1.0 17 2180\nSynthetic Bloch predictions: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)\nIris Pauli: 0.9 0.7 69 4620\nIris Pauli predictions: (0, 1, 1, 1, 0, 1, 0, 0, 1, 1)\nIris Bloch: 0.8 0.5 70 4640\nIris Bloch predictions: (0, 0, 1, 1, 0, 1, 0, 0, 0, 1)\nIris RBF: "
+        },
+        {
+          "stream": "stdout",
+          "text": "0.9 0.8 17 0\nIris RBF predictions: (0, 1, 0, 0, 1, 1, 0, 0, 1, 1)\nFinite Bernoulli trial count: 23429120\n"
+        }
+      ],
+      "snapshot": {
+        "path": "algorithms/machine_learning/qsvm/overview/main.py",
+        "revision": "0c88d5af9cd1f9dd0d39dca8d54309199c81c086",
+        "original_sha256": "d308a2ba037b06c3f795f5dfe46ad6bae1940259f5d92a35a9bb272d2b1a4a92",
+        "snapshot_hash": "c21231c9aa93ea079bcd9b2eac56696f6f24e50b63b3f5b28058154cefc9c01a"
+      }
+    },
+    {
+      "entry": "applications/chemistry/lih_chemistry/overview/main.py",
+      "source_sha256": "eb71fce7ae72de8075ad5f82183e46c9cd0c2a565746f7bd0b6ae2f61ea1543b",
+      "status": "completed",
+      "elapsed_seconds": 11.923,
+      "error": null,
+      "logs": [
+        {
+          "stream": "stdout",
+          "text": "LiH geometry and basis: "
+        },
+        {
+          "stream": "stdout",
+          "text": "((('Li', (0.833472, 0.0, 0.0)), ('H', (-0.833472, 0.0, 0.0))), 'sto-3g')\nSpatial orbital energies: (-2.350460661791792, -0.27949546689007554, 0.07757097411831548, 0.16391248297818511, 0.16391248297818517, 0.5286412583253668)\nFresh molecular method energies: (('RHF', -7.85900712731487), ('MP2', -7.872481696949935), ('CISD', -7.880634520720808), ('CCSD', -7.8806375402178315), ('FCI', -7.880648979805256))\nFrozen and active orbitals with particle counts: (1, 5, (1, 1))\nCanonical fermion terms: 864\nFresh core-frozen and native FCI energies: (-7.880416053961524, -7.880416053957045)\n"
+        },
+        {
+          "stream": "stdout",
+          "text": "Jordan-Wigner term count: 276\nDiagonal generators: "
+        },
+        {
+          "stream": "stdout",
+          "text": "(((0, 'z'), (2, 'z'), (5, 'z'), (7, 'z'), (8, 'z')), ((1, 'z'), (3, 'z'), (5, 'z'), (7, 'z'), (9, 'z')), ((4, 'z'), (5, 'z')), ((6, 'z'), (7, 'z')))\nDual X positions: (0, 1, 4, 6)\nTransformed term count: 276\nAll sector minima: (((1, 1, 1, 1), -7.768908584655425), ((1, 1, 1, -1), -7.724554496308057), ((1, 1, -1, 1), -7.724554496308054), ((1, 1, -1, -1), -7.312750852207561), ((1, -1, 1, 1), -7.804992414357718), ((1, -1, 1, -1), -7.717412859272519), ((1, -1, -1, 1), -7.7174128592725175), ((1, -1, -1, -1), -7.5559310787440825), ((-1, 1, 1, 1), -7.8049924143577085), ((-1, 1, 1, -1), -7.717412859272517), ((-1, 1, -1, 1), -7.717412859272517), ((-1, 1, -1, -1), -7.555931078744086), ((-1, -1, 1, 1), -7.880416053961532), ((-1, -1, 1, -1), -7.7245544963080475), ((-1, -1, -1, 1), -7.724554496308057), ((-1, -1, -1, -1), -7.312750852207573))\nLargest independent sector spectral error: 1.509903313490213e-14\nHartree-Fock sector and reduced basis word: ((-1, -1, 1, 1), 0)\nOrbitals encoded and tapered width: (10, 6)\n"
+        },
+        {
+          "stream": "stdout",
+          "text": "UCCSD excitation term counts: (2, 2, 2, 2, 8, 8, 4, 4, 8, 8)\nThresholded VQE qubits and terms: (6, 231)\nActual VQE queries: "
+        },
+        {
+          "stream": "stdout",
+          "text": "200\nConverged and budget exhausted: (False, True)\nIndependent maximum ansatz state error: 1.4766847523074796e-14\nFirst VQE energy: -7.85900712731462\nLast VQE energy: -7.875644894907075\nBest observed VQE energy: -7.877102265076675\n"
+        }
+      ],
+      "snapshot": {
+        "path": "applications/chemistry/lih_chemistry/overview/main.py",
+        "revision": "0c88d5af9cd1f9dd0d39dca8d54309199c81c086",
+        "original_sha256": "eb71fce7ae72de8075ad5f82183e46c9cd0c2a565746f7bd0b6ae2f61ea1543b",
+        "snapshot_hash": "c6490b745e51c0fadc73171badda9e335dc8521927933fbabc7dc6eb036105e0"
+      }
+    },
+    {
+      "entry": "applications/finance/credit_card_fraud/overview/main.py",
+      "source_sha256": "c86292d175a6b07554b83b91a6a93bf0f850f577a6e5bb6a1ddf9e90b29c1a82",
+      "status": "failed",
+      "elapsed_seconds": 1.094,
+      "error": null,
+      "logs": [
+        {
+          "stream": "stderr",
+          "text": "Traceback (most recent call last):\n  File \"<string>\", line 113, in <module>\n  File \"<frozen runpy>\", line 226, in run_module\n"
+        },
+        {
+          "stream": "stderr",
+          "text": "  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"/private/var/folders/31/5hn_pjqs57j_4bqjh0qq3l780000gn/T/flagqai-python-zmwz_kxd/examples/synthesis/applications/finance/credit_card_fraud/overview/main.py\", line 65, in <module>\n"
+        },
+        {
+          "stream": "stderr",
+          "text": "    main()\n"
+        },
+        {
+          "stream": "stderr",
+          "text": "  File \"/private/var/folders/31/5hn_pjqs57j_4bqjh0qq3l780000gn/T/flagqai-python-zmwz_kxd/examples/synthesis/applications/finance/credit_card_fraud/overview/main.py\", line 50, in main\n"
+        },
+        {
+          "stream": "stderr",
+          "text": "    result = workflow.run(args.data)\n"
+        },
+        {
+          "stream": "stderr",
+          "text": "     "
+        },
+        {
+          "stream": "stderr",
+          "text": "        ^^^"
+        },
+        {
+          "stream": "stderr",
+          "text": "^^^^^^^^^"
+        },
+        {
+          "stream": "stderr",
+          "text": "^^^^^^^^"
+        },
+        {
+          "stream": "stderr",
+          "text": "^^^\n  File \"/private/var/folders/31/5hn_pjqs57j_4bqjh0qq3l780000gn/T/flagqai-python-zmwz_kxd/examples/synthesis/applications/finance/credit_card_fraud/overview/workflow.py\", line 119, in run\n"
+        },
+        {
+          "stream": "stderr",
+          "text": "    data = model.prepare(path)\n"
+        },
+        {
+          "stream": "stderr",
+          "text": "          "
+        },
+        {
+          "stream": "stderr",
+          "text": " ^^^^^"
+        },
+        {
+          "stream": "stderr",
+          "text": "^^^^^^^^^"
+        },
+        {
+          "stream": "stderr",
+          "text": "^^^^^\n"
+        },
+        {
+          "stream": "stderr",
+          "text": "  File \"/private/var/folders/31/5hn_pjqs57j_4bqjh0qq3l780000gn/T/flagqai-python-zmwz_kxd/examples/synthesis/applications/finance/credit_card_fraud/overview/model.py\", line 97, in prepare\n"
+        },
+        {
+          "stream": "stderr",
+          "text": "    if hashlib.sha256(path.read_bytes()).hexdigest() != SOURCE_DIGEST:\n"
+        },
+        {
+          "stream": "stderr",
+          "text": "            "
+        },
+        {
+          "stream": "stderr",
+          "text": " "
+        },
+        {
+          "stream": "stderr",
+          "text": "        "
+        },
+        {
+          "stream": "stderr",
+          "text": " ^^^^^^^^^"
+        },
+        {
+          "stream": "stderr",
+          "text": "^^^^^^^"
+        },
+        {
+          "stream": "stderr",
+          "text": "^\n  File \"/Users/baai/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/pathlib.py\", line 1019, in read_bytes\n"
+        },
+        {
+          "stream": "stderr",
+          "text": "    with self.open(mode='rb') as f:\n"
+        },
+        {
+          "stream": "stderr",
+          "text": "         ^^^^^^"
+        },
+        {
+          "stream": "stderr",
+          "text": "^^^^^^^^^^^"
+        },
+        {
+          "stream": "stderr",
+          "text": "^^^\n  File \"/Users/baai/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/pathlib.py\", line 1013, in open\n"
+        },
+        {
+          "stream": "stderr",
+          "text": "    return io.open(self, mode, buffering, encoding, errors, newline)\n"
+        },
+        {
+          "stream": "stderr",
+          "text": "    "
+        },
+        {
+          "stream": "stderr",
+          "text": "       ^^"
+        },
+        {
+          "stream": "stderr",
+          "text": "^^^^^^^^"
+        },
+        {
+          "stream": "stderr",
+          "text": "^^^^^^^"
+        },
+        {
+          "stream": "stderr",
+          "text": "^^^^^"
+        },
+        {
+          "stream": "stderr",
+          "text": "^^^^^^^^"
+        },
+        {
+          "stream": "stderr",
+          "text": "^"
+        },
+        {
+          "stream": "stderr",
+          "text": "^^^^^"
+        },
+        {
+          "stream": "stderr",
+          "text": "^^^^^^^^"
+        },
+        {
+          "stream": "stderr",
+          "text": "^^^^^^^"
+        },
+        {
+          "stream": "stderr",
+          "text": "^^^^^^\n"
+        },
+        {
+          "stream": "stderr",
+          "text": "FileNotFoundError: [Errno 2] No such file or directory: 'creditcard.csv'\n"
+        }
+      ],
+      "snapshot": {
+        "path": "applications/finance/credit_card_fraud/overview/main.py",
+        "revision": "0c88d5af9cd1f9dd0d39dca8d54309199c81c086",
+        "original_sha256": "c86292d175a6b07554b83b91a6a93bf0f850f577a6e5bb6a1ddf9e90b29c1a82",
+        "snapshot_hash": "8045c45cd7af0cc3106d65e0526aaf0d5284c27cf08aeb660dc8f98a3ee8003c"
+      }
+    }
+  ],
+  "scope": "Real execution is recorded only in runs. Helper imports, API probes and successful exits do not establish scientific correctness. No model calls.",
+  "known_blockers": [
+    {
+      "entry": "applications/finance/credit_card_fraud/overview/main.py",
+      "reason": "Requires separately supplied pinned creditcard.csv; absent from the source tree. See the original example README.",
+      "expected_sha256": "cb6baeefbfd24b7b8f865b55efa366e2023b35bb125bc88a9f08a4c03724e5cd"
+    }
+  ]
+}

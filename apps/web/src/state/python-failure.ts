@@ -40,10 +40,10 @@ export function pythonFailure(run: PythonRun): PythonFailure | null {
     chains.pop();
     diagnostic = chains.at(-1)!;
   }
-  const entry = (run.project?.entry || "main.py").replace(
-    /[.*+?^${}()|[\]\\]/g,
-    "\\$&",
-  );
+  const entry = (
+    run.project?.entry ||
+    (run.synthesis ? "examples/synthesis/" + run.synthesis.path : "main.py")
+  ).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const frames = [
     ...diagnostic.matchAll(
       new RegExp('File "(?:[^"\\n]*[/\\\\])?' + entry + '", line (\\d+)', "g"),

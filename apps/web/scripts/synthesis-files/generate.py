@@ -30,6 +30,7 @@ def generate(root, web):
         entries.append(entry)
     document = {'revision': revision, 'root': 'examples/synthesis', 'entries': entries}
     (web / 'src/data/synthesis-files.json').write_text(json.dumps(document, indent=2) + '\n')
+    (web / 'public/examples/synthesis-files.json').write_text(json.dumps(document, indent=2) + '\n')
     print(f'Mirrored {len(entries)} original files at {revision}')
 
 
