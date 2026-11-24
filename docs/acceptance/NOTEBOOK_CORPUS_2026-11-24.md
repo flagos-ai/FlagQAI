@@ -30,6 +30,11 @@ not isolated performance benchmarks. The default interactive profile remains
 two threads and a 600-second cell deadline; long examples need the recorded
 profile rather than an implicit unlimited execution budget.
 
+The current local Web is activated on that complete SDK installation with four
+threads and a 7,200-second cell deadline in its local settings. This interactive
+profile is distinct from the shorter final audit deadline; changing that local
+profile does not change the receipts of already running audit kernels.
+
 ## Missing inputs repaired
 
 The original notebook and Python source bytes are unchanged. Execution supplies
@@ -66,10 +71,21 @@ Those records include missing-input errors, timeouts and interruptions. The old
 environment lacked a native extension and had mismatched SDK distribution
 metadata, so its successes are not combined with the final environment to claim
 full coverage. All 212 notebooks are rerun in the final environment.
+The shareable historical summary is
+[`notebook-corpus-history-2026-11-24.json`](notebook-corpus-history-2026-11-24.json).
 
 Successful execution means the original code and its assertions completed.
 It does not imply optimizer convergence, quantum advantage or scientific
 correctness beyond the checks the original examples actually perform.
+
+Supporting regressions passed: 252 backend tests with the complete SDK, 336
+frontend tests, 10 Chromium scenarios with the same SDK, TypeScript, the Web
+production build and staged CLI package verification (2,671 files, 32 entry
+targets). The browser scenarios include real credit-card data execution and
+unrelated draft preservation. The release inventory recognizes only the exact
+Git identities of the original PNG and two attributed pretrained weight files;
+CLI package binary checks remain unchanged. The CI SDK source pin is aligned
+with the example snapshot and its scientific dependencies are explicitly pinned.
 
 ## Repeating the audit
 

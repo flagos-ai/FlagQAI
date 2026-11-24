@@ -20,6 +20,8 @@ except ImportError:
 @unittest.skipUnless(AVAILABLE, 'Requires FlagQuantum synth and PyTorch')
 class CoolingWalkthroughSDKTests(unittest.TestCase):
     def test_every_code_cell_and_archived_replay(self):
+        import matplotlib
+        matplotlib.use('Agg')
         import torch
         web = Path(__file__).resolve().parents[3] / 'apps/web/public/notebooks'
         identity = '6281132ae7b11b3c3fea3e8f'

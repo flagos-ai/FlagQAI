@@ -1,2 +1,10 @@
 jupyter-client==8.10.0
 ipykernel==7.4.0
+ipython==9.19.1
+jedi==0.20.1
+numpy==2.5.5
+scipy==1.18.1
+matplotlib==3.11.2
+pyscf==2.15.0
+scikit-learn==1.9.1
+pillow==13.0.0

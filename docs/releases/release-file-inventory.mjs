@@ -14,10 +14,14 @@ const root = fileURLToPath(new URL('../../', import.meta.url))
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex')
 const decode = new TextDecoder('utf-8', { fatal: true })
 
-// Owner-approved official brand asset, source-only; provenance is recorded beside it.
+// Reviewed brand and pinned example inputs, source-only; notices and provenance
+// are retained beside the inputs and in the synthesis source manifest.
 // Both path and Git content identity must match. CLI package binaries remain rejected.
 export const reviewedSourceBinaries = Object.freeze({
   'apps/web/public/assets/baai-logo-white.png': 'ec4fef2eb6f643242adab89d00cf618209eb4716',
+  'apps/web/public/examples/synthesis-files/applications/image_processing/quantum_hadamard_edge_detection/overview/data/marina-bay-sands-128.png': 'f86210067707ea7098d564afa4b72e8e4df1139b',
+  'apps/web/public/examples/synthesis-inputs/generator_trained_model.pth': 'f783eaeed820f7b997a3e974b84b882a0f763e70',
+  'apps/web/public/examples/synthesis-inputs/q_generator_trained_model.pth': 'a993f6dc51372fd6a2874132967842b3d24e1ad2',
 })
 export function isReviewedSourceBinary(file) {
   return file.binary === true && reviewedSourceBinaries[file.path] === file.oid
