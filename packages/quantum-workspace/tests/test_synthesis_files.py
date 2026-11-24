@@ -5,6 +5,7 @@ from hashlib import sha256
 import json
 from pathlib import Path
 import sys
+import unittest
 from unittest.mock import patch
 
 from test_python_runs import PythonRunCase
@@ -71,6 +72,7 @@ print("companion files executed", VALUE)
                 self.runs.command(settings=settings)
             spawn.assert_not_called()
 
+    @unittest.skipUnless(sys.version_info >= (3, 10), 'Full corpus syntax audit requires Python 3.10; the selected compute interpreter remains authoritative.')
     def test_all_pinned_python_sources_parse_and_assets_match(self):
         import ast
         web = Path(__file__).resolve().parents[3] / 'apps/web/public'
@@ -85,3 +87,18 @@ print("companion files executed", VALUE)
                 count += 1
         self.assertEqual(count, 1320)  # 1,318 upstream files and two package roots.
         self.assertEqual(metadata['revision'], manifest['revision'])
+
+    def test_real_worker_stages_verified_external_csv_and_tensor_weights(self):
+        web = Path(__file__).resolve().parents[3] / 'apps/web/public'
+        self.runs.settings = replace(self.settings, web_root=web)
+        for entry, target, digest in [
+            ('applications/finance/credit_card_fraud/overview/main.py', 'creditcard.csv',
+             'cb6baeefbfd24b7b8f865b55efa366e2023b35bb125bc88a9f08a4c03724e5cd'),
+            ('algorithms/machine_learning/qgan/qgan_bars_and_strips/overview/main.py', 'resources/generator_trained_model.pth',
+             '21bae21bcb4e2abd763e8fd77adff64da9439562cc7758046327ca626f6e507e'),
+        ]:
+            source = f'from pathlib import Path\nfrom hashlib import sha256\nassert sha256(Path({target!r}).read_bytes()).hexdigest() == {digest!r}\nprint("verified original input")'
+            run = self.wait(self.runs.submit({'source': source, 'synthesis_path': entry})['id'])
+            self.assertEqual(run['status'], 'completed', run.get('error') or run['logs'])
+            evidence = self.runs.evidence(run['id'])
+            self.assertIn(target, evidence['inputs']['assets_base64'])

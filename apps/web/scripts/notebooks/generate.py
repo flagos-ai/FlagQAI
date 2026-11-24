@@ -1,5 +1,6 @@
 """Vendor pinned native notebooks and their Python import closure, never execute them."""
 from import_closure import closure
+import ast
 import base64
 import hashlib
 import json
@@ -20,11 +21,23 @@ def include_inputs(files):
     for name in list(files):
         source = root / name
         if source.name == '__init__.py': continue
-        candidates = list(source.parent.glob('*.json')) + list(source.parent.glob('*.csv'))
-        for directory in ('data', 'historical_ionq'):
-            candidates.extend((source.parent/directory).rglob('*'))
+        directories = {source.parent}
+        for node in ast.walk(ast.parse(files[name])):
+            if (isinstance(node, ast.Subscript) and isinstance(node.value, ast.Attribute)
+                    and node.value.attr == 'parents' and '__file__' in ast.unparse(node.value)
+                    and isinstance(node.slice, ast.Constant) and type(node.slice.value) is int
+                    and 0 <= node.slice.value < len(source.parents)):
+                directories.add(source.parents[node.slice.value])
+        candidates = []
+        for parent in directories:
+            if parent != base and base not in parent.parents:
+                continue
+            candidates.extend(parent.glob('*.json'))
+            candidates.extend(parent.glob('*.csv'))
+            for directory in ('data', 'historical_ionq'):
+                candidates.extend((parent/directory).rglob('*'))
         for asset in candidates:
-            if asset.is_file() and not asset.is_symlink() and asset.suffix in ('.json', '.csv', '.npy', '.npz'):
+            if asset.is_file() and not asset.is_symlink() and asset.suffix in ('.json', '.csv', '.npy', '.npz', '.png'):
                 assets[asset.relative_to(root).as_posix()] = asset.read_bytes()
     instructions = ['# Pinned data inputs, restored only inside the explicit run directory.',
                     'from pathlib import Path', 'import importlib', '', 'def prepare():']

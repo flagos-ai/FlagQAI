@@ -20,6 +20,12 @@ export type CellRun = {
   outputs: CellOutput[];
 };
 export type NotebookRun = {
+  runtime?: {
+    python: string;
+    executable: string;
+    cell_timeout_seconds?: number;
+    cpu_threads?: number;
+  };
   id: string;
   status: string;
   revision: string;

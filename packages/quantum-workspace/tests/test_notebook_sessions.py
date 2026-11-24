@@ -224,3 +224,62 @@ class NotebookSessionTests(unittest.TestCase):
         self.save(['assert research_value == 42'])
         run, _ = self.execute([0], 'b'*32)
         self.assertEqual(run['status'], 'completed', run)
+
+    def test_selected_cell_timeout_is_recorded_and_enforced_without_replay(self):
+        from dataclasses import replace
+        self.python.settings = replace(self.settings, notebook_cell_timeout_seconds=1, notebook_cpu_threads=3)
+        self.save(['import time\nprint("before bounded wait", flush=True)\ntime.sleep(5)', 'print("must not execute")'])
+        run, _ = self.execute([0, 1])
+        self.assertEqual(run['status'], 'interrupted', run)
+        self.assertEqual(run['runtime']['cell_timeout_seconds'], 1)
+        self.assertEqual(run['runtime']['cpu_threads'], 3)
+        self.assertIn('1-second limit', run['error'])
+        self.assertEqual(run['cells'][1]['status'], 'interrupted')
+        self.assertEqual(run['cells'][1]['outputs'], [])
+        self.assertEqual(len(self.sessions.read(self.key)['runs']), 1)
+        self.python.settings = replace(self.settings, notebook_cell_timeout_seconds=0)
+        self.doc = self.sessions.read(self.key)
+        with self.assertRaisesRegex(ValueError, 'between 1 and 7200'):
+            self.sessions.execute(self.key, {'request_id': '6'*32, 'revision': self.doc['revision'],
+                'cell_ids': [self.doc['cells'][0]['id']]})
+        self.assertEqual(len(self.sessions.read(self.key)['runs']), 1)
+
+    def test_original_image_input_is_seeded_without_inserting_or_changing_cells(self):
+        self.key = '5' * 32
+        self.doc = self.sessions.create({'notebook_id': '89e0925855a6f3549c9fe558', 'request_id': self.key})
+        original = [cell['source'] for cell in self.doc['cells']]
+        # Execute only the original imports and photo-loading cells.
+        indexes = [i for i, cell in enumerate(self.doc['cells']) if cell['cell_type'] == 'code'][:2]
+        run, _ = self.execute(indexes)
+        self.assertEqual(run['status'], 'completed', run)
+        self.assertEqual([cell['source'] for cell in self.sessions.read(self.key)['cells']], original)
+        root = self.settings.database_path.parent / 'notebook-workspaces' / self.key
+        photo = root / 'examples/synthesis/applications/image_processing/quantum_hadamard_edge_detection/overview/data/marina-bay-sands-128.png'
+        source = self.settings.web_root / 'examples/synthesis-files/applications/image_processing/quantum_hadamard_edge_detection/overview/data/marina-bay-sands-128.png'
+        self.assertEqual(photo.read_bytes(), source.read_bytes())
+
+    def test_parent_hamiltonian_data_is_seeded_for_original_exponentiation_cells(self):
+        self.key = '4' * 32
+        self.doc = self.sessions.create({'notebook_id': 'fade6063ddd87de2f4de317c', 'request_id': self.key})
+        original = [cell['source'] for cell in self.doc['cells']]
+        indexes = [i for i, cell in enumerate(self.doc['cells']) if cell['cell_type'] == 'code'][:2]
+        run, _ = self.execute(indexes)
+        self.assertEqual(run['status'], 'completed', run)
+        self.assertEqual([cell['source'] for cell in self.sessions.read(self.key)['cells']], original)
+        root = self.settings.database_path.parent / 'notebook-workspaces' / self.key
+        relative = 'examples/synthesis/tutorials/basics/exponentiation/example_exponentiation/hamiltonian.json'
+        self.assertEqual((root / relative).read_bytes(),
+            (self.settings.web_root / 'examples/synthesis-files/tutorials/basics/exponentiation/example_exponentiation/hamiltonian.json').read_bytes())
+
+    def test_compute_budgets_load_from_local_settings_with_explicit_environment_override(self):
+        from unittest.mock import patch
+        root = Path(self.tmp.name)
+        folder = root / '.flagqai/quantum-workspace'
+        folder.mkdir(parents=True)
+        (folder / 'settings.json').write_text(json.dumps({'notebook_cpu_threads': 4, 'notebook_cell_timeout_seconds': 1800}))
+        with patch.dict('os.environ', {'FQ_NOTEBOOK_CPU_THREADS': '3', 'FQ_NOTEBOOK_CELL_TIMEOUT_SECONDS': '120'}):
+            settings = WorkspaceSettings.from_root(root)
+            self.assertEqual((settings.notebook_cpu_threads, settings.notebook_cell_timeout_seconds), (3, 120))
+        with patch.dict('os.environ', {}, clear=True):
+            settings = WorkspaceSettings.from_root(root)
+            self.assertEqual((settings.notebook_cpu_threads, settings.notebook_cell_timeout_seconds), (4, 1800))

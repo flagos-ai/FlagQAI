@@ -1,2 +1,5 @@
 # Unified patch context prefixes precede upstream tab indentation and blank lines.
 apps/cli/patches/*.patch whitespace=-space-before-tab,-blank-at-eol
+# Execution input checksums require the exact published bytes on every platform.
+apps/web/public/examples/synthesis-inputs/*.csv -text
+apps/web/public/examples/synthesis-inputs/*.pth -text

@@ -223,6 +223,10 @@ class NotebookSessions:
             selected = self.python_runs.selected_settings()
             if selected.compute_transport != 'local' or selected.macos_python_isolation:
                 raise ValueError('Interactive notebooks currently require a local Python environment without process isolation. Existing SSH script execution remains available.')
+            if type(selected.notebook_cell_timeout_seconds) is not int or not 1 <= selected.notebook_cell_timeout_seconds <= 7200:
+                raise ValueError('Notebook cell timeout must be between 1 and 7200 seconds.')
+            if type(selected.notebook_cpu_threads) is not int or not 1 <= selected.notebook_cpu_threads <= 64:
+                raise ValueError('Notebook CPU thread budget must be between 1 and 64.')
             fingerprint = repr(selected)
             cells = [{k: cell[k] for k in ('id', 'source')} for cell in record['cells']
                      if cell['cell_type'] == 'code' and cell['id'] in cell_ids]
@@ -252,7 +256,7 @@ class NotebookSessions:
                 root.mkdir(parents=True, exist_ok=True)
                 bundle = {'files': {}}
                 if not record['notebook_id'].startswith('import:'):
-                    _, _, bundle, _ = notebook_bundle(self.settings.web_root, record['notebook_id'])
+                    _, item, bundle, _ = notebook_bundle(self.settings.web_root, record['notebook_id'])
                 # Per-notebook working directory retains user-created results.
                 # Source support files are seeded once, never overwritten.
                 for name, source in bundle['files'].items():
@@ -279,15 +283,23 @@ class NotebookSessions:
                             stream.write(raw)
                     except FileExistsError:
                         pass
+                if not record['notebook_id'].startswith('import:'):
+                    from .synthesis_inputs import prepare
+                    prepare(self.settings.web_root, item['path'] + '/walkthrough.ipynb', root)
                 log = tempfile_log(root)
                 process = subprocess.Popen([selected.local_python or sys.executable, '-u', '-c',
+                    'CELL_TIMEOUT_SECONDS = ' + str(selected.notebook_cell_timeout_seconds) + '\n' +
                     Path(__file__).with_name('notebook_kernel_worker.py').read_text()], cwd=root,
                     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=log, text=True,
                     start_new_session=os.name == 'posix',
                     env={**os.environ, 'MPLBACKEND': 'module://matplotlib_inline.backend_inline',
-                         'OMP_NUM_THREADS': '2', 'OPENBLAS_NUM_THREADS': '2'})
+                         'OMP_NUM_THREADS': str(selected.notebook_cpu_threads),
+                         'MKL_NUM_THREADS': str(selected.notebook_cpu_threads),
+                         'OPENBLAS_NUM_THREADS': str(selected.notebook_cpu_threads),
+                         'VECLIB_MAXIMUM_THREADS': str(selected.notebook_cpu_threads)})
                 kernel = {'process': process, 'log': log, 'events': queue.Queue(), 'busy': False,
-                          'fingerprint': fingerprint, 'id': uuid.uuid4().hex}
+                          'fingerprint': fingerprint, 'id': uuid.uuid4().hex,
+                          'cell_timeout_seconds': selected.notebook_cell_timeout_seconds}
                 self.kernels[key] = kernel
                 threading.Thread(target=self._read_events, args=(kernel,), daemon=True).start()
             kernel['busy'] = True
@@ -322,7 +334,7 @@ class NotebookSessions:
             kernel['process'].stdin.write(json.dumps({'action': 'execute', 'cells': run['cells']}) + '\n')
             kernel['process'].stdin.flush()
             while True:
-                event = kernel['events'].get(timeout=100)
+                event = kernel['events'].get(timeout=kernel.get('cell_timeout_seconds', 90) + 10)
                 if event['type'] == 'fatal':
                     raise ValueError(event['error'])
                 if event['type'] == 'assistance':

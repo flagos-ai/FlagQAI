@@ -32,6 +32,10 @@ def snapshot(web_root, entry, source):
         if len(raw) != item['bytes'] or sha256(raw).hexdigest() != item['sha256']:
             raise ValueError('Synthesis source files changed. Rebuild the example library before running.')
         files['examples/synthesis/' + name] = base64.b64encode(raw).decode()
+    from .synthesis_inputs import inputs
+    supplemental = inputs(web_root, entry)
+    for item, content in supplemental:
+        files[item['path']] = base64.b64encode(content).decode()
     entry = 'examples/synthesis/' + entry
     files[entry] = base64.b64encode(source.encode()).decode()
     # Real package roots prevent an unrelated installed examples package winning.
@@ -40,4 +44,4 @@ def snapshot(web_root, entry, source):
     payload = {'synthesis_entry': entry, 'synthesis_files': files}
     raw = json.dumps(payload, sort_keys=True).encode()
     return raw, {'path': selected['path'], 'revision': manifest['revision'],
-                 'original_sha256': selected['sha256'], 'snapshot_hash': sha256(raw).hexdigest()}
+                 'original_sha256': selected['sha256'], 'supplemental_inputs': [item for item, _ in supplemental], 'snapshot_hash': sha256(raw).hexdigest()}

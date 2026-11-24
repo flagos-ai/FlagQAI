@@ -1,5 +1,6 @@
 """JSON-lines bridge to a real IPython kernel in the selected interpreter."""
 import json
+import os
 import queue
 import sys
 import threading
@@ -20,7 +21,9 @@ try:
     client = manager.client()
     client.start_channels()
     client.wait_for_ready(timeout=25)
-    emit({'type': 'ready', 'python': sys.version.split()[0], 'executable': sys.executable})
+    emit({'type': 'ready', 'python': sys.version.split()[0], 'executable': sys.executable,
+          'cell_timeout_seconds': globals().get('CELL_TIMEOUT_SECONDS', 90),
+          'cpu_threads': int(os.environ.get('OMP_NUM_THREADS', '2'))})
 except Exception as error:
     if 'manager' in globals():
         try:
@@ -43,11 +46,11 @@ def execute(request):
             truncated = False
             emit({'type': 'cell_start', 'cell_id': cell['id']})
             message = client.execute(cell['source'], allow_stdin=False, stop_on_error=True)
-            deadline = time.monotonic() + 90
+            deadline = time.monotonic() + globals().get('CELL_TIMEOUT_SECONDS', 90)
             while True:
                 if time.monotonic() >= deadline:
                     manager.interrupt_kernel()
-                    raise TimeoutError('Cell exceeded the 90-second limit; restart the kernel before continuing.')
+                    raise TimeoutError('Cell exceeded the ' + str(globals().get('CELL_TIMEOUT_SECONDS', 90)) + '-second limit; restart the kernel before continuing.')
                 try:
                     event = client.get_iopub_msg(timeout=0.2)
                 except queue.Empty:

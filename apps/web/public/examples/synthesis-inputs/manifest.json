@@ -1,0 +1,40 @@
+{
+  "schema": "flagqai.synthesis-inputs.v1",
+  "entries": [
+    {
+      "prefix": "applications/finance/credit_card_fraud/overview/",
+      "path": "creditcard.csv",
+      "url": "/examples/synthesis-inputs/creditcard.csv",
+      "bytes": 339816,
+      "sha256": "cb6baeefbfd24b7b8f865b55efa366e2023b35bb125bc88a9f08a4c03724e5cd",
+      "source": "https://raw.githubusercontent.com/Classiq/classiq-library/b69c4893d8264d1e59ce0909df2bd88efed25e00/applications/finance/resources/creditcard.csv",
+      "attribution": "Machine Learning Group at ULB; Worldline. Pinned teaching subset distributed by Classiq.",
+      "license": "Open Database License and Database Contents License, as identified by the dataset publisher",
+      "license_url": "https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud",
+      "licenses": [
+        "https://opendatacommons.org/licenses/odbl/1-0/",
+        "https://opendatacommons.org/licenses/dbcl/1-0/"
+      ]
+    },
+    {
+      "prefix": "algorithms/machine_learning/qgan/qgan_bars_and_strips/overview/",
+      "path": "resources/generator_trained_model.pth",
+      "url": "/examples/synthesis-inputs/generator_trained_model.pth",
+      "bytes": 5207,
+      "sha256": "21bae21bcb4e2abd763e8fd77adff64da9439562cc7758046327ca626f6e507e",
+      "source": "https://raw.githubusercontent.com/Classiq/classiq-library/b69c4893d8264d1e59ce0909df2bd88efed25e00/algorithms/QML/qgan/resources/generator_trained_model.pth",
+      "attribution": "Classiq Technologies; original generator checkpoint, unmodified.",
+      "license": "MIT; see CLASSIQ_LICENSE.txt"
+    },
+    {
+      "prefix": "algorithms/machine_learning/qgan/qgan_bars_and_strips/overview/",
+      "path": "resources/q_generator_trained_model.pth",
+      "url": "/examples/synthesis-inputs/q_generator_trained_model.pth",
+      "bytes": 8866,
+      "sha256": "85a2a8ad1f7d3495857808a5cbab7f2e4d186c2cd1b89de53e33926bd72af19b",
+      "source": "https://raw.githubusercontent.com/Classiq/classiq-library/b69c4893d8264d1e59ce0909df2bd88efed25e00/algorithms/QML/qgan/resources/q_generator_trained_model.pth",
+      "attribution": "Classiq Technologies; original generator checkpoint, unmodified.",
+      "license": "MIT; see CLASSIQ_LICENSE.txt"
+    }
+  ]
+}

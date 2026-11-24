@@ -1815,7 +1815,7 @@
         "typing"
       ],
       "notebookSha256": "a0af7740c932dcdee2b40029e5ae00415d499485fb157cf288fb7028b4c571ce",
-      "bundleSha256": "0465aa57a70fe1b46b25ac3486025a1598922d5188e96c79955643f8fc1eb1aa",
+      "bundleSha256": "af82fd9c6b8b6a990adb60cf68db44c40e6d2fe171f82ff4226a2a06996581fb",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/applications/image_processing/quantum_hadamard_edge_detection/overview"
     },
@@ -3560,7 +3560,7 @@
         "torch"
       ],
       "notebookSha256": "6d1b3b24f9dd7f47c2f7f61dc9d583a3a463ccaa0a7b7877e0726abe81e5b06c",
-      "bundleSha256": "4ce02e709dcb2b5765d38e6ca61bb0f6f10a5502f7038268454bc284ff6b50aa",
+      "bundleSha256": "6e352553a8f62d76791b5b66e7f6a8401306893f488bc71b0633e05163e72012",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/tutorials/basics/exponentiation/example_exponentiation/overview"
     },
@@ -4172,7 +4172,7 @@
         "torch"
       ],
       "notebookSha256": "097683acb9581e529d7bf01e244009409e7adf6006a2c91f29d66232e98aeaf5",
-      "bundleSha256": "983cd9ef80207d8415f69ff0e1430b8f5637d672889b6c556cb01e5eadefcee5",
+      "bundleSha256": "eb6558d857445829ae7c122701ced5c980faf18648456af04528291fe72b28a0",
       "unavailableReason": "",
       "sourceUrl": "https://github.com/flagos-ai/FlagQuantum/tree/fb7c05184085f829f282780618014001a3da1714/examples/synthesis/tutorials/technology_demonstrations/hamiltonian_evolution/overview"
     },

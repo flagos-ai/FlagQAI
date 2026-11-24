@@ -176,7 +176,7 @@ def supervise():
                 raise ValueError('Invalid synthesis input snapshot.')
             size = 0
             for name, encoded in assets.items():
-                if (not name.startswith('examples/') or '\\' in name
+                if (not (name.startswith('examples/') or (name.startswith('resources/') or '/' not in name) and Path(name).suffix in ('.csv', '.json', '.npy', '.npz', '.pth')) or '\\' in name
                         or any(part in ('', '.', '..') for part in name.split('/'))):
                     raise ValueError('Invalid synthesis input path.')
                 raw = base64.b64decode(encoded, validate=True)

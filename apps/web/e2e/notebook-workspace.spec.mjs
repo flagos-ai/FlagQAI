@@ -2,6 +2,27 @@ import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { chooseNotebook } from "./notebook-picker.mjs";
 
+const caseNotebooks = new WeakMap();
+test.beforeEach(async ({ page }) => {
+  const ids = new Set();
+  caseNotebooks.set(page, ids);
+  page.on("request", (request) => {
+    const identity = new URL(request.url()).pathname.match(
+      /^\/api\/notebook-sessions\/([a-f0-9]{32})(?:\/|$)/,
+    );
+    if (identity) ids.add(identity[1]);
+  });
+});
+test.afterEach(async ({ page }) => {
+  await Promise.allSettled(
+    [...caseNotebooks.get(page)].map((id) =>
+      page.request.post("/api/notebook-sessions/" + id + "/restart", {
+        data: { action: "restart" },
+      }),
+    ),
+  );
+});
+
 test("IPython cell workspace retains state, receipts, edits and output", async ({
   page,
 }) => {
@@ -735,4 +756,59 @@ test("notebook output images fit without cropping or distorting", async ({
     path: "test-results/notebook-output-fit.png",
     fullPage: true,
   });
+});
+
+test("original credit-card notebook runs with verified external data and preserves script draft", async ({
+  page,
+}) => {
+  test.setTimeout(90000);
+  await page.goto("/#model");
+  const model = page.locator(
+    'textarea[aria-label="Quantum model code editor"]',
+  );
+  await model.fill("# preserve my unrelated Python draft");
+  await page.getByRole("button", { name: "Examples", exact: true }).click();
+  const path =
+    "applications/finance/credit_card_fraud/overview/walkthrough.ipynb";
+  await page.getByRole("textbox", { name: "Search models" }).fill(path);
+  await page
+    .getByRole("region", { name: "FlagQuantum synthesis files" })
+    .getByRole("button", { name: path, exact: true })
+    .click();
+  const workspace = page.getByRole("region", {
+    name: "Notebook workspace",
+    exact: true,
+  });
+  const receipt = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      /\/api\/notebook-sessions\/[a-f0-9]+\/execute$/.test(response.url()),
+  );
+  await workspace.getByRole("button", { name: "Run all", exact: true }).click();
+  const response = await receipt;
+  expect(response.ok()).toBeTruthy();
+  const original = await response.json();
+  let observed;
+  await expect
+    .poll(
+      async () => {
+        observed = await (
+          await page.request.get("/api/notebook-sessions/" + original.id)
+        ).json();
+        return observed.runs[0]?.status;
+      },
+      { timeout: 60000 },
+    )
+    .not.toMatch(/^(queued|running)$/);
+  expect(observed.runs[0].status, JSON.stringify(observed.runs[0])).toBe(
+    "completed",
+  );
+  expect(observed.cells.map((cell) => cell.source)).toEqual(
+    original.cells.map((cell) => cell.source),
+  );
+  expect(
+    observed.runs[0].cells.every((cell) => cell.status === "completed"),
+  ).toBe(true);
+  expect(JSON.stringify(observed.runs[0])).toContain("948");
+  await expect(model).toHaveValue("# preserve my unrelated Python draft");
 });

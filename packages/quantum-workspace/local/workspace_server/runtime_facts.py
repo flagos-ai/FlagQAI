@@ -19,7 +19,7 @@ def runtime_manifest(fq=None, imports=()):
     for dist in metadata.distributions():
         name = dist.metadata.get('Name', '')
         version = dist.version
-        if re.fullmatch(r'[A-Za-z0-9._-]{1,100}', name) and re.fullmatch(r'[A-Za-z0-9.+!_-]{1,100}', version): packages[name.lower().replace('_', '-')] = version
+        if re.fullmatch(r'[A-Za-z0-9._-]{1,100}', name) and re.fullmatch(r'[A-Za-z0-9.+!_-]{1,100}', version): packages.setdefault(name.lower().replace('_', '-'), version)
     facts['packages'] = dict(sorted(packages.items())[:128])
     facts['packages_truncated'] = len(packages) > 128
     facts['sdk_distribution_version'] = packages.get('flagquantum')
@@ -41,6 +41,19 @@ def runtime_manifest(fq=None, imports=()):
             facts['sdk_code_sha256'] = digest.hexdigest()
             facts['sdk_code_files'] = count
         facts['sdk_code_scope'] = 'Python and native code files; excludes bytecode, data and distribution metadata'
+        if sys.modules.get('flagquantum') is fq:
+            try:
+                from importlib import import_module
+                native = import_module('flagquantum.simulation.native_cpu')
+                available = bool(native.native_cpu_rotation_available())
+                facts['native_cpu'] = {'available': available,
+                    'parallel_build': bool(native.native_cpu_parallel_build_available()) if available else False}
+                if not available:
+                    loader = sys.modules.get('flagquantum.simulation.native_cpu.adjoint')
+                    facts['native_cpu']['detail'] = str(getattr(loader, '_EXTENSION_ERROR', None) or 'Native CPU operators are disabled or not loaded.')[:500]
+            except (ImportError, OSError, RuntimeError, AttributeError) as error:
+                facts['native_cpu'] = {'available': False, 'detail': str(error)[:500]}
+
         try:
             direct = json.loads(metadata.distribution('flagquantum').read_text('direct_url.json') or '{}')
             vcs = direct.get('vcs_info', {}); revision = vcs.get('commit_id')
