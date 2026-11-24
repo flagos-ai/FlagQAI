@@ -2,6 +2,10 @@ import { openWorkspaceAction } from "./workspace-actions.mjs";
 import { test, expect } from "@playwright/test";
 import { writeFile, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
+import {
+  pythonExamples,
+  openCircuitExample,
+} from "../src/state/python-templates.ts";
 
 const editor = (page) =>
   page.getByRole("textbox", { name: "Quantum model code editor" });
@@ -110,18 +114,18 @@ for (const [name, states] of [
     });
     if ((await agent.getAttribute("aria-expanded")) === "true")
       await agent.click();
-    await page.getByRole("button", { name: "Examples", exact: true }).click();
     if (name === "X State") {
       await editor(page).fill(draft);
-      await expect(
-        page.getByRole("button", { name: /^X State/ }),
-      ).toContainText("predict its measurement");
     }
+    // Exercise manually authored bounded circuits. The source library itself
+    // mirrors upstream files and is covered by synthesis-library.spec.mjs.
+    await page.getByRole("button", { name: "New Model", exact: true }).click();
     await page
-      .getByRole("button", {
-        name: new RegExp("^" + name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
-      })
+      .getByRole("button", { name: "Gate-level circuit", exact: true })
       .click();
+    const fixture = pythonExamples.find((model) => model.name === name);
+    expect(fixture).toBeTruthy();
+    await editor(page).fill(openCircuitExample(fixture).source);
     if (states) await expect(editor(page)).toHaveValue(/^# Predict: /);
     const run = await runPython(page);
     expect(run.status, JSON.stringify(run)).toBe("completed");
@@ -3379,10 +3383,13 @@ test("model import explains invalid files and preserves the newest draft during 
     await agent.click();
   await page.getByRole("button", { name: "Examples", exact: true }).click();
   const examples = page.getByRole("region", {
-    name: "Example models",
+    name: "FlagQuantum synthesis files",
     exact: true,
   });
-  expect((await examples.boundingBox()).height).toBeLessThan(280);
+  await expect(examples).toBeVisible();
+  expect(
+    (await page.locator(".fq-library-body").boundingBox()).height,
+  ).toBeLessThan(page.viewportSize().height);
   await page.screenshot({
     path: testInfo.outputPath("compact-model-library.png"),
     fullPage: true,
@@ -3405,9 +3412,9 @@ test("model import explains invalid files and preserves the newest draft during 
       .locator(".fq-model-library-tabs")
       .evaluate((element) => element.scrollWidth <= element.clientWidth + 1),
   ).toBe(true);
-  await expect(examples.getByRole("button").last()).toContainText(
-    "Quantum Arithmetic",
-  );
+  await expect(
+    examples.getByRole("button", { name: "tutorials", exact: true }),
+  ).toBeVisible();
   await page.screenshot({
     path: testInfo.outputPath("compact-model-library-narrow.png"),
     fullPage: true,
@@ -3421,14 +3428,20 @@ test("model import explains invalid files and preserves the newest draft during 
   });
   await modelSearch.fill("   ghz   ");
   await expect(
-    page.locator(".fq-library-card").filter({ hasText: "GHZ State" }).first(),
+    examples.getByRole("button", {
+      name: "functions/state_preparation/prepare_ghz_state/main.py",
+      exact: true,
+    }),
   ).toBeVisible();
   await expect(
-    page.locator(".fq-library-card").filter({ hasText: "Bell State" }),
+    examples.getByRole("button", {
+      name: "community/basic_examples/superposition/main.py",
+      exact: true,
+    }),
   ).toHaveCount(0);
   await modelSearch.fill("no-model-with-this-name");
   await expect(
-    page.getByRole("status").filter({ hasText: "No models match your search" }),
+    examples.getByRole("status").filter({ hasText: "No matching files." }),
   ).toBeVisible();
   await modelSearch.evaluate((element) =>
     element.dispatchEvent(
@@ -4921,7 +4934,7 @@ test("QAOA Max-Cut reference: scripted Agent orchestration, real optimization, c
   // Keep individual operation deadlines and zero retries; allow enough total
   // time for the full provenance workflow on shared CI runners.
   testInfo.setTimeout(240000);
-  const { qaoaTaskPrompt, qaoaTaskName, qaoaSource } =
+  const { qaoaTaskPrompt, qaoaSource } =
     await import("../src/tasks/qaoa-maxcut.mjs");
   const previousRuns = new Set(
     (await get(page, "/api/python/runs")).map((item) => item.id),
@@ -5169,11 +5182,11 @@ test("QAOA Max-Cut reference: scripted Agent orchestration, real optimization, c
   if ((await agent.getAttribute("aria-expanded")) === "true")
     await agent.click();
   await page.getByRole("button", { name: "MODELS", exact: true }).click();
-  await page.getByRole("button", { name: "Examples", exact: true }).click();
+  await page.getByRole("button", { name: "New Model", exact: true }).click();
   await page
-    .getByRole("region", { name: "Reference research task", exact: true })
-    .getByRole("button", { name: new RegExp(qaoaTaskName) })
+    .getByRole("button", { name: "Gate-level circuit", exact: true })
     .click();
+  await editor(page).fill(qaoaSource);
   await expect(editor(page)).toHaveValue(qaoaSource);
   const independentRun = await runPython(page);
   const independent = await savedRecord(
@@ -5555,11 +5568,11 @@ test("QAOA Max-Cut reference: scripted Agent orchestration, real optimization, c
       );
       expect(environmentManifest.installation_performed).toBe(false);
       expect(environmentManifest.current.sdk_version).toBe("0.4.0");
-      expect(environmentManifest.current.packages.torch).toMatch(
-        /^2\.13\.0(?:\+cpu)?$/,
+      expect(environmentManifest.current.packages.torch).toBe(
+        full.runtime.environment_manifest.packages.torch,
       );
-      expect(environmentManifest.current.sdk_code_sha256).toMatch(
-        /^[a-f0-9]{64}$/,
+      expect(environmentManifest.current.sdk_code_sha256).toBe(
+        full.runtime.environment_manifest.sdk_code_sha256,
       );
       await restored.screenshot({
         path: testInfo.outputPath("reproduction-environment-preparation.png"),

@@ -5134,7 +5134,7 @@ body,
   color: var(--muted);
   font-size: 12px;
 }
-.fq-workspace .fq-quick-open > input {
+.fq-workspace.fq-ui-controls .fq-quick-open > input {
   width: calc(100% - 32px);
   min-width: 0;
 }

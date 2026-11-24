@@ -28,7 +28,10 @@ test("library view and creation preserve drafts and never submit work", async ({
     page.getByRole("region", { name: "My models", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("region", { name: "Example models", exact: true }),
+    page.getByRole("region", {
+      name: "FlagQuantum synthesis files",
+      exact: true,
+    }),
   ).toBeVisible();
   await search.press("Escape");
   await page.getByRole("button", { name: "New Model", exact: true }).click();

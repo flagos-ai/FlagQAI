@@ -23,12 +23,17 @@ independent clean-environment installation. Added dependencies include PySCF
 retained in the local preparation history; the successful installation uses a
 published binary wheel.
 
-The final audit assigns each kernel four CPU threads, a 1,800-second cell
+The first pass of the final audit assigns each kernel four CPU threads, a 1,800-second cell
 deadline, a 7,200-second notebook deadline and a 4 GiB notebook memory budget.
 Elapsed times include contention from the second independent kernel and are
 not isolated performance benchmarks. The default interactive profile remains
 two threads and a 600-second cell deadline; long examples need the recorded
 profile rather than an implicit unlimited execution budget.
+
+Minimum graph coloring exceeded the initial cell deadline. Its separate retry
+profile uses the same original cells and four CPU threads, with a 7,200-second
+cell deadline and a 14,400-second notebook deadline. The initial interruption
+remains in the ledger; the larger budget does not reduce optimization iterations.
 
 The current local Web is activated on that complete SDK installation with four
 threads and a 7,200-second cell deadline in its local settings. This interactive
@@ -79,13 +84,18 @@ It does not imply optimizer convergence, quantum advantage or scientific
 correctness beyond the checks the original examples actually perform.
 
 Supporting regressions passed: 252 backend tests with the complete SDK, 336
-frontend tests, 10 Chromium scenarios with the same SDK, TypeScript, the Web
+frontend tests, all 96 Chromium scenarios with the same SDK, TypeScript, the Web
 production build and staged CLI package verification (2,671 files, 32 entry
 targets). The browser scenarios include real credit-card data execution and
 unrelated draft preservation. The release inventory recognizes only the exact
 Git identities of the original PNG and two attributed pretrained weight files;
 CLI package binary checks remain unchanged. The CI SDK source pin is aligned
 with the example snapshot and its scientific dependencies are explicitly pinned.
+Browser acceptance also covers the complete QAOA export/import/reproduction
+workflow, rapid follow-up insertion and editing, and horizontal containment of
+the project Quick Open dialog. Runtime comparison checks use the archived run's
+actual Torch version and SDK code hash; the separate CI SDK lane retains its
+explicit Torch version pin.
 
 ## Repeating the audit
 

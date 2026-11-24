@@ -167,13 +167,12 @@ test("Notebook docstring prose stays string-colored without executing cells", as
     name: "Notebook workspace",
     exact: true,
   });
-  const code = notebook.getByLabel("Edit code cell 1", { exact: true });
+  const cell = notebook
+    .getByRole("region", { name: /^code cell \d+$/ })
+    .first();
+  const code = cell.getByRole("textbox");
   const source = '"""Readout\nfor N = 15: int(bits, 2) # prose\n"""\nprint(15)';
   await code.fill(source);
-  const cell = notebook.getByRole("region", {
-    name: "code cell 1",
-    exact: true,
-  });
   await expect(
     cell.locator(".fq-token-string").filter({ hasText: "for N = 15" }),
   ).toHaveText('"""Readout\nfor N = 15: int(bits, 2) # prose\n"""');

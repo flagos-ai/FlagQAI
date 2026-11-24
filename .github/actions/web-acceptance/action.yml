@@ -64,6 +64,9 @@ runs:
           pnpm --dir apps/web exec playwright install --with-deps chromium
         fi
     - name: Browser workbench acceptance (real SDK, scripted Agent, no model calls)
+      env:
+        FQ_SCIENTIFIC_GRID_SDK: compatible
+        FQ_SYNTHESIS_REPORT_SDK: compatible
       shell: bash
       run: pnpm --dir apps/web test:e2e
     - name: Verify complete product journeys

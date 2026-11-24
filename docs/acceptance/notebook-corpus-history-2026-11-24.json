@@ -22,6 +22,7 @@
           "started_at": 1795500002.817827,
           "elapsed_seconds": 3.764,
           "code_cells": 13,
+          "notebook_timeout_seconds": null,
           "completed_cells": 13,
           "source_cells_unchanged": true,
           "runtime": {
@@ -29,6 +30,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/06e9c41297c34e1b9f460d70499ac210/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -79,6 +82,7 @@
           "started_at": 1795500006.5841558,
           "elapsed_seconds": 1.724,
           "code_cells": 5,
+          "notebook_timeout_seconds": null,
           "completed_cells": 5,
           "source_cells_unchanged": true,
           "runtime": {
@@ -86,6 +90,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/e92c9d73f1e94da68993e3669bb0cf12/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -131,6 +137,7 @@
           "started_at": 1795500008.3103218,
           "elapsed_seconds": 2.234,
           "code_cells": 4,
+          "notebook_timeout_seconds": null,
           "completed_cells": 4,
           "source_cells_unchanged": true,
           "runtime": {
@@ -138,6 +145,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/c179e954b2da4830b5bc921fcd1b0753/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -180,6 +189,7 @@
           "started_at": 1795500010.546885,
           "elapsed_seconds": 21.047,
           "code_cells": 4,
+          "notebook_timeout_seconds": null,
           "completed_cells": 4,
           "source_cells_unchanged": true,
           "runtime": {
@@ -187,6 +197,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/aa81e01b99d441829b3e7b9999debc36/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -235,6 +247,7 @@
           "started_at": 1795500031.596332,
           "elapsed_seconds": 2.24,
           "code_cells": 6,
+          "notebook_timeout_seconds": null,
           "completed_cells": 6,
           "source_cells_unchanged": true,
           "runtime": {
@@ -242,6 +255,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/54bd08ed42404081b26a7300daab14aa/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -285,6 +300,7 @@
           "started_at": 1795500033.8376691,
           "elapsed_seconds": 1.723,
           "code_cells": 8,
+          "notebook_timeout_seconds": null,
           "completed_cells": 8,
           "source_cells_unchanged": true,
           "runtime": {
@@ -292,6 +308,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/8d724b52cd4f488187c5eb93db6e09bd/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -335,6 +353,7 @@
           "started_at": 1795500035.563227,
           "elapsed_seconds": 1.675,
           "code_cells": 4,
+          "notebook_timeout_seconds": null,
           "completed_cells": 4,
           "source_cells_unchanged": true,
           "runtime": {
@@ -342,6 +361,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/499eb03bf54f4654837114ad824ff7a4/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -386,6 +407,7 @@
           "started_at": 1795500037.2395809,
           "elapsed_seconds": 1.717,
           "code_cells": 3,
+          "notebook_timeout_seconds": null,
           "completed_cells": 3,
           "source_cells_unchanged": true,
           "runtime": {
@@ -393,6 +415,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/d2d6bc5e923e4eaeb3791833c43cb61d/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -434,6 +458,7 @@
           "started_at": 1795500038.957945,
           "elapsed_seconds": 17.981,
           "code_cells": 5,
+          "notebook_timeout_seconds": null,
           "completed_cells": 5,
           "source_cells_unchanged": true,
           "runtime": {
@@ -441,6 +466,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/a519d89c36e848e183bc8d98809b3249/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -482,6 +509,7 @@
           "started_at": 1795500056.942809,
           "elapsed_seconds": 2.23,
           "code_cells": 13,
+          "notebook_timeout_seconds": null,
           "completed_cells": 13,
           "source_cells_unchanged": true,
           "runtime": {
@@ -489,6 +517,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/32132b01262c419d89c85ead82db77bf/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -556,6 +586,7 @@
           "started_at": 1795500059.175748,
           "elapsed_seconds": 2.244,
           "code_cells": 12,
+          "notebook_timeout_seconds": null,
           "completed_cells": 12,
           "source_cells_unchanged": true,
           "runtime": {
@@ -563,6 +594,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/8b05c234a6744298bf430c8d66286d1d/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -645,6 +678,7 @@
           "started_at": 1795500061.42441,
           "elapsed_seconds": 2.232,
           "code_cells": 15,
+          "notebook_timeout_seconds": null,
           "completed_cells": 15,
           "source_cells_unchanged": true,
           "runtime": {
@@ -652,6 +686,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/c046b803ad1149b0a49f560645bff4d6/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -708,6 +744,7 @@
           "started_at": 1795500063.659471,
           "elapsed_seconds": 1.729,
           "code_cells": 2,
+          "notebook_timeout_seconds": null,
           "completed_cells": 2,
           "source_cells_unchanged": true,
           "runtime": {
@@ -715,6 +752,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/e145ee16c29343e0b71d0947f96129be/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -757,6 +796,7 @@
           "started_at": 1795500065.3917708,
           "elapsed_seconds": 32.247,
           "code_cells": 5,
+          "notebook_timeout_seconds": null,
           "completed_cells": 5,
           "source_cells_unchanged": true,
           "runtime": {
@@ -764,6 +804,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/f6428deda5d4425892c8d617c5179e44/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -811,6 +853,7 @@
           "started_at": 1795500097.641147,
           "elapsed_seconds": 1.733,
           "code_cells": 23,
+          "notebook_timeout_seconds": null,
           "completed_cells": 10,
           "source_cells_unchanged": true,
           "runtime": {
@@ -818,6 +861,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/9953090480bd4c4d940d71a35f1c5944/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -930,6 +975,7 @@
           "started_at": 1795503328.704692,
           "elapsed_seconds": 2.747,
           "code_cells": 23,
+          "notebook_timeout_seconds": null,
           "completed_cells": 23,
           "source_cells_unchanged": true,
           "runtime": {
@@ -938,6 +984,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 600
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/89d636b2af24489599bf9eecda077610/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -1022,6 +1070,7 @@
           "started_at": 1795500099.3769479,
           "elapsed_seconds": 3.768,
           "code_cells": 25,
+          "notebook_timeout_seconds": null,
           "completed_cells": 25,
           "source_cells_unchanged": true,
           "runtime": {
@@ -1029,6 +1078,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/3018fe3556864523a83787bc326c08a4/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -1091,6 +1142,7 @@
           "started_at": 1795500103.14815,
           "elapsed_seconds": 5.292,
           "code_cells": 5,
+          "notebook_timeout_seconds": null,
           "completed_cells": 5,
           "source_cells_unchanged": true,
           "runtime": {
@@ -1098,6 +1150,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/048008b9119f427da722747b596420b7/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -1144,6 +1198,7 @@
           "started_at": 1795500108.441854,
           "elapsed_seconds": 3.702,
           "code_cells": 5,
+          "notebook_timeout_seconds": null,
           "completed_cells": 5,
           "source_cells_unchanged": true,
           "runtime": {
@@ -1151,6 +1206,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/1aac241573864997b1c8cceecd37d27b/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -1193,6 +1250,7 @@
           "started_at": 1795500112.145476,
           "elapsed_seconds": 2.233,
           "code_cells": 4,
+          "notebook_timeout_seconds": null,
           "completed_cells": 4,
           "source_cells_unchanged": true,
           "runtime": {
@@ -1200,6 +1258,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/b785f8f222574afd8a6ab3099d1b48ca/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -1247,6 +1307,7 @@
           "started_at": 1795500114.3820102,
           "elapsed_seconds": 8.347,
           "code_cells": 21,
+          "notebook_timeout_seconds": null,
           "completed_cells": 21,
           "source_cells_unchanged": true,
           "runtime": {
@@ -1254,6 +1315,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/12dd32d533a74774881ac5299da7eece/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -1304,6 +1367,7 @@
           "started_at": 1795500122.732491,
           "elapsed_seconds": 8.334,
           "code_cells": 5,
+          "notebook_timeout_seconds": null,
           "completed_cells": 5,
           "source_cells_unchanged": true,
           "runtime": {
@@ -1311,6 +1375,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/0de758fcf6854b80b9990a13d3e9deea/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -1353,6 +1419,7 @@
           "started_at": 1795500131.06949,
           "elapsed_seconds": 8.853,
           "code_cells": 5,
+          "notebook_timeout_seconds": null,
           "completed_cells": 5,
           "source_cells_unchanged": true,
           "runtime": {
@@ -1360,6 +1427,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/99eec30a0af14dfe91f84f76585e115c/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -1407,6 +1476,7 @@
           "started_at": 1795500139.927348,
           "elapsed_seconds": 5.803,
           "code_cells": 16,
+          "notebook_timeout_seconds": null,
           "completed_cells": 16,
           "source_cells_unchanged": true,
           "runtime": {
@@ -1414,6 +1484,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/5749ecffc8204f5ba61965ae8bb13e0f/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -1469,6 +1541,7 @@
           "started_at": 1795500145.7343822,
           "elapsed_seconds": 3.259,
           "code_cells": 16,
+          "notebook_timeout_seconds": null,
           "completed_cells": 16,
           "source_cells_unchanged": true,
           "runtime": {
@@ -1476,6 +1549,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/dd825e238564475c88716887140b9122/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -1543,6 +1618,7 @@
           "started_at": 1795500148.9979038,
           "elapsed_seconds": 6.318,
           "code_cells": 14,
+          "notebook_timeout_seconds": null,
           "completed_cells": 14,
           "source_cells_unchanged": true,
           "runtime": {
@@ -1550,6 +1626,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/a0f4f3fd132648bd8880c45127875a8a/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -1623,6 +1701,7 @@
           "started_at": 1795500155.3205602,
           "elapsed_seconds": 4.27,
           "code_cells": 24,
+          "notebook_timeout_seconds": null,
           "completed_cells": 24,
           "source_cells_unchanged": true,
           "runtime": {
@@ -1630,6 +1709,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/6822271792b541ee9554defc45171128/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -1706,6 +1787,7 @@
           "started_at": 1795500159.594934,
           "elapsed_seconds": 4.279,
           "code_cells": 14,
+          "notebook_timeout_seconds": null,
           "completed_cells": 14,
           "source_cells_unchanged": true,
           "runtime": {
@@ -1713,6 +1795,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/a4fcb8ce316048f0ac795511e4ebbcab/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -1782,6 +1866,7 @@
           "started_at": 1795500163.878456,
           "elapsed_seconds": 2.246,
           "code_cells": 15,
+          "notebook_timeout_seconds": null,
           "completed_cells": 15,
           "source_cells_unchanged": true,
           "runtime": {
@@ -1789,6 +1874,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/758475f5020241769edfb72431e69d0d/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -1870,6 +1957,7 @@
           "started_at": 1795500166.129861,
           "elapsed_seconds": 20.98,
           "code_cells": 17,
+          "notebook_timeout_seconds": null,
           "completed_cells": 17,
           "source_cells_unchanged": true,
           "runtime": {
@@ -1877,6 +1965,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/a5dd1092d11a4fa1b17af0dd9f2adc16/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -1934,6 +2024,7 @@
           "started_at": 1795500187.111789,
           "elapsed_seconds": 4.763,
           "code_cells": 5,
+          "notebook_timeout_seconds": null,
           "completed_cells": 5,
           "source_cells_unchanged": true,
           "runtime": {
@@ -1941,6 +2032,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/22233616a9ac42d19f2c96f44d947b30/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -1983,6 +2076,7 @@
           "started_at": 1795500191.876898,
           "elapsed_seconds": 47.478,
           "code_cells": 27,
+          "notebook_timeout_seconds": null,
           "completed_cells": 27,
           "source_cells_unchanged": true,
           "runtime": {
@@ -1990,6 +2084,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/e025b5fa709a4908ae8b1f9a08897295/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -2049,6 +2145,7 @@
           "started_at": 1795500239.3574998,
           "elapsed_seconds": 2.238,
           "code_cells": 4,
+          "notebook_timeout_seconds": null,
           "completed_cells": 4,
           "source_cells_unchanged": true,
           "runtime": {
@@ -2056,6 +2153,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/fb5ae681a7e4474d83757068baecba74/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -2102,6 +2201,7 @@
           "started_at": 1795500241.598895,
           "elapsed_seconds": 2.755,
           "code_cells": 14,
+          "notebook_timeout_seconds": null,
           "completed_cells": 14,
           "source_cells_unchanged": true,
           "runtime": {
@@ -2109,6 +2209,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/725bb7cdfadb4a29b61dab9414e1efc3/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -2203,6 +2305,7 @@
           "started_at": 1795500244.3583722,
           "elapsed_seconds": 1.727,
           "code_cells": 3,
+          "notebook_timeout_seconds": null,
           "completed_cells": 3,
           "source_cells_unchanged": true,
           "runtime": {
@@ -2210,6 +2313,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/892706d17e6c41139936fa2a2314781a/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -2251,6 +2356,7 @@
           "started_at": 1795500246.08714,
           "elapsed_seconds": 2.235,
           "code_cells": 9,
+          "notebook_timeout_seconds": null,
           "completed_cells": 9,
           "source_cells_unchanged": true,
           "runtime": {
@@ -2258,6 +2364,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/ef841d03f4a54fafa53b680eeae2b8f6/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -2347,6 +2455,7 @@
           "started_at": 1795500248.325901,
           "elapsed_seconds": 1.726,
           "code_cells": 2,
+          "notebook_timeout_seconds": null,
           "completed_cells": 2,
           "source_cells_unchanged": true,
           "runtime": {
@@ -2354,6 +2463,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/e18488b9bb8641a7991d84e214fd116c/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -2397,6 +2508,7 @@
           "started_at": 1795500250.055107,
           "elapsed_seconds": 24.593,
           "code_cells": 18,
+          "notebook_timeout_seconds": null,
           "completed_cells": 18,
           "source_cells_unchanged": true,
           "runtime": {
@@ -2404,6 +2516,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/54b9aeed95ec41ffa965d3d533fd1fed/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -2469,6 +2583,7 @@
           "started_at": 1795500274.652116,
           "elapsed_seconds": 2.182,
           "code_cells": 25,
+          "notebook_timeout_seconds": null,
           "completed_cells": 25,
           "source_cells_unchanged": true,
           "runtime": {
@@ -2476,6 +2591,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/b554a0c4265940318c99743b616c0970/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -2535,6 +2652,7 @@
           "started_at": 1795500276.836363,
           "elapsed_seconds": 23.058,
           "code_cells": 16,
+          "notebook_timeout_seconds": null,
           "completed_cells": 16,
           "source_cells_unchanged": true,
           "runtime": {
@@ -2542,6 +2660,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/2039db5e79b2493dbe5e4022be60d4fa/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -2605,6 +2725,7 @@
           "started_at": 1795500299.899882,
           "elapsed_seconds": 92.02,
           "code_cells": 8,
+          "notebook_timeout_seconds": null,
           "completed_cells": 3,
           "source_cells_unchanged": true,
           "runtime": {
@@ -2612,6 +2733,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/401aa5dd20104fe29da0bf90f71db026/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -2682,6 +2805,7 @@
           "started_at": 1795503331.461419,
           "elapsed_seconds": 696.866,
           "code_cells": 8,
+          "notebook_timeout_seconds": null,
           "completed_cells": 4,
           "source_cells_unchanged": true,
           "runtime": {
@@ -2690,6 +2814,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 600
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/d0b3b8fe93cc4730821586e60866eaa1/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -2763,6 +2889,7 @@
           "started_at": 1795500391.925013,
           "elapsed_seconds": 2.249,
           "code_cells": 15,
+          "notebook_timeout_seconds": null,
           "completed_cells": 15,
           "source_cells_unchanged": true,
           "runtime": {
@@ -2770,6 +2897,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/304b6840f91442e2a3995ad16e4a0c5b/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -2829,6 +2958,7 @@
           "started_at": 1795500394.177356,
           "elapsed_seconds": 2.244,
           "code_cells": 6,
+          "notebook_timeout_seconds": null,
           "completed_cells": 6,
           "source_cells_unchanged": true,
           "runtime": {
@@ -2836,6 +2966,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/01a0b645e7f647a99b119f649ade33a5/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -2884,6 +3016,7 @@
           "started_at": 1795500396.423624,
           "elapsed_seconds": 5.289,
           "code_cells": 15,
+          "notebook_timeout_seconds": null,
           "completed_cells": 15,
           "source_cells_unchanged": true,
           "runtime": {
@@ -2891,6 +3024,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/a1ee98660792473db5287e39a9b9d657/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -2954,6 +3089,7 @@
           "started_at": 1795500401.716842,
           "elapsed_seconds": 28.617,
           "code_cells": 5,
+          "notebook_timeout_seconds": null,
           "completed_cells": 5,
           "source_cells_unchanged": true,
           "runtime": {
@@ -2961,6 +3097,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/e93f38601277457fb3768bb4d7543af0/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -3009,6 +3147,7 @@
           "started_at": 1795500430.336085,
           "elapsed_seconds": 2.738,
           "code_cells": 21,
+          "notebook_timeout_seconds": null,
           "completed_cells": 21,
           "source_cells_unchanged": true,
           "runtime": {
@@ -3016,6 +3155,8 @@
             "python": "3.12.14",
             "executable": "<workspace>/.flagqai/example-runtime/bin/python"
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/5be6902606844c93a8edb0d443102588/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -3070,6 +3211,7 @@
           "started_at": 1795500433.076201,
           "elapsed_seconds": 2.234,
           "code_cells": 23,
+          "notebook_timeout_seconds": null,
           "completed_cells": 23,
           "source_cells_unchanged": true,
           "runtime": {
@@ -3078,6 +3220,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/7c68eda7281b4950993e796e6940d29f/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -3141,6 +3285,7 @@
           "started_at": 1795500435.3143969,
           "elapsed_seconds": 6.394,
           "code_cells": 11,
+          "notebook_timeout_seconds": null,
           "completed_cells": 11,
           "source_cells_unchanged": true,
           "runtime": {
@@ -3149,6 +3294,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/cf6af756dba04315bb9a390f5d695f10/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -3198,6 +3345,7 @@
           "started_at": 1795500441.710987,
           "elapsed_seconds": 1.714,
           "code_cells": 4,
+          "notebook_timeout_seconds": null,
           "completed_cells": 4,
           "source_cells_unchanged": true,
           "runtime": {
@@ -3206,6 +3354,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/3b8971857a4c44989afff8f88d78d065/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -3256,6 +3406,7 @@
           "started_at": 1795500443.427927,
           "elapsed_seconds": 16.008,
           "code_cells": 8,
+          "notebook_timeout_seconds": null,
           "completed_cells": 8,
           "source_cells_unchanged": true,
           "runtime": {
@@ -3264,6 +3415,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/4eef14b888144a1f83e0cc7a1b3fb52a/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -3325,6 +3478,7 @@
           "started_at": 1795500459.439179,
           "elapsed_seconds": 3.25,
           "code_cells": 19,
+          "notebook_timeout_seconds": null,
           "completed_cells": 19,
           "source_cells_unchanged": true,
           "runtime": {
@@ -3333,6 +3487,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/e5a653c8803d4d0bbe98597803c20d6c/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -3419,6 +3575,7 @@
           "started_at": 1795500462.694112,
           "elapsed_seconds": 3.311,
           "code_cells": 19,
+          "notebook_timeout_seconds": null,
           "completed_cells": 19,
           "source_cells_unchanged": true,
           "runtime": {
@@ -3427,6 +3584,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/8d967f5bc8b24e1788c4fdb4ea324880/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -3495,6 +3654,7 @@
           "started_at": 1795500466.0071318,
           "elapsed_seconds": 2.829,
           "code_cells": 10,
+          "notebook_timeout_seconds": null,
           "completed_cells": 10,
           "source_cells_unchanged": true,
           "runtime": {
@@ -3503,6 +3663,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/73785ccc0a6d4bf28a4facca782bc969/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -3560,6 +3722,7 @@
           "started_at": 1795500468.8387141,
           "elapsed_seconds": 24.655,
           "code_cells": 16,
+          "notebook_timeout_seconds": null,
           "completed_cells": 16,
           "source_cells_unchanged": true,
           "runtime": {
@@ -3568,6 +3731,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/38512aeb0bf6468192d77fd12a174ef4/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -3637,6 +3802,7 @@
           "started_at": 1795500493.49885,
           "elapsed_seconds": 5.306,
           "code_cells": 14,
+          "notebook_timeout_seconds": null,
           "completed_cells": 14,
           "source_cells_unchanged": true,
           "runtime": {
@@ -3645,6 +3811,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/080a4470e94a42c893a373ae720c8f5f/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -3719,6 +3887,7 @@
           "started_at": 1795500498.809613,
           "elapsed_seconds": 2.244,
           "code_cells": 10,
+          "notebook_timeout_seconds": null,
           "completed_cells": 10,
           "source_cells_unchanged": true,
           "runtime": {
@@ -3727,6 +3896,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/c7f03ab4a9fc446b97e7968525da8ea2/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -3784,6 +3955,7 @@
           "started_at": 1795500501.058016,
           "elapsed_seconds": 9.92,
           "code_cells": 23,
+          "notebook_timeout_seconds": null,
           "completed_cells": 23,
           "source_cells_unchanged": true,
           "runtime": {
@@ -3792,6 +3964,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/1bc6d428642c4c979fd8ba1b2451bf97/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -3841,6 +4015,7 @@
           "started_at": 1795500510.982378,
           "elapsed_seconds": 3.768,
           "code_cells": 5,
+          "notebook_timeout_seconds": null,
           "completed_cells": 5,
           "source_cells_unchanged": true,
           "runtime": {
@@ -3849,6 +4024,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/2bbf4689b132444494a369452656076b/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -3899,6 +4076,7 @@
           "started_at": 1795500514.754267,
           "elapsed_seconds": 1.729,
           "code_cells": 9,
+          "notebook_timeout_seconds": null,
           "completed_cells": 9,
           "source_cells_unchanged": true,
           "runtime": {
@@ -3907,6 +4085,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/86b2cc93b9b743cc8dc519519416bbd8/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -3960,6 +4140,7 @@
           "started_at": 1795500516.4872808,
           "elapsed_seconds": 91.242,
           "code_cells": 21,
+          "notebook_timeout_seconds": null,
           "completed_cells": 2,
           "source_cells_unchanged": true,
           "runtime": {
@@ -3968,6 +4149,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/d22cf4f5f01e4ba98454f9b49a572a73/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -4102,6 +4285,7 @@
           "started_at": 1795504028.337631,
           "elapsed_seconds": 196.212,
           "code_cells": 21,
+          "notebook_timeout_seconds": null,
           "completed_cells": 21,
           "source_cells_unchanged": true,
           "runtime": {
@@ -4110,6 +4294,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 600
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/591019a4c9b14a81ab89ac9813817734/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -4162,6 +4348,7 @@
           "started_at": 1795500607.7321012,
           "elapsed_seconds": 71.467,
           "code_cells": 14,
+          "notebook_timeout_seconds": null,
           "completed_cells": 14,
           "source_cells_unchanged": true,
           "runtime": {
@@ -4170,6 +4357,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/9df9648ae764435c975363f46e2b04ea/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -4232,6 +4421,7 @@
           "started_at": 1795500679.2054431,
           "elapsed_seconds": 1.734,
           "code_cells": 13,
+          "notebook_timeout_seconds": null,
           "completed_cells": 13,
           "source_cells_unchanged": true,
           "runtime": {
@@ -4240,6 +4430,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/1df3e41a7e28405aac27e43cf5832825/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -4290,6 +4482,7 @@
           "started_at": 1795500680.9428952,
           "elapsed_seconds": 8.331,
           "code_cells": 19,
+          "notebook_timeout_seconds": null,
           "completed_cells": 19,
           "source_cells_unchanged": true,
           "runtime": {
@@ -4298,6 +4491,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/d1957317896843a3a37326bfe107b5a8/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -4353,6 +4548,7 @@
           "started_at": 1795500689.2787259,
           "elapsed_seconds": 30.725,
           "code_cells": 28,
+          "notebook_timeout_seconds": null,
           "completed_cells": 28,
           "source_cells_unchanged": true,
           "runtime": {
@@ -4361,6 +4557,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/dac3705bd42646fa8bedd92dd917438d/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -4434,6 +4632,7 @@
           "started_at": 1795500720.008214,
           "elapsed_seconds": 10.387,
           "code_cells": 12,
+          "notebook_timeout_seconds": null,
           "completed_cells": 12,
           "source_cells_unchanged": true,
           "runtime": {
@@ -4442,6 +4641,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/6db309205796474e93f8257c252d2a5c/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -4491,6 +4692,7 @@
           "started_at": 1795500730.399779,
           "elapsed_seconds": 4.276,
           "code_cells": 4,
+          "notebook_timeout_seconds": null,
           "completed_cells": 4,
           "source_cells_unchanged": true,
           "runtime": {
@@ -4499,6 +4701,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/e4831978d2d548049863510f61f8dd34/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -4548,6 +4752,7 @@
           "started_at": 1795500734.679049,
           "elapsed_seconds": 2.239,
           "code_cells": 17,
+          "notebook_timeout_seconds": null,
           "completed_cells": 17,
           "source_cells_unchanged": true,
           "runtime": {
@@ -4556,6 +4761,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/ccfa82335fb94485b2d40ed60aa0a477/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -4602,6 +4809,7 @@
           "started_at": 1795500736.921998,
           "elapsed_seconds": 4.284,
           "code_cells": 17,
+          "notebook_timeout_seconds": null,
           "completed_cells": 17,
           "source_cells_unchanged": true,
           "runtime": {
@@ -4610,6 +4818,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/3d92b8f0ebfa44dd84f002d86cd6ae20/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -4655,6 +4865,7 @@
           "started_at": 1795500741.208041,
           "elapsed_seconds": 6.316,
           "code_cells": 17,
+          "notebook_timeout_seconds": null,
           "completed_cells": 17,
           "source_cells_unchanged": true,
           "runtime": {
@@ -4663,6 +4874,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/f3e6d79096e04394a236dc58e4c81b88/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -4714,6 +4927,7 @@
           "started_at": 1795500747.528416,
           "elapsed_seconds": 30.76,
           "code_cells": 11,
+          "notebook_timeout_seconds": null,
           "completed_cells": 11,
           "source_cells_unchanged": true,
           "runtime": {
@@ -4722,6 +4936,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/75845e0b661b4dc5b2e15baf6bb01ad0/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -4769,6 +4985,7 @@
           "started_at": 1795500778.293426,
           "elapsed_seconds": 3.263,
           "code_cells": 7,
+          "notebook_timeout_seconds": null,
           "completed_cells": 7,
           "source_cells_unchanged": true,
           "runtime": {
@@ -4777,6 +4994,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/568e20d02f654bd8b118e7bb074454e8/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -4842,6 +5061,7 @@
           "started_at": 1795500781.561259,
           "elapsed_seconds": 74.921,
           "code_cells": 36,
+          "notebook_timeout_seconds": null,
           "completed_cells": 36,
           "source_cells_unchanged": true,
           "runtime": {
@@ -4850,6 +5070,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/ecaa39400efa4f7e85536f48d19c4f0c/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -4899,6 +5121,7 @@
           "started_at": 1795500856.484351,
           "elapsed_seconds": 3.259,
           "code_cells": 14,
+          "notebook_timeout_seconds": null,
           "completed_cells": 14,
           "source_cells_unchanged": true,
           "runtime": {
@@ -4907,6 +5130,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/7001d9666a7b4ca19750cdcd6746ae89/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -4960,6 +5185,7 @@
           "started_at": 1795500859.7472441,
           "elapsed_seconds": 4.783,
           "code_cells": 26,
+          "notebook_timeout_seconds": null,
           "completed_cells": 26,
           "source_cells_unchanged": true,
           "runtime": {
@@ -4968,6 +5194,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/955ef49877f34b88b476f856c3291378/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -5043,6 +5271,7 @@
           "started_at": 1795500864.535855,
           "elapsed_seconds": 3.257,
           "code_cells": 29,
+          "notebook_timeout_seconds": null,
           "completed_cells": 29,
           "source_cells_unchanged": true,
           "runtime": {
@@ -5051,6 +5280,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/a7e9aa478fa44fc4a941bc0eaf1dd28e/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -5111,6 +5342,7 @@
           "started_at": 1795500867.797431,
           "elapsed_seconds": 2.751,
           "code_cells": 13,
+          "notebook_timeout_seconds": null,
           "completed_cells": 13,
           "source_cells_unchanged": true,
           "runtime": {
@@ -5119,6 +5351,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/f3092f8063c348dbaaed5e9385b36ef5/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -5181,6 +5415,7 @@
           "started_at": 1795500870.553527,
           "elapsed_seconds": 78.947,
           "code_cells": 12,
+          "notebook_timeout_seconds": null,
           "completed_cells": 12,
           "source_cells_unchanged": true,
           "runtime": {
@@ -5189,6 +5424,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/5ba3fbe840f3422cb80556edf34fc630/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -5240,6 +5477,7 @@
           "started_at": 1795500949.505197,
           "elapsed_seconds": 5.795,
           "code_cells": 28,
+          "notebook_timeout_seconds": null,
           "completed_cells": 28,
           "source_cells_unchanged": true,
           "runtime": {
@@ -5248,6 +5486,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/37703a557bea413ba8fbbe99b652d4f6/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -5320,6 +5560,7 @@
           "started_at": 1795500955.305676,
           "elapsed_seconds": 1.727,
           "code_cells": 15,
+          "notebook_timeout_seconds": null,
           "completed_cells": 15,
           "source_cells_unchanged": true,
           "runtime": {
@@ -5328,6 +5569,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/5a06476dc1b24d82963060c4bfe2f3cf/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -5389,6 +5632,7 @@
           "started_at": 1795500957.037288,
           "elapsed_seconds": 19.516,
           "code_cells": 15,
+          "notebook_timeout_seconds": null,
           "completed_cells": 15,
           "source_cells_unchanged": true,
           "runtime": {
@@ -5397,6 +5641,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/1270feca83d14f1aace9a4616643ea1d/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -5456,6 +5702,7 @@
           "started_at": 1795500976.556544,
           "elapsed_seconds": 46.991,
           "code_cells": 16,
+          "notebook_timeout_seconds": null,
           "completed_cells": 16,
           "source_cells_unchanged": true,
           "runtime": {
@@ -5464,6 +5711,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/783ca6eef0af498b919fd9d2b182aa98/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -5526,6 +5775,7 @@
           "started_at": 1795501023.5506182,
           "elapsed_seconds": 51.064,
           "code_cells": 11,
+          "notebook_timeout_seconds": null,
           "completed_cells": 11,
           "source_cells_unchanged": true,
           "runtime": {
@@ -5534,6 +5784,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/7926a31cca7c4671a5cc9586565829c0/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -5593,6 +5845,7 @@
           "started_at": 1795501074.621142,
           "elapsed_seconds": 1.726,
           "code_cells": 17,
+          "notebook_timeout_seconds": null,
           "completed_cells": 1,
           "source_cells_unchanged": true,
           "runtime": {
@@ -5601,6 +5854,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/94b974d370c9467aaed942dc0e17b7e0/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -5723,6 +5978,7 @@
           "started_at": 1795504224.5579011,
           "elapsed_seconds": 4.829,
           "code_cells": 17,
+          "notebook_timeout_seconds": null,
           "completed_cells": 17,
           "source_cells_unchanged": true,
           "runtime": {
@@ -5731,6 +5987,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 600
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/bbceae4f53a7406a84ab1c3ae31aa632/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -5792,6 +6050,7 @@
           "started_at": 1795501076.34916,
           "elapsed_seconds": 35.813,
           "code_cells": 17,
+          "notebook_timeout_seconds": null,
           "completed_cells": 17,
           "source_cells_unchanged": true,
           "runtime": {
@@ -5800,6 +6059,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/b141fcfeb443475c98e40980983a78b5/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -5873,6 +6134,7 @@
           "started_at": 1795501112.167854,
           "elapsed_seconds": 41.465,
           "code_cells": 28,
+          "notebook_timeout_seconds": null,
           "completed_cells": 28,
           "source_cells_unchanged": true,
           "runtime": {
@@ -5881,6 +6143,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/a3cea48a31714dfab3352eb4f1366487/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -5971,6 +6235,7 @@
           "started_at": 1795501153.638497,
           "elapsed_seconds": 69.432,
           "code_cells": 17,
+          "notebook_timeout_seconds": null,
           "completed_cells": 17,
           "source_cells_unchanged": true,
           "runtime": {
@@ -5979,6 +6244,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/f2e286752bb44a039def3f022d55c5f5/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -6046,6 +6313,7 @@
           "started_at": 1795501223.076181,
           "elapsed_seconds": 18.528,
           "code_cells": 36,
+          "notebook_timeout_seconds": null,
           "completed_cells": 36,
           "source_cells_unchanged": true,
           "runtime": {
@@ -6054,6 +6322,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/6f9d3d90ef914519be0fb6c53e008d15/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -6116,6 +6386,7 @@
           "started_at": 1795501241.608865,
           "elapsed_seconds": 4.783,
           "code_cells": 20,
+          "notebook_timeout_seconds": null,
           "completed_cells": 20,
           "source_cells_unchanged": true,
           "runtime": {
@@ -6124,6 +6395,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/30ee093e2c4541f9bfc44d6298ff5668/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -6183,6 +6456,7 @@
           "started_at": 1795501246.397633,
           "elapsed_seconds": 91.641,
           "code_cells": 13,
+          "notebook_timeout_seconds": null,
           "completed_cells": 6,
           "source_cells_unchanged": true,
           "runtime": {
@@ -6191,6 +6465,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/ee259ad9704a4147b639aa7fdf3166a8/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -6272,6 +6548,7 @@
           "started_at": 1795504229.395503,
           "elapsed_seconds": 88.584,
           "code_cells": 13,
+          "notebook_timeout_seconds": null,
           "completed_cells": 13,
           "source_cells_unchanged": true,
           "runtime": {
@@ -6280,6 +6557,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 600
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/dd98c0f9b27747429f7d7d654d3180fb/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -6353,6 +6632,7 @@
           "started_at": 1795501338.042847,
           "elapsed_seconds": 10.368,
           "code_cells": 5,
+          "notebook_timeout_seconds": null,
           "completed_cells": 5,
           "source_cells_unchanged": true,
           "runtime": {
@@ -6361,6 +6641,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/02e17869934f460283698d01e0de7b6d/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -6407,6 +6689,7 @@
           "started_at": 1795501348.414976,
           "elapsed_seconds": 12.918,
           "code_cells": 9,
+          "notebook_timeout_seconds": null,
           "completed_cells": 9,
           "source_cells_unchanged": true,
           "runtime": {
@@ -6415,6 +6698,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/6d124316642446de8b682d39aea86acb/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -6479,6 +6764,7 @@
           "started_at": 1795501361.337876,
           "elapsed_seconds": 12.398,
           "code_cells": 9,
+          "notebook_timeout_seconds": null,
           "completed_cells": 9,
           "source_cells_unchanged": true,
           "runtime": {
@@ -6487,6 +6773,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/291dadc4838d403094d792367855928f/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -6550,6 +6838,7 @@
           "started_at": 1795501373.7418802,
           "elapsed_seconds": 24.071,
           "code_cells": 4,
+          "notebook_timeout_seconds": null,
           "completed_cells": 4,
           "source_cells_unchanged": true,
           "runtime": {
@@ -6558,6 +6847,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/0d2de804e82040f2ac5aec80bf6522c0/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -6604,6 +6895,7 @@
           "started_at": 1795501397.818044,
           "elapsed_seconds": 4.774,
           "code_cells": 4,
+          "notebook_timeout_seconds": null,
           "completed_cells": 4,
           "source_cells_unchanged": true,
           "runtime": {
@@ -6612,6 +6904,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/64f4a63d27124d0090eecd414ee4e0e3/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -6658,6 +6952,7 @@
           "started_at": 1795501402.596276,
           "elapsed_seconds": 102.653,
           "code_cells": 5,
+          "notebook_timeout_seconds": null,
           "completed_cells": 2,
           "source_cells_unchanged": true,
           "runtime": {
@@ -6666,6 +6961,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/4c55acf25e5d4f0f928871b02492063a/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -6720,6 +7017,7 @@
           "started_at": 1795504317.988755,
           "elapsed_seconds": 612.665,
           "code_cells": 5,
+          "notebook_timeout_seconds": null,
           "completed_cells": 2,
           "source_cells_unchanged": true,
           "runtime": {
@@ -6729,6 +7027,8 @@
             "cell_timeout_seconds": 600,
             "cpu_threads": 2
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/92a35371c6fb4c1eafbcff58bf432ca1/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -6791,6 +7091,7 @@
           "started_at": 1795501505.2558,
           "elapsed_seconds": 14.483,
           "code_cells": 5,
+          "notebook_timeout_seconds": null,
           "completed_cells": 5,
           "source_cells_unchanged": true,
           "runtime": {
@@ -6799,6 +7100,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/1dbaec79b09c414eb59264ad6a6ed37f/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -6845,6 +7148,7 @@
           "started_at": 1795501519.743396,
           "elapsed_seconds": 98.705,
           "code_cells": 5,
+          "notebook_timeout_seconds": null,
           "completed_cells": 2,
           "source_cells_unchanged": true,
           "runtime": {
@@ -6853,6 +7157,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/5640d925721047ea89abe282a96f0682/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -6901,6 +7207,7 @@
           "started_at": 1795504930.663243,
           "elapsed_seconds": 609.965,
           "code_cells": 5,
+          "notebook_timeout_seconds": null,
           "completed_cells": 2,
           "source_cells_unchanged": true,
           "runtime": {
@@ -6910,6 +7217,8 @@
             "cell_timeout_seconds": 600,
             "cpu_threads": 2
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/380f5eba9a3b4e089cc63734bfb2ce52/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -6972,6 +7281,7 @@
           "started_at": 1795501618.453452,
           "elapsed_seconds": 92.136,
           "code_cells": 15,
+          "notebook_timeout_seconds": null,
           "completed_cells": 6,
           "source_cells_unchanged": true,
           "runtime": {
@@ -6980,6 +7290,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/635521dca41340968ea3fcd0ef6de572/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -7065,6 +7377,7 @@
           "started_at": 1795505540.668043,
           "elapsed_seconds": 127.718,
           "code_cells": 15,
+          "notebook_timeout_seconds": null,
           "completed_cells": 15,
           "source_cells_unchanged": true,
           "runtime": {
@@ -7074,6 +7387,8 @@
             "cell_timeout_seconds": 600,
             "cpu_threads": 2
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/79cdbc7bc93e4da9b7fc652443974e66/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -7146,6 +7461,7 @@
           "started_at": 1795501710.594499,
           "elapsed_seconds": 4.785,
           "code_cells": 2,
+          "notebook_timeout_seconds": null,
           "completed_cells": 2,
           "source_cells_unchanged": true,
           "runtime": {
@@ -7154,6 +7470,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/8a198d75104b4717b96fdcb7787d3627/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -7205,6 +7523,7 @@
           "started_at": 1795501715.383911,
           "elapsed_seconds": 43.47,
           "code_cells": 19,
+          "notebook_timeout_seconds": null,
           "completed_cells": 19,
           "source_cells_unchanged": true,
           "runtime": {
@@ -7213,6 +7532,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/3ed74e58c9ba416183988062af42ed2c/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -7274,6 +7595,7 @@
           "started_at": 1795501758.859345,
           "elapsed_seconds": 2.243,
           "code_cells": 14,
+          "notebook_timeout_seconds": null,
           "completed_cells": 14,
           "source_cells_unchanged": true,
           "runtime": {
@@ -7282,6 +7604,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/d05bf9fed6c94bf2ad229e76bd5e9652/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -7334,6 +7658,7 @@
           "started_at": 1795501761.107424,
           "elapsed_seconds": 91.638,
           "code_cells": 14,
+          "notebook_timeout_seconds": null,
           "completed_cells": 5,
           "source_cells_unchanged": true,
           "runtime": {
@@ -7342,6 +7667,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/745f12525ebb4e25a27d4349396dac4c/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -7427,6 +7754,7 @@
           "started_at": 1795505668.394648,
           "elapsed_seconds": 296.414,
           "code_cells": 14,
+          "notebook_timeout_seconds": null,
           "completed_cells": 5,
           "source_cells_unchanged": true,
           "runtime": {
@@ -7436,6 +7764,8 @@
             "cell_timeout_seconds": 600,
             "cpu_threads": 2
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/8ceb83bc7f974b5886504c3a53ab869b/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -7523,6 +7853,7 @@
           "started_at": 1795501852.7520618,
           "elapsed_seconds": 16.526,
           "code_cells": 5,
+          "notebook_timeout_seconds": null,
           "completed_cells": 5,
           "source_cells_unchanged": true,
           "runtime": {
@@ -7531,6 +7862,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/9a4218c7a39948cc88b3e4008412f59b/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -7576,6 +7909,7 @@
           "started_at": 1795501869.2824929,
           "elapsed_seconds": 3.765,
           "code_cells": 22,
+          "notebook_timeout_seconds": null,
           "completed_cells": 22,
           "source_cells_unchanged": true,
           "runtime": {
@@ -7584,6 +7918,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/3bf6818e4b6a4d2ca3ae2f49e8a96ed4/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -7640,6 +7976,7 @@
           "started_at": 1795501873.0531101,
           "elapsed_seconds": 5.803,
           "code_cells": 39,
+          "notebook_timeout_seconds": null,
           "completed_cells": 39,
           "source_cells_unchanged": true,
           "runtime": {
@@ -7648,6 +7985,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/d6d5219510c847f3ab264f92ce00f664/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -7729,6 +8068,7 @@
           "started_at": 1795501878.861818,
           "elapsed_seconds": 9.353,
           "code_cells": 23,
+          "notebook_timeout_seconds": null,
           "completed_cells": 23,
           "source_cells_unchanged": true,
           "runtime": {
@@ -7737,6 +8077,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/b9eddf330a054a59bb7ba825c72be117/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -7817,6 +8159,7 @@
           "started_at": 1795501888.2185001,
           "elapsed_seconds": 5.288,
           "code_cells": 4,
+          "notebook_timeout_seconds": null,
           "completed_cells": 4,
           "source_cells_unchanged": true,
           "runtime": {
@@ -7825,6 +8168,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/59237fd8d61143969140d69c018b9b2f/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -7871,6 +8216,7 @@
           "started_at": 1795501893.511332,
           "elapsed_seconds": 91.597,
           "code_cells": 20,
+          "notebook_timeout_seconds": null,
           "completed_cells": 13,
           "source_cells_unchanged": true,
           "runtime": {
@@ -7879,6 +8225,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/f927e7fbb54c44579d53e68840d7f26e/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -7980,6 +8328,7 @@
           "started_at": 1795501985.113142,
           "elapsed_seconds": 2.74,
           "code_cells": 14,
+          "notebook_timeout_seconds": null,
           "completed_cells": 14,
           "source_cells_unchanged": true,
           "runtime": {
@@ -7988,6 +8337,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/2f28a6fe219149c6ab97f4e77ad296a4/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -8077,6 +8428,7 @@
           "started_at": 1795501987.8569002,
           "elapsed_seconds": 18.516,
           "code_cells": 27,
+          "notebook_timeout_seconds": null,
           "completed_cells": 27,
           "source_cells_unchanged": true,
           "runtime": {
@@ -8085,6 +8437,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/cb46631d6ee54105840e29222a26895a/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -8179,6 +8533,7 @@
           "started_at": 1795502006.379605,
           "elapsed_seconds": 3.261,
           "code_cells": 25,
+          "notebook_timeout_seconds": null,
           "completed_cells": 25,
           "source_cells_unchanged": true,
           "runtime": {
@@ -8187,6 +8542,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/c2c2aede110a41279a13bd89b913e21e/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -8238,6 +8595,7 @@
           "started_at": 1795502009.6459332,
           "elapsed_seconds": 91.556,
           "code_cells": 16,
+          "notebook_timeout_seconds": null,
           "completed_cells": 12,
           "source_cells_unchanged": true,
           "runtime": {
@@ -8246,6 +8604,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/56c2184b4998470680c917a2fab03ed7/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -8313,6 +8673,7 @@
           "started_at": 1795502101.207565,
           "elapsed_seconds": 39.369,
           "code_cells": 10,
+          "notebook_timeout_seconds": null,
           "completed_cells": 10,
           "source_cells_unchanged": true,
           "runtime": {
@@ -8321,6 +8682,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/24d20ea90b5a48e2998da6caa1e121b8/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -8378,6 +8741,7 @@
           "started_at": 1795502140.582551,
           "elapsed_seconds": 76.483,
           "code_cells": 21,
+          "notebook_timeout_seconds": null,
           "completed_cells": 21,
           "source_cells_unchanged": true,
           "runtime": {
@@ -8386,6 +8750,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/6a11462fc0f54b36b220a4095e407af6/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -8447,6 +8813,7 @@
           "started_at": 1795502217.071382,
           "elapsed_seconds": 75.915,
           "code_cells": 29,
+          "notebook_timeout_seconds": null,
           "completed_cells": 29,
           "source_cells_unchanged": true,
           "runtime": {
@@ -8455,6 +8822,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/e46a5067f22341bea838c3731a306229/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -8522,6 +8891,7 @@
           "started_at": 1795502292.99014,
           "elapsed_seconds": 3.191,
           "code_cells": 18,
+          "notebook_timeout_seconds": null,
           "completed_cells": 18,
           "source_cells_unchanged": true,
           "runtime": {
@@ -8530,6 +8900,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/0f26629b51524da8b5f53dcd29d743bd/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -8583,6 +8955,7 @@
           "started_at": 1795502296.184454,
           "elapsed_seconds": 91.505,
           "code_cells": 17,
+          "notebook_timeout_seconds": null,
           "completed_cells": 6,
           "source_cells_unchanged": true,
           "runtime": {
@@ -8591,6 +8964,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/0c811e3925e6417189d73e4561def3f6/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -8695,6 +9070,7 @@
           "started_at": 1795502387.697113,
           "elapsed_seconds": 1.742,
           "code_cells": 6,
+          "notebook_timeout_seconds": null,
           "completed_cells": 6,
           "source_cells_unchanged": true,
           "runtime": {
@@ -8703,6 +9079,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/bba0d263f41049d8b05457774ff879af/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -8744,6 +9122,7 @@
           "started_at": 1795502389.44487,
           "elapsed_seconds": 1.727,
           "code_cells": 3,
+          "notebook_timeout_seconds": null,
           "completed_cells": 3,
           "source_cells_unchanged": true,
           "runtime": {
@@ -8752,6 +9131,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/b9f3c56e4da943a48515381df807d6dc/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -8793,6 +9174,7 @@
           "started_at": 1795502391.177727,
           "elapsed_seconds": 1.726,
           "code_cells": 17,
+          "notebook_timeout_seconds": null,
           "completed_cells": 17,
           "source_cells_unchanged": true,
           "runtime": {
@@ -8801,6 +9183,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/602398f4820c436bb2e0f2a1adc20d5b/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -8849,6 +9233,7 @@
           "started_at": 1795502392.9099798,
           "elapsed_seconds": 2.754,
           "code_cells": 19,
+          "notebook_timeout_seconds": null,
           "completed_cells": 19,
           "source_cells_unchanged": true,
           "runtime": {
@@ -8857,6 +9242,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/60fd47a25d1442d38eec05a65518556c/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -8906,6 +9293,7 @@
           "started_at": 1795502395.669464,
           "elapsed_seconds": 2.233,
           "code_cells": 17,
+          "notebook_timeout_seconds": null,
           "completed_cells": 17,
           "source_cells_unchanged": true,
           "runtime": {
@@ -8914,6 +9302,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/a2073bc33fcc4d2fb6181a9dbd39d6d5/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -8962,6 +9352,7 @@
           "started_at": 1795502397.9093492,
           "elapsed_seconds": 1.724,
           "code_cells": 16,
+          "notebook_timeout_seconds": null,
           "completed_cells": 16,
           "source_cells_unchanged": true,
           "runtime": {
@@ -8970,6 +9361,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/7d26fe805ff54ab09bb132ef5fffd09a/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -9014,6 +9407,7 @@
           "started_at": 1795502399.638277,
           "elapsed_seconds": 4.279,
           "code_cells": 20,
+          "notebook_timeout_seconds": null,
           "completed_cells": 20,
           "source_cells_unchanged": true,
           "runtime": {
@@ -9022,6 +9416,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/cd6faa37c6b749b4b3173753181b8d95/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -9109,6 +9505,7 @@
           "started_at": 1795502403.9242702,
           "elapsed_seconds": 4.275,
           "code_cells": 51,
+          "notebook_timeout_seconds": null,
           "completed_cells": 51,
           "source_cells_unchanged": true,
           "runtime": {
@@ -9117,6 +9514,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/60801bdb0f524e99bbd3db46f37adb17/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -9230,6 +9629,7 @@
           "started_at": 1795502408.2078662,
           "elapsed_seconds": 1.725,
           "code_cells": 4,
+          "notebook_timeout_seconds": null,
           "completed_cells": 4,
           "source_cells_unchanged": true,
           "runtime": {
@@ -9238,6 +9638,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/247e2a9811c648bbae4ad587a3da552f/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -9283,6 +9685,7 @@
           "started_at": 1795502409.937597,
           "elapsed_seconds": 3.256,
           "code_cells": 10,
+          "notebook_timeout_seconds": null,
           "completed_cells": 10,
           "source_cells_unchanged": true,
           "runtime": {
@@ -9291,6 +9694,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/6492aa2350604d0b928073e1d65e29bd/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -9342,6 +9747,7 @@
           "started_at": 1795502413.198848,
           "elapsed_seconds": 1.735,
           "code_cells": 7,
+          "notebook_timeout_seconds": null,
           "completed_cells": 7,
           "source_cells_unchanged": true,
           "runtime": {
@@ -9350,6 +9756,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/0e3f0b0e192d492283aded2a27663020/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -9404,6 +9812,7 @@
           "started_at": 1795502414.940036,
           "elapsed_seconds": 2.243,
           "code_cells": 14,
+          "notebook_timeout_seconds": null,
           "completed_cells": 14,
           "source_cells_unchanged": true,
           "runtime": {
@@ -9412,6 +9821,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/d814b89fc9de4c389996dec83ff4c18c/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -9493,6 +9904,7 @@
           "started_at": 1795502417.189142,
           "elapsed_seconds": 16.987,
           "code_cells": 21,
+          "notebook_timeout_seconds": null,
           "completed_cells": 21,
           "source_cells_unchanged": true,
           "runtime": {
@@ -9501,6 +9913,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/1b7024ed293640f4be87ab4c428b01ec/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -9557,6 +9971,7 @@
           "started_at": 1795502434.180245,
           "elapsed_seconds": 2.232,
           "code_cells": 12,
+          "notebook_timeout_seconds": null,
           "completed_cells": 12,
           "source_cells_unchanged": true,
           "runtime": {
@@ -9565,6 +9980,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/50b3e77597d6413382cb93c07651950a/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -9620,6 +10037,7 @@
           "started_at": 1795502436.4186082,
           "elapsed_seconds": 2.749,
           "code_cells": 12,
+          "notebook_timeout_seconds": null,
           "completed_cells": 12,
           "source_cells_unchanged": true,
           "runtime": {
@@ -9628,6 +10046,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/0f3491b77f5141a5bd77b1e9b9e2b272/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -9679,6 +10099,7 @@
           "started_at": 1795502439.173459,
           "elapsed_seconds": 5.807,
           "code_cells": 12,
+          "notebook_timeout_seconds": null,
           "completed_cells": 12,
           "source_cells_unchanged": true,
           "runtime": {
@@ -9687,6 +10108,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/2dfc53b11ed64ea58d1276938bbf8148/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -9757,6 +10180,7 @@
           "started_at": 1795502444.987296,
           "elapsed_seconds": 1.731,
           "code_cells": 13,
+          "notebook_timeout_seconds": null,
           "completed_cells": 13,
           "source_cells_unchanged": true,
           "runtime": {
@@ -9765,6 +10189,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/699245cac2b248ea8807cf52a32b4e92/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -9811,6 +10237,7 @@
           "started_at": 1795502446.724478,
           "elapsed_seconds": 1.729,
           "code_cells": 6,
+          "notebook_timeout_seconds": null,
           "completed_cells": 6,
           "source_cells_unchanged": true,
           "runtime": {
@@ -9819,6 +10246,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/ac86d46eb2914e0d8cb92edf9aacac5c/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -9863,6 +10292,7 @@
           "started_at": 1795502448.458665,
           "elapsed_seconds": 1.734,
           "code_cells": 4,
+          "notebook_timeout_seconds": null,
           "completed_cells": 4,
           "source_cells_unchanged": true,
           "runtime": {
@@ -9871,6 +10301,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/61bf4f9b92a14ecdb1b6abbb475e5ecf/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -9923,6 +10355,7 @@
           "started_at": 1795502450.198256,
           "elapsed_seconds": 1.732,
           "code_cells": 5,
+          "notebook_timeout_seconds": null,
           "completed_cells": 5,
           "source_cells_unchanged": true,
           "runtime": {
@@ -9931,6 +10364,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/f14672537a974be9ab0c861b208fb9ff/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -9975,6 +10410,7 @@
           "started_at": 1795502451.9357288,
           "elapsed_seconds": 1.729,
           "code_cells": 5,
+          "notebook_timeout_seconds": null,
           "completed_cells": 5,
           "source_cells_unchanged": true,
           "runtime": {
@@ -9983,6 +10419,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/c78acaa95c1243f2b9d85cc520c247cc/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -10030,6 +10468,7 @@
           "started_at": 1795502453.669599,
           "elapsed_seconds": 1.731,
           "code_cells": 5,
+          "notebook_timeout_seconds": null,
           "completed_cells": 5,
           "source_cells_unchanged": true,
           "runtime": {
@@ -10038,6 +10477,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/b4c0eb1fbf714b35a301e13efa3de476/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -10085,6 +10526,7 @@
           "started_at": 1795502455.406465,
           "elapsed_seconds": 1.728,
           "code_cells": 5,
+          "notebook_timeout_seconds": null,
           "completed_cells": 5,
           "source_cells_unchanged": true,
           "runtime": {
@@ -10093,6 +10535,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/74d3e14ce5fb4eb7a7054f4cd0c473ef/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -10140,6 +10584,7 @@
           "started_at": 1795502457.1399791,
           "elapsed_seconds": 1.728,
           "code_cells": 5,
+          "notebook_timeout_seconds": null,
           "completed_cells": 5,
           "source_cells_unchanged": true,
           "runtime": {
@@ -10148,6 +10593,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/093b3f781f4b41089866b52a1559b25a/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -10195,6 +10642,7 @@
           "started_at": 1795502458.8732722,
           "elapsed_seconds": 1.726,
           "code_cells": 8,
+          "notebook_timeout_seconds": null,
           "completed_cells": 8,
           "source_cells_unchanged": true,
           "runtime": {
@@ -10203,6 +10651,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/e149cc659e4b4cd0905613ff677d558d/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -10247,6 +10697,7 @@
           "started_at": 1795502460.605132,
           "elapsed_seconds": 1.726,
           "code_cells": 6,
+          "notebook_timeout_seconds": null,
           "completed_cells": 6,
           "source_cells_unchanged": true,
           "runtime": {
@@ -10255,6 +10706,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/0e6b74e6a5e24195b7d01de6aa663f0c/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -10299,6 +10752,7 @@
           "started_at": 1795502462.336478,
           "elapsed_seconds": 1.731,
           "code_cells": 5,
+          "notebook_timeout_seconds": null,
           "completed_cells": 5,
           "source_cells_unchanged": true,
           "runtime": {
@@ -10307,6 +10761,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/8df7de3db87e4b5dbedb32cde61f86d7/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -10354,6 +10810,7 @@
           "started_at": 1795502464.073646,
           "elapsed_seconds": 1.224,
           "code_cells": 3,
+          "notebook_timeout_seconds": null,
           "completed_cells": 3,
           "source_cells_unchanged": true,
           "runtime": {
@@ -10362,6 +10819,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/9b8a8612e018458992572378bef00c33/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -10406,6 +10865,7 @@
           "started_at": 1795502465.302437,
           "elapsed_seconds": 1.735,
           "code_cells": 5,
+          "notebook_timeout_seconds": null,
           "completed_cells": 5,
           "source_cells_unchanged": true,
           "runtime": {
@@ -10414,6 +10874,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/062e71cd8f1d4e058b012d6f22db3c08/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -10461,6 +10923,7 @@
           "started_at": 1795502467.042517,
           "elapsed_seconds": 1.73,
           "code_cells": 4,
+          "notebook_timeout_seconds": null,
           "completed_cells": 4,
           "source_cells_unchanged": true,
           "runtime": {
@@ -10469,6 +10932,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/03d4f3aa782a4e63b1fc4e9b3053ea07/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -10516,6 +10981,7 @@
           "started_at": 1795502468.778841,
           "elapsed_seconds": 1.734,
           "code_cells": 3,
+          "notebook_timeout_seconds": null,
           "completed_cells": 3,
           "source_cells_unchanged": true,
           "runtime": {
@@ -10524,6 +10990,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/308fd67618cd4ff1a250728c78872bc4/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -10566,6 +11034,7 @@
           "started_at": 1795502470.5187032,
           "elapsed_seconds": 1.73,
           "code_cells": 6,
+          "notebook_timeout_seconds": null,
           "completed_cells": 6,
           "source_cells_unchanged": true,
           "runtime": {
@@ -10574,6 +11043,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/1c8ad9b42b5c4f6f9243e1cc4a2e86e9/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -10616,6 +11087,7 @@
           "started_at": 1795502472.254393,
           "elapsed_seconds": 1.225,
           "code_cells": 2,
+          "notebook_timeout_seconds": null,
           "completed_cells": 2,
           "source_cells_unchanged": true,
           "runtime": {
@@ -10624,6 +11096,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/055bb2ca7eef483fbcd7138af11a6ec8/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -10669,6 +11143,7 @@
           "started_at": 1795502473.484642,
           "elapsed_seconds": 1.729,
           "code_cells": 7,
+          "notebook_timeout_seconds": null,
           "completed_cells": 7,
           "source_cells_unchanged": true,
           "runtime": {
@@ -10677,6 +11152,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/3595aabc88a04079b370bab2c8cdce97/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -10720,6 +11197,7 @@
           "started_at": 1795502475.2198012,
           "elapsed_seconds": 1.728,
           "code_cells": 3,
+          "notebook_timeout_seconds": null,
           "completed_cells": 3,
           "source_cells_unchanged": true,
           "runtime": {
@@ -10728,6 +11206,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/5b045ebe03c84ea583e8f33d1f2dd599/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -10770,6 +11250,7 @@
           "started_at": 1795502476.953297,
           "elapsed_seconds": 1.726,
           "code_cells": 3,
+          "notebook_timeout_seconds": null,
           "completed_cells": 3,
           "source_cells_unchanged": true,
           "runtime": {
@@ -10778,6 +11259,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/352f7b12094a47068e31e0f08362de93/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -10821,6 +11304,7 @@
           "started_at": 1795502478.685313,
           "elapsed_seconds": 2.749,
           "code_cells": 6,
+          "notebook_timeout_seconds": null,
           "completed_cells": 6,
           "source_cells_unchanged": true,
           "runtime": {
@@ -10829,6 +11313,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/7cb1296d37624eab9a55e34476c79dbc/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -10869,6 +11355,7 @@
           "started_at": 1795502481.440077,
           "elapsed_seconds": 1.732,
           "code_cells": 7,
+          "notebook_timeout_seconds": null,
           "completed_cells": 7,
           "source_cells_unchanged": true,
           "runtime": {
@@ -10877,6 +11364,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/c63e1a2aa7c7481a83e71e12f61f8a65/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -10919,6 +11408,7 @@
           "started_at": 1795502483.176596,
           "elapsed_seconds": 1.731,
           "code_cells": 5,
+          "notebook_timeout_seconds": null,
           "completed_cells": 5,
           "source_cells_unchanged": true,
           "runtime": {
@@ -10927,6 +11417,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/3ce32f7200f64d2d9dd7499cc99049ce/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -10967,6 +11459,7 @@
           "started_at": 1795502484.9145758,
           "elapsed_seconds": 2.235,
           "code_cells": 4,
+          "notebook_timeout_seconds": null,
           "completed_cells": 4,
           "source_cells_unchanged": true,
           "runtime": {
@@ -10975,6 +11468,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/8ba6e82c31a34bf7a05ccf095d5c26b6/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -11017,6 +11512,7 @@
           "started_at": 1795502487.1552992,
           "elapsed_seconds": 1.735,
           "code_cells": 4,
+          "notebook_timeout_seconds": null,
           "completed_cells": 4,
           "source_cells_unchanged": true,
           "runtime": {
@@ -11025,6 +11521,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/8aa28ffbfb1d460bb5f7f30f4f564af5/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -11111,6 +11609,7 @@
           "started_at": 1795502488.896851,
           "elapsed_seconds": 1.731,
           "code_cells": 6,
+          "notebook_timeout_seconds": null,
           "completed_cells": 6,
           "source_cells_unchanged": true,
           "runtime": {
@@ -11119,6 +11618,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/060b4d5075a14376a7fba13320c93778/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -11162,6 +11663,7 @@
           "started_at": 1795502490.633843,
           "elapsed_seconds": 1.222,
           "code_cells": 3,
+          "notebook_timeout_seconds": null,
           "completed_cells": 3,
           "source_cells_unchanged": true,
           "runtime": {
@@ -11170,6 +11672,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/10e81416eddf4c348919696f9e7e8271/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -11213,6 +11717,7 @@
           "started_at": 1795502491.8609228,
           "elapsed_seconds": 1.731,
           "code_cells": 6,
+          "notebook_timeout_seconds": null,
           "completed_cells": 6,
           "source_cells_unchanged": true,
           "runtime": {
@@ -11221,6 +11726,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/be10dbb5c91e402aaf620c3e63506b4c/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -11264,6 +11771,7 @@
           "started_at": 1795502493.596972,
           "elapsed_seconds": 1.729,
           "code_cells": 6,
+          "notebook_timeout_seconds": null,
           "completed_cells": 6,
           "source_cells_unchanged": true,
           "runtime": {
@@ -11272,6 +11780,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/cd9e9db3df144b84bddc439f5fdbe6da/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -11319,6 +11829,7 @@
           "started_at": 1795502495.3302011,
           "elapsed_seconds": 1.721,
           "code_cells": 6,
+          "notebook_timeout_seconds": null,
           "completed_cells": 6,
           "source_cells_unchanged": true,
           "runtime": {
@@ -11327,6 +11838,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/ba66a88d58ce4ce9b4bde26e139e0a8d/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -11368,6 +11881,7 @@
           "started_at": 1795502497.057031,
           "elapsed_seconds": 1.736,
           "code_cells": 8,
+          "notebook_timeout_seconds": null,
           "completed_cells": 8,
           "source_cells_unchanged": true,
           "runtime": {
@@ -11376,6 +11890,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/82ec0e9466c84a9cbbe6412bcaff10c2/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -11418,6 +11934,7 @@
           "started_at": 1795502498.79833,
           "elapsed_seconds": 57.156,
           "code_cells": 19,
+          "notebook_timeout_seconds": null,
           "completed_cells": 19,
           "source_cells_unchanged": true,
           "runtime": {
@@ -11426,6 +11943,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/82f0890725d5480dbb47610f8e464e65/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -11510,6 +12029,7 @@
           "started_at": 1795502555.9628239,
           "elapsed_seconds": 6.816,
           "code_cells": 10,
+          "notebook_timeout_seconds": null,
           "completed_cells": 10,
           "source_cells_unchanged": true,
           "runtime": {
@@ -11518,6 +12038,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/900bea3b7edd4ec2a9473e8b67b55efb/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -11571,6 +12093,7 @@
           "started_at": 1795502562.783286,
           "elapsed_seconds": 2.744,
           "code_cells": 16,
+          "notebook_timeout_seconds": null,
           "completed_cells": 16,
           "source_cells_unchanged": true,
           "runtime": {
@@ -11579,6 +12102,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/4f1a71302aad404ea489eeb55b1f90b1/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -11629,6 +12154,7 @@
           "started_at": 1795502565.531359,
           "elapsed_seconds": 1.726,
           "code_cells": 8,
+          "notebook_timeout_seconds": null,
           "completed_cells": 8,
           "source_cells_unchanged": true,
           "runtime": {
@@ -11637,6 +12163,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/d8aed4dbac714c5291da5bc854b8b0ac/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -11680,6 +12208,7 @@
           "started_at": 1795502567.263268,
           "elapsed_seconds": 2.231,
           "code_cells": 3,
+          "notebook_timeout_seconds": null,
           "completed_cells": 1,
           "source_cells_unchanged": true,
           "runtime": {
@@ -11688,6 +12217,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/0686270e608f4a9882b1f03045674744/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -11749,6 +12280,7 @@
           "started_at": 1795502569.499531,
           "elapsed_seconds": 2.751,
           "code_cells": 4,
+          "notebook_timeout_seconds": null,
           "completed_cells": 4,
           "source_cells_unchanged": true,
           "runtime": {
@@ -11757,6 +12289,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/3f97adc26cae40f19372c4b02803f1b9/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -11800,6 +12334,7 @@
           "started_at": 1795502572.256692,
           "elapsed_seconds": 7.322,
           "code_cells": 8,
+          "notebook_timeout_seconds": null,
           "completed_cells": 8,
           "source_cells_unchanged": true,
           "runtime": {
@@ -11808,6 +12343,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/dca81e1c8feb432a8b78c960dafab7c3/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -11853,6 +12390,7 @@
           "started_at": 1795502579.585262,
           "elapsed_seconds": 3.252,
           "code_cells": 4,
+          "notebook_timeout_seconds": null,
           "completed_cells": 4,
           "source_cells_unchanged": true,
           "runtime": {
@@ -11861,6 +12399,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/29fc9bc554e14ceb92537c04ca3c2d35/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -11905,6 +12445,7 @@
           "started_at": 1795502582.845046,
           "elapsed_seconds": 1.733,
           "code_cells": 5,
+          "notebook_timeout_seconds": null,
           "completed_cells": 5,
           "source_cells_unchanged": true,
           "runtime": {
@@ -11913,6 +12454,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/3df5bac7fda94d0c89275946577509b3/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -11956,6 +12499,7 @@
           "started_at": 1795502584.584007,
           "elapsed_seconds": 58.728,
           "code_cells": 13,
+          "notebook_timeout_seconds": null,
           "completed_cells": 13,
           "source_cells_unchanged": true,
           "runtime": {
@@ -11964,6 +12508,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/d4acaabe9a17436a8ada0f5414b2ad5f/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -12014,6 +12560,7 @@
           "started_at": 1795502643.3159769,
           "elapsed_seconds": 2.746,
           "code_cells": 4,
+          "notebook_timeout_seconds": null,
           "completed_cells": 4,
           "source_cells_unchanged": true,
           "runtime": {
@@ -12022,6 +12569,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/8addf3450c2749be8f139e9e7b4aa23a/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -12066,6 +12615,7 @@
           "started_at": 1795502646.06646,
           "elapsed_seconds": 1.215,
           "code_cells": 3,
+          "notebook_timeout_seconds": null,
           "completed_cells": 3,
           "source_cells_unchanged": true,
           "runtime": {
@@ -12074,6 +12624,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/018e13ed2a0648b683272622d9388c36/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -12116,6 +12668,7 @@
           "started_at": 1795502647.287093,
           "elapsed_seconds": 1.723,
           "code_cells": 3,
+          "notebook_timeout_seconds": null,
           "completed_cells": 3,
           "source_cells_unchanged": true,
           "runtime": {
@@ -12124,6 +12677,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/3c405094968d4997896e01001b0153a4/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -12166,6 +12721,7 @@
           "started_at": 1795502649.015936,
           "elapsed_seconds": 2.753,
           "code_cells": 5,
+          "notebook_timeout_seconds": null,
           "completed_cells": 5,
           "source_cells_unchanged": true,
           "runtime": {
@@ -12174,6 +12730,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/04c51bdd47054de7b971dc6c276fe143/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -12218,6 +12776,7 @@
           "started_at": 1795502651.7755609,
           "elapsed_seconds": 1.725,
           "code_cells": 12,
+          "notebook_timeout_seconds": null,
           "completed_cells": 12,
           "source_cells_unchanged": true,
           "runtime": {
@@ -12226,6 +12785,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/95ceab3e6f25416d97026fc3ab6d9b72/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -12273,6 +12834,7 @@
           "started_at": 1795502653.506103,
           "elapsed_seconds": 2.245,
           "code_cells": 16,
+          "notebook_timeout_seconds": null,
           "completed_cells": 16,
           "source_cells_unchanged": true,
           "runtime": {
@@ -12281,6 +12843,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/016f64e7e85b403ab7e517eff8687f1e/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -12337,6 +12901,7 @@
           "started_at": 1795502655.758228,
           "elapsed_seconds": 2.238,
           "code_cells": 22,
+          "notebook_timeout_seconds": null,
           "completed_cells": 22,
           "source_cells_unchanged": true,
           "runtime": {
@@ -12345,6 +12910,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/6fd0462caa7e4684b60138260ccc8bdc/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -12388,6 +12955,7 @@
           "started_at": 1795502658.0026062,
           "elapsed_seconds": 1.735,
           "code_cells": 23,
+          "notebook_timeout_seconds": null,
           "completed_cells": 23,
           "source_cells_unchanged": true,
           "runtime": {
@@ -12396,6 +12964,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/384724d4635449cfb5cd3b27467c2370/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -12441,6 +13011,7 @@
           "started_at": 1795502659.743911,
           "elapsed_seconds": 3.77,
           "code_cells": 6,
+          "notebook_timeout_seconds": null,
           "completed_cells": 6,
           "source_cells_unchanged": true,
           "runtime": {
@@ -12449,6 +13020,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/cd1f9c1e60ea4cf7ae1e95eed7dc1711/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -12493,6 +13066,7 @@
           "started_at": 1795502663.5208461,
           "elapsed_seconds": 2.234,
           "code_cells": 4,
+          "notebook_timeout_seconds": null,
           "completed_cells": 4,
           "source_cells_unchanged": true,
           "runtime": {
@@ -12501,6 +13075,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/ece38e9547f7420c9b3d949b8a13480e/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -12545,6 +13121,7 @@
           "started_at": 1795502665.7609239,
           "elapsed_seconds": 91.555,
           "code_cells": 11,
+          "notebook_timeout_seconds": null,
           "completed_cells": 6,
           "source_cells_unchanged": true,
           "runtime": {
@@ -12553,6 +13130,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/b1eab6930891401b918f3d500fdc6d60/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -12639,6 +13218,7 @@
           "started_at": 1795502757.3264692,
           "elapsed_seconds": 91.599,
           "code_cells": 7,
+          "notebook_timeout_seconds": null,
           "completed_cells": 2,
           "source_cells_unchanged": true,
           "runtime": {
@@ -12647,6 +13227,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/fe9da5a774314ebfafae1ef3d8aa9328/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -12726,6 +13308,7 @@
           "started_at": 1795502848.9322581,
           "elapsed_seconds": 7.317,
           "code_cells": 11,
+          "notebook_timeout_seconds": null,
           "completed_cells": 11,
           "source_cells_unchanged": true,
           "runtime": {
@@ -12734,6 +13317,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/d5114ac7b04547318591857cabf7d888/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -12781,6 +13366,7 @@
           "started_at": 1795502856.255947,
           "elapsed_seconds": 1.735,
           "code_cells": 2,
+          "notebook_timeout_seconds": null,
           "completed_cells": 2,
           "source_cells_unchanged": true,
           "runtime": {
@@ -12789,6 +13375,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/84bfb32d6b0a4f23a5a699e0eca1d50b/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -12832,6 +13420,7 @@
           "started_at": 1795502857.9965498,
           "elapsed_seconds": 1.725,
           "code_cells": 10,
+          "notebook_timeout_seconds": null,
           "completed_cells": 10,
           "source_cells_unchanged": true,
           "runtime": {
@@ -12840,6 +13429,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/a20e2141922e4d7ba77878c07b8e0ef9/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -12883,6 +13474,7 @@
           "started_at": 1795502859.727585,
           "elapsed_seconds": 21.053,
           "code_cells": 3,
+          "notebook_timeout_seconds": null,
           "completed_cells": 3,
           "source_cells_unchanged": true,
           "runtime": {
@@ -12891,6 +13483,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/d3cfb25ed0f541c3af1e5af743c126a1/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -12955,6 +13549,7 @@
           "started_at": 1795502880.788138,
           "elapsed_seconds": 21.061,
           "code_cells": 3,
+          "notebook_timeout_seconds": null,
           "completed_cells": 3,
           "source_cells_unchanged": true,
           "runtime": {
@@ -12963,6 +13558,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/72b23c3f21354c19838b1410645d72fb/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -13020,6 +13617,7 @@
           "started_at": 1795502901.855236,
           "elapsed_seconds": 21.049,
           "code_cells": 3,
+          "notebook_timeout_seconds": null,
           "completed_cells": 3,
           "source_cells_unchanged": true,
           "runtime": {
@@ -13028,6 +13626,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/701431f6fc054459bf26c0ab2519671a/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -13092,6 +13692,7 @@
           "started_at": 1795502922.911978,
           "elapsed_seconds": 13.423,
           "code_cells": 3,
+          "notebook_timeout_seconds": null,
           "completed_cells": 3,
           "source_cells_unchanged": true,
           "runtime": {
@@ -13100,6 +13701,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/fef300e6aa5f4dcda2820a86346e4681/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -13165,6 +13768,7 @@
           "started_at": 1795502936.3430028,
           "elapsed_seconds": 2.245,
           "code_cells": 4,
+          "notebook_timeout_seconds": null,
           "completed_cells": 4,
           "source_cells_unchanged": true,
           "runtime": {
@@ -13173,6 +13777,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/9361ea62120c4bee9993bae5bed91a40/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -13232,6 +13838,7 @@
           "started_at": 1795502938.595814,
           "elapsed_seconds": 1.736,
           "code_cells": 3,
+          "notebook_timeout_seconds": null,
           "completed_cells": 3,
           "source_cells_unchanged": true,
           "runtime": {
@@ -13240,6 +13847,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/2a2df35008524a909f198f9375936b9e/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -13291,6 +13900,7 @@
           "started_at": 1795502940.339107,
           "elapsed_seconds": 1.728,
           "code_cells": 3,
+          "notebook_timeout_seconds": null,
           "completed_cells": 3,
           "source_cells_unchanged": true,
           "runtime": {
@@ -13299,6 +13909,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/e3ff3c5ab10d4c91b19e1af7c8dd9671/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -13350,6 +13962,7 @@
           "started_at": 1795502942.074165,
           "elapsed_seconds": 1.724,
           "code_cells": 3,
+          "notebook_timeout_seconds": null,
           "completed_cells": 3,
           "source_cells_unchanged": true,
           "runtime": {
@@ -13358,6 +13971,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/a619306223554b27ba6c7d749d187b89/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -13409,6 +14024,7 @@
           "started_at": 1795502943.8055491,
           "elapsed_seconds": 47.998,
           "code_cells": 15,
+          "notebook_timeout_seconds": null,
           "completed_cells": 15,
           "source_cells_unchanged": true,
           "runtime": {
@@ -13417,6 +14033,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/33b9ac4ac667474c8468b08e532dccd7/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -13502,6 +14120,7 @@
           "started_at": 1795502991.812926,
           "elapsed_seconds": 52.068,
           "code_cells": 16,
+          "notebook_timeout_seconds": null,
           "completed_cells": 16,
           "source_cells_unchanged": true,
           "runtime": {
@@ -13510,6 +14129,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/245256f11ad3480abd2831a16ad4c85c/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -13590,6 +14211,7 @@
           "started_at": 1795503043.890213,
           "elapsed_seconds": 10.882,
           "code_cells": 4,
+          "notebook_timeout_seconds": null,
           "completed_cells": 4,
           "source_cells_unchanged": true,
           "runtime": {
@@ -13598,6 +14220,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/ca6ab2d1fd704e008e00a6d3e9e93eb9/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -13642,6 +14266,7 @@
           "started_at": 1795503054.781128,
           "elapsed_seconds": 100.211,
           "code_cells": 10,
+          "notebook_timeout_seconds": null,
           "completed_cells": 3,
           "source_cells_unchanged": true,
           "runtime": {
@@ -13650,6 +14275,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/c000db658eda4344aa879a0cdc099ae7/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -13743,6 +14370,7 @@
           "started_at": 1795503155.002659,
           "elapsed_seconds": 3.78,
           "code_cells": 9,
+          "notebook_timeout_seconds": null,
           "completed_cells": 9,
           "source_cells_unchanged": true,
           "runtime": {
@@ -13751,6 +14379,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/b6e4d255181446f5952bd9cb7c438852/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -13801,6 +14431,7 @@
           "started_at": 1795503158.7891562,
           "elapsed_seconds": 91.542,
           "code_cells": 12,
+          "notebook_timeout_seconds": null,
           "completed_cells": 3,
           "source_cells_unchanged": true,
           "runtime": {
@@ -13809,6 +14440,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/6028ed6fcc264d1a9b9a96d88d2e61a8/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -13902,6 +14535,7 @@
           "started_at": 1795503250.3404958,
           "elapsed_seconds": 6.826,
           "code_cells": 18,
+          "notebook_timeout_seconds": null,
           "completed_cells": 18,
           "source_cells_unchanged": true,
           "runtime": {
@@ -13910,6 +14544,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/f9200d617da7460dbcdd1c9c8c1b1967/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -13965,6 +14601,7 @@
           "started_at": 1795503257.173177,
           "elapsed_seconds": 32.753,
           "code_cells": 9,
+          "notebook_timeout_seconds": null,
           "completed_cells": 9,
           "source_cells_unchanged": true,
           "runtime": {
@@ -13973,6 +14610,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/6b3367e2055b4a4b87520787d390c8d5/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -14020,6 +14659,7 @@
           "started_at": 1795503289.9343958,
           "elapsed_seconds": 3.264,
           "code_cells": 18,
+          "notebook_timeout_seconds": null,
           "completed_cells": 18,
           "source_cells_unchanged": true,
           "runtime": {
@@ -14028,6 +14668,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/4cda0a5c8bcd4ea0985c546f918499d3/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -14076,6 +14718,7 @@
           "started_at": 1795503293.206107,
           "elapsed_seconds": 5.305,
           "code_cells": 18,
+          "notebook_timeout_seconds": null,
           "completed_cells": 18,
           "source_cells_unchanged": true,
           "runtime": {
@@ -14084,6 +14727,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/a3f8e5a2b3834b3ca16bd54d5e672223/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -14131,6 +14776,7 @@
           "started_at": 1795503298.518273,
           "elapsed_seconds": 5.294,
           "code_cells": 16,
+          "notebook_timeout_seconds": null,
           "completed_cells": 16,
           "source_cells_unchanged": true,
           "runtime": {
@@ -14139,6 +14785,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/0f564e2c710d4465bf2ebfd2fe11eb15/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -14186,6 +14834,7 @@
           "started_at": 1795503303.8203158,
           "elapsed_seconds": 2.755,
           "code_cells": 12,
+          "notebook_timeout_seconds": null,
           "completed_cells": 12,
           "source_cells_unchanged": true,
           "runtime": {
@@ -14194,6 +14843,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/0770aa8acc3e4d0f997f823466bc926c/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -14263,6 +14914,7 @@
           "started_at": 1795503306.583467,
           "elapsed_seconds": 1.738,
           "code_cells": 21,
+          "notebook_timeout_seconds": null,
           "completed_cells": 21,
           "source_cells_unchanged": true,
           "runtime": {
@@ -14271,6 +14923,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/840320a0271148088b2fe78f30df3ecf/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -14341,6 +14995,7 @@
           "started_at": 1795503308.3295538,
           "elapsed_seconds": 8.334,
           "code_cells": 3,
+          "notebook_timeout_seconds": null,
           "completed_cells": 3,
           "source_cells_unchanged": true,
           "runtime": {
@@ -14349,6 +15004,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/beb6354bf9794edca0d05824088ec19b/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -14393,6 +15050,7 @@
           "started_at": 1795503316.671186,
           "elapsed_seconds": 2.242,
           "code_cells": 21,
+          "notebook_timeout_seconds": null,
           "completed_cells": 21,
           "source_cells_unchanged": true,
           "runtime": {
@@ -14401,6 +15059,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/76247f5c7f1d42d286bb9e0028530f03/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -14451,6 +15111,7 @@
           "started_at": 1795503318.920387,
           "elapsed_seconds": 2.231,
           "code_cells": 19,
+          "notebook_timeout_seconds": null,
           "completed_cells": 19,
           "source_cells_unchanged": true,
           "runtime": {
@@ -14459,6 +15120,8 @@
             "executable": "<workspace>/.flagqai/example-runtime/bin/python",
             "cell_timeout_seconds": 90
           },
+          "environment_receipt": "runtime-environment.json",
+          "environment_receipt_sha256": "e76de9e7ade9ab0568ebd83289867f46e91560457447025f06651cce5de0c458",
           "truncated_output_cells": [],
           "support_sources_sha256": {
             "notebook-workspaces/052304fe1ff047aa836b3c07365b9be8/examples/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",

@@ -93,7 +93,8 @@ def main():
                 row = {'notebook_id': item['id'], 'path': item['path'], 'notebook_sha256': item['notebookSha256'],
                        'attempt': number, 'status': 'running', 'started_at': time.time(),
                        'directory': str((outer / item['id'] / 'attempt-1').relative_to(root)),
-                       'cpu_threads': args.cpu_threads, 'cell_timeout_seconds': args.cell_timeout}
+                       'cpu_threads': args.cpu_threads, 'cell_timeout_seconds': args.cell_timeout,
+                       'notebook_timeout_seconds': args.notebook_timeout}
                 ledger['attempts'].append(row)
                 write(ledger_path, ledger)
                 future = pool.submit(execute, item, outer)

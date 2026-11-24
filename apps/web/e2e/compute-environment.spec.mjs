@@ -34,7 +34,12 @@ test("compute settings apply only after a real local SDK check and survive refre
   await expect(apply).toBeDisabled();
   await python.fill("/missing/compute-environment-test/python");
   await check.click();
-  await expect(dialog.getByRole("alert")).toContainText("No fallback");
+  await expect(dialog.getByRole("alert")).toContainText(
+    "Python executable is unavailable",
+  );
+  await expect(dialog.getByRole("alert")).toContainText(
+    "no research code was executed",
+  );
   await expect(apply).toBeDisabled();
   expect(await get("/api/compute-environment")).toEqual(before);
   await python.fill(before.config.local_python);

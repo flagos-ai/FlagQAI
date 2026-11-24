@@ -16,6 +16,8 @@ def main():
     args = parser.parse_args()
     root = args.report_root.resolve()
     ledger = json.loads((root / 'ledger.json').read_text())
+    environment_path = root / 'runtime-environment.json'
+    environment = json.loads(environment_path.read_text()) if environment_path.exists() else None
     web = Path(__file__).resolve().parents[3] / 'apps/web/public/notebooks'
     catalog = json.loads((web / 'catalog.json').read_text())
     entries = []
@@ -29,6 +31,15 @@ def main():
             if record['notebook_id'] != item['id']:
                 continue
             directory = root / record['directory']
+            environment_receipt = None
+            if environment is not None:
+                parent = directory
+                while parent != root and not (parent / 'runtime-environment.json').exists():
+                    assert parent.is_relative_to(root)
+                    parent = parent.parent
+                environment_receipt = parent / 'runtime-environment.json'
+                actual = json.loads(environment_receipt.read_text())
+                assert all(actual.get(key) == environment.get(key) for key in ('sdk_code_sha256', 'python', 'packages'))
             transcript = directory / 'run.json'
             if not transcript.exists():
                 store = SQLiteJobStore(directory / 'jobs.notebook-runs.sqlite3')
@@ -51,8 +62,11 @@ def main():
             attempts.append({'attempt': record['attempt'], 'status': 'completed' if complete else ('incomplete' if observed['status'] == 'completed' else observed['status']),
                 'started_at': record.get('started_at'),
                 'elapsed_seconds': record.get('elapsed_seconds'), 'code_cells': len(sources),
+                'notebook_timeout_seconds': record.get('notebook_timeout_seconds'),
                 'completed_cells': sum(c['status'] == 'completed' for c in observed['cells']),
                 'source_cells_unchanged': True, 'runtime': observed.get('runtime'),
+                'environment_receipt': str(environment_receipt.relative_to(root)) if environment_receipt else None,
+                'environment_receipt_sha256': sha256(environment_receipt.read_bytes()).hexdigest() if environment_receipt else None,
                 'truncated_output_cells': [i + 1 for i, c in enumerate(observed['cells'])
                     if any('Output truncated (1 MiB or 2000 events)' in o.get('text', '') for o in c['outputs'])],
                 'support_sources_sha256': {str(path.relative_to(directory)): sha256(path.read_bytes()).hexdigest()
@@ -74,7 +88,7 @@ def main():
         'max_independent_kernels': ledger.get('max_independent_kernels', 1),
         'scope': 'Fresh original-cell execution through isolated real Web kernels; concurrency is recorded separately. Execution success does not establish optimizer convergence or scientific correctness beyond the assertions actually executed.',
         'entries': entries}
-    for name, key in [('runtime-environment.json', 'runtime_environment'), ('external-inputs.json', 'external_inputs'), ('sdk-build.json', 'sdk_build')]:
+    for name, key in [('runtime-environment.json', 'runtime_environment'), ('external-inputs.json', 'external_inputs'), ('sdk-build.json', 'sdk_build'), ('long-run-retry.json', 'long_run_retry')]:
         if (root / name).exists():
             summary[key] = json.loads((root / name).read_text())
     output = args.output or root / 'summary.json'

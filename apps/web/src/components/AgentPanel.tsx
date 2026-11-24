@@ -859,12 +859,6 @@ export function AgentPanel({
                 event.preventDefault();
                 setDraft(suggestedPrompt);
                 setCaret(suggestedPrompt.length);
-                requestAnimationFrame(() =>
-                  input.current?.setSelectionRange(
-                    suggestedPrompt.length,
-                    suggestedPrompt.length,
-                  ),
-                );
                 return;
               }
               if (referenceOpen) {

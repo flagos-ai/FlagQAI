@@ -41,6 +41,14 @@ test("inline follow-up accepts with Right Arrow without sending or replacing dra
   await expect(composer).toHaveValue("");
   await composer.press("ArrowRight");
   await expect(composer).toHaveValue(prompt);
+  await expect
+    .poll(() =>
+      composer.evaluate((element) => [
+        element.selectionStart,
+        element.selectionEnd,
+      ]),
+    )
+    .toEqual([prompt.length, prompt.length]);
   expect(sent).toHaveLength(1);
   await composer.fill("My independent question");
   await composer.press("ArrowRight");
