@@ -31,6 +31,7 @@ export type PythonRun = {
     | "timed_out";
   source_hash?: string;
   execution_status?: string;
+  phase?: "synthesizing" | "computing" | "capturing" | "python";
   collection_status?:
     | "pending"
     | "collecting"

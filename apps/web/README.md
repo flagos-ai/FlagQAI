@@ -945,3 +945,17 @@ This adapter currently applies to Python task execution, not independent Noteboo
 kernels or external Python processes. SDK calls bypassing these observed exports
 are not claimed to be captured. Code/run hashes and project dependency snapshots
 continue to determine whether a collected circuit belongs to the current source.
+
+### Reading a completed Python run
+
+Output presents a compact circuit/resource summary without changing the selected
+result tab. **View circuit** opens the recorded version; **Back to code** returns
+to the active draft and its reading position. Full archive/result actions remain
+under **Files and recorded results**. Failed collection or previews reveal those
+files, and retrying collection does not run the source again.
+
+Logs retain their reading position and latest-output follow preference per run in
+the current browser session, including after refresh. Existing compact output and
+manually adjusted heights are unchanged. Synthesis/computation phase labels come
+from actual observed SDK calls; a collection failure is explicitly distinguished
+from Python execution failure.

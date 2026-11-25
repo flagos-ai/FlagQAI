@@ -198,3 +198,98 @@ test("original QLBM Python run auto-collects a real circuit and keeps its source
   const after = await (await page.request.get("/api/python/runs")).json();
   expect(after.length - before.length).toBe(1);
 });
+
+test("QLBM output summary preserves code, log reading position and manual height after circuit viewing", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    process.env.FQ_SYNTHESIS_REPORT_SDK !== "compatible",
+    "Requires the pinned synthesis SDK",
+  );
+  test.setTimeout(120000);
+  const { readFileSync } = await import("node:fs");
+  const original = readFileSync(
+    new URL(
+      "../public/examples/synthesis-files/applications/cfd/qlbm/main.py",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const source =
+    original +
+    "\nprint('\\n'.join('reading line ' + str(i) for i in range(120)))\n";
+  await page.addInitScript((source) => {
+    if (!localStorage.getItem("fq-react-workspace-v1"))
+      localStorage.setItem(
+        "fq-react-workspace-v1",
+        JSON.stringify({
+          source,
+          name: "applications/cfd/qlbm/main.py",
+          language: "python",
+          modelPanel: "output",
+        }),
+      );
+  }, source);
+  await page.goto("/#model");
+  const before = await (await page.request.get("/api/python/runs")).json();
+  await page.getByRole("button", { name: "Run Python", exact: true }).click();
+  const summary = page.getByRole("region", {
+    name: "Run result summary",
+    exact: true,
+  });
+  await expect(summary).toContainText(
+    "19 qubits · 3,316 operations · depth 2,770",
+    { timeout: 90000 },
+  );
+  await expect(
+    page.getByRole("button", { name: "Output", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  const resize = page.getByRole("separator", {
+    name: "Resize model errors panel",
+  });
+  await resize.press("Shift+ArrowUp");
+  const height = await resize.getAttribute("aria-valuenow");
+  const editor = page.getByRole("textbox", {
+    name: "Quantum model code editor",
+  });
+  const draft =
+    source +
+    "\n# unsubmitted iteration\n" +
+    "# keep reading here\n".repeat(100);
+  await editor.fill(draft);
+  await editor.evaluate((node) => {
+    node.scrollTop = 240;
+    node.dispatchEvent(new Event("scroll"));
+  });
+  const logs = page.getByLabel("Python console output", { exact: true });
+  await logs.evaluate((node) => {
+    node.scrollTop = 180;
+    node.dispatchEvent(new Event("scroll"));
+  });
+  await expect(summary).toContainText("Previous source");
+  await summary
+    .getByRole("button", { name: "View circuit", exact: true })
+    .click();
+  await expect(page).toHaveURL(/#program$/);
+  await page.getByRole("button", { name: "Back to code", exact: true }).click();
+  await expect(editor).toHaveValue(draft);
+  await expect
+    .poll(() => editor.evaluate((node) => Math.round(node.scrollTop)))
+    .toBe(240);
+  await expect
+    .poll(() => logs.evaluate((node) => Math.round(node.scrollTop)))
+    .toBe(180);
+  await expect(resize).toHaveAttribute("aria-valuenow", height);
+  await page.screenshot({
+    path: testInfo.outputPath("qlbm-run-summary.png"),
+    fullPage: true,
+  });
+  await page.reload();
+  await expect(editor).toHaveValue(draft);
+  await expect
+    .poll(() => logs.evaluate((node) => Math.round(node.scrollTop)))
+    .toBe(180);
+  await expect(resize).toHaveAttribute("aria-valuenow", height);
+  const after = await (await page.request.get("/api/python/runs")).json();
+  expect(after.length - before.length).toBe(1);
+});

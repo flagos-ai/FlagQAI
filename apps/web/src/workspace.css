@@ -8103,3 +8103,52 @@ body,
   color: #9ca3af;
   opacity: 1;
 }
+
+.fq-python-run-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--fq-border, #35373a);
+  flex-shrink: 0;
+}
+.fq-python-run-summary > div {
+  flex: 1;
+  min-width: 170px;
+}
+.fq-python-run-summary strong {
+  font-size: 12px;
+  font-weight: 600;
+  margin-right: 10px;
+}
+.fq-python-run-summary span {
+  font-size: 12px;
+  color: #c9d4df;
+}
+.fq-python-run-summary small {
+  display: block;
+  color: #c6b48f;
+  font-size: 11px;
+  margin-top: 3px;
+}
+.fq-python-run-summary button {
+  min-height: 26px;
+  font-size: 12px;
+  padding: 3px 8px;
+}
+.fq-python-files {
+  flex-shrink: 0;
+}
+.fq-python-files > summary {
+  padding: 5px 12px;
+  cursor: pointer;
+  color: #aab6c3;
+  font-size: 11px;
+}
+.fq-python-console details.fq-python-files {
+  padding: 0;
+  margin: 0;
+  max-height: none;
+  overflow: visible;
+}

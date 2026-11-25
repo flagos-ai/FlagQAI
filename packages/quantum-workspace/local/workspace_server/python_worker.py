@@ -239,10 +239,23 @@ finally:
         for reader in readers: reader.start()
         started = time.monotonic()
         reason = None
+        phase = None
         while process.poll() is None:
             if cancelled.is_set() or time.monotonic()-started > 90:
                 reason = 'cancelled' if cancelled.is_set() else 'timed_out'
                 break
+            stage_file = root / '.synthesis-stage.json'
+            try:
+                descriptor = os.open(stage_file, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+                with os.fdopen(descriptor, 'rb') as stream:
+                    info = os.fstat(stream.fileno())
+                    raw = stream.read(257) if stat.S_ISREG(info.st_mode) and info.st_size <= 256 else b''
+                next_phase = json.loads(raw).get('phase') if 0 < len(raw) <= 256 else None
+                if next_phase in ('synthesizing', 'computing', 'capturing', 'python') and next_phase != phase:
+                    phase = next_phase
+                    emit({'type': 'phase', 'phase': phase})
+            except (OSError, ValueError, AttributeError):
+                pass
             time.sleep(.05)
         # Stop descendants too, including processes that outlive main.py.
         try: os.killpg(process.pid, signal.SIGTERM)

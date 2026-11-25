@@ -31,6 +31,14 @@ def install_synthesis_capture():
         if len(errors) < 8:
             errors.append(str(message)[:500])
 
+    def stage(phase):
+        try:
+            fd = os.open(root / '.synthesis-stage.json', os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW | os.O_NONBLOCK, 0o600)
+            with os.fdopen(fd, 'w') as stream:
+                json.dump({'phase': phase}, stream)
+        except OSError:
+            pass  # Progress reporting must not change research execution.
+
     def write(record, result=None):
         nonlocal folder
         try:
@@ -48,27 +56,40 @@ def install_synthesis_capture():
             note('Automatic circuit capture: ' + str(error))
 
     def observed_return(frame, event, value):
-        if event != 'return' or frame.f_code not in codes:
+        if frame.f_code not in codes:
             return
         try:
             kind = codes[frame.f_code]
             with lock:
+                if event == 'call':
+                    if kind == 'synthesize':
+                        stage('synthesizing')
+                    elif kind == 'run':
+                        product = frame.f_locals.get('program_or_plan')
+                        if any(product is row['program'] or id(product) in row['identities'] for row in records):
+                            stage('computing')
+                    return
                 if kind == 'synthesize' and isinstance(value, sdk['Program']):
                     if len(records) >= 8:
                         note('Automatic circuit capture is limited to eight synthesis products per run.')
+                        stage('python')
                         return
                     plan = value.execution
                     record = {'index': len(records) + 1, 'program': value, 'plan': plan,
                               'identities': {id(plan), id(value.circuit)}, 'explicit': []}
                     records.append(record)
+                    stage('capturing')
                     write(record)
+                    stage('python')
                 elif kind == 'run' and value is not None:
                     product = frame.f_locals.get('program_or_plan')
                     for record in records:
                         if product is record['program'] or id(product) in record['identities']:
                             record['plan'] = value.plan
                             record['identities'].add(id(value.plan))
+                            stage('capturing')
                             write(record, value)
+                            stage('python')
                             break
                 elif kind == 'save':
                     if not records:
@@ -98,7 +119,7 @@ def install_synthesis_capture():
     def observe(frame, event, value):
         if getattr(guard, 'active', False):
             return
-        if event != 'return' or frame.f_code not in codes:
+        if event not in ('call', 'return') or frame.f_code not in codes:
             return
         guard.active = True
         try:
@@ -108,6 +129,9 @@ def install_synthesis_capture():
 
     def monitored_return(code, offset, value):
         observe(sys._getframe(1), 'return', value)
+
+    def monitored_start(code, offset):
+        observe(sys._getframe(1), 'call', None)
 
     def install(fq):
         nonlocal installed, tool_id
@@ -133,8 +157,9 @@ def install_synthesis_capture():
                     continue
                 tool_id = candidate
                 monitoring.register_callback(tool_id, monitoring.events.PY_RETURN, monitored_return)
+                monitoring.register_callback(tool_id, monitoring.events.PY_START, monitored_start)
                 for code in codes:
-                    monitoring.set_local_events(tool_id, code, monitoring.events.PY_RETURN)
+                    monitoring.set_local_events(tool_id, code, monitoring.events.PY_RETURN | monitoring.events.PY_START)
                 return
         if previous_profile is not None or previous_thread_profile is not None:
             note('Automatic circuit observation is unavailable while another Python profiler is active.')
@@ -173,6 +198,7 @@ def install_synthesis_capture():
             for code in codes:
                 monitoring.set_local_events(tool_id, code, 0)
             monitoring.register_callback(tool_id, monitoring.events.PY_RETURN, None)
+            monitoring.register_callback(tool_id, monitoring.events.PY_START, None)
             monitoring.free_tool_id(tool_id)
         paths = []
         with lock:

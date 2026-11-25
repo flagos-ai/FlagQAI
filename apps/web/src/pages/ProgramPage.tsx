@@ -113,6 +113,14 @@ export function ProgramPage({
               {(program.experiment.python_run?.id || program.id).slice(-8)}
             </small>
           )}
+          {program && (
+            <button
+              onClick={() => dispatch({ type: "navigate", page: "model" })}
+              title="Return to your editor draft and reading position"
+            >
+              Back to code
+            </button>
+          )}
           <div className="push" />
           <button
             aria-pressed={info}

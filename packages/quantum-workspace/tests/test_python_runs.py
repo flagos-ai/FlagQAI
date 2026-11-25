@@ -40,6 +40,17 @@ class PythonRunCase(unittest.TestCase):
 
 
 class PythonTests(PythonRunCase):
+    def test_phase_reader_ignores_symlinks_and_oversized_progress_files(self):
+        for setup in (
+            "Path('.synthesis-stage.json').write_text('{\"phase\":\"computing\"}' + ' ' * 300)",
+            "target = Path(folder) / 'outside.json'\ntarget.write_text('{\"phase\":\"computing\"}')\nPath('.synthesis-stage.json').symlink_to(target)",
+        ):
+            with self.subTest(setup=setup):
+                source = "from pathlib import Path\nimport tempfile, time\nwith tempfile.TemporaryDirectory() as folder:\n" + ''.join('    ' + line + '\n' for line in setup.splitlines()) + "    time.sleep(.3)\nprint('completed')\n"
+                run = self.wait(self.runs.submit({'source': source})['id'])
+                self.assertEqual(run['status'], 'completed', run)
+                self.assertNotIn('phase', run)
+
     def test_deep_source_tree_does_not_report_a_false_collection_failure(self):
         source = "from pathlib import Path\np = Path('/'.join(['nested'] * 12))\np.mkdir(parents=True)\n(p / 'module.py').write_text('value = 1')\nprint('completed without saving a circuit')"
         run = self.wait(self.runs.submit({'source': source})['id'])
@@ -456,6 +467,12 @@ program = synth.synthesize(polynomial, inputs={"x": synth.UInt(1), "y": synth.UI
         source = (repo / 'apps/web/public/examples/synthesis-files' / entry).read_text()
         self.assertNotIn('fq.save', source)
         self.runs.settings = replace(self.settings, web_root=repo / 'apps/web/dist')
+        phases = []
+        put = self.runs.store.put
+        def record_phase(value):
+            if value.get('phase'): phases.append(value['phase'])
+            return put(value)
+        self.runs.store.put = record_phase
         run = self.wait(self.runs.submit({'source': source, 'name': entry, 'synthesis_path': entry})['id'])
         self.assertEqual(run['status'], 'completed', run)
         self.assertEqual(run['collection_status'], 'completed', run)
@@ -463,6 +480,7 @@ program = synth.synthesize(polynomial, inputs={"x": synth.UInt(1), "y": synth.UI
         self.assertEqual(len(run['experiments']), 1, run)
         record = self.runs.experiments.get(run['experiments'][0]['id'])
         program = record['program']
+        self.assertIn('synthesizing', phases)
         self.assertEqual(program['compiled']['qubits'], 19)
         self.assertEqual(program['compiled']['depth'], 2770)
         self.assertEqual(len(program['compiled']['instructions']), 3316)

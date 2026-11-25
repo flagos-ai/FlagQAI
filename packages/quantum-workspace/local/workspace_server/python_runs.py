@@ -392,6 +392,7 @@ with tempfile.TemporaryDirectory(prefix='fq-sdk-preflight-') as directory:
                     elif not run.get('truncated'):
                         run['truncated'] = True
                 elif event['type'] == 'runtime': run['runtime'] = event
+                elif event['type'] == 'phase': run['phase'] = event['phase']
                 elif event['type'] == 'synthesis-capture': run['automatic_capture'] = {'files': event['files']}
                 elif event['type'] == 'artifact': artifact = event['value']
                 elif event['type'] == 'artifact-error':

@@ -119,7 +119,14 @@ export function pythonRunFeedback({
     };
   if (run.status === "running")
     return {
-      label: "Running…",
+      label:
+        run.phase === "synthesizing"
+          ? "Synthesizing…"
+          : run.phase === "computing"
+            ? "Computing…"
+            : run.phase === "capturing"
+              ? "Collecting circuit…"
+              : "Running…",
       busy: true,
       message: "Running the submitted code. You can keep editing.",
     };
@@ -150,9 +157,13 @@ export function pythonRunFeedback({
     };
   if (["partial", "failed"].includes(run.collection_status || ""))
     return {
-      label: "Results need attention",
+      label:
+        run.collection_status === "failed"
+          ? "Completed · collection failed"
+          : "Completed · some results unavailable",
       busy: false,
-      message: "Python finished, but some saved results could not be opened.",
+      message:
+        "Python completed successfully. Some circuit files could not be collected; output and failure details are retained.",
     };
   return {
     label: "Completed",

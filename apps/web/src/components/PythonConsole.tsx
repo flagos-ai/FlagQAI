@@ -1,3 +1,6 @@
+import { PythonRunSummary } from "./PythonRunSummary";
+import { usePythonOutputPosition } from "../hooks/usePythonOutputPosition";
+import { compilationResults } from "../state/compilation-results";
 import { ResearchNextStep } from "./ResearchNextStep";
 import { useEffect, useRef, useState } from "react";
 import type { PythonWorkspace } from "../hooks/usePythonWorkspace";
@@ -75,7 +78,26 @@ export function PythonConsole({
   });
   const logs = useRef<HTMLPreElement>(null);
   const upload = useRef<HTMLInputElement>(null);
-  const [follow, setFollow] = useState(true);
+  const {
+    remember: rememberOutput,
+    follow,
+    jump,
+  } = usePythonOutputPosition(run?.id, !showCompilation, run?.logs, logs);
+  const summaryRows = compilationResults(state, run);
+  const [filesOpen, setFilesOpen] = useState(() => {
+    try {
+      return sessionStorage.getItem("fq-python-files-open-v1") === "open";
+    } catch {
+      return false;
+    }
+  });
+  const previewFailed = Object.values(python.previews).some(
+    (preview) => preview.status === "failed",
+  );
+  const filesNeedAttention = previewFailed || !!run?.collection_errors?.length;
+  useEffect(() => {
+    if (filesNeedAttention) setFilesOpen(true);
+  }, [filesNeedAttention]);
   const [repairingId, setRepairingId] = useState<string | null>(null),
     [repairError, setRepairError] = useState<{
       id: string;
@@ -119,13 +141,6 @@ export function PythonConsole({
       if (currentRunId.current === id) setCopyResult({ id, status: "error" });
     }
   };
-  useEffect(() => {
-    setFollow(true);
-  }, [python.selectedRunId]);
-  useEffect(() => {
-    if (follow && logs.current)
-      logs.current.scrollTop = logs.current.scrollHeight;
-  }, [run?.logs, follow]);
   const failure = run ? pythonFailure(run) : null;
   const line = failure?.line;
   const freshness = run ? pythonResultFreshness(run, state) : undefined;
@@ -245,7 +260,7 @@ export function PythonConsole({
                 }
                 disabled={follow || !run?.logs.length}
                 onClick={() => {
-                  setFollow(true);
+                  jump();
                   logs.current?.focus({ preventScroll: true });
                 }}
               >
@@ -285,6 +300,12 @@ export function PythonConsole({
       </div>
       {showCompilation && compilation}
       <div style={{ display: showCompilation ? "none" : "contents" }}>
+        <PythonRunSummary
+          state={state}
+          run={run}
+          dispatch={dispatch}
+          researchAction={!compact ? researchAction : undefined}
+        />
         {failure && run && (
           <section
             className="fq-python-collection-errors"
@@ -340,106 +361,139 @@ export function PythonConsole({
             )}
           </section>
         )}
-        {run && freshness && freshness !== "current" && (
-          <div className={"fq-result-freshness " + freshness} role="status">
-            <span aria-hidden="true">
-              {freshness === "changed" ? "◷" : "◇"}
-            </span>
-            {freshness === "changed"
-              ? working
-                ? "Code changed · This run uses its submitted snapshot."
-                : "Code changed · These results are from an earlier snapshot. Run again to update."
-              : freshness === "other-file"
-                ? `Saved run · ${run.project?.entry}. Your current file is unchanged.`
-                : "Saved project snapshot · Current dependencies have not been verified."}
-          </div>
-        )}
+        {run &&
+          freshness &&
+          freshness !== "current" &&
+          (!summaryRows.length || freshness !== "changed") && (
+            <div className={"fq-result-freshness " + freshness} role="status">
+              <span aria-hidden="true">
+                {freshness === "changed" ? "◷" : "◇"}
+              </span>
+              {freshness === "changed"
+                ? working
+                  ? "Code changed · This run uses its submitted snapshot."
+                  : "Code changed · These results are from an earlier snapshot. Run again to update."
+                : freshness === "other-file"
+                  ? `Saved run · ${run.project?.entry}. Your current file is unchanged.`
+                  : "Saved project snapshot · Current dependencies have not been verified."}
+            </div>
+          )}
         {run?.project?.path.startsWith("notebook-copies/") && (
           <RunEvidence key={run.id} run={run} />
         )}
         {!!run?.experiments?.length && (
-          <section
-            className="fq-python-experiments"
-            aria-label="Saved Python experiments"
-            title="Linked to this run's source snapshot. Opening an experiment preserves your editor draft."
+          <details
+            className="fq-python-files"
+            open={compact || filesOpen}
+            onToggle={(event) => {
+              if (!compact) {
+                const open = event.currentTarget.open;
+                setFilesOpen(open);
+                try {
+                  sessionStorage.setItem(
+                    "fq-python-files-open-v1",
+                    open ? "open" : "closed",
+                  );
+                } catch {
+                  /* The disclosure remains usable without storage. */
+                }
+              }
+            }}
           >
-            <div className="fq-run-completion">
-              <span className="fq-run-completion-mark" aria-hidden="true">
-                {run.collection_status === "completed" ? "✓" : "◇"}
-              </span>
-              <span>
-                <strong>
-                  {run.collection_status === "completed" &&
-                  run.status === "completed"
-                    ? "Run complete"
-                    : "Saved outputs"}
-                </strong>
-                <small>
-                  {run.experiments.length}{" "}
-                  {run.experiments.length === 1 ? "experiment" : "experiments"}{" "}
-                  ·{" "}
-                  {run.collection_status === "partial"
-                    ? "Some files need attention"
-                    : "Recorded from this run"}
-                </small>
-              </span>
-              {!compact && researchAction}
-            </div>
-            {run.experiments.map((reference) => (
-              <div
-                className="fq-python-experiment"
-                role="group"
-                aria-label={reference.filename}
-                key={reference.id}
-              >
-                <span
-                  title={`${reference.filename} · SHA-256 ${reference.sha256} · run ${run.id}`}
+            <summary>
+              Files and recorded results ({run.experiments.length})
+            </summary>
+            <section
+              className="fq-python-experiments"
+              aria-label="Saved Python experiments"
+              title="Linked to this run's source snapshot. Opening an experiment preserves your editor draft."
+            >
+              {!summaryRows.length && (
+                <div className="fq-run-completion">
+                  <span className="fq-run-completion-mark" aria-hidden="true">
+                    {run.collection_status === "completed" ? "✓" : "◇"}
+                  </span>
+                  <span>
+                    <strong>
+                      {run.collection_status === "completed" &&
+                      run.status === "completed"
+                        ? "Run complete"
+                        : "Saved outputs"}
+                    </strong>
+                    <small>
+                      {run.experiments.length}{" "}
+                      {run.experiments.length === 1
+                        ? "experiment"
+                        : "experiments"}{" "}
+                      ·{" "}
+                      {run.collection_status === "partial"
+                        ? "Some files need attention"
+                        : "Recorded from this run"}
+                    </small>
+                  </span>
+                  {!compact && researchAction}
+                </div>
+              )}
+              {run.experiments.map((reference) => (
+                <div
+                  className="fq-python-experiment"
+                  role="group"
+                  aria-label={reference.filename}
+                  key={reference.id}
                 >
-                  {reference.filename}
-                  <small>
-                    {" "}
-                    ·{" "}
-                    {python.previews[reference.id]?.status === "loading"
-                      ? "Loading preview…"
-                      : python.previews[reference.id]?.status === "failed"
-                        ? "Preview failed"
-                        : python.previews[reference.id]?.status === "loaded"
-                          ? "Loaded in Quantum"
-                          : "Saved · preview pending"}
-                  </small>
-                </span>
-                <button
-                  className="fq-run-open-circuit"
-                  disabled={python.previews[reference.id]?.status !== "loaded"}
-                  onClick={() =>
-                    void python.openExperiment(reference.id, "program")
-                  }
-                >
-                  View circuit ↗
-                </button>
-                {reference.has_result ? (
+                  <span
+                    title={`${reference.filename} · SHA-256 ${reference.sha256} · run ${run.id}`}
+                  >
+                    {reference.filename}
+                    <small>
+                      {" "}
+                      ·{" "}
+                      {python.previews[reference.id]?.status === "loading"
+                        ? "Loading preview…"
+                        : python.previews[reference.id]?.status === "failed"
+                          ? "Preview failed"
+                          : python.previews[reference.id]?.status === "loaded"
+                            ? "Loaded in Quantum"
+                            : "Saved · preview pending"}
+                    </small>
+                  </span>
                   <button
+                    className="fq-run-open-circuit"
                     disabled={
                       python.previews[reference.id]?.status !== "loaded"
                     }
                     onClick={() =>
-                      void python.openExperiment(reference.id, "jobs")
+                      void python.openExperiment(reference.id, "program")
                     }
                   >
-                    View result ↗
+                    View circuit ↗
                   </button>
-                ) : (
-                  <small>Circuit only · no saved result</small>
-                )}
-                {python.previews[reference.id]?.status === "failed" && (
-                  <span role="alert">
-                    {python.previews[reference.id].error}{" "}
-                    <button onClick={python.retryLoading}>Retry loading</button>
-                  </span>
-                )}
-              </div>
-            ))}
-          </section>
+                  {reference.has_result ? (
+                    <button
+                      disabled={
+                        python.previews[reference.id]?.status !== "loaded"
+                      }
+                      onClick={() =>
+                        void python.openExperiment(reference.id, "jobs")
+                      }
+                    >
+                      View result ↗
+                    </button>
+                  ) : (
+                    <small>Circuit only · no saved result</small>
+                  )}
+                  {python.previews[reference.id]?.status === "failed" && (
+                    <span role="alert">
+                      {python.previews[reference.id].error}{" "}
+                      <button onClick={python.retryLoading}>
+                        Retry loading
+                      </button>
+                    </span>
+                  )}
+                </div>
+              ))}
+            </section>
+          </details>
         )}
         {run && <ResearchNextStep run={run} />}
         <div className="fq-python-result-toolbar" hidden={!run}>
@@ -587,16 +641,7 @@ export function PythonConsole({
           aria-label="Python console output"
           aria-live="off"
           tabIndex={0}
-          onScroll={() => {
-            const element = logs.current;
-            if (element)
-              setFollow(
-                element.scrollHeight -
-                  element.scrollTop -
-                  element.clientHeight <
-                  32,
-              );
-          }}
+          onScroll={rememberOutput}
         >
           {run?.logs.length ? (
             run.logs.map((log, index) => (
