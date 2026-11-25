@@ -63,7 +63,8 @@ def check_synthesis_environment(entry):
 '''
 
 FQX_LIMITS = {'files': 8, 'file_bytes': 16 * 1024 * 1024,
-              'total_bytes': 32 * 1024 * 1024, 'chunk_bytes': 64 * 1024}
+              'total_bytes': 32 * 1024 * 1024, 'chunk_bytes': 64 * 1024,
+              'scan_entries': 16384, 'directory_depth': 32}
 
 
 def collect_experiments(root, emit):
@@ -77,13 +78,13 @@ def collect_experiments(root, emit):
         with os.scandir(directory) as items:
             for entry in items:
                 entries += 1
-                if entries > 4096:
-                    emit({'type': 'artifact-error', 'name': '', 'message': 'File scan stopped at 4096 entries.'})
+                if entries > FQX_LIMITS['scan_entries']:
+                    emit({'type': 'artifact-error', 'name': '', 'message': 'File scan stopped at 16384 entries.'})
                     return
                 name = Path(entry.path).relative_to(root).as_posix()
                 if entry.is_dir(follow_symlinks=False):
-                    if depth < 8: pending.append((Path(entry.path), depth + 1))
-                    else: emit({'type': 'artifact-error', 'name': name, 'message': 'Artifact directory depth exceeds 8.'})
+                    if depth < FQX_LIMITS['directory_depth']: pending.append((Path(entry.path), depth + 1))
+                    else: emit({'type': 'artifact-error', 'name': name, 'message': 'Artifact directory depth exceeds 32.'})
                     continue
                 if not entry.name.lower().endswith('.fqx'): continue
                 if count >= FQX_LIMITS['files']:

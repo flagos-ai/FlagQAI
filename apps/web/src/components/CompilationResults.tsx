@@ -67,6 +67,11 @@ export function CompilationResults({
   );
   const loading =
     python && !!state.pythonRunId && run?.id !== state.pythonRunId;
+  const collectionFailed =
+    python &&
+    !loading &&
+    !!run &&
+    ["failed", "partial"].includes(run.collection_status || "");
   const status = loading
     ? "Loading selected run…"
     : !python && compilingSource !== null
@@ -79,15 +84,19 @@ export function CompilationResults({
           ? `Python ${run.status}…`
           : python && run && run.status !== "completed"
             ? `Python ${run.status} · saved circuits retained`
-            : current.length
-              ? python
-                ? "Saved circuits available"
-                : "Compiled"
-              : rows.length
-                ? "Source changed · previous resources"
-                : python
-                  ? "No saved circuit for this source"
-                  : "Ready to compile";
+            : collectionFailed
+              ? rows.length
+                ? "Some circuits could not be collected"
+                : "Circuit collection failed"
+              : current.length
+                ? python
+                  ? "Saved circuits available"
+                  : "Compiled"
+                : rows.length
+                  ? "Source changed · previous resources"
+                  : python
+                    ? "No saved circuit for this source"
+                    : "Ready to compile";
   return (
     <section
       className="fq-compilation-results"
@@ -119,11 +128,15 @@ export function CompilationResults({
       )}
       {!rows.length && (
         <p className="fq-compilation-empty">
-          {python
-            ? detectedPythonStyle(state.source) === "synthesis"
-              ? "Set synthesis constraints in this Python source, then Run Python. Save the generated circuit with fq.save to inspect its resources here."
-              : "Run this Python source and save a circuit with fq.save to inspect its resources here."
-            : "Use Compile above to generate a circuit from this source."}
+          {collectionFailed
+            ? "Python execution and circuit collection have separate statuses. Review the collection errors in Output before deciding whether to run again."
+            : python
+              ? run?.status === "completed"
+                ? "Python completed without a saved circuit. Printed probabilities and resource estimates are available in Output; this source must save an FQX file to make its circuit available here."
+                : detectedPythonStyle(state.source) === "synthesis"
+                  ? "Set synthesis constraints in this Python source, then Run Python. Save the generated circuit with fq.save to inspect its resources here."
+                  : "Run this Python source and save a circuit with fq.save to inspect its resources here."
+              : "Use Compile above to generate a circuit from this source."}
         </p>
       )}
       {rows.length > 0 && (
@@ -222,7 +235,9 @@ export function CompilationResults({
       )}
       {python &&
         run &&
-        (run.error || (run.experiments?.length || 0) > rows.length) && (
+        (collectionFailed ||
+          run.error ||
+          (run.experiments?.length || 0) > rows.length) && (
           <button onClick={onOutput}>View run output and all archives</button>
         )}
     </section>

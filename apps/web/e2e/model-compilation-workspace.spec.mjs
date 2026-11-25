@@ -73,3 +73,69 @@ test("legacy synthesis navigation preserves Notebook, Python and chat drafts wit
   await expect(chat).toHaveValue("Keep this unsent question.");
   expect(submissions).toBe(0);
 });
+
+test("collection failures offer output recovery instead of asking for another compile", async ({
+  page,
+}) => {
+  const source = "print('existing output')";
+  const run = {
+    id: "collection-regression",
+    name: "Existing run",
+    source,
+    status: "completed",
+    execution_status: "completed",
+    collection_status: "failed",
+    collection_errors: [
+      { filename: "nested", message: "Artifact directory depth exceeds 8." },
+    ],
+    experiments: [],
+    logs: [{ stream: "stdout", text: "existing output" }],
+    environment: {
+      transport: "local",
+      python: "python3",
+      timeout_seconds: 90,
+      scope: "single-file",
+    },
+  };
+  let submissions = 0;
+  await page.addInitScript(
+    ({ source, id }) => {
+      localStorage.setItem(
+        "fq-react-workspace-v1",
+        JSON.stringify({
+          language: "python",
+          source,
+          name: "Existing run",
+          pythonRunId: id,
+          modelPanel: "compilation",
+        }),
+      );
+    },
+    { source, id: run.id },
+  );
+  await page.route("**/api/python/runs**", async (route) => {
+    if (route.request().method() === "POST") submissions++;
+    await route.fulfill({
+      json: route.request().url().endsWith("/runs") ? [run] : run,
+    });
+  });
+  await page.goto("/#model");
+  const results = page.getByRole("region", {
+    name: "Compilation results",
+    exact: true,
+  });
+  await expect(results.getByRole("status")).toHaveText(
+    "Circuit collection failed",
+  );
+  await expect(results).not.toContainText("Set synthesis constraints");
+  await results
+    .getByRole("button", { name: "View run output and all archives" })
+    .click();
+  await expect(
+    page.getByText("Experiment collection failed", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("textbox", { name: "Quantum model code editor" }),
+  ).toHaveValue(source);
+  expect(submissions).toBe(0);
+});

@@ -40,6 +40,32 @@ class PythonRunCase(unittest.TestCase):
 
 
 class PythonTests(PythonRunCase):
+    def test_deep_source_tree_does_not_report_a_false_collection_failure(self):
+        source = "from pathlib import Path\np = Path('/'.join(['nested'] * 12))\np.mkdir(parents=True)\n(p / 'module.py').write_text('value = 1')\nprint('completed without saving a circuit')"
+        run = self.wait(self.runs.submit({'source': source})['id'])
+        self.assertEqual(run['status'], 'completed', run)
+        self.assertEqual(run['collection_status'], 'completed', run)
+        self.assertEqual(run['collection_errors'], [])
+        self.assertEqual(run['experiments'], [])
+
+    def test_deep_artifact_collection_remains_bounded_and_rejects_symlinks(self):
+        from workspace_server.python_worker import collect_experiments, FQX_LIMITS
+        root = Path(self.temp.name) / 'artifacts'
+        nested = root.joinpath(*(['nested'] * 12))
+        nested.mkdir(parents=True)
+        (nested / 'saved.fqx').write_bytes(b'archive')
+        (nested / 'linked.fqx').symlink_to(nested / 'saved.fqx')
+        messages = []
+        collect_experiments(root, messages.append)
+        self.assertEqual(len([m for m in messages if m['type'] == 'fqx-end']), 1)
+        errors = [m for m in messages if m['type'] == 'artifact-error']
+        self.assertEqual(len(errors), 1)
+        self.assertTrue(errors[0]['name'].endswith('linked.fqx'))
+        nested.joinpath(*(['deeper'] * FQX_LIMITS['directory_depth'])).mkdir(parents=True)
+        messages.clear()
+        collect_experiments(root, messages.append)
+        self.assertTrue(any('depth exceeds' in m.get('message', '') for m in messages))
+
     def test_real_stdout_is_live_and_source_snapshot_stays_immutable(self):
         source='import time\nprint("first output", flush=True)\ntime.sleep(.4)\nprint("中文 output")'
         run=self.runs.submit({'source':source,'name':'Live output'})

@@ -59,3 +59,24 @@ models, SDK modifications or new backend execution paths are involved.
 
 The prior 212-notebook execution report and all retained attempts remain intact
 in `NOTEBOOK_CORPUS_2026-11-24.md` and its linked machine-readable reports.
+
+## Collection failure follow-up
+
+Run `2e2480f3` completed its QLBM Python computation, printing a 19-qubit,
+3,316-operation, depth-2,770 resource estimate. Its original source does not
+save an FQX file. Scanning the bundled upstream source tree incorrectly hit the
+collector's eight-level directory limit and recorded collection failures for
+unrelated input directories. These historical errors are retained.
+
+The collector now supports up to 32 directory levels and 16,384 scanned entries,
+while retaining regular-file, no-follow, archive-count and byte limits. The
+resource pane distinguishes collection failure from successful execution without
+a saved circuit, and links collection failures back to Output. Printed estimates
+are not presented as archived circuits. Future workers load the supervisor source
+per execution; the service does not need restarting for this change.
+
+Regression checks cover a successful subprocess with twelve input-directory
+levels and no archives, a deeply nested archive transfer, symlink rejection,
+retained directory limits, and a browser recovery flow that submits no task and
+preserves editor source. Frontend unit tests: 340 passed; type checking, build
+and staged CLI package verification passed.
