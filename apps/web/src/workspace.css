@@ -130,7 +130,7 @@ body,
   color: #b0bac7;
   line-height: 1.7;
 }
-.fq-workspace input:not([type="checkbox"]),
+.fq-workspace input:not([type="checkbox"]):not([type="radio"]),
 .fq-workspace textarea {
   display: block;
   width: 100%;
@@ -2037,6 +2037,92 @@ body,
 .fq-agent-interaction label small {
   display: block;
   font-size: 10px;
+}
+.fq-agent-question {
+  border-color: var(--control-line);
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 14px;
+  margin: 8px 0;
+}
+.fq-agent-question h3 {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+.fq-agent-question fieldset {
+  min-width: 0;
+  margin: 0 0 12px;
+  padding: 0;
+  border: 0;
+}
+.fq-agent-question legend {
+  width: 100%;
+  padding: 0;
+  margin-bottom: 10px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 550;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.fq-agent-question .fq-agent-question-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 4px 0;
+  padding: 9px 10px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.fq-agent-question-option:hover {
+  background: #ffffff06;
+}
+.fq-agent-question-option[data-selected="true"] {
+  background: #68beee0c;
+  border-color: #68beee40;
+}
+.fq-agent-question-option:focus-within {
+  outline: 1px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+.fq-agent-question .fq-agent-question-option input {
+  appearance: auto;
+  flex: 0 0 15px;
+  width: 15px;
+  height: 15px;
+  min-height: 0;
+  margin: 3px 0 0;
+  padding: 0;
+  box-shadow: none;
+  accent-color: var(--accent);
+}
+.fq-agent-question-option > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.fq-agent-question-option strong {
+  display: block;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.6;
+}
+.fq-agent-question .fq-agent-question-option small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+  margin-top: 2px;
+}
+.fq-agent-question fieldset > input {
+  margin-top: 10px;
+}
+.fq-agent-question .fq-agent-interaction-actions {
+  justify-content: flex-end;
+  padding-top: 10px;
+  border-top: 1px solid var(--control-line);
 }
 .fq-agent-live,
 .fq-agent-stop-state {
@@ -5048,7 +5134,7 @@ body,
   color: var(--muted);
   font-size: 12px;
 }
-.fq-workspace .fq-quick-open > input {
+.fq-workspace.fq-ui-controls .fq-quick-open > input {
   width: calc(100% - 32px);
   min-width: 0;
 }
@@ -7905,4 +7991,9 @@ body,
 
 .fq-research-constraint-review textarea {
   min-height: 72px;
+}
+
+.fq-workspace .fq-agent-input textarea[data-follow-up="true"]::placeholder {
+  color: #9ca3af;
+  opacity: 1;
 }

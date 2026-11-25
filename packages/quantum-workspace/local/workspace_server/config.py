@@ -22,6 +22,8 @@ class WorkspaceSettings:
     ssh_identity: str = ""
     agent_sdk_preflight: bool = False
     macos_python_isolation: bool = False
+    notebook_cell_timeout_seconds: int = 600
+    notebook_cpu_threads: int = 2
 
     @classmethod
     def from_root(cls, root):
@@ -40,5 +42,7 @@ class WorkspaceSettings:
             remote_python=os.environ.get("FQ_REMOTE_PYTHON") or settings.get("remote_python"),
             macos_python_isolation=os.environ.get("FQ_MACOS_PYTHON_ISOLATION") == "1",
             agent_sdk_preflight=os.environ.get("FQ_AGENT_SDK_PREFLIGHT") == "1",
+            notebook_cell_timeout_seconds=int(os.environ.get('FQ_NOTEBOOK_CELL_TIMEOUT_SECONDS', settings.get('notebook_cell_timeout_seconds', 600))),
+            notebook_cpu_threads=int(os.environ.get('FQ_NOTEBOOK_CPU_THREADS', settings.get('notebook_cpu_threads', 2))),
             ssh_port=int(os.environ.get('FQ_SSH_PORT', settings.get('ssh_port', 2222))),
         )

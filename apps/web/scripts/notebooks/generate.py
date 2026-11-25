@@ -1,4 +1,5 @@
 """Vendor pinned native notebooks and their Python import closure, never execute them."""
+from import_closure import closure
 import ast
 import base64
 import hashlib
@@ -14,50 +15,29 @@ out = web / 'public/notebooks'
 out.mkdir(parents=True, exist_ok=True)
 def sha(raw): return hashlib.sha256(raw).hexdigest()
 def encode(value): return (json.dumps(value, ensure_ascii=False, indent=2) + '\n').encode()
-def closure(entry):
-    files, imports, pending = {}, set(), [entry]
-    while pending:
-        path = pending.pop()
-        name = path.relative_to(root).as_posix()
-        if name in files: continue
-        source = path.read_text()
-        files[name] = source
-        for parent in path.relative_to(root).parents:
-            if str(parent) != '.':
-                init = root / parent / '__init__.py'
-                if init.is_file() and init != path and init.relative_to(root).as_posix() not in files:
-                    pending.append(init)
-                elif not init.is_file():
-                    files.setdefault((parent / '__init__.py').as_posix(), '')
-        package = list(path.relative_to(root).parts[:-1])
-        for node in ast.walk(ast.parse(source)):
-            names = []
-            if isinstance(node, ast.Import): names = [a.name for a in node.names]
-            elif isinstance(node, ast.ImportFrom):
-                prefix = package[:len(package)-node.level+1] if node.level else []
-                module = '.'.join(prefix + ([node.module] if node.module else []))
-                names = [module] + [module + '.' + a.name for a in node.names]
-            for module in names:
-                if module.startswith('examples.'):
-                    candidate = root.joinpath(*module.split('.')).with_suffix('.py')
-                    if candidate.is_file(): pending.append(candidate)
-                    else:
-                        init = root.joinpath(*module.split('.'), '__init__.py')
-                        if init.is_file(): pending.append(init)
-                elif module and not getattr(node, 'level', 0):
-                    imports.add(module.split('.')[0])
-    return files, sorted(imports - {'examples'})
 
 def include_inputs(files):
     assets = {}
     for name in list(files):
         source = root / name
         if source.name == '__init__.py': continue
-        candidates = list(source.parent.glob('*.json')) + list(source.parent.glob('*.csv'))
-        for directory in ('data', 'historical_ionq'):
-            candidates.extend((source.parent/directory).rglob('*'))
+        directories = {source.parent}
+        for node in ast.walk(ast.parse(files[name])):
+            if (isinstance(node, ast.Subscript) and isinstance(node.value, ast.Attribute)
+                    and node.value.attr == 'parents' and '__file__' in ast.unparse(node.value)
+                    and isinstance(node.slice, ast.Constant) and type(node.slice.value) is int
+                    and 0 <= node.slice.value < len(source.parents)):
+                directories.add(source.parents[node.slice.value])
+        candidates = []
+        for parent in directories:
+            if parent != base and base not in parent.parents:
+                continue
+            candidates.extend(parent.glob('*.json'))
+            candidates.extend(parent.glob('*.csv'))
+            for directory in ('data', 'historical_ionq'):
+                candidates.extend((parent/directory).rglob('*'))
         for asset in candidates:
-            if asset.is_file() and not asset.is_symlink() and asset.suffix in ('.json', '.csv', '.npy', '.npz'):
+            if asset.is_file() and not asset.is_symlink() and asset.suffix in ('.json', '.csv', '.npy', '.npz', '.png'):
                 assets[asset.relative_to(root).as_posix()] = asset.read_bytes()
     instructions = ['# Pinned data inputs, restored only inside the explicit run directory.',
                     'from pathlib import Path', 'import importlib', '', 'def prepare():']
@@ -91,7 +71,9 @@ for notebook in sorted(base.rglob('walkthrough.ipynb')):
                   if c['cell_type']=='markdown' and ''.join(c['source']).startswith('# ')), identity.split('/')[-1].replace('_',' '))
     module = provenance['native_entrypoint']
     entry = root.joinpath(*module.split('.')).with_suffix('.py')
-    files, imports = closure(entry)
+    files, imports = closure(root, entry, (
+        ''.join(cell['source']) for cell in document['cells'] if cell['cell_type'] == 'code'
+    ))
     input_hashes = include_inputs(files)
     # Keep executable source unchanged. A small launcher establishes package imports.
     files['run_notebook.py'] = (f'# Official FlagQuantum notebook: {identity}\n# SDK source: {REVISION}\n'
@@ -131,3 +113,6 @@ for name,path in [('LICENSE',root/'LICENSE'),('CLASSIQ_LICENSE.txt',base/'CLASSI
     'Original provenance, copyrights and licenses are retained. Native workflows derive from the Classiq library; both licenses apply.\n'
     'Notebook bytes and Python sources are unchanged; generated launchers invoke the documented Python entry and save its last observed fq.run result.\n')
 print(f'Vendored {len(entries)} notebooks; {sum(not e["unavailableReason"] for e in entries)} bounded companion projects.')
+
+from implementation import generate as generate_implementation
+generate_implementation(out)

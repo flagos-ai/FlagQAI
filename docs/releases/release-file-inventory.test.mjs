@@ -59,3 +59,13 @@ test('reviewed Web branding requires both exact path and immutable content ident
   assert.equal(isReviewedSourceBinary({path:'apps/web/public/unknown.png',oid:reviewedSourceBinaries[path],binary:true}),false)
   assert.equal(isReviewedSourceBinary({path:'apps/cli/lib/portrait.png',oid:reviewedSourceBinaries[path],binary:true}),false)
 })
+
+test('pinned example data is reviewed only at its exact source path and Git identity', () => {
+  const data = Object.entries(reviewedSourceBinaries).filter(([path]) => path.includes('/examples/'))
+  assert.equal(data.length, 3)
+  for (const [path, oid] of data) {
+    assert.equal(isReviewedSourceBinary({path, oid, binary:true}), true)
+    assert.equal(isReviewedSourceBinary({path, oid:'0'.repeat(40), binary:true}), false)
+    assert.equal(isReviewedSourceBinary({path:'apps/cli/lib/' + path.split('/').at(-1), oid, binary:true}), false)
+  }
+})

@@ -17,7 +17,7 @@ export function codeTokens(
   if (language === "plain") return [{ text: source, kind: "plain" }];
   const pattern =
     language === "python"
-      ? /#[^\n]*|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b|\b[A-Za-z_]\w*\b/g
+      ? /#[^\n]*|(?:\b(?:[rRuUbBfF]|[rR][fFbB]|[fFbB][rR]))?(?:"""(?:\\[\s\S]|(?!""")[^\\])*(?:"""|$)|'''(?:\\[\s\S]|(?!''')[^\\])*(?:'''|$)|"(?:\\[\s\S]|[^"\\\n])*"|'(?:\\[\s\S]|[^'\\\n])*')|\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b|\b[A-Za-z_]\w*\b/g
       : /\/\/[^\n]*|"(?:\\.|[^"\\\n])*"|\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b|\b[A-Za-z_]\w*\b/g;
   const keywords = new Set(
     language === "python"
@@ -58,7 +58,7 @@ export function codeTokens(
       language === "python" ? text.startsWith("#") : text.startsWith("//")
     )
       ? "comment"
-      : /^["']/.test(text)
+      : /^(?:[rRuUbBfF]|[rR][fFbB]|[fFbB][rR])?["']/.test(text)
         ? "string"
         : /^\d/.test(text)
           ? "number"

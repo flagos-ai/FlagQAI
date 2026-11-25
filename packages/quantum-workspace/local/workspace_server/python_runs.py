@@ -58,8 +58,8 @@ class PythonRuns:
 
     @staticmethod
     def validate(source):
-        if not isinstance(source, str) or not 0 < len(source.encode()) <= 32768:
-            raise ValueError('Python source must be between 1 byte and 32 KiB.')
+        if not isinstance(source, str) or not 0 < len(source.encode()) <= 65536:
+            raise ValueError('Python source must be between 1 byte and 64 KiB.')
         try: ast.parse(source, filename='main.py')
         except SyntaxError as error:
             return {'message':error.msg, 'line':error.lineno or 1, 'column':error.offset or 1}
@@ -163,12 +163,22 @@ with tempfile.TemporaryDirectory(prefix='fq-sdk-preflight-') as directory:
         else:
             selected = self.settings
             environment = self.environment(selected)
+        synthesis = None
+        if data.get('synthesis_path') is not None:
+            from .synthesis_files import snapshot
+            synthesis = snapshot(self.settings.web_root, data['synthesis_path'], data['source'])
         with self.lock:
             if len(self.active) >= 4: raise ValueError('Python queue full. Wait for a task to finish.')
             run = {'id':str(uuid.uuid4()), 'name':str(data.get('name') or 'Python task')[:100],
                 'source':data['source'], 'source_hash':source_hash(data['source']), 'status':'queued', 'created_at':time.time(), 'logs':[],
                 'experiments':[], 'collection_errors':[], 'collection_status':'pending',
                 'environment':environment}
+            if synthesis:
+                raw, run['synthesis'] = synthesis
+                run['environment']['scope'] = 'Pinned synthesis tree in a temporary working directory'
+                inputs = self.settings.database_path.parent / 'python-inputs'
+                inputs.mkdir(parents=True, exist_ok=True)
+                (inputs / (run['id'] + '.synthesis.json')).write_bytes(raw)
             if checked:
                 run['notebook_environment'] = report
             if bundle is not None:
@@ -185,6 +195,16 @@ with tempfile.TemporaryDirectory(prefix='fq-sdk-preflight-') as directory:
     def get(self, run_id):
         return self.store.get(run_id)
 
+    def synthesis_input(self, run):
+        saved = self.settings.database_path.parent / 'python-inputs' / (run['id'] + '.synthesis.json')
+        raw = saved.read_bytes()
+        if hashlib.sha256(raw).hexdigest() != run['synthesis']['snapshot_hash']:
+            raise ValueError('Recorded synthesis input snapshot changed.')
+        payload = json.loads(raw)
+        if base64.b64decode(payload['synthesis_files'][payload['synthesis_entry']]).decode() != run['source']:
+            raise ValueError('Recorded synthesis entry changed.')
+        return payload
+
     def evidence(self, run_id):
         """Export recorded inputs and observations without reading the live project."""
         if not isinstance(run_id, str) or not re.fullmatch('[a-f0-9-]{36}', run_id):
@@ -195,6 +215,12 @@ with tempfile.TemporaryDirectory(prefix='fq-sdk-preflight-') as directory:
         if source_hash(run['source']) != run.get('source_hash'):
             raise ValueError('Recorded source checksum changed.')
         inputs = {'entry': 'main.py', 'files': {'main.py': run['source']}}
+        if run.get('synthesis'):
+            payload = self.synthesis_input(run)
+            inputs = {'entry': payload['synthesis_entry'],
+                      'files': {name: base64.b64decode(raw).decode('utf-8') for name, raw in payload['synthesis_files'].items() if name.endswith('.py')},
+                      'assets_base64': {name: raw for name, raw in payload['synthesis_files'].items() if not name.endswith('.py')},
+                      'synthesis': run['synthesis']}
         if run.get('project'):
             path = self.settings.database_path.parent / 'python-inputs' / (run_id + '.json')
             inputs = json.loads(path.read_text())
@@ -296,7 +322,12 @@ with tempfile.TemporaryDirectory(prefix='fq-sdk-preflight-') as directory:
         worker = worker or ('ISOLATE_PYTHON = ' + repr(settings.macos_python_isolation) + '\n'
             + 'RUNTIME_MANIFEST_CODE = ' + repr((Path(__file__).parent/'runtime_facts.py').read_text()) + '\n' + (Path(__file__).parent/'python_worker.py').read_text())
         if settings.compute_transport == 'local':
-            return [settings.local_python or sys.executable, '-u', '-c', worker]
+            from shutil import which
+            executable = settings.local_python or sys.executable
+            if not which(executable):
+                raise RuntimeError('The selected Python executable is unavailable: ' + executable
+                    + '. Open Compute environment, choose an existing Python with FlagQuantum installed, check it and activate it. Your code and draft are retained; no research code was executed.')
+            return [executable, '-u', '-c', worker]
         if not settings.ssh_target: raise RuntimeError('Configure the SSH CPU target before running Python.')
         encoded = base64.b64encode(worker.encode()).decode()
         driver = "import base64;exec(compile(base64.b64decode('%s'),'<python-supervisor>','exec'))" % encoded
@@ -318,6 +349,8 @@ with tempfile.TemporaryDirectory(prefix='fq-sdk-preflight-') as directory:
             helper_files = ('preview_limits.py', 'synthesis_projection.py', 'python_publish.py')
             helper = '\n'.join(Path(__file__).with_name(filename).read_text() for filename in helper_files)
             request = {'source':run['source'], 'helper':helper}
+            if run.get('synthesis'):
+                request.update(self.synthesis_input(run))
             if run.get('project'):
                 saved = self.settings.database_path.parent / 'python-inputs' / (run['id'] + '.json')
                 bundle = json.loads(saved.read_text())

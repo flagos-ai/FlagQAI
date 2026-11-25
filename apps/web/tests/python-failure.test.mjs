@@ -32,6 +32,36 @@ const file = (run) => ({
   source: run.source,
   revision: run.source_hash,
 });
+test("SDK capture wrappers expose the chained cause and its source location", () => {
+  const run = failed(Array(140).fill("# saved source").join("\n"));
+  const raw =
+    'Traceback (most recent call last):\n  File "main.py", line 54, in circuit_builder\n    theta[layer, wire]\nKeyError: (0, 0)\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File "main.py", line 130, in run_training\nflagquantum.errors.ExecutionError: Module builder compilation requires static circuit topology; do not branch on Tensor values when choosing gates or qubits\n';
+  run.logs = Array.from(raw, (text) => ({ stream: "stderr", text }));
+  const detail = pythonFailure(run);
+  assert.equal(detail.summary, "KeyError: (0, 0)");
+  assert.equal(detail.line, 54);
+  assert.match(detail.logs, /\[stderr\]/);
+  assert.equal(run.logs.map((log) => log.text).join(""), raw);
+  const request = pythonRepairRequest(run, file(run));
+  assert.match(request.prompt, /KeyError: \(0, 0\)/);
+  assert.equal(request.attachment.failure.line, 54);
+  for (const separator of [
+    "\n",
+    "\nDuring handling of the above exception, another exception occurred:\n",
+  ]) {
+    run.logs = [
+      {
+        stream: "stderr",
+        text: raw.replace(
+          /\nThe above exception was the direct cause of the following exception:\n/,
+          separator,
+        ),
+      },
+    ];
+    assert.match(pythonFailure(run).summary, /static circuit topology/);
+    assert.equal(pythonFailure(run).line, 130);
+  }
+});
 test("syntax, dependency and SDK failures locate only the failed Python snapshot", () => {
   for (const [type, message] of [
     ["SyntaxError", "invalid syntax"],
@@ -119,4 +149,16 @@ test("linking a dedicated failure file and receiving its repair never overwrite 
   assert.equal(repaired.source, state.source);
   assert.equal(repaired.editorLink.incoming.source, "print('fixed')");
   assert.equal(run.source, "import missing_demo\n");
+});
+
+test("synthesis failures point to the selected entry rather than a companion module", () => {
+  const run = failed("first\nsecond\n");
+  run.synthesis = { path: "case/entry.py" };
+  run.logs = [
+    {
+      stream: "stderr",
+      text: 'File "/tmp/examples/synthesis/case/entry.py", line 2\nFile "/tmp/examples/synthesis/case/helper.py", line 99\nValueError: actual failure',
+    },
+  ];
+  assert.equal(pythonFailure(run).line, 2);
 });

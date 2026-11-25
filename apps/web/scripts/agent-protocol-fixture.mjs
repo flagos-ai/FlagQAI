@@ -221,7 +221,7 @@ const backend = {
         controlCase =
           process.env.FQ_E2E_CONTROL_DIR &&
           process.env.FQ_TEST_CONTROL === "1" &&
-          /^control acceptance: (permission|question|stop-delayed|stop-unknown|stop-failed)$/.test(
+          /^control acceptance: (permission|question|question-layout|stop-delayed|stop-unknown|stop-failed)$/.test(
             requestText.trim(),
           )
             ? requestText.trim().split(": ")[1]
@@ -406,7 +406,10 @@ const backend = {
                 },
                 { type: "session.status", status },
               );
-            } else if (controlCase === "question") {
+            } else if (
+              controlCase === "question" ||
+              controlCase === "question-layout"
+            ) {
               question = "question-" + turn;
               status = "requires-action";
               emit(
@@ -416,11 +419,33 @@ const backend = {
                     requestId: question,
                     questions: [
                       {
-                        question: "Which circuit should we inspect?",
-                        options: [
-                          { label: "Bell", description: "Two qubits" },
-                          { label: "GHZ", description: "Three qubits" },
-                        ],
+                        question:
+                          controlCase === "question-layout"
+                            ? "“Bell 算法”通常指哪一项？我按你的选择实现并跑出结果。"
+                            : "Which circuit should we inspect?",
+                        options:
+                          controlCase === "question-layout"
+                            ? [
+                                {
+                                  label: "贝尔态制备 + 测量验证（推荐）",
+                                  description:
+                                    "H + CNOT 制备 (|00⟩+|11⟩)/√2，跑 2048 shots，验证两个比特完全相关、约 50/50。",
+                                },
+                                {
+                                  label: "贝尔不等式（CHSH）测试",
+                                  description:
+                                    "制备贝尔态，在多个测量角度下统计关联，算出 S 值并检查是否违反 |S| ≤ 2。",
+                                },
+                                {
+                                  label: "贝尔态 + 超密编码演示",
+                                  description:
+                                    "用贝尔态作为资源，编码 2 个经典比特，只传 1 个量子比特后解码验证。",
+                                },
+                              ]
+                            : [
+                                { label: "Bell", description: "Two qubits" },
+                                { label: "GHZ", description: "Three qubits" },
+                              ],
                       },
                     ],
                   },

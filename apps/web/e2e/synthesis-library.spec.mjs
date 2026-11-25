@@ -1,130 +1,129 @@
 import { test, expect } from "@playwright/test";
+import { readFile } from "node:fs/promises";
+const snapshot = JSON.parse(
+  await readFile(new URL("../src/data/synthesis-files.json", import.meta.url)),
+);
 
-test("official synthesis copies preserve drafts and report the selected SDK's actual readiness", async ({
+test("repository folders open original Python including large files without execution or draft loss", async ({
   page,
 }, testInfo) => {
-  const compatible = process.env.FQ_SYNTH_CATALOG_SDK === "compatible";
-  const get = async (path) => {
-    const response = await page.request.get(path);
-    expect(response.ok()).toBeTruthy();
-    return response.json();
-  };
+  let executions = 0;
+  page.on("request", (request) => {
+    if (request.method() === "POST" && /\/runs$|\/execute$/.test(request.url()))
+      executions++;
+  });
   await page.goto("/#model");
   const editor = page.getByRole("textbox", {
     name: "Quantum model code editor",
   });
-  const draft = '# keep my unsaved research\nprint("draft")\n';
+  const draft = '# retained original draft\nprint("keep")';
   await editor.fill(draft);
-  const builderRuns = new Set(
-    (await get("/api/python/runs")).map((run) => run.id),
-  );
   await page.getByRole("button", { name: "Examples", exact: true }).click();
-  const library = page.getByRole("region", {
-    name: "Synthesis examples",
+  const tree = page.getByRole("region", {
+    name: "FlagQuantum synthesis files",
+  });
+  const folder = tree.getByRole("button", {
+    name: "applications",
     exact: true,
   });
-  const shelf = library.locator(".fq-synthesis-shelf");
-  const catalog = library.locator(".fq-synthesis-catalog");
-  const featured = library.locator(".fq-synthesis-featured");
-  const starters = library.locator(".fq-synthesis-starters");
-  await expect(shelf).not.toHaveAttribute("open");
-  await expect(starters).toHaveCount(0);
-  await shelf.locator(":scope > summary").focus();
-  await page.keyboard.press("Enter");
-  await expect(starters.getByRole("button")).toHaveCount(3);
-  await expect(catalog).not.toHaveAttribute("open");
-  await featured.locator(":scope > summary").click();
-  await expect(featured.getByRole("button")).toHaveCount(7);
+  expect(
+    await folder.evaluate(
+      (element) => getComputedStyle(element).justifyContent,
+    ),
+  ).toBe("flex-start");
+  await folder.click();
+  await expect(folder).toHaveAttribute("aria-expanded", "true");
   await page.reload();
-  await expect(shelf).toHaveAttribute("open");
-  await expect(featured).toHaveAttribute("open");
-  await expect(editor).toHaveValue(draft);
-
-  const search = page.getByRole("textbox", {
-    name: "Search models",
-    exact: true,
-  });
-  await search.fill("chemistry");
-  const reference = catalog.getByRole("link", {
-    name: /molecular energy curve/,
-  });
-  await expect(reference).toBeVisible();
-  await expect(reference).toHaveAttribute(
-    "href",
-    /github\.com\/flagos-ai\/FlagQuantum\/blob\/b3fa4a7/,
+  await expect(folder).toHaveAttribute("aria-expanded", "true");
+  const search = page.getByRole("textbox", { name: "Search models" });
+  const paths = [
+    "applications/physical_systems/hhl_lanchester/physics.py",
+    "community/basic_examples/superposition/main.py",
+  ];
+  for (const path of paths) {
+    await search.fill(path);
+    await tree.getByRole("button", { name: path, exact: true }).click();
+    const entry = snapshot.entries.find((file) => file.path === path);
+    const raw = await readFile(
+      new URL("../public" + entry.url, import.meta.url),
+      "utf8",
+    );
+    await expect(editor).toHaveValue(raw);
+  }
+  await page.reload();
+  await expect(editor).toHaveValue(
+    await readFile(
+      new URL(
+        "../public" +
+          snapshot.entries.find((file) => file.path === paths[1]).url,
+        import.meta.url,
+      ),
+      "utf8",
+    ),
   );
-  await expect(editor).toHaveValue(draft);
-  await search.fill("");
-  await expect(catalog).not.toHaveAttribute("open");
   expect(
-    (await get("/api/python/runs")).every(({ id }) => builderRuns.has(id)),
+    await page.evaluate(
+      (text) =>
+        Object.values(localStorage).some((value) => value.includes(text)),
+      "retained original draft",
+    ),
   ).toBe(true);
-
-  const acceptance = await get("/examples/synthesis/acceptance.json");
-  await search.fill("Quantum Fourier");
-  await starters
-    .getByRole("button", { name: /Quantum Fourier transform/ })
-    .click();
-  const code = await editor.inputValue();
-  expect(code).toMatch(/Source revision: b3fa4a7/);
-  expect(code).toMatch(/fq.save\("qft.fqx"/);
-  expect(code).not.toMatch(/_missing|hasattr\(_synth/);
-  const { createHash } = await import("node:crypto");
-  const report = acceptance.results.find(({ id }) => id === "functions/qft");
-  expect(createHash("sha256").update(code).digest("hex")).toBe(
-    report.sourceSha256,
-  );
+  await search.fill("README.md");
+  await tree.getByRole("button", { name: "README.md", exact: true }).click();
   await expect(
-    page.getByText("No models match your search.", { exact: false }),
-  ).toHaveCount(0);
-  await search.fill("");
-  await page.getByRole("button", { name: "My files", exact: true }).click();
-  await expect(
-    page
-      .getByRole("region", { name: "My models", exact: true })
-      .getByRole("button", { name: /Python Bell pair/ }),
+    page.getByRole("dialog", { name: "README.md", exact: true }),
   ).toBeVisible();
-  expect(
-    (await get("/api/python/runs")).every(({ id }) => builderRuns.has(id)),
-  ).toBe(true);
+  expect(executions).toBe(0);
+  await page.screenshot({
+    path: testInfo.outputPath("synthesis-file-tree.png"),
+  });
+});
 
-  await page.getByRole("button", { name: /^(Run Python|Save & run)$/ }).click();
+test("source-tree Run executes original companion imports and preserves frozen inputs", async ({
+  page,
+}) => {
+  test.setTimeout(120000);
+  await page.goto("/#model");
+  await page.getByRole("button", { name: "Examples", exact: true }).click();
+  const path =
+    "applications/automotive/cooling_systems_optimization/overview/main.py";
+  await page.getByRole("textbox", { name: "Search models" }).fill(path);
+  await page
+    .getByRole("region", { name: "FlagQuantum synthesis files" })
+    .getByRole("button", { name: path, exact: true })
+    .click();
+  const before = new Set(
+    (await (await page.request.get("/api/python/runs")).json()).map(
+      (run) => run.id,
+    ),
+  );
+  await page.getByRole("button", { name: "Run Python", exact: true }).click();
   let run;
   await expect
     .poll(
       async () => {
-        const created = (await get("/api/python/runs")).filter(
-          ({ id }) => !builderRuns.has(id),
-        );
-        if (!created.length) return "not submitted";
-        expect(created).toHaveLength(1);
-        run = await get("/api/python/runs/" + created[0].id);
+        const newest = (
+          await (await page.request.get("/api/python/runs")).json()
+        ).find((run) => !before.has(run.id));
+        if (!newest) return "waiting";
+        run = await (
+          await page.request.get("/api/python/runs/" + newest.id)
+        ).json();
         return run.status;
       },
-      { timeout: 90000 },
+      { timeout: 100000 },
     )
-    .toBe(compatible ? "completed" : "failed");
-  expect(run.source_hash).toBeTruthy();
-  if (compatible) {
-    expect(run.experiments.map((item) => item.filename)).toContain("qft.fqx");
-  } else {
-    expect(run.logs.map((entry) => entry.text).join("")).toContain(
-      "No research code was executed.",
-    );
-    expect(run.experiments).toEqual([]);
-  }
-  await page.reload();
-  await expect(editor).toHaveValue(code);
-  expect(
-    await page.evaluate(
-      (old) =>
-        JSON.parse(localStorage.getItem("fq-react-workspace-v1")).models.some(
-          (model) => model.source === old,
-        ),
-      draft,
-    ),
-  ).toBe(true);
-  await page.screenshot({
-    path: testInfo.outputPath("official-synthesis-examples.png"),
-  });
+    .not.toMatch(/^(waiting|queued|running)$/);
+  expect(run.status, JSON.stringify(run)).toBe("completed");
+  expect(run.synthesis.path).toBe(path);
+  expect(run.logs.map((row) => row.text).join("")).toContain(
+    "Signed QSVT temperatures:",
+  );
+  const evidenceResponse = await page.request.get(
+    `/api/python/runs/${run.id}/evidence`,
+  );
+  expect(evidenceResponse.ok()).toBeTruthy();
+  const evidence = await evidenceResponse.json();
+  expect(evidence.inputs.entry).toBe("examples/synthesis/" + path);
+  expect(Object.keys(evidence.inputs.files).length).toBeGreaterThan(1300);
 });

@@ -13,18 +13,21 @@ runs:
         cache-dependency-path: apps/web/pnpm-lock.yaml
     - uses: actions/setup-python@v5
       with:
-        python-version: '3.11'
+        python-version: '3.12'
     # Import save/load from a verified source checkout instead of resolving a PyPI SDK.
     # Test the immutable merged SDK source; CPU PyTorch executes the circuits.
     - uses: actions/checkout@v4
       with:
         repository: flagos-ai/FlagQuantum
-        ref: 4ed3b8252200900d25350aaac6ddc9abbf8bc1e6
+        ref: 0c88d5af9cd1f9dd0d39dca8d54309199c81c086
         path: .ci-flagquantum-sdk
         persist-credentials: false
     - name: Install pinned SDK CPU runtime
       shell: bash
       run: python -m pip install --index-url https://download.pytorch.org/whl/cpu -r packages/quantum-workspace/tests/sdk-runtime.txt
+    - name: Install notebook kernel acceptance runtime
+      shell: bash
+      run: python -m pip install -r packages/quantum-workspace/tests/notebook-runtime.txt
     # Web protocol tests exercise the pinned native compaction implementation.
     - run: pnpm cli:install
       shell: bash
@@ -38,6 +41,10 @@ runs:
       shell: bash
       run: python -m unittest discover -s packages/quantum-workspace/tests -p test_agent_proxy.py -v
     - name: Required real SDK workspace acceptance (zero skipped tests)
+      env:
+        OMP_NUM_THREADS: '2'
+        OPENBLAS_NUM_THREADS: '2'
+        MKL_NUM_THREADS: '2'
       shell: bash
       run: python packages/quantum-workspace/tests/sdk_acceptance.py --report apps/web/sdk-results/acceptance.json
     - name: Compile scripted native Agent fixture
@@ -57,6 +64,9 @@ runs:
           pnpm --dir apps/web exec playwright install --with-deps chromium
         fi
     - name: Browser workbench acceptance (real SDK, scripted Agent, no model calls)
+      env:
+        FQ_SCIENTIFIC_GRID_SDK: compatible
+        FQ_SYNTHESIS_REPORT_SDK: compatible
       shell: bash
       run: pnpm --dir apps/web test:e2e
     - name: Verify complete product journeys

@@ -24,6 +24,19 @@ const shapes = {
       <path d="M3 10h10a7 7 0 0 1 7 7v2" />
     </>
   ),
+  redo: (
+    <>
+      <path d="m16 5 5 5-5 5" />
+      <path d="M21 10H11a7 7 0 0 0-7 7v2" />
+    </>
+  ),
+  stop: <rect x="6" y="6" width="12" height="12" rx="2" />,
+  moveUp: <path d="M12 20V4m-6 6 6-6 6 6" />,
+  trash: (
+    <>
+      <path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7" />
+    </>
+  ),
   download: (
     <>
       <path d="M12 3v12m-4-4 4 4 4-4M4 16v4h16v-4" />

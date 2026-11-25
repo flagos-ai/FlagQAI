@@ -25,17 +25,34 @@ export function pythonFailure(run: PythonRun): PythonFailure | null {
     .filter((log) => log.stream === "stderr")
     .map((log) => log.text)
     .join("");
-  const entry = (run.project?.entry || "main.py").replace(
-    /[.*+?^${}()|[\]\\]/g,
-    "\\$&",
+  // These SDK wrappers describe a failed capture, not necessarily its cause.
+  // Follow only explicit exception chaining, never a separate earlier traceback.
+  let diagnostic = stderr;
+  const chains = stderr.split(
+    /\nThe above exception was the direct cause of the following exception:\s*\n/,
   );
+  while (chains.length > 1) {
+    const last = chains.at(-1)!;
+    const wrapped = last.match(
+      /^(?:flagquantum\.errors\.)?ExecutionError: (?:Module builder compilation requires static circuit topology[^\n]*|module forward execution failed)\s*$/m,
+    );
+    if (!wrapped) break;
+    chains.pop();
+    diagnostic = chains.at(-1)!;
+  }
+  const entry = (
+    run.project?.entry ||
+    (run.synthesis ? "examples/synthesis/" + run.synthesis.path : "main.py")
+  ).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const frames = [
-    ...stderr.matchAll(
+    ...diagnostic.matchAll(
       new RegExp('File "(?:[^"\\n]*[/\\\\])?' + entry + '", line (\\d+)', "g"),
     ),
   ];
   const line = Number(frames.at(-1)?.[1]);
-  const errors = [...stderr.matchAll(/^([\w.]+(?:Error|Exception):[^\n]*)/gm)];
+  const errors = [
+    ...diagnostic.matchAll(/^([\w.]+(?:Error|Exception):[^\n]*)/gm),
+  ];
   const summary =
     errors.at(-1)?.[1] ||
     run.error ||

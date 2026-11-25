@@ -1,3 +1,4 @@
+import { synthesisFiles } from "../state/synthesis-files";
 import { editorFiles } from "../api/editor-files";
 import { reviewActionValid, type ReviewAction } from "../state/agent-review";
 import { workspaceReducer } from "../state/reducer";
@@ -336,11 +337,18 @@ export function usePythonWorkspace(
                 request_id: crypto.randomUUID(),
                 origin: "ui",
                 operation: "python.run",
+                synthesis_path: synthesisFiles.find(
+                  (file) => file.path === snapshot.name,
+                )?.path,
                 source: snapshot.source,
                 name: snapshot.name,
               })
             ).python_run
-          : await pythonAPI.run(snapshot.source, snapshot.name);
+          : await pythonAPI.run(
+              snapshot.source,
+              snapshot.name,
+              synthesisFiles.find((file) => file.path === snapshot.name)?.path,
+            );
       if (reviewed && result.source !== snapshot.source)
         throw Error(
           "The run reported a different source snapshot. Inspect run history before retrying.",

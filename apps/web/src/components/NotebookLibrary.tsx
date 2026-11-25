@@ -12,6 +12,9 @@ import { CodeExample } from "./CodeExample";
 import { Modal } from "./Modal";
 import { CloseButton } from "./CloseButton";
 import { projectsAPI, type NotebookEnvironment } from "../api/projects";
+import { notebookSessions } from "../api/notebook-sessions";
+
+import { NotebookImplementation } from "./NotebookImplementation";
 
 const featured = [
   "community/basic_examples/superposition",
@@ -21,8 +24,10 @@ const featured = [
 export function NotebookLibrary({
   query,
   onCreate,
+  onOpen,
 }: {
   query: string;
+  onOpen: (id: string) => void;
   onCreate: (id: string, request: string) => Promise<boolean | undefined>;
 }) {
   const matches = matchingNotebooks(query);
@@ -100,6 +105,22 @@ export function NotebookLibrary({
       setCreating(false);
     }
   };
+  const openExpanded = async () => {
+    if (!selected || lock.current) return;
+    lock.current = true;
+    setCreating(true);
+    setError("");
+    try {
+      const copy = await notebookSessions.open(selected.id, request.current);
+      onOpen("import:" + copy.id);
+      setSelected(undefined);
+    } catch (problem) {
+      setError(String(problem));
+    } finally {
+      lock.current = false;
+      setCreating(false);
+    }
+  };
   const entry = (item: NotebookExample) => (
     <button
       className="fq-library-card"
@@ -151,7 +172,12 @@ export function NotebookLibrary({
           <header>
             <div>
               <h2>{selected.title}</h2>
-              <small>Official notebook · {notebookRevision.slice(0, 7)}</small>
+              <small>
+                {"presentation" in selected
+                  ? "Expanded walkthrough"
+                  : "Official notebook"}{" "}
+                · {notebookRevision.slice(0, 7)}
+              </small>
             </div>
             <CloseButton
               label="Close notebook"
@@ -161,6 +187,23 @@ export function NotebookLibrary({
             />
           </header>
           <div className="fq-notebook-actions">
+            {"presentation" in selected && (
+              <button
+                disabled={creating || !document || !!selected.unavailableReason}
+                onClick={() => void openExpanded()}
+              >
+                Open expanded copy
+              </button>
+            )}
+            <button
+              disabled={!document || !!selected.unavailableReason}
+              onClick={() => {
+                onOpen(selected.id);
+                setSelected(undefined);
+              }}
+            >
+              Open notebook workspace
+            </button>
             <button
               className="primary"
               disabled={creating || !!selected.unavailableReason || !document}
@@ -177,8 +220,17 @@ export function NotebookLibrary({
             <a href={selected.sourceUrl} target="_blank" rel="noreferrer">
               Official source ↗
             </a>
+            {"presentation" in selected && (
+              <a
+                href={`/notebooks/${selected.id}.upstream.ipynb`}
+                download="original-walkthrough.ipynb"
+              >
+                Download original notebook
+              </a>
+            )}
           </div>
           {error && <p role="alert">{error}</p>}
+          <NotebookImplementation notebookId={selected.id} />
           <div className="fq-notebook-pages">
             <div className="fq-notebook-environment">
               <button disabled={checking} onClick={() => void check()}>

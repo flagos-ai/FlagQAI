@@ -91,9 +91,23 @@ export function createWorkbenchTools(
         if (input.resource === 'experiment') return experimentEvidence(record, target!.port)
         return record
       }),
-    tool('workbench_create_python', 'Create a new Python model without replacing an unsaved browser draft. Write ordinary FlagQuantum code with fq.save("name.fqx", result.plan, result=result). Returns file.id and file.revision. Keep names and source specific to the task.',
+    tool('workbench_create_python', 'Create a new Python model without replacing an unsaved browser draft. Write ordinary FlagQuantum code with fq.save("name.fqx", result.plan, result=result). Returns file.id and file.revision. Keep names and source specific to the task. For hybrid training, inspect the installed SDK API first: named fq.Module parameters reach the builder as a mapping; rotation gates take qubits before angles (use theta=). Pass training data through inputs, use fixed topology with tensor-valued angles and declare the circuit batch size. Verify finite nonzero gradients, parameter updates, loss, independent readout and the actual baseline; do not invent classical bounds or quantum advantage.',
       schema({ source: { ...string, maxLength: 32768 }, name: { ...string, maxLength: 200 }, request_id: string }, ['source', 'name', 'request_id']),
       (input, signal) => action('model.create', { ...input, language: 'python' }, signal)),
+    tool('workbench_preflight_python', 'Run a small, independent scientific-code smoke check before a full experiment. Supply executable source using the same builder, data and objective as the candidate, but only a forward pass, backward pass and one optimizer step, with assertions for finite loss, nonzero finite gradients and parameter updates. Check that changing inputs changes the model output. This tool inspects the selected SDK, saves a separate model, then runs that exact revision in the managed environment. It never edits the browser draft. Reuse request_id only for identical retries. A successful process validates only the supplied assertions, not scientific correctness or quantum advantage. Wait for this run before starting full training.',
+      schema({ source: { ...string, maxLength: 32768 }, name: { ...string, maxLength: 200 }, request_id: string }, ['source', 'name', 'request_id']),
+      async (input, signal) => {
+        const target = binding()
+        const sdk = await action('sdk.inspect', {}, signal, target)
+        if (!sameBinding(binding(), target)) throw new Error('Workbench context changed during SDK inspection.')
+        const created = await action('model.create', { source: input.source, name: input.name, language: 'python', request_id: input.request_id + ':model' }, signal, target)
+        const file = created.file as { id?: string; revision?: string } | undefined
+        if (!file?.id || !file.revision) throw new Error('Preflight model identity is missing; no run was submitted.')
+        if (!sameBinding(binding(), target)) throw new Error('Workbench context changed before preflight execution.')
+        const result = await action('python.run', { model_id: file.id, expected_revision: file.revision, name: input.name, request_id: input.request_id + ':run' }, signal, target)
+        return { purpose: 'preflight', sdk, file, python_run: runEvidence(result.python_run as Record<string, unknown>), next_tool: 'workbench_wait_run',
+          guidance: 'Inspect the completed smoke check and its assertions before full training. Keep this run and create an independent corrected version on failure. Full training and saved-artifact replay still require separate evidence.' }
+      }),
     tool('workbench_run_python', 'Run the exact shared Python model revision using the managed SDK environment. Do not run an unrelated local interpreter or manually simulate. Returns python_run.id; use workbench_wait_run to await execution and collection. Reuse request_id for retries of identical input.',
       schema({ model_id: string, revision: string, request_id: string }, ['model_id', 'revision', 'request_id']),
       async (input, signal) => {

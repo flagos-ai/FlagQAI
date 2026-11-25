@@ -1,0 +1,16 @@
+Credit-card fraud teaching data
+
+Source: https://raw.githubusercontent.com/Classiq/classiq-library/b69c4893d8264d1e59ce0909df2bd88efed25e00/applications/finance/resources/creditcard.csv
+SHA256: cb6baeefbfd24b7b8f865b55efa366e2023b35bb125bc88a9f08a4c03724e5cd
+
+Credit: Machine Learning Group at ULB and Worldline.
+The 948-row teaching subset is distributed in the Classiq library.
+Dataset publisher: https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud
+The publisher identifies the Open Database License and Database Contents License.
+No rows, labels or feature values were altered.
+
+QGAN checkpoints: original unmodified tensor weights from the pinned Classiq library revision b69c4893d8264d1e59ce0909df2bd88efed25e00. MIT copyright/license retained in CLASSIQ_LICENSE.txt. Source URLs and SHA256 hashes are recorded in manifest.json. The example loads tensor weights only on CPU.
+
+Credit-card data license URIs:
+https://opendatacommons.org/licenses/odbl/1-0/
+https://opendatacommons.org/licenses/dbcl/1-0/

@@ -12,6 +12,23 @@ export function runSettled(run: Data): boolean {
     ['completed', 'partial', 'failed', 'cancelled'].includes(String(run.collection_status))
 }
 
+/** Keep explicit causes visible even when the recent log tail drops their frames. */
+function failureEvidence(run: Data, logs: unknown[]) {
+  if (run.status !== 'failed' && run.execution_status !== 'failed') return null
+  const text = logs.filter(entry => object(entry).stream === 'stderr').map(entry => String(object(entry).text ?? '')).join('')
+  const sections = text.split(/The above exception was the direct cause of the following exception:/)
+  const last = sections.at(-1) ?? ''
+  const error = (section: string) => [...section.matchAll(/^([\w.]+(?:Error|Exception)|KeyboardInterrupt|SystemExit):[^\n]*/gm)].at(-1)?.[0]?.slice(0, 1000) ?? null
+  const outer = error(last)
+  const wrapped = sections.length > 1 && outer?.startsWith('flagquantum.errors.ExecutionError:') &&
+    /static circuit topology|[Mm]odule forward execution failed/.test(outer)
+  const cause = wrapped ? sections.at(-2)! : last
+  const frames = [...cause.matchAll(/File "([^"\n]+)", line (\d+)/g)].slice(-8)
+  return { summary: error(cause) ?? outer, outer_error: outer,
+    explicit_cause: Boolean(wrapped), frames: frames.map(frame => ({ file: frame[1], line: Number(frame[2]) })),
+    guidance: 'Read detail=full before repairing. Retain the failed source and create an independent corrected version.' }
+}
+
 export function runEvidence(run: Data) {
   const logs = array(run.logs)
   let remaining = 8000
@@ -24,6 +41,7 @@ export function runEvidence(run: Data) {
   return {
     ...pick(run, ['id', 'name', 'status', 'source_hash', 'execution_status', 'collection_status', 'collection_errors', 'experiments', 'runtime', 'exit_code', 'elapsed_seconds', 'error', 'truncated', 'project']),
     settled: runSettled(run),
+    failure: failureEvidence(run, logs),
     logs: recent,
     logs_truncated: logs.length > 20 || logs.reduce((sum: number, entry) => sum + String(object(entry).text ?? '').length, 0) > 8000,
     full_record: 'Use workbench_inspect(resource="run", id=run_id, detail="full") for the exact source, complete retained logs and legacy inline artifacts. Waiting never submits another run.',
@@ -61,6 +79,9 @@ export function experimentEvidence(record: Data, port: number) {
     }),
     measurement_count: measurements.length, measurements_truncated: measurements.length > 8,
     recorded_state: archive.state == null ? null : { ...pick(state, ['dtype', 'shape', 'complex']), values: values.slice(0, 32), truncated: state.truncated === true || values.length > 32 },
+    recorded_metrics: archive.metrics == null ? null : JSON.stringify(archive.metrics).length <= 12000
+      ? archive.metrics : { truncated: true, reason: 'Recorded metrics exceed the summary limit; request detail=full.' },
+    metrics_status: archive.metrics == null ? 'not_recorded' : 'recorded_not_independently_verified',
     accuracy: archive.accuracy ?? null, runtime: archive.runtime ?? null, provenance: archive.provenance ?? null,
     configuration: pick(object(archive.execution_plan).resolved_options, ['backend', 'device', 'precision', 'mode', 'shots', 'seed', 'allow_backend_fallback']),
     full_record: 'Use workbench_inspect(resource="experiment", id=experiment_id, detail="full") for all previewed measurements, values, statistics, source and execution-plan fields. The original archive retains data beyond Web preview limits. Counts alone do not establish phase or fidelity.',

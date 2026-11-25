@@ -232,9 +232,9 @@ export function splitWorkspaceContext(text: string) {
       text.slice(start + marker.length, -"\n</workspace_context>".length),
     );
     if (
-      !["model", "program"].includes(context.kind) ||
+      !["model", "program", "notebook"].includes(context.kind) ||
       typeof context.name !== "string" ||
-      !["OpenQASM", "Python"].includes(context.format) ||
+      !["OpenQASM", "Python", "Notebook"].includes(context.format) ||
       typeof context.source !== "string" ||
       typeof context.truncated !== "boolean"
     )

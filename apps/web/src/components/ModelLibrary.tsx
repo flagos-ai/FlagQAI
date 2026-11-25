@@ -1,15 +1,11 @@
-import { matchingNotebooks } from "../state/notebooks";
-import { NotebookLibrary } from "./NotebookLibrary";
+import { SynthesisFileTree } from "./SynthesisFileTree";
 import { ToolbarMenu } from "./ToolbarMenu";
 import { ModelFolderLibrary } from "./ModelFolderLibrary";
 import { modelFolderTree } from "../state/model-folders";
-import { SynthesisExampleLibrary } from "./SynthesisExampleLibrary";
 import {
-  matchingSynthesisExamples,
   synthesisExamples,
   synthesisExampleCopy,
 } from "../state/synthesis-catalog";
-import { qaoaTaskName, qaoaSource } from "../tasks/qaoa-maxcut.mjs";
 import { UIIcon } from "./UIIcon";
 import { CodeExample } from "./CodeExample";
 import { useEffect, useRef, useState } from "react";
@@ -17,8 +13,6 @@ import type { Model, WorkspaceAction } from "../contracts/quantum-workspace";
 import {
   pythonExamples as examples,
   interpretPythonPrompt as interpretPrompt,
-  circuitExampleCaption,
-  openCircuitExample,
 } from "../state/python-templates";
 
 export function ModelLibrary({
@@ -31,8 +25,9 @@ export function ModelLibrary({
   importing,
   projectPanel,
   projectRequest = 0,
-  onCreateNotebook,
+  onOpenNotebook,
 }: {
+  onOpenNotebook: (id: string) => void;
   onCreateNotebook: (
     id: string,
     request: string,
@@ -78,11 +73,6 @@ export function ModelLibrary({
   const upload = useRef<HTMLInputElement>(null);
   const search = useRef<HTMLInputElement>(null);
   const term = query.trim().toLowerCase();
-  const synthesisMatches = matchingSynthesisExamples(query);
-  const visibleExamples = examples.filter((model) =>
-    model.name.toLowerCase().includes(term),
-  );
-  const showReferenceTask = qaoaTaskName.toLowerCase().includes(term);
   const folderPaths = modelFolderTree(models, folders);
   const folderMatches = term
     ? modelFolderTree(models, folders, term)
@@ -263,74 +253,12 @@ export function ModelLibrary({
                 dispatch={dispatch}
               />
             )}
-          {!visibleExamples.length &&
-            !folderMatches.length &&
-            !synthesisMatches.length &&
-            !matchingNotebooks(query).length &&
-            !showReferenceTask && (
-              <p role="status">
-                No models match your search. Try another name or clear the
-                search.
-              </p>
-            )}
           {(term || libraryView === "examples") && (
             <>
-              {(!term || visibleExamples.length > 0) && (
-                <section
-                  className="fq-model-library-group"
-                  aria-label="Example models"
-                >
-                  <small className="eyebrow">EXAMPLES</small>
-                  {visibleExamples.map((m) => (
-                    <button
-                      className="fq-library-card"
-                      key={m.name}
-                      onClick={() => onSelect(openCircuitExample(m))}
-                    >
-                      <span className="fq-library-title">
-                        <UIIcon name="file" size={14} />
-                        {m.name}
-                      </span>
-                      <small>
-                        {circuitExampleCaption(m) ??
-                          (m.name.includes("Arithmetic")
-                            ? "Superposition · res = 3x + 2"
-                            : "Python · Quantum circuit")}
-                      </small>
-                    </button>
-                  ))}
-                </section>
-              )}
-              {showReferenceTask && (
-                <section
-                  className="fq-model-library-group"
-                  aria-label="Reference research task"
-                >
-                  <small className="eyebrow">RESEARCH WORKFLOW</small>
-                  <button
-                    className="fq-library-card"
-                    onClick={() =>
-                      onSelect({
-                        name: qaoaTaskName,
-                        source: qaoaSource,
-                        language: "python",
-                      })
-                    }
-                  >
-                    <span className="fq-library-title">
-                      <UIIcon name="circuit" size={14} />
-                      {qaoaTaskName}
-                    </span>
-                    <small>Optimize · Compare · Save and replay</small>
-                  </button>
-                </section>
-              )}
-              <NotebookLibrary query={query} onCreate={onCreateNotebook} />
-              <SynthesisExampleLibrary
+              <SynthesisFileTree
                 query={query}
-                matches={synthesisMatches}
-                models={models}
                 onSelect={onSelect}
+                onOpenNotebook={onOpenNotebook}
               />
             </>
           )}
