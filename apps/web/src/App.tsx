@@ -33,7 +33,6 @@ import { Separator } from "./components/Separator";
 import { ModelPage } from "./pages/ModelPage";
 import { ProgramPage } from "./pages/ProgramPage";
 import { ExecutionPage } from "./pages/ExecutionPage";
-import { SynthesisPage } from "./pages/SynthesisPage";
 import { JobsPage } from "./pages/JobsPage";
 import { useQuantumWorkspace } from "./hooks/useQuantumWorkspace";
 import { usePanelSize } from "./hooks/usePanelSize";
@@ -74,7 +73,7 @@ export default function App() {
         localStorage.getItem("fq-notebook-editor-v1") || "null",
       );
       return {
-        active: saved?.active === true,
+        active: saved?.active === true && location.hash !== "#synthesis",
         id: typeof saved?.id === "string" ? saved.id : undefined,
       };
     } catch {
@@ -123,6 +122,14 @@ export default function App() {
       /* Keep the editor usable without storage. */
     }
   }, [notebookEditor]);
+  useEffect(() => {
+    const legacy = (event: HashChangeEvent) => {
+      if (new URL(event.newURL).hash === "#synthesis")
+        setNotebookEditor((value) => ({ ...value, active: false }));
+    };
+    window.addEventListener("hashchange", legacy);
+    return () => window.removeEventListener("hashchange", legacy);
+  }, []);
   const openNotebook = (id: string) => setNotebookEditor({ active: true, id });
   const openProjectFile = async (path: string) => {
     const opened = await projectWorkspace.openFile(path);
@@ -147,7 +154,6 @@ export default function App() {
   const importingRef = useRef(false);
   const pages: [Page, string][] = [
     ["model", "MODEL"],
-    ["synthesis", "SYNTHESIS"],
     ["program", "QUANTUM"],
     ["execution", "EXECUTION"],
     ["jobs", "JOBS"],
@@ -281,6 +287,7 @@ export default function App() {
               dispatch={dispatch}
             />
           }
+          programs={state.programs}
           models={state.models}
           folders={state.modelFolders}
           dispatch={dispatch}
@@ -378,28 +385,6 @@ export default function App() {
       );
     if (state.page === "jobs")
       return <JobsLibrary state={state} dispatch={dispatch} />;
-    if (state.page === "synthesis")
-      return (
-        <>
-          <div className="fq-pane-title">COMPILER</div>
-          <div className="fq-library-body fq-compiler-sidebar">
-            <h3>FlagQuantum</h3>
-            <p>{backendLabel}</p>
-            <details>
-              <summary>Compiler details</summary>
-              <p>
-                OpenQASM 2/3 import and compilation through the installed
-                FlagQuantum package.
-              </p>
-              <p>
-                2 CPU threads per task · 1 active task + up to 3 waiting · 16
-                qubits · 100,000 shots maximum · 90-second process limit.
-              </p>
-              <p>Credentials stay in the local environment.</p>
-            </details>
-          </div>
-        </>
-      );
     return <ExecutionBackend backend={backend} />;
   };
   return (
@@ -607,7 +592,8 @@ export default function App() {
               }}
               state={state}
               dispatch={dispatch}
-              compile={compile}
+              compilingSource={compilingSource}
+              compile={(source, name) => compile(source, name, true)}
             />
           )}
           {state.page === "program" && (
@@ -628,14 +614,6 @@ export default function App() {
           )}
           {state.page === "jobs" && (
             <JobsPage state={state} dispatch={dispatch} />
-          )}
-          {state.page === "synthesis" && (
-            <SynthesisPage
-              state={state}
-              dispatch={dispatch}
-              compile={() => void compile()}
-              compilingSource={compilingSource}
-            />
           )}
         </main>
       </div>

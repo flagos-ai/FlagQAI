@@ -1,5 +1,9 @@
 import type { NotebookContext } from "../state/notebook-context";
 import { NotebookWorkspace } from "../components/NotebookWorkspace";
+import {
+  CompilationResults,
+  EditorResultsTabs,
+} from "../components/CompilationResults";
 import { NotebookPicker } from "../components/NotebookPicker";
 import { notebookExamples } from "../state/notebooks";
 import {
@@ -66,6 +70,7 @@ export function ModelPage({
   onRepairPython,
   backendLabel = "Configured CPU backend",
   research,
+  compilingSource,
 }: {
   notebookEditor: { active: boolean; id?: string };
   onNotebookContextChange: (value: NotebookContext) => void;
@@ -77,6 +82,7 @@ export function ModelPage({
   python: PythonWorkspace;
   backendLabel?: string;
   research?: { turns: ResearchTurn[]; bridge: PlatformBridge };
+  compilingSource: string | null;
   onRepairPython: (run: PythonRun) => Promise<void>;
   onReferenceDocument: () => void;
   onAttachSelection: (
@@ -157,6 +163,12 @@ export function ModelPage({
     }
   }, [configuration]);
   const [errorsHeight, setErrorsHeight] = usePanelSize("errors", 180, 80, 500),
+    [compilationHeight, setCompilationHeight] = usePanelSize(
+      "compilation-results",
+      260,
+      120,
+      500,
+    ),
     [settingsWidth, setSettingsWidth] = usePanelSize("settings", 300, 230, 500),
     [constraintsHeight, setConstraintsHeight] = usePanelSize(
       "constraints",
@@ -182,8 +194,32 @@ export function ModelPage({
       /* Keep the current tab usable without storage. */
     }
   };
+  const resultPanel = state.modelPanel || "output";
+  const chooseResultPanel = (panel: "output" | "compilation") =>
+    dispatch({ type: "model-panel", panel });
+  const resultTabs = (
+    <EditorResultsTabs
+      value={resultPanel}
+      onChange={chooseResultPanel}
+      outputLabel={state.language === "python" ? "Output" : "Diagnostics"}
+    />
+  );
+  const compilation = (
+    <CompilationResults
+      key={`${state.language}:${state.name}:${state.pythonRunId || "source"}`}
+      state={state}
+      dispatch={dispatch}
+      run={python.run}
+      compilingSource={compilingSource}
+      onOutput={() => chooseResultPanel("output")}
+    />
+  );
   const outputHeight =
-    state.language === "python" && compactOutput ? 112 : errorsHeight;
+    resultPanel === "compilation"
+      ? compilationHeight
+      : state.language === "python" && compactOutput
+        ? 112
+        : errorsHeight;
   const capturePosition = useEditorPosition(
     state.editorLink?.id ||
       `${state.project?.id || "models"}:${state.language}:${state.name}`,
@@ -221,6 +257,9 @@ export function ModelPage({
     setScroll({ top: textarea.scrollTop, left: textarea.scrollLeft });
   }, [state.source]);
   const isPython = state.language === "python";
+  const filename = state.name.endsWith(isPython ? ".py" : ".qasm")
+    ? state.name
+    : state.name + (isPython ? ".py" : ".qasm");
   const detectedStyle = useMemo(
     () => (isPython ? detectedPythonStyle(state.source) : undefined),
     [isPython, state.source],
@@ -490,14 +529,9 @@ export function ModelPage({
         />
         <div className="fq-toolbar fq-model-toolbar" inert={!!codePreview}>
           <div className="fq-model-document">
-            <span
-              className="fq-filename"
-              title={`${state.name}.${isPython ? "py" : "qasm"}`}
-            >
+            <span className="fq-filename" title={filename}>
               <UIIcon name="file" size={14} />
-              <span>
-                {state.name}.{isPython ? "py" : "qasm"}
-              </span>
+              <span>{filename}</span>
             </span>
             <EditorSyncBar
               state={state}
@@ -560,12 +594,7 @@ export function ModelPage({
                 className="fq-control-icon"
                 title="Download model"
                 aria-label="Download model"
-                onClick={() =>
-                  download(
-                    state.name + (isPython ? ".py" : ".qasm"),
-                    state.source,
-                  )
-                }
+                onClick={() => download(filename, state.source)}
               >
                 <UIIcon name="download" />
               </button>
@@ -882,21 +911,32 @@ export function ModelPage({
         {!focus && (
           <>
             <Separator
-              label="Resize model errors panel"
+              label={
+                resultPanel === "compilation"
+                  ? "Resize compilation results"
+                  : "Resize model errors panel"
+              }
               orientation="horizontal"
               reverse
               value={outputHeight}
               onChange={(height) => {
+                if (resultPanel === "compilation") {
+                  setCompilationHeight(height);
+                  return;
+                }
                 changeOutputMode(false);
                 setErrorsHeight(height);
               }}
-              min={80}
+              min={resultPanel === "compilation" ? 120 : 80}
               max={500}
-              initial={180}
+              initial={resultPanel === "compilation" ? 260 : 180}
             />
             <section className="fq-errors" style={{ height: outputHeight }}>
               {isPython ? (
                 <PythonConsole
+                  headerTabs={resultTabs}
+                  showCompilation={resultPanel === "compilation"}
+                  compilation={compilation}
                   compact={compactOutput}
                   onCompactChange={changeOutputMode}
                   python={python}
@@ -916,63 +956,68 @@ export function ModelPage({
               ) : (
                 <>
                   <div className="fq-pane-title">
-                    <span className="fq-model-output-title">Diagnostics</span>{" "}
+                    {resultTabs}
                     <span>
                       {errors.length ? `${errors.length} errors` : ""}
                     </span>
                   </div>
-                  <div className="fq-error-list" role="status">
-                    {diagnostics.map((d, i) => (
-                      <button
-                        className={"fq-diagnostic " + d.severity}
-                        key={i}
-                        onClick={() => locate(d.start, d.length)}
-                      >
-                        <b>{d.message}</b>
-                        <small>
-                          Line {d.line}, Column {d.column} · Local {d.severity}
-                        </small>
-                      </button>
-                    ))}
-                    {remoteError && (
-                      <div className="fq-diagnostic error">
-                        <b>Compilation failed</b>
-                        <pre>{remoteError}</pre>
-                        {/line\D*(\d+)/i.test(remoteError) && (
-                          <button
-                            onClick={() => {
-                              const line = Number(
-                                remoteError.match(/line\D*(\d+)/i)![1],
-                              );
-                              locate(
-                                lines.slice(0, line - 1).join("\n").length +
-                                  (line > 1 ? 1 : 0),
-                                lines[line - 1]?.length || 1,
-                              );
-                            }}
-                          >
-                            Go to source line ↗
-                          </button>
-                        )}
-                      </div>
-                    )}
-                    {!diagnostics.length && !remoteError && (
-                      <div className="fq-diagnostic">
-                        <b>
-                          {state.busy
-                            ? "Compiling on remote CPU…"
-                            : compiled
-                              ? "No errors found"
-                              : "No local errors found"}
-                        </b>
-                        <p>
-                          {compiled
-                            ? `${compiled.compiled.qubits} qubits · depth ${compiled.compiled.depth}`
-                            : "Local checks passed. Compile to validate full backend support."}
-                        </p>
-                      </div>
-                    )}
-                  </div>
+                  {resultPanel === "compilation" ? (
+                    compilation
+                  ) : (
+                    <div className="fq-error-list" role="status">
+                      {diagnostics.map((d, i) => (
+                        <button
+                          className={"fq-diagnostic " + d.severity}
+                          key={i}
+                          onClick={() => locate(d.start, d.length)}
+                        >
+                          <b>{d.message}</b>
+                          <small>
+                            Line {d.line}, Column {d.column} · Local{" "}
+                            {d.severity}
+                          </small>
+                        </button>
+                      ))}
+                      {remoteError && (
+                        <div className="fq-diagnostic error">
+                          <b>Compilation failed</b>
+                          <pre>{remoteError}</pre>
+                          {/line\D*(\d+)/i.test(remoteError) && (
+                            <button
+                              onClick={() => {
+                                const line = Number(
+                                  remoteError.match(/line\D*(\d+)/i)![1],
+                                );
+                                locate(
+                                  lines.slice(0, line - 1).join("\n").length +
+                                    (line > 1 ? 1 : 0),
+                                  lines[line - 1]?.length || 1,
+                                );
+                              }}
+                            >
+                              Go to source line ↗
+                            </button>
+                          )}
+                        </div>
+                      )}
+                      {!diagnostics.length && !remoteError && (
+                        <div className="fq-diagnostic">
+                          <b>
+                            {state.busy
+                              ? "Compiling on remote CPU…"
+                              : compiled
+                                ? "No errors found"
+                                : "No local errors found"}
+                          </b>
+                          <p>
+                            {compiled
+                              ? `${compiled.compiled.qubits} qubits · depth ${compiled.compiled.depth}`
+                              : "Local checks passed. Compile to validate full backend support."}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </>
               )}
             </section>
@@ -1009,6 +1054,13 @@ export function ModelPage({
               <h3>{isPython ? "Execution" : "⌄ Constraints"}</h3>
               {isPython ? (
                 <>
+                  {detectedStyle === "synthesis" && (
+                    <p>
+                      Synthesis constraints are defined in this Python source.
+                      Edit the synth.synthesize call to change limits and
+                      objectives, then Run Python.
+                    </p>
+                  )}
                   <p>
                     {state.editorLink?.project
                       ? "Frozen project snapshot in a temporary working directory"

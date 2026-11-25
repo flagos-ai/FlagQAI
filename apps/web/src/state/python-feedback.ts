@@ -4,7 +4,7 @@ import { projectDirty } from "./project-workspace.ts";
 export type ResultFreshness = "current" | "changed" | "other-file" | "unknown";
 /** Compare the frozen entry and dependencies without rewriting historical results. */
 export function pythonResultFreshness(
-  run: PythonRun,
+  run: Pick<PythonRun, "source" | "project">,
   state: WorkspaceState,
 ): ResultFreshness {
   const project = run.project;

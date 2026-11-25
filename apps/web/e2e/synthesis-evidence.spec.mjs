@@ -17,7 +17,8 @@ async function openAndRun(page, disclosure, button) {
   const ids = new Set(
     (await get(page, "/api/python/runs")).map(({ id }) => id),
   );
-  await page.getByRole("button", { name: "SYNTHESIS", exact: true }).click();
+  await page.getByRole("button", { name: "MODEL", exact: true }).click();
+  await page.getByRole("button", { name: "TEMPLATES", exact: true }).click();
   await page.getByText(disclosure, { exact: true }).press("Enter");
   await page.getByRole("button", { name: button, exact: true }).click();
   await expect(page).toHaveURL(/#model$/);
@@ -80,7 +81,7 @@ async function compareSavedReports(page, left, right) {
 
 test("synthesis reports show recorded constraints, named outputs and actual resource deltas", async ({
   page,
-}) => {
+}, testInfo) => {
   const { draft, run, ids } = await openAndRun(
     page,
     "Verify synthesis across constraints",
@@ -91,6 +92,34 @@ test("synthesis reports show recorded constraints, named outputs and actual reso
       "synth-baseline.fqx",
       "synth-line.fqx",
     ]);
+    await page
+      .getByRole("button", { name: "Circuits & resources", exact: true })
+      .click();
+    const resources = page.getByRole("region", {
+      name: "Compilation results",
+      exact: true,
+    });
+    await expect(
+      resources.getByRole("row").filter({ hasText: "Current source" }),
+    ).toHaveCount(2);
+    await page
+      .getByRole("textbox", { name: "Quantum model code editor" })
+      .fill(run.source + "\n# preserve a newer version");
+    await expect(
+      resources.getByRole("status", { name: "Compilation status" }),
+    ).toHaveText("Source changed · previous resources");
+    await page
+      .getByRole("textbox", { name: "Quantum model code editor" })
+      .fill(run.source);
+    await page.reload();
+    await expect(
+      resources.getByRole("row").filter({ hasText: "Current source" }),
+    ).toHaveCount(2);
+    await expect(page.getByLabel("Python run history")).toHaveValue(run.id);
+    await page.screenshot({
+      path: testInfo.outputPath("model-synthesis-in-place.png"),
+      fullPage: true,
+    });
     await page.getByRole("button", { name: "JOBS", exact: true }).click();
     await page
       .getByRole("button", { name: "Open job synth-line", exact: true })
@@ -182,7 +211,27 @@ test("compiler optimization reports a verified no-gain result under the pinned S
       "optimization-baseline.fqx",
       "optimization-candidate.fqx",
     ]);
-    await page.getByRole("button", { name: "SYNTHESIS", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Circuits & resources", exact: true })
+      .click();
+    const resources = page.getByRole("region", {
+      name: "Compilation results",
+      exact: true,
+    });
+    await expect(resources.getByRole("checkbox")).toHaveCount(2);
+    await resources.getByRole("checkbox").nth(0).check();
+    await resources.getByRole("checkbox").nth(1).check();
+    await resources
+      .getByRole("button", { name: "Compare saved circuits", exact: true })
+      .click();
+    await expect(
+      page.getByRole("region", {
+        name: "Synthesis report comparison",
+        exact: true,
+      }),
+    ).toContainText("No resource improvement");
+    await page.getByRole("button", { name: "MODEL", exact: true }).click();
+    await page.getByRole("button", { name: "TEMPLATES", exact: true }).click();
     await page
       .getByText("Verify a compiler optimization", { exact: true })
       .press("Enter");

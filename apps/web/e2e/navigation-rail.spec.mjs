@@ -10,6 +10,9 @@ test("navigation stays reachable in short viewports and preserves drafts", async
   const draft = "# Navigation must preserve unsaved research\n";
   await editor.fill(draft);
   const rail = page.getByRole("navigation", { name: "Research workspace" });
+  await expect(
+    rail.getByRole("button", { name: "SYNTHESIS", exact: true }),
+  ).toHaveCount(0);
   const agent = rail.getByRole("button", {
     name: "FlagQAI Agent",
     exact: true,
@@ -28,7 +31,6 @@ test("navigation stays reachable in short viewports and preserves drafts", async
   ]) {
     await page.setViewportSize({ width, height });
     for (const [label, hash] of [
-      ["SYNTHESIS", "synthesis"],
       ["QUANTUM", "program"],
       ["EXECUTION", "execution"],
       ["JOBS", "jobs"],

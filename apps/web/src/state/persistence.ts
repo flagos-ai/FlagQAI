@@ -137,7 +137,9 @@ export function restoreWorkspace(
   const page = ["model", "synthesis", "program", "execution", "jobs"].includes(
     hash,
   )
-    ? hash
+    ? hash === "synthesis"
+      ? "model"
+      : hash
     : "model";
   return {
     agentDraft: restoreAgentDraft(saved.agentDraft),
@@ -167,6 +169,10 @@ export function restoreWorkspace(
         : undefined,
     pythonRunId: saved.pythonRunId,
     page: page as WorkspaceState["page"],
+    modelPanel:
+      hash === "synthesis" || saved.modelPanel === "compilation"
+        ? "compilation"
+        : "output",
     name,
     source,
     editorLink: restoreEditorLink(saved.editorLink, name),
@@ -207,6 +213,7 @@ export function restoreWorkspace(
 }
 export function workspaceBackup(state: WorkspaceState) {
   const {
+    modelPanel,
     source,
     name,
     language,
@@ -233,6 +240,7 @@ export function workspaceBackup(state: WorkspaceState) {
     agentDraft,
   } = state;
   return JSON.stringify({
+    modelPanel,
     schema,
     project,
     projectTabs: projectTabs?.map((tab) => ({ ...tab, undo: [] })),

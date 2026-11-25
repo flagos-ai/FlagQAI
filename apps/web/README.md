@@ -43,6 +43,21 @@ explicit local runtime:
 - `.fqx` reading: `FQ_EXPERIMENT_PYTHON=/path/to/python` with official SDK
   `fq.save`/`fq.load` support. The Web host itself requires only Python's stdlib.
 
+### Edit, compile and inspect
+
+Model keeps Python, OpenQASM and Notebook authoring in one workspace. OpenQASM
+Compile completes beside the editor in **Circuits & resources**. Python retains
+**Run Python**; edit synthesis constraints in the actual SDK calls and save the
+generated circuit with `fq.save` to inspect its resources. The results header
+retains run history, while saved versions remain distinguishable from edited code.
+Use **View circuit** for the full Quantum view or select two saved archives for
+comparison. Output and circuit resources remember their heights independently.
+
+Constraint verification, compiler optimization and harmonic-grid examples are in
+**Templates**. The original upstream file tree stays in **Examples**. Old
+`#synthesis` links open Model's resource view. Notebook continues to display its
+own cell outputs and preserves independent drafts when switching views.
+
 Set `FQ_AGENT_SDK_PREFLIGHT=1` for a quantum workbench that requires a
 working SDK before each Agent submission. The server uses the configured
 local or SSH Python runner to execute a small circuit and reload its saved
