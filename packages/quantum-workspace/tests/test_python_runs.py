@@ -397,3 +397,110 @@ print('saved', result.counts, flush=True)
         self.assertEqual(result['status'], 'cancelled', result)
         self.assertEqual(result['experiments'], [])
         self.assertEqual(result['collection_status'], 'cancelled')
+
+@unittest.skipUnless(HAS_FQX, 'Requires FlagQuantum synthesis/save/load')
+class AutomaticSynthesisCaptureTests(PythonRunCase):
+    SOURCE = '''import flagquantum as fq
+from flagquantum import synth
+
+def polynomial(x: int, y: int) -> int:
+    return x * x + y
+
+program = synth.synthesize(polynomial, inputs={"x": synth.UInt(1), "y": synth.UInt(2)}, max_qubits=16)
+'''
+
+    def test_unsaved_product_and_actual_result_are_collected_without_reexecution(self):
+        run = self.wait(self.runs.submit({'source': self.SOURCE + "result = fq.run(program)\nprint('ran once')\n"})['id'])
+        self.assertEqual(run['status'], 'completed', run)
+        self.assertEqual(run['collection_status'], 'completed', run)
+        self.assertEqual(len(run['experiments']), 1, run)
+        saved = self.runs.experiments.get(run['experiments'][0]['id'])
+        self.assertTrue(saved['program']['experiment']['has_result'])
+        self.assertEqual(saved['program']['experiment']['python_run']['capture_method'], 'automatic')
+        self.assertEqual(saved['program']['origin']['source'], run['source'])
+        self.assertEqual(saved['program']['origin']['run_id'], run['id'])
+        self.assertEqual(''.join(x['text'] for x in run['logs']).count('ran once'), 1)
+        self.assertEqual(self.quantum.adapter.calls, [])
+
+    def test_multiple_products_include_circuit_only_and_survive_script_failure(self):
+        source = self.SOURCE + "second = synth.synthesize(polynomial, inputs={'x': synth.UInt(1), 'y': synth.UInt(2)}, objective='depth', max_qubits=16)\nraise ValueError('after synthesis')\n"
+        run = self.wait(self.runs.submit({'source': source})['id'])
+        self.assertEqual(run['status'], 'failed', run)
+        self.assertEqual(run['collection_status'], 'completed', run)
+        self.assertEqual(len(run['experiments']), 2, run)
+        for file in run['experiments']:
+            program = self.runs.experiments.get(file['id'])['program']
+            self.assertFalse(program['experiment']['has_result'])
+            self.assertEqual(program['origin']['execution_status'], 'failed')
+
+    def test_explicit_save_takes_precedence_without_duplicate_automatic_archive(self):
+        source = self.SOURCE + "result = fq.run(program)\nfq.save('chosen.fqx', result.plan, result=result)\n"
+        run = self.wait(self.runs.submit({'source': source})['id'])
+        self.assertEqual(run['collection_status'], 'completed', run)
+        self.assertEqual([item['filename'] for item in run['experiments']], ['chosen.fqx'])
+        saved = self.runs.experiments.get(run['experiments'][0]['id'])['program']
+        self.assertEqual(saved['experiment']['python_run']['capture_method'], 'explicit')
+
+    def test_capture_error_does_not_fail_successful_research_code(self):
+        source = "from flagquantum import synth\nsynth.Program.execution = property(lambda self: (_ for _ in ()).throw(ValueError('injected capture failure')))\n" + self.SOURCE + "print('research completed')\n"
+        run = self.wait(self.runs.submit({'source': source})['id'])
+        self.assertEqual(run['status'], 'completed', run)
+        self.assertEqual(run['collection_status'], 'failed', run)
+        self.assertIn('injected capture failure', str(run['collection_errors']))
+        self.assertIn('research completed', str(run['logs']))
+
+    def test_original_qlbm_entry_collects_real_resources_and_result_without_source_edits(self):
+        from dataclasses import replace
+        repo = Path(__file__).resolve().parents[3]
+        entry = 'applications/cfd/qlbm/main.py'
+        source = (repo / 'apps/web/public/examples/synthesis-files' / entry).read_text()
+        self.assertNotIn('fq.save', source)
+        self.runs.settings = replace(self.settings, web_root=repo / 'apps/web/dist')
+        run = self.wait(self.runs.submit({'source': source, 'name': entry, 'synthesis_path': entry})['id'])
+        self.assertEqual(run['status'], 'completed', run)
+        self.assertEqual(run['collection_status'], 'completed', run)
+        self.assertEqual(run['source'], source)
+        self.assertEqual(len(run['experiments']), 1, run)
+        record = self.runs.experiments.get(run['experiments'][0]['id'])
+        program = record['program']
+        self.assertEqual(program['compiled']['qubits'], 19)
+        self.assertEqual(program['compiled']['depth'], 2770)
+        self.assertEqual(len(program['compiled']['instructions']), 3316)
+        self.assertTrue(program['experiment']['has_result'])
+        self.assertEqual(program['experiment']['python_run']['capture_method'], 'automatic')
+        self.assertEqual(program['origin']['source'], source)
+        self.assertEqual(self.quantum.adapter.calls, [])
+
+    def test_keyword_plan_execution_keeps_sdk_introspection_and_real_result(self):
+        source = self.SOURCE + "import inspect, sys\nassert not hasattr(sys, 'monitoring') or sys.getprofile() is None\nfrom pathlib import Path\nassert Path(inspect.getsourcefile(synth.synthesize)).is_file()\nassert synth.synthesize.__module__ == 'flagquantum.services.synthesis'\nresult = fq.run(program_or_plan=program.execution)\n"
+        run = self.wait(self.runs.submit({'source': source})['id'])
+        self.assertEqual(run['status'], 'completed', run)
+        self.assertEqual(run['collection_status'], 'completed', run)
+        self.assertEqual(len(run['experiments']), 1, run)
+        self.assertTrue(run['experiments'][0]['has_result'])
+
+    def test_deleted_explicit_archive_does_not_discard_automatic_result(self):
+        source = self.SOURCE + "from pathlib import Path\nresult = fq.run(program)\nfq.save('chosen.fqx', result.plan, result=result)\nPath('chosen.fqx').unlink()\n"
+        run = self.wait(self.runs.submit({'source': source})['id'])
+        self.assertEqual(run['collection_status'], 'completed', run)
+        self.assertEqual(len(run['experiments']), 1, run)
+        saved = self.runs.experiments.get(run['experiments'][0]['id'])['program']
+        self.assertEqual(saved['experiment']['python_run']['capture_method'], 'automatic')
+        self.assertTrue(saved['experiment']['has_result'])
+
+    def test_preview_limits_reject_oversized_circuits_without_changing_execution_limits(self):
+        from workspace_server.preview_limits import validate_preview_size
+        validate_preview_size(19, 3316)
+        with self.assertRaisesRegex(ValueError, '10000 gates'):
+            validate_preview_size(19, 10001)
+        with self.assertRaisesRegex(ValueError, '256 qubits'):
+            validate_preview_size(257, 1)
+
+    def test_save_outside_task_directory_keeps_automatic_archive_without_false_error(self):
+        source = self.SOURCE + "import tempfile\nfrom pathlib import Path\nresult = fq.run(program)\nwith tempfile.TemporaryDirectory() as folder:\n    fq.save(Path(folder) / 'external.fqx', result.plan, result=result)\n"
+        run = self.wait(self.runs.submit({'source': source})['id'])
+        self.assertEqual(run['status'], 'completed', run)
+        self.assertEqual(run['collection_status'], 'completed', run)
+        self.assertEqual(len(run['experiments']), 1, run)
+        saved = self.runs.experiments.get(run['experiments'][0]['id'])['program']
+        self.assertEqual(saved['experiment']['python_run']['capture_method'], 'automatic')

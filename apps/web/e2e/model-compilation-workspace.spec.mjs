@@ -139,3 +139,62 @@ test("collection failures offer output recovery instead of asking for another co
   ).toHaveValue(source);
   expect(submissions).toBe(0);
 });
+
+test("original QLBM Python run auto-collects a real circuit and keeps its source version", async ({
+  page,
+}) => {
+  test.skip(
+    process.env.FQ_SYNTHESIS_REPORT_SDK !== "compatible",
+    "Requires the pinned real synthesis SDK",
+  );
+  test.setTimeout(120000);
+  const { readFileSync } = await import("node:fs");
+  const source = readFileSync(
+    new URL(
+      "../public/examples/synthesis-files/applications/cfd/qlbm/main.py",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  await page.addInitScript((source) => {
+    localStorage.setItem(
+      "fq-react-workspace-v1",
+      JSON.stringify({
+        source,
+        name: "applications/cfd/qlbm/main.py",
+        language: "python",
+        modelPanel: "compilation",
+      }),
+    );
+  }, source);
+  await page.goto("/#model");
+  const before = await (await page.request.get("/api/python/runs")).json();
+  await page.getByRole("button", { name: "Run Python", exact: true }).click();
+  const resources = page.getByRole("region", {
+    name: "Compilation results",
+    exact: true,
+  });
+  await expect(resources.getByRole("row")).toHaveCount(2, { timeout: 90000 });
+  await expect(resources).toContainText("Auto-collected");
+  await expect(resources).toContainText("Recorded result");
+  await expect(resources).toContainText("Current source");
+  const row = resources.getByRole("row").nth(1);
+  await expect(row.getByRole("cell").nth(0)).toHaveText("19");
+  await expect(row.getByRole("cell").nth(1)).toHaveText("2770");
+  await expect(row.getByRole("cell").nth(2)).toHaveText("3316");
+  const editor = page.getByRole("textbox", {
+    name: "Quantum model code editor",
+  });
+  await expect(editor).toHaveValue(source);
+  await editor.fill(source + "\n# independent unsaved iteration\n");
+  await expect(resources).toContainText("Code changed · saved version");
+  await resources.getByRole("button", { name: /^View circuit / }).click();
+  await expect(
+    page.getByRole("group", {
+      name: "Interactive hierarchical quantum circuit",
+      exact: true,
+    }),
+  ).toBeVisible();
+  const after = await (await page.request.get("/api/python/runs")).json();
+  expect(after.length - before.length).toBe(1);
+});

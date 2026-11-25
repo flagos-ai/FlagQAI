@@ -132,9 +132,9 @@ export function CompilationResults({
             ? "Python execution and circuit collection have separate statuses. Review the collection errors in Output before deciding whether to run again."
             : python
               ? run?.status === "completed"
-                ? "Python completed without a saved circuit. Printed probabilities and resource estimates are available in Output; this source must save an FQX file to make its circuit available here."
+                ? "Python completed without a collected circuit. Printed results remain in Output. Supported synthesis products are collected automatically; other circuits can be saved with fq.save."
                 : detectedPythonStyle(state.source) === "synthesis"
-                  ? "Set synthesis constraints in this Python source, then Run Python. Save the generated circuit with fq.save to inspect its resources here."
+                  ? "Run Python to collect synthesized circuits and their available results automatically. Edit synthesis constraints in this source."
                   : "Run this Python source and save a circuit with fq.save to inspect its resources here."
               : "Use Compile above to generate a circuit from this source."}
         </p>
@@ -181,6 +181,15 @@ export function CompilationResults({
                           {program.experiment?.filename || program.name}
                         </span>
                         <small>
+                          {program.experiment?.python_run?.capture_method ===
+                          "automatic"
+                            ? "Auto-collected"
+                            : "Saved"}{" "}
+                          ·{" "}
+                          {program.experiment?.has_result
+                            ? "Recorded result"
+                            : "Circuit only"}{" "}
+                          ·{" "}
                           {matches
                             ? "Current source"
                             : program.origin?.source === state.source
@@ -236,6 +245,7 @@ export function CompilationResults({
       {python &&
         run &&
         (collectionFailed ||
+          !rows.length ||
           run.error ||
           (run.experiments?.length || 0) > rows.length) && (
           <button onClick={onOutput}>View run output and all archives</button>

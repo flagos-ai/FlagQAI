@@ -147,6 +147,7 @@ export type ExperimentInfo = {
     execution_status: string;
     transport: string;
     task_path: string;
+    capture_method?: "automatic" | "explicit";
     elapsed_seconds?: number;
     sdk_version?: string;
     sdk_code_sha256?: string | null;
