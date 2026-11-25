@@ -435,10 +435,14 @@ function reduceWorkspace(
         },
       };
     }
+    case "model-panel":
+      return { ...state, modelPanel: action.panel };
     case "navigate":
       return {
         ...state,
-        page: action.page,
+        page: action.page === "synthesis" ? "model" : action.page,
+        modelPanel:
+          action.page === "synthesis" ? "compilation" : state.modelPanel,
         selectedProgramId:
           action.page === "program" &&
           !state.programs.some((p) => p.id === state.selectedProgramId)
@@ -538,8 +542,20 @@ function reduceWorkspace(
       return {
         ...state,
         programs,
-        selectedProgramId: action.program.id,
-        page: state.source === action.program.source ? "program" : state.page,
+        selectedProgramId:
+          action.stayInModel && state.page !== "model"
+            ? state.selectedProgramId
+            : action.program.id,
+        page:
+          state.source === action.program.source
+            ? action.stayInModel
+              ? state.page
+              : "program"
+            : state.page,
+        modelPanel:
+          action.stayInModel && state.source === action.program.source
+            ? "compilation"
+            : state.modelPanel,
         error: null,
       };
     }

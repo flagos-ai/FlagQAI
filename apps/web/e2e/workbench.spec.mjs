@@ -78,6 +78,9 @@ async function openCircuit(page, run, filename) {
   const reference = run.experiments.find(
     (item) => !filename || item.filename === filename,
   );
+  const files = page.locator(".fq-python-files");
+  if (!(await files.evaluate((node) => node.open)))
+    await files.locator(":scope > summary").click();
   await page
     .getByRole("group", { name: reference.filename, exact: true })
     .getByRole("button", { name: "View circuit ↗" })
@@ -4504,30 +4507,28 @@ test("Synthesis shows source-bound compilation status and reusable results witho
   page,
 }, testInfo) => {
   const pythonDraft = await editor(page).inputValue();
-  await page.getByRole("button", { name: "SYNTHESIS", exact: true }).click();
-  const synthesis = page.getByRole("region", {
-    name: "Synthesis workspace",
+  await page.evaluate(() => {
+    location.hash = "synthesis";
+  });
+  await expect(page).toHaveURL(/#model$/);
+  await expect(
+    page.getByRole("button", { name: "SYNTHESIS", exact: true }),
+  ).toHaveCount(0);
+  const panel = page.getByRole("region", {
+    name: "Compilation results",
     exact: true,
   });
-  const status = synthesis.getByRole("status", {
-    name: "Compilation status",
-    exact: true,
-  });
-  await expect(status).toHaveText("Python runs in Model");
-  await synthesis
-    .getByRole("button", { name: "Open Python in Model", exact: true })
-    .click();
+  await expect(panel).toBeVisible();
   await expect(editor(page)).toHaveValue(pythonDraft);
   await page.getByRole("button", { name: "OpenQASM", exact: true }).click();
   const source =
     'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\ncreg c[2];\n// @module acceptance | Source check\nh q[0];\ncx q[0],q[1];\nmeasure q[0] -> c[0];\nmeasure q[1] -> c[1];\n';
   await editor(page).fill(source);
-  await page.getByRole("button", { name: "SYNTHESIS", exact: true }).click();
-  await expect(status).toHaveText("Ready to compile");
-  const compile = synthesis.getByRole("button", {
-    name: "Compile model →",
+  const status = panel.getByRole("status", {
+    name: "Compilation status",
     exact: true,
   });
+  const compile = page.getByRole("button", { name: "Compile", exact: true });
   let release;
   let hold = new Promise((resolve) => {
     release = resolve;
@@ -4536,127 +4537,93 @@ test("Synthesis shows source-bound compilation status and reusable results witho
     await hold;
     await route.continue();
   });
-  const compiledResponse = page.waitForResponse(
-    (response) => new URL(response.url()).pathname === "/api/compile",
+  const response = page.waitForResponse(
+    (r) => new URL(r.url()).pathname === "/api/compile",
   );
   try {
     await compile.click();
     await expect(status).toHaveText("Compiling…");
-    await expect(
-      synthesis.getByRole("button", { name: "Compiling…", exact: true }),
-    ).toBeDisabled();
-    await page.screenshot({
-      path: testInfo.outputPath("compact-synthesis-working.png"),
-      fullPage: true,
-    });
+    await expect(compile).toBeDisabled();
+    await expect(editor(page)).toHaveValue(source);
   } finally {
     release();
   }
-  const response = await compiledResponse;
-  expect(response.ok(), JSON.stringify(await response.json())).toBe(true);
-  await expect(page).toHaveURL(/#program$/, { timeout: 90000 });
-  await expect(
-    page.getByRole("group", {
-      name: "Interactive hierarchical quantum circuit",
-      exact: true,
-    }),
-  ).toBeVisible();
+  expect((await response).ok()).toBe(true);
+  await expect(status).toHaveText("Compiled", { timeout: 90000 });
+  await expect(page).toHaveURL(/#model$/);
+  const current = panel.getByRole("row").filter({ hasText: "Current source" });
+  await expect(current).toHaveCount(1);
+  await expect(current.getByRole("cell")).toHaveText([
+    "2",
+    "2",
+    "2",
+    "0",
+    "View circuit",
+  ]);
+  await current.getByRole("button", { name: /^View circuit/ }).click();
+  await expect(page).toHaveURL(/#program$/);
   await page
     .getByRole("button", { name: "Select Source check", exact: true })
     .press("Enter");
   await expect(page.locator(".fq-node-details")).toContainText("Lines 6–7");
-  await page.getByRole("button", { name: "SYNTHESIS", exact: true }).click();
-  await expect(status).toHaveText("Compiled");
-  const result = synthesis.getByRole("region", {
-    name: "Compilation result",
+  await page.getByRole("button", { name: "MODEL", exact: true }).click();
+  await expect(panel).toBeVisible();
+  const resize = page.getByRole("separator", {
+    name: "Resize compilation results",
     exact: true,
   });
-  await expect(result.locator(".fq-synthesis-metrics")).toContainText(
-    "Qubits2",
-  );
-  await expect(result.locator(".fq-synthesis-metrics")).toContainText("Gates2");
-  expect(
-    (await result.boundingBox()).y - (await synthesis.boundingBox()).y,
-  ).toBeLessThan(150);
-  const sidebar = page.getByRole("separator", {
-    name: "Resize left sidebar",
-    exact: true,
-  });
-  const handle = await sidebar.boundingBox();
-  await page.mouse.move(handle.x + handle.width / 2, handle.y + 50);
-  await page.mouse.down();
-  await page.mouse.move(handle.x + handle.width / 2 + 40, handle.y + 50);
-  await page.mouse.up();
-  await expect(sidebar).toHaveAttribute("aria-valuenow", "320");
+  await resize.press("Shift+ArrowUp");
+  const height = await resize.getAttribute("aria-valuenow");
   await page.reload();
-  await expect(sidebar).toHaveAttribute("aria-valuenow", "320");
-  await expect(status).toHaveText("Compiled");
-  await page.screenshot({
-    path: testInfo.outputPath("compact-synthesis-result.png"),
-    fullPage: true,
-  });
-  await page.setViewportSize({ width: 820, height: 700 });
-  expect(
-    await synthesis.evaluate(
-      (element) => element.scrollWidth <= element.clientWidth + 1,
-    ),
-  ).toBe(true);
-  await page.screenshot({
-    path: testInfo.outputPath("compact-synthesis-narrow.png"),
-    fullPage: true,
-  });
-  await page.setViewportSize({ width: 1440, height: 1000 });
-  await result
-    .getByRole("button", { name: "Open circuit", exact: true })
-    .click();
-  await expect(page).toHaveURL(/#program$/);
-  await page.getByRole("button", { name: "SYNTHESIS", exact: true }).click();
-  await synthesis
-    .getByRole("button", { name: "Edit model", exact: true })
-    .click();
+  await expect(resize).toHaveAttribute("aria-valuenow", height);
+  await expect(panel).toBeVisible();
+  await expect(editor(page)).toHaveValue(source);
   const changed = source.replace("measure q[0]", "x q[1];\nmeasure q[0]");
   await editor(page).fill(changed);
-  await page.getByRole("button", { name: "SYNTHESIS", exact: true }).click();
-  await expect(status).toHaveText("Ready to compile");
-  await expect(
-    synthesis.getByRole("region", {
-      name: "Previous compilation",
-      exact: true,
-    }),
-  ).toContainText("Source differs from the current model");
+  await expect(status).toHaveText("Source changed · previous resources");
+  await expect(panel).toContainText("Code changed · saved version");
   hold = new Promise((resolve) => {
     release = resolve;
   });
-  const newer = changed + "// Keep this newer draft\n";
+  const newer = changed + "// keep a newer draft\n";
+  const second = page.waitForResponse(
+    (r) => new URL(r.url()).pathname === "/api/compile",
+  );
   try {
     await compile.click();
     await expect(status).toHaveText("Compiling…");
-    await synthesis
-      .getByRole("button", { name: "Edit model", exact: true })
-      .click();
     await editor(page).fill(newer);
-    await page.getByRole("button", { name: "SYNTHESIS", exact: true }).click();
     await expect(status).toHaveText("Compiling another source…");
   } finally {
     release();
   }
-  await expect(status).toHaveText("Ready to compile", { timeout: 90000 });
-  await expect(page).toHaveURL(/#synthesis$/);
-  await expect(
-    synthesis
-      .getByRole("region", { name: "Previous compilation", exact: true })
-      .locator(".fq-synthesis-metrics"),
-  ).toContainText("Gates3");
-  await synthesis
-    .getByRole("button", { name: "Edit model", exact: true })
-    .click();
+  expect((await second).ok()).toBe(true);
+  await expect(status).toHaveText("Source changed · previous resources");
   await expect(editor(page)).toHaveValue(newer);
-  await editor(page).fill(source.replace("h q[0]", "h q[7]"));
-  await page.getByRole("button", { name: "SYNTHESIS", exact: true }).click();
+  await expect(page).toHaveURL(/#model$/);
+  await page.unroute("**/api/compile");
+  await page.route("**/api/compile", (route) =>
+    route.fulfill({
+      status: 503,
+      json: { error: "Compiler temporarily unavailable" },
+    }),
+  );
   await compile.click();
-  await expect(status).toHaveText("Compilation failed", { timeout: 90000 });
-  await expect(synthesis.getByRole("alert")).toBeVisible();
+  await expect(status).toHaveText("Compilation failed");
+  await expect(panel.getByRole("alert")).toContainText(
+    "Compiler temporarily unavailable",
+  );
   await expect(compile).toBeEnabled();
+  await page.setViewportSize({ width: 820, height: 700 });
+  expect(
+    await panel.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth + 1,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: testInfo.outputPath("model-compilation-resources.png"),
+    fullPage: true,
+  });
 });
 
 test("Quantum compact list preserves explicit information-panel choices and manual sizes", async ({
@@ -6079,6 +6046,12 @@ test("reviewed OpenQASM compilation uses the accepted snapshot instead of the pr
   const response = await compilation;
   expect(response.request().postDataJSON().source).toBe(proposal);
   expect(response.ok(), JSON.stringify(await response.json())).toBe(true);
+  await expect(page).toHaveURL(/#model$/);
+  await page
+    .getByRole("region", { name: "Compilation results", exact: true })
+    .getByRole("button", { name: /^View circuit/ })
+    .first()
+    .click();
   await expect(page).toHaveURL(/#program$/, { timeout: 90000 });
   await page.getByRole("button", { name: "MODEL", exact: true }).click();
   await expect(editor(page)).toHaveValue(proposal);

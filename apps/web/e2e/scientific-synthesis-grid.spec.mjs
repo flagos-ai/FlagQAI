@@ -19,7 +19,7 @@ test("scientific grid opens a draft-safe copy and binds resources to real saved 
   const originalRuns = await history();
   const jobsBefore = await get("/api/jobs");
   const synthesis = page.getByRole("button", {
-    name: "SYNTHESIS",
+    name: "MODEL",
     exact: true,
   });
   const section = page.getByRole("region", {
@@ -30,9 +30,10 @@ test("scientific grid opens a draft-safe copy and binds resources to real saved 
   const records = [];
   for (const bits of grids) {
     await synthesis.click();
+    await page.getByRole("button", { name: "TEMPLATES", exact: true }).click();
     const disclosure = section.locator("details").first();
-    await expect(disclosure).not.toHaveAttribute("open");
-    await disclosure.locator(":scope > summary").press("Enter");
+    if ((await disclosure.getAttribute("open")) === null)
+      await disclosure.locator(":scope > summary").press("Enter");
     const size = section.getByLabel("Scientific grid size");
     await size.selectOption(String(bits));
     const row = section
@@ -78,11 +79,17 @@ test("scientific grid opens a draft-safe copy and binds resources to real saved 
       const { program } = await get("/api/experiments/" + artifact.id);
       records.push(program);
       await synthesis.click();
-      await section
-        .locator("details")
-        .first()
-        .locator(":scope > summary")
+      await page
+        .getByRole("button", { name: "TEMPLATES", exact: true })
         .click();
+      if (
+        (await section.locator("details").first().getAttribute("open")) === null
+      )
+        await section
+          .locator("details")
+          .first()
+          .locator(":scope > summary")
+          .click();
       await expect(
         row.getByRole("button", { name: "View circuit" }),
       ).toBeVisible();
@@ -100,6 +107,9 @@ test("scientific grid opens a draft-safe copy and binds resources to real saved 
         await row.getByRole("button", { name: "View circuit" }).click();
         await expect(page).toHaveURL(/#program$/);
         await synthesis.click();
+        await page
+          .getByRole("button", { name: "TEMPLATES", exact: true })
+          .click();
         await section
           .locator("details")
           .first()
@@ -114,9 +124,7 @@ test("scientific grid opens a draft-safe copy and binds resources to real saved 
         ).toBeVisible();
       } else {
         // Return to Model between variants so the Synthesis disclosure resets.
-        await page
-          .getByRole("button", { name: "Open Python in Model" })
-          .click();
+        await page.getByRole("button", { name: "MODEL", exact: true }).click();
       }
     }
   }

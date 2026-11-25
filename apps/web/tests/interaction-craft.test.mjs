@@ -46,7 +46,7 @@ test("run feedback never presents a previous run or a stop request as confirmed 
       selectedId: "a",
       run: { ...run, status: "completed", collection_status: "partial" },
     }).label,
-    "Results need attention",
+    "Completed · some results unavailable",
   );
   assert.match(
     pythonRunFeedback({ selectedId: "a", run: { ...run, status: "completed" } })
@@ -211,4 +211,41 @@ test("corrupt or unavailable view storage cannot affect the result or editor dat
   assert.deepEqual(readJobView(bad, job), defaultJobView);
   assert.doesNotThrow(() => writeJobView(bad, job, defaultJobView));
   assert.equal(job.result.counts["00"], 3);
+});
+
+test("successful Python with a collection failure does not present as failed execution", () => {
+  const feedback = pythonRunFeedback({
+    selectedId: "collection",
+    run: {
+      id: "collection",
+      status: "completed",
+      execution_status: "completed",
+      collection_status: "failed",
+    },
+  });
+  assert.equal(feedback.label, "Completed · collection failed");
+  assert.match(feedback.message, /completed successfully/);
+  assert.equal(feedback.busy, false);
+});
+
+test("SDK execution phases are shown only for the active confirmed run", () => {
+  for (const [phase, label] of [
+    ["synthesizing", "Synthesizing…"],
+    ["computing", "Computing…"],
+    ["capturing", "Collecting circuit…"],
+  ]) {
+    const run = { id: "active", status: "running", phase };
+    assert.equal(pythonRunFeedback({ selectedId: "active", run }).label, label);
+    assert.equal(
+      pythonRunFeedback({ selectedId: "different", run }).label,
+      "Loading run…",
+    );
+    assert.equal(
+      pythonRunFeedback({
+        selectedId: "active",
+        run: { ...run, status: "failed" },
+      }).label,
+      "Failed",
+    );
+  }
 });

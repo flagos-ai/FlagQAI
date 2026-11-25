@@ -1,3 +1,5 @@
+import { SynthesisExamples } from "./SynthesisExamples";
+import type { ProgramSnapshot } from "../contracts/quantum-workspace";
 import { SynthesisFileTree } from "./SynthesisFileTree";
 import { ToolbarMenu } from "./ToolbarMenu";
 import { ModelFolderLibrary } from "./ModelFolderLibrary";
@@ -17,6 +19,7 @@ import {
 
 export function ModelLibrary({
   models,
+  programs = [],
   folders,
   dispatch,
   onSelect,
@@ -37,6 +40,7 @@ export function ModelLibrary({
   busy?: boolean;
   importing?: boolean;
   models: Model[];
+  programs?: ProgramSnapshot[];
   folders?: string[];
   dispatch: (action: WorkspaceAction) => void;
   onSelect: (model: Model) => void;
@@ -329,6 +333,11 @@ export function ModelLibrary({
               Choose a supported template, then review and apply its source.
             </p>
           )}
+          <SynthesisExamples
+            programs={programs}
+            dispatch={dispatch}
+            onSelect={onSelect}
+          />
         </div>
       )}
       <footer>

@@ -73,18 +73,19 @@ and drag/reset behavior are unchanged. Acceptance verifies settings/expansion
 across reload, validation, actual snapshot execution with 64 shots and seed 7,
 narrow layout, pointer resizing, and retained editor drafts.
 
-Synthesis replaces introductory copy with a compact source/action toolbar,
-compiler status, and saved resource summary. The workspace hook tracks the actual
-in-flight compile source independently of generic busy state. Results match the
-current source exactly; older same-name compilations are explicitly labeled as
-previous resources, and a failed retry never promotes saved resources to a new
-success. Python files link to Run Python in Model, while existing Python circuit
-artifacts can still be opened. Successful compilation retains the existing
-navigation to Quantum, and returning to Synthesis shows its persisted resources.
-Compiler/environment explanations are folded into the sidebar; width drag/reset
-behavior is unchanged. Acceptance covers real OpenQASM compilation, held-request
-status, source changes during compilation, failure/retry feedback, result access,
-reload, narrow layout, and preserved drafts.
+Compilation is part of Model's existing output dock. Its Circuits & resources
+view keeps the source editor visible, exposes recorded circuit resources and
+verification evidence, and opens the full Quantum view only on explicit action.
+Python retains Run Python; high-level synthesis constraints remain in the actual
+source. OpenQASM compilation completes in place. Results retain their source and
+run bindings, and changed project dependencies prevent a current-version label.
+
+The output dock remembers its selected view. Circuit resources have an independent
+remembered height, while Output retains its compact mode and manual height.
+The old Synthesis navigation item and compiler sidebar are removed. Legacy
+`#synthesis` links select Model's resource view; verification and scientific
+examples live in Templates. See
+[Model compilation acceptance](../acceptance/MODEL_COMPILATION_WORKSPACE_2026-11-25.md).
 
 Quantum's library uses compact snapshot rows with name/time, qubits/depth, and
 saved-result availability. Full identity and timestamp remain in hover text and

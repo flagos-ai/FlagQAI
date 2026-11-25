@@ -35,7 +35,7 @@ export function workspaceActivityGroups(actions: PlatformAction[]) {
 export function workspacePageLabel(page: string | undefined) {
   const labels: Record<string, string> = {
     model: "Model",
-    synthesis: "Compiler",
+    synthesis: "Model · circuits",
     program: "Quantum",
     execution: "Execution",
     jobs: "Results",

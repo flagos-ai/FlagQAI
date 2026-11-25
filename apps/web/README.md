@@ -43,6 +43,21 @@ explicit local runtime:
 - `.fqx` reading: `FQ_EXPERIMENT_PYTHON=/path/to/python` with official SDK
   `fq.save`/`fq.load` support. The Web host itself requires only Python's stdlib.
 
+### Edit, compile and inspect
+
+Model keeps Python, OpenQASM and Notebook authoring in one workspace. OpenQASM
+Compile completes beside the editor in **Circuits & resources**. Python retains
+**Run Python**; edit synthesis constraints in the actual SDK calls and save the
+generated circuit with `fq.save` to inspect its resources. The results header
+retains run history, while saved versions remain distinguishable from edited code.
+Use **View circuit** for the full Quantum view or select two saved archives for
+comparison. Output and circuit resources remember their heights independently.
+
+Constraint verification, compiler optimization and harmonic-grid examples are in
+**Templates**. The original upstream file tree stays in **Examples**. Old
+`#synthesis` links open Model's resource view. Notebook continues to display its
+own cell outputs and preserves independent drafts when switching views.
+
 Set `FQ_AGENT_SDK_PREFLIGHT=1` for a quantum workbench that requires a
 working SDK before each Agent submission. The server uses the configured
 local or SSH Python runner to execute a small circuit and reload its saved
@@ -566,8 +581,8 @@ adapter. The subprocess uses `FQ_EXPERIMENT_PYTHON`, falling back to
 SDK and PyTorch available. An old SDK produces an actionable import error; there
 is no custom replacement decoder or silent compute fallback.
 
-The initial Web reader supports files up to 16 MiB, 1–16 qubits, 2000 gates,
-32 KiB of exported OpenQASM, 128 measurement outputs and a 2 MiB preview. It
+The initial Web reader supports files up to 16 MiB, 1–256 qubits, 10,000 gates,
+512 KiB of exported preview OpenQASM, 128 measurement outputs and a 2 MiB preview. It
 preserves saved measurements and their batches/qubit order. Numeric previews
 retain dtype/shape and show at most 1024 elements; complex values are
 `[real, imaginary]` pairs. Downloading the original `.fqx` preserves every byte.
@@ -905,3 +920,42 @@ Historical replay, Follow Off, failed runs and incomplete collection never trigg
 that automatic transition. Other cases offer **Compare results** for explicit
 selection. Coalesced follow navigation avoids intermediate page flashes, and a
 comparison stays open when later code/run notices arrive.
+
+
+### Automatic synthesis circuit collection
+
+Explicit **Run Python** tasks observe successful calls to the installed SDK's
+`flagquantum.synth.synthesize` (including its implementation-module export).
+The task-local adapter immediately saves the returned product's checked execution
+plan, then attaches the actual result when that product or its plan is passed to
+`fq.run`. It never compiles a substitute circuit or executes a product again.
+Original example source files are unchanged. Ordinary Python tasks do not import
+the SDK merely to enable this observation.
+
+The Model resource pane labels these archives **Auto-collected**, with **Circuit
+only** or **Recorded result**. Successful explicit `fq.save` archives of the same
+object take precedence when they retain the available result; otherwise the
+automatic copy remains. Capture errors are separate from Python exit status.
+Completed products remain inspectable after a later script exception, with the
+failed execution origin retained. Cancellation or timeout does not promise a
+complete archive. Capture is bounded to eight products, 16 MiB per archive and
+32 MiB combined; existing archive/preview limits still apply.
+
+This adapter currently applies to Python task execution, not independent Notebook
+kernels or external Python processes. SDK calls bypassing these observed exports
+are not claimed to be captured. Code/run hashes and project dependency snapshots
+continue to determine whether a collected circuit belongs to the current source.
+
+### Reading a completed Python run
+
+Output presents a compact circuit/resource summary without changing the selected
+result tab. **View circuit** opens the recorded version; **Back to code** returns
+to the active draft and its reading position. Full archive/result actions remain
+under **Files and recorded results**. Failed collection or previews reveal those
+files, and retrying collection does not run the source again.
+
+Logs retain their reading position and latest-output follow preference per run in
+the current browser session, including after refresh. Existing compact output and
+manually adjusted heights are unchanged. Synthesis/computation phase labels come
+from actual observed SDK calls; a collection failure is explicitly distinguished
+from Python execution failure.

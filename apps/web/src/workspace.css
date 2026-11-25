@@ -5041,6 +5041,112 @@ body,
   }
 }
 
+.fq-workspace.fq-ui-controls .fq-editor-result-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+.fq-workspace.fq-ui-controls .fq-editor-result-tabs > button {
+  min-height: 26px;
+  padding: 3px 7px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.fq-workspace.fq-ui-controls
+  .fq-editor-result-tabs
+  > button[aria-pressed="true"] {
+  color: var(--text);
+  background: var(--ui-selection);
+}
+.fq-python-console > .fq-pane-title:has(.fq-editor-result-tabs) {
+  flex-wrap: wrap;
+}
+.fq-compilation-results {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
+  padding: 10px 14px;
+  font-size: 12px;
+}
+.fq-compilation-results > header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.fq-compilation-results > header small,
+.fq-compilation-scope {
+  color: var(--muted);
+  font-size: 11px;
+}
+.fq-compilation-results p {
+  margin: 8px 0;
+  line-height: 1.6;
+}
+.fq-compilation-table {
+  overflow-x: auto;
+  max-width: 100%;
+}
+.fq-compilation-table table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 540px;
+  font-variant-numeric: tabular-nums;
+}
+.fq-compilation-table th,
+.fq-compilation-table td {
+  text-align: left;
+  padding: 7px 9px;
+  border-bottom: 1px solid var(--ui-line);
+  white-space: nowrap;
+}
+.fq-compilation-table thead th {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 500;
+}
+.fq-compilation-table tbody th {
+  font-weight: 500;
+  min-width: 180px;
+  max-width: 350px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.fq-compilation-table th small {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 400;
+  margin-top: 4px;
+}
+.fq-compilation-table input[type="checkbox"] {
+  margin-right: 7px;
+  vertical-align: middle;
+}
+.fq-synthesis-examples {
+  border-top: 1px solid var(--ui-line);
+  margin-top: 16px;
+  padding-top: 8px;
+}
+.fq-synthesis-examples > h3 {
+  font-size: 12px;
+  font-weight: 500;
+}
+.fq-synthesis-examples details {
+  font-size: 11px;
+}
+.fq-synthesis-examples .fq-synth-evidence {
+  padding: 8px;
+  margin: 6px 0;
+}
+
 .fq-quick-open {
   width: min(560px, calc(100vw - 32px));
   max-height: min(600px, calc(100dvh - 48px));
@@ -7996,4 +8102,53 @@ body,
 .fq-workspace .fq-agent-input textarea[data-follow-up="true"]::placeholder {
   color: #9ca3af;
   opacity: 1;
+}
+
+.fq-python-run-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--fq-border, #35373a);
+  flex-shrink: 0;
+}
+.fq-python-run-summary > div {
+  flex: 1;
+  min-width: 170px;
+}
+.fq-python-run-summary strong {
+  font-size: 12px;
+  font-weight: 600;
+  margin-right: 10px;
+}
+.fq-python-run-summary span {
+  font-size: 12px;
+  color: #c9d4df;
+}
+.fq-python-run-summary small {
+  display: block;
+  color: #c6b48f;
+  font-size: 11px;
+  margin-top: 3px;
+}
+.fq-python-run-summary button {
+  min-height: 26px;
+  font-size: 12px;
+  padding: 3px 8px;
+}
+.fq-python-files {
+  flex-shrink: 0;
+}
+.fq-python-files > summary {
+  padding: 5px 12px;
+  cursor: pointer;
+  color: #aab6c3;
+  font-size: 11px;
+}
+.fq-python-console details.fq-python-files {
+  padding: 0;
+  margin: 0;
+  max-height: none;
+  overflow: visible;
 }

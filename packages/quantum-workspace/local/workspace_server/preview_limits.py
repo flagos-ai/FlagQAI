@@ -1,7 +1,7 @@
 """Display bounds for recorded circuits, independent of execution limits."""
 
 MAX_PREVIEW_QUBITS = 256
-MAX_PREVIEW_GATES = 2000
+MAX_PREVIEW_GATES = 10000
 
 
 def validate_preview_size(qubits, gates):

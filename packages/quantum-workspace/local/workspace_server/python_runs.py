@@ -320,6 +320,7 @@ with tempfile.TemporaryDirectory(prefix='fq-sdk-preflight-') as directory:
         if settings.macos_python_isolation and settings.compute_transport != 'local':
             raise RuntimeError('macOS Python isolation requires the local compute runner.')
         worker = worker or ('ISOLATE_PYTHON = ' + repr(settings.macos_python_isolation) + '\n'
+            + 'SYNTHESIS_CAPTURE_CODE = ' + repr((Path(__file__).parent/'synthesis_capture.py').read_text()) + '\n'
             + 'RUNTIME_MANIFEST_CODE = ' + repr((Path(__file__).parent/'runtime_facts.py').read_text()) + '\n' + (Path(__file__).parent/'python_worker.py').read_text())
         if settings.compute_transport == 'local':
             from shutil import which
@@ -391,6 +392,8 @@ with tempfile.TemporaryDirectory(prefix='fq-sdk-preflight-') as directory:
                     elif not run.get('truncated'):
                         run['truncated'] = True
                 elif event['type'] == 'runtime': run['runtime'] = event
+                elif event['type'] == 'phase': run['phase'] = event['phase']
+                elif event['type'] == 'synthesis-capture': run['automatic_capture'] = {'files': event['files']}
                 elif event['type'] == 'artifact': artifact = event['value']
                 elif event['type'] == 'artifact-error':
                     collection_error(run, event.get('name', ''), event['message'])

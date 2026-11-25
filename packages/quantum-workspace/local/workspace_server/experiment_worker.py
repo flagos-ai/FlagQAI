@@ -49,8 +49,8 @@ def project(path):
     limits = runpy.run_path(str(helpers / 'preview_limits.py'))
     limits['validate_preview_size'](ir.n_wires, len(ir.instructions))
     source = emit_openqasm(ir, version=2.0)
-    if len(source.encode()) > 32768:
-        raise ValueError('The exported circuit exceeds the Web source limit of 32 KiB.')
+    if len(source.encode()) > 512 * 1024:
+        raise ValueError('The archived circuit exceeds the preview source limit of 512 KiB.')
     with zipfile.ZipFile(path) as archive:
         producer = json.loads(archive.read('manifest.json'))['producer']['version']
     depths = [0] * ir.n_wires

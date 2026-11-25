@@ -63,7 +63,8 @@ def check_synthesis_environment(entry):
 '''
 
 FQX_LIMITS = {'files': 8, 'file_bytes': 16 * 1024 * 1024,
-              'total_bytes': 32 * 1024 * 1024, 'chunk_bytes': 64 * 1024}
+              'total_bytes': 32 * 1024 * 1024, 'chunk_bytes': 64 * 1024,
+              'scan_entries': 16384, 'directory_depth': 32}
 
 
 def collect_experiments(root, emit):
@@ -77,13 +78,13 @@ def collect_experiments(root, emit):
         with os.scandir(directory) as items:
             for entry in items:
                 entries += 1
-                if entries > 4096:
-                    emit({'type': 'artifact-error', 'name': '', 'message': 'File scan stopped at 4096 entries.'})
+                if entries > FQX_LIMITS['scan_entries']:
+                    emit({'type': 'artifact-error', 'name': '', 'message': 'File scan stopped at 16384 entries.'})
                     return
                 name = Path(entry.path).relative_to(root).as_posix()
                 if entry.is_dir(follow_symlinks=False):
-                    if depth < 8: pending.append((Path(entry.path), depth + 1))
-                    else: emit({'type': 'artifact-error', 'name': name, 'message': 'Artifact directory depth exceeds 8.'})
+                    if depth < FQX_LIMITS['directory_depth']: pending.append((Path(entry.path), depth + 1))
+                    else: emit({'type': 'artifact-error', 'name': name, 'message': 'Artifact directory depth exceeds 32.'})
                     continue
                 if not entry.name.lower().endswith('.fqx'): continue
                 if count >= FQX_LIMITS['files']:
@@ -194,8 +195,9 @@ def supervise():
         emit({'type':'runtime', 'python':sys.version.split()[0], 'cwd':str(root)})
         # Observe the actual SDK imported by the script without requiring it for
         # ordinary Python tasks or changing the user's source file.
-        driver = RUNTIME_MANIFEST_CODE + "\n" + SYNTHESIS_PREFLIGHT_CODE + "\n" + """import runpy,sys,json
+        driver = globals().get('SYNTHESIS_CAPTURE_CODE', 'def install_synthesis_capture():\n    return lambda: None\n') + "\n" + RUNTIME_MANIFEST_CODE + "\n" + SYNTHESIS_PREFLIGHT_CODE + "\n" + """import runpy,sys,json
 from pathlib import Path
+finish_capture = install_synthesis_capture()
 try:
     sys.path.insert(0, str(Path.cwd()))
     sys.path.insert(0, str(Path(sys.argv[1]).resolve().parent))
@@ -208,6 +210,8 @@ try:
     check_synthesis_environment(entry)
     runpy.run_module(entry[:-3].replace('/', '.'), run_name='__main__', alter_sys=True) if package.startswith('examples.') else runpy.run_path(entry, run_name='__main__')
 finally:
+    try: finish_capture()
+    except Exception: pass
     fq = sys.modules.get('flagquantum')
     try:
         import os
@@ -235,10 +239,23 @@ finally:
         for reader in readers: reader.start()
         started = time.monotonic()
         reason = None
+        phase = None
         while process.poll() is None:
             if cancelled.is_set() or time.monotonic()-started > 90:
                 reason = 'cancelled' if cancelled.is_set() else 'timed_out'
                 break
+            stage_file = root / '.synthesis-stage.json'
+            try:
+                descriptor = os.open(stage_file, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+                with os.fdopen(descriptor, 'rb') as stream:
+                    info = os.fstat(stream.fileno())
+                    raw = stream.read(257) if stat.S_ISREG(info.st_mode) and info.st_size <= 256 else b''
+                next_phase = json.loads(raw).get('phase') if 0 < len(raw) <= 256 else None
+                if next_phase in ('synthesizing', 'computing', 'capturing', 'python') and next_phase != phase:
+                    phase = next_phase
+                    emit({'type': 'phase', 'phase': phase})
+            except (OSError, ValueError, AttributeError):
+                pass
             time.sleep(.05)
         # Stop descendants too, including processes that outlive main.py.
         try: os.killpg(process.pid, signal.SIGTERM)
@@ -263,6 +280,21 @@ finally:
                           'sdk_version': version[:64] if isinstance(version, str) else None,
                           'save_load_supported': facts.get('save_load_supported') is True, 'environment_manifest': facts})
             except (ValueError, OSError): pass
+        capture = root / '.synthesis-capture.json'
+        if not reason and not capture.is_symlink() and capture.is_file() and capture.stat().st_size < 16384:
+            try:
+                report = json.loads(capture.read_text())
+                paths = report.get('files', [])
+                errors = report.get('errors', [])
+                if (not isinstance(paths, list) or len(paths) > 8 or
+                        any(not isinstance(path, str) or len(path) > 256 for path in paths) or
+                        not isinstance(errors, list) or len(errors) > 8):
+                    raise ValueError('Invalid automatic capture report.')
+                emit({'type': 'synthesis-capture', 'files': paths})
+                for error in errors:
+                    emit({'type': 'artifact-error', 'name': 'Automatic synthesis capture', 'message': str(error)[:500]})
+            except (ValueError, OSError) as error:
+                emit({'type': 'artifact-error', 'name': 'Automatic synthesis capture', 'message': str(error)[:500]})
         if not reason:
             try: collect_experiments(root, emit)
             except OSError as error: emit({'type': 'artifact-error', 'name': '', 'message': str(error)[:500]})

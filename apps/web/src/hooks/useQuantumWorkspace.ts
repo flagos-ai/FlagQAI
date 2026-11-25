@@ -73,16 +73,22 @@ export function useQuantumWorkspace() {
     history.replaceState(null, "", "#" + state.page);
   }, [state.page]);
   useEffect(() => {
-    const change = () =>
+    const change = () => {
+      const hash = location.hash.slice(1);
       dispatch({
         type: "navigate",
-        page: restoreWorkspace(workspaceStorage, location.hash.slice(1)).page,
+        page:
+          hash === "synthesis"
+            ? "synthesis"
+            : restoreWorkspace(workspaceStorage, hash).page,
       });
+      if (hash === "synthesis") history.replaceState(null, "", "#model");
+    };
     window.addEventListener("hashchange", change);
     return () => window.removeEventListener("hashchange", change);
   }, []);
   const compile = useCallback(
-    async (source = state.source, name = state.name) => {
+    async (source = state.source, name = state.name, stayInModel = false) => {
       if (state.busy || operation.current) return;
       if (state.language === "python" && source === state.source) {
         dispatch({ type: "navigate", page: "model" });
@@ -112,6 +118,7 @@ export function useQuantumWorkspace() {
           response?.program.compiled || (await quantumAPI.compile(source));
         dispatch({
           type: "compiled",
+          stayInModel,
           program: response?.program || {
             id: crypto.randomUUID(),
             name,

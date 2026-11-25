@@ -147,6 +147,7 @@ export type ExperimentInfo = {
     execution_status: string;
     transport: string;
     task_path: string;
+    capture_method?: "automatic" | "explicit";
     elapsed_seconds?: number;
     sdk_version?: string;
     sdk_code_sha256?: string | null;
@@ -267,6 +268,7 @@ export type WorkspaceState = {
   editorLink?: EditorLink;
   schema: "flagqai.quantum-workspace.v1";
   page: Page;
+  modelPanel?: "output" | "compilation";
   name: string;
   source: string;
   programs: ProgramSnapshot[];
@@ -335,9 +337,10 @@ export type WorkspaceAction =
     }
   | { type: "unlink-editor" }
   | { type: "navigate"; page: Page }
+  | { type: "model-panel"; panel: "output" | "compilation" }
   | { type: "edit"; source: string }
   | { type: "model"; model: Model; preserveDraft?: boolean }
-  | { type: "compiled"; program: ProgramSnapshot }
+  | { type: "compiled"; program: ProgramSnapshot; stayInModel?: boolean }
   | { type: "program"; id: string }
   | { type: "recover-program"; program: ProgramSnapshot }
   | { type: "import-agent-program"; program: ProgramSnapshot }

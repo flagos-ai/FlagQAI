@@ -141,6 +141,7 @@ class ExperimentImports:
                 info['python_run'] = {'id': python_run['id'], 'source_hash': origin['source_hash'],
                                       'execution_status': origin['execution_status'],
                                       'transport': python_run['environment']['transport'], 'task_path': task_path,
+                                      'capture_method': ('automatic' if task_path in python_run.get('automatic_capture', {}).get('files', []) else 'explicit'),
                                       'elapsed_seconds': python_run.get('elapsed_seconds'),
                                       'sdk_version': runtime.get('sdk_version'),
                                       'sdk_code_sha256': manifest.get('sdk_code_sha256') if isinstance(manifest, dict) else None}

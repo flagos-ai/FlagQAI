@@ -73,6 +73,9 @@ async function openCircuit(page, run, filename) {
   const reference = run.experiments.find(
     (item) => !filename || item.filename === filename,
   );
+  const files = page.locator(".fq-python-files");
+  if (!(await files.evaluate((node) => node.open)))
+    await files.locator(":scope > summary").click();
   await page
     .getByRole("group", { name: reference.filename, exact: true })
     .getByRole("button", { name: "View circuit ↗" })
